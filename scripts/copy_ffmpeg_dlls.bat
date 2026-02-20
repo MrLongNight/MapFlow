@@ -1,12 +1,8 @@
 @echo off
 REM Post-build script to copy FFmpeg DLLs to the executable directory
 
-set VCPKG_BIN=%~dp0..\vcpkg_installed\x64-windows\bin
+set VCPKG_BIN=%~dp0..\vcpkg\installed\x64-windows\bin
 set TARGET_DIR=%~dp0..\target\debug
-
-if not exist "%VCPKG_BIN%" (
-    set VCPKG_BIN=%~dp0..\vcpkg\installed\x64-windows\bin
-)
 
 echo Copying FFmpeg DLLs from %VCPKG_BIN% to %TARGET_DIR%...
 

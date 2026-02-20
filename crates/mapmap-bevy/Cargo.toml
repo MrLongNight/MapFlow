@@ -9,23 +9,31 @@ repository.workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
-# Bevy 0.16 Upgrade to align with egui/wgpu v27
-bevy = { version = "0.16", features = [
-    "tonemapping_luts",
+# Bevy 0.16 stabilization
+bevy = { version = "0.16", default-features = false, features = [
+    "bevy_core_pipeline",
+    "bevy_pbr",
+    "bevy_gltf",
+    "bevy_render",
+    "bevy_scene",
+    "bevy_sprite",
+    "bevy_text",
+    "bevy_ui",
+    "bevy_winit",
     "default_font",
     "x11",
     "wayland",
+    "tonemapping_luts",
 ] }
 
 # Extensions compatible with Bevy 0.16
 bevy_atmosphere = "0.13"
-# bevy_enoki = "0.6" # Check version
-bevy_mod_outline = "0.10"
-hexx = "0.18" # Version compatible with Bevy 0.16
+# bevy_enoki = "0.5" # Disabled due to version mismatch (skips 0.16 support)
+bevy_mod_outline = "0.10.3"
+hexx = "0.24" # Version compatible with Bevy 0.16
 
 mapmap-core = { path = "../mapmap-core" }
 rand = "0.9.2"
 thiserror = { workspace = true }
 tracing = { workspace = true }
-# Use Bevy's own wgpu version (v24) to avoid conflicts
-wgpu = "24.0"
+wgpu = { workspace = true } # Use Bevy's re-exported wgpu to avoid conflicts

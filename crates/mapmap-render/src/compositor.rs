@@ -6,14 +6,13 @@
 use crate::Result;
 use bytemuck::{Pod, Zeroable};
 use mapmap_core::BlendMode;
-use std::collections::HashMap;
-use std::sync::{Arc, Weak};
+use std::sync::Arc;
 use tracing::info;
 use wgpu::util::DeviceExt;
 
 /// Compositor parameters for blend modes
 #[repr(C)]
-#[derive(Copy, Clone, Debug, Pod, Zeroable, PartialEq)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
 struct CompositeParams {
     blend_mode: u32,
     opacity: f32,
@@ -22,13 +21,6 @@ struct CompositeParams {
 
 struct CachedUniform {
     buffer: wgpu::Buffer,
-    bind_group: Arc<wgpu::BindGroup>,
-    last_params: Option<CompositeParams>,
-}
-
-struct CachedTextureBindGroup {
-    base_weak: Weak<wgpu::TextureView>,
-    blend_weak: Weak<wgpu::TextureView>,
     bind_group: Arc<wgpu::BindGroup>,
 }
 
@@ -43,7 +35,6 @@ pub struct Compositor {
     // Caching
     uniform_cache: Vec<CachedUniform>,
     current_cache_index: usize,
-    bind_group_cache: HashMap<(usize, usize), CachedTextureBindGroup>,
 }
 
 impl Compositor {
@@ -189,28 +180,16 @@ impl Compositor {
             device,
             uniform_cache: Vec::new(),
             current_cache_index: 0,
-            bind_group_cache: HashMap::new(),
         })
     }
 
     /// Create a bind group for compositing two textures
     pub fn create_bind_group(
-        &mut self,
-        base_view: &Arc<wgpu::TextureView>,
-        blend_view: &Arc<wgpu::TextureView>,
-    ) -> Arc<wgpu::BindGroup> {
-        let key = (
-            Arc::as_ptr(base_view) as usize,
-            Arc::as_ptr(blend_view) as usize,
-        );
-
-        if let Some(cached) = self.bind_group_cache.get(&key) {
-            if cached.base_weak.upgrade().is_some() && cached.blend_weak.upgrade().is_some() {
-                return cached.bind_group.clone();
-            }
-        }
-
-        let bg = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+        &self,
+        base_view: &wgpu::TextureView,
+        blend_view: &wgpu::TextureView,
+    ) -> wgpu::BindGroup {
+        self.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Compositor Bind Group"),
             layout: &self.bind_group_layout,
             entries: &[
@@ -231,19 +210,7 @@ impl Compositor {
                     resource: wgpu::BindingResource::Sampler(&self.sampler),
                 },
             ],
-        });
-
-        let bg = Arc::new(bg);
-        self.bind_group_cache.insert(
-            key,
-            CachedTextureBindGroup {
-                base_weak: Arc::downgrade(base_view),
-                blend_weak: Arc::downgrade(blend_view),
-                bind_group: bg.clone(),
-            },
-        );
-
-        bg
+        })
     }
 
     /// Create a uniform buffer for composite parameters
@@ -265,11 +232,6 @@ impl Compositor {
     /// Reset cache index at start of frame
     pub fn begin_frame(&mut self) {
         self.current_cache_index = 0;
-
-        // Prune dead texture bind groups
-        self.bind_group_cache.retain(|_, cached| {
-            cached.base_weak.strong_count() > 0 && cached.blend_weak.strong_count() > 0
-        });
     }
 
     /// Get a uniform bind group with updated parameters, reusing cached resources
@@ -307,22 +269,18 @@ impl Compositor {
             self.uniform_cache.push(CachedUniform {
                 buffer,
                 bind_group: Arc::new(bind_group),
-                last_params: Some(params),
             });
         }
 
         // Update current buffer
-        let cache_entry = &mut self.uniform_cache[self.current_cache_index];
+        let cache_entry = &self.uniform_cache[self.current_cache_index];
         let params = CompositeParams {
             blend_mode: blend_mode_to_u32(blend_mode),
             opacity,
             _padding: [0.0; 2],
         };
 
-        if cache_entry.last_params.as_ref() != Some(&params) {
-            queue.write_buffer(&cache_entry.buffer, 0, bytemuck::cast_slice(&[params]));
-            cache_entry.last_params = Some(params);
-        }
+        queue.write_buffer(&cache_entry.buffer, 0, bytemuck::cast_slice(&[params]));
 
         let bind_group = self.uniform_cache[self.current_cache_index]
             .bind_group
@@ -385,7 +343,7 @@ mod tests {
             let backend = crate::WgpuBackend::new(None).await;
             if let Ok(backend) = backend {
                 let compositor =
-                    Compositor::new(backend.device.clone(), wgpu::TextureFormat::Bgra8UnormSrgb);
+                    Compositor::new(backend.device.clone(), wgpu::TextureFormat::Bgra8Unorm);
                 assert!(compositor.is_ok());
             }
         });
