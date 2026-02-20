@@ -1,22 +1,23 @@
-# Technical Debt, Bugs and Missing UI Features
+ Technical Debt, Bugs and Missing UI Features
 
 This document tracks the current state of MapFlow's implementation, identifying gaps between code and UI, known bugs, and technical debt.
 
-## Critical Bugs
+## Critical Bugs (Actively Being Fixed)
 
-### 1. Video Rendering Pipeline
-- **Status:** **FIXED** (2026-02-20)
+### 1. Video Rendering Pipeline (Partial Fix Applied)
+- **Status:** **IN PROGRESS**
 - **Symptoms:** Media nodes show no content; Output projectors show magenta/pink patterns.
 - **Root Cause:** 
     - Decoded frames were uploaded to `TexturePool` but not synchronized with the `node_previews` map used by the UI.
-    - Synchronous uploads on logic thread caused micro-stutters.
-- **Solution:**
-    - Implemented `FramePipeline` with background decoding and GPU upload threads.
+    - `wgpu` texture format mismatch between decoder (RGBA) and surface (BGRA) handled incorrectly in some places.
+    - `PaintTextureCache` default to test patterns instead of waiting for decoder frames.
+- **Fixes Applied:**
     - Added node preview synchronization in `render.rs`.
-    - Integrated asynchronous pipeline handles into the main render loop.
+    - Added detailed logging in `media.rs`.
+    - Implemented 2s timeout for Hue connection to prevent startup hang.
 
 ### 2. Preview Panel Empty
-- **Status:** **FIXED** (2026-02-20)
+- **Status:** **FIXED**
 - **Root Cause:** The `PreviewPanel` state was never updated with the `egui::TextureId` from the render engine's preview cache.
 - **Fix:** Added logic in `render.rs` to propagate `egui_tex_id` to `app.ui_state.preview_panel`.
 
@@ -39,6 +40,7 @@ This document tracks the current state of MapFlow's implementation, identifying 
 ## Significant Technical Debt (TODOs)
 
 ### Architecture
+- **GPU Upload Thread:** `pipeline.rs` has a placeholder for the upload thread. Currently, uploads happen on the logic thread, causing micro-stutters during high-resolution playback.
 - **VRAM Management:** The `TexturePool` lacks an automated garbage collection for unused textures (e.g., from deleted nodes).
 - **Undo/Redo Breadth:** Currently only supports node positions. Needs expansion to all state mutations (connections, parameters).
 
@@ -47,7 +49,6 @@ This document tracks the current state of MapFlow's implementation, identifying 
 - **Mesh File Import:** `module.rs` TODO: Load mesh from OBJ/SVG files.
 - **MPV Integration:** `mpv_decoder.rs` is just a shell; needs full Render API integration for fallback decoding.
 
-## Cleanup Completed
-- **Asynchronous GPU Pipeline:** IMPLEMENTED. Background threads now handle decode and upload.
+## Cleanup Needed
 - **sysinfo redundancy:** Removed `new_all()` calls which were causing startup lags.
-- **Windows Startup:** Fixed Hue connection timeout and Bevy asset watcher hangs.
+- **Dead Code:** Multiple `#[allow(dead_code)]` markers in `window_manager.rs` and `lib.rs` need review.
