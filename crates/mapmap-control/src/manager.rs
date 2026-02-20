@@ -227,12 +227,7 @@ impl ControlManager {
     /// Validate control value for security issues (e.g. path traversal)
     fn validate_security(&self, target: &ControlTarget, value: &ControlValue) -> Result<()> {
         if let ControlValue::String(s) = value {
-            // Check for path traversal attempts while avoiding false positives for text (e.g., "Loading...")
-            // We block:
-            // - Exact match ".."
-            // - Start with "../" or "..\"
-            // - Contains "/../" or "\..\" or mixed separators
-            // - End with "/.." or "\.."
+            // Check for path traversal attempts
             if s == ".."
                 || s.starts_with("../")
                 || s.starts_with("..\\")
@@ -243,7 +238,6 @@ impl ControlManager {
                 || s.ends_with("/..")
                 || s.ends_with("\\..")
             {
-                // Get name for error message
                 let name = match target {
                     ControlTarget::PaintParameter(_, name) => name.clone(),
                     ControlTarget::EffectParameter(_, name) => name.clone(),
@@ -341,7 +335,6 @@ impl ControlManager {
     }
 
     /// Get a list of all possible control targets.
-    // This is a placeholder and should be populated from the main application state.
     pub fn get_all_control_targets(&self) -> Vec<ControlTarget> {
         vec![
             ControlTarget::LayerOpacity(1),
@@ -380,8 +373,6 @@ mod tests {
     #[test]
     fn test_key_bindings() {
         let mut manager = ControlManager::new();
-
-        // Default bindings should include Space -> TogglePlayPause
         manager.handle_key_press(Key::Space, &Modifiers::new());
     }
 
@@ -401,11 +392,11 @@ mod tests {
 
         assert!(called.load(Ordering::SeqCst));
     }
+
     #[test]
     fn test_cue_execution() {
         let mut manager = ControlManager::new();
 
-        // Add some dummy cues to test navigation
         manager.cue_list.add_cue(
             crate::cue::Cue::new(1, "Cue 1".to_string())
                 .with_fade_duration(std::time::Duration::from_millis(0)),
@@ -415,17 +406,14 @@ mod tests {
                 .with_fade_duration(std::time::Duration::from_millis(0)),
         );
 
-        // Test Goto 1
         manager.execute_action(Action::GotoCue(1));
         manager.update();
         assert_eq!(manager.cue_list.current_cue(), Some(1));
 
-        // Test Next
         manager.execute_action(Action::NextCue);
         manager.update();
         assert_eq!(manager.cue_list.current_cue(), Some(2));
 
-        // Test Prev
         manager.execute_action(Action::PrevCue);
         manager.update();
         assert_eq!(manager.cue_list.current_cue(), Some(1));
@@ -441,7 +429,6 @@ mod tests {
             called_clone.store(true, std::sync::atomic::Ordering::SeqCst);
         });
 
-        // 1. Safe value should pass
         manager.apply_control(
             ControlTarget::EffectParameter(0, "file_path".to_string()),
             ControlValue::String("safe_file.txt".to_string()),
@@ -449,7 +436,6 @@ mod tests {
         assert!(called.load(std::sync::atomic::Ordering::SeqCst));
         called.store(false, std::sync::atomic::Ordering::SeqCst);
 
-        // 2. Unsafe value should be blocked (contains "..")
         manager.apply_control(
             ControlTarget::EffectParameter(0, "file_path".to_string()),
             ControlValue::String("../secret.txt".to_string()),
