@@ -4,11 +4,11 @@
   # MapFlow
   ### High-Performance Real-Time Visual Synthesis & Projection Mapping
 
-  [![Build & Quality](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-DevFlow_Job01_Validation.yml/badge.svg?branch=main&label=Build%20%26%20Quality)](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-DevFlow_Job01_Validation.yml)
-  [![Stable Release](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-MainFlow_Job03_Release.yml/badge.svg?label=Stable%20Release)](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-MainFlow_Job03_Release.yml)
-  [![Security Scanned](https://img.shields.io/badge/Security-Verified-brightgreen)](.github/workflows/CICD-DevFlow_Job01_Validation.yml)
-  [![Platform: Windows | Linux](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-blue.svg)](docs/01-GETTING-STARTED/INSTALLATION.md)
-  [![Language: Rust](https://img.shields.io/badge/Language-Rust-orange.svg)](https://www.rust-lang.org/)
+  [![Build & Quality](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-DevFlow_Job01_Validation.yml/badge.svg?branch=main)](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-DevFlow_Job01_Validation.yml)
+  [![Stable Release](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-MainFlow_Job03_Release.yml/badge.svg)](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-MainFlow_Job03_Release.yml)
+  [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
+  [![Rust: 1.75+](https://img.shields.io/badge/Rust-1.75%2B-orange.svg)](https://www.rust-lang.org/)
+  [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
   **MapFlow** is a next-generation, modular **VJ (Video Jockey) Software** engineered for high-performance visual synthesis, real-time effects, and professional projection mapping. Built with the speed and safety of **Rust**, it empowers artists to create immersive visual experiences with unprecedented flexibility.
 </div>
@@ -52,7 +52,7 @@ Seamlessly integrate with your performance setup via **OSC**, **MIDI**, and **Ab
 | **3D Engine** | [Bevy](https://bevyengine.org/) (Data-driven ECS engine) |
 | **Interface** | [egui](https://github.com/emilk/egui) (Blazing fast immediate mode UI) |
 | **Video/Audio** | FFmpeg (via `ffmpeg-next`), CPAL (Cross-platform audio) |
-| **Protocol** | [MCP](https://modelcontextprotocol.io/) (Model Context Protocol for AI integration) |
+| **Protocol** | [Model Context Protocol](https://modelcontextprotocol.io/) (AI integration) |
 
 ---
 

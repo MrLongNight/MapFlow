@@ -71,7 +71,7 @@ jobs:
 
              const endpoint = 'https://jules.googleapis.com/v1alpha/sessions';
              const payload = {
-               prompt: `Issue #${issueNumber}: ${issue.data.title}\n\n${issue.data.body || ''}\n\n---\n**IMPORTANT:** When generating the Pull Request description, you MUST include "Fixes #${issueNumber}" on a separate line to ensure the issue is automatically closed upon merging.`,
+               prompt: `Issue #${issueNumber}: ${issue.data.title}\n\n${issue.data.body || ''}`,
                title: `Issue #${issueNumber}: ${issue.data.title}`.substring(0, 100),
                automationMode: 'AUTO_CREATE_PR',
                sourceContext: {

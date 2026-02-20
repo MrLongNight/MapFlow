@@ -272,12 +272,6 @@ impl ControlManager {
 
     /// Apply a control change
     pub fn apply_control(&mut self, target: ControlTarget, value: ControlValue) {
-        // SECURITY: Validate potential file paths to prevent traversal
-        if let Err(e) = self.validate_security(&target, &value) {
-            warn!("Security violation in apply_control: {}", e);
-            return;
-        }
-
         info!("Control change: {:?} = {:?}", target, value);
 
         // Call the control callback if set

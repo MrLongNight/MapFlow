@@ -784,6 +784,7 @@ impl ModuleCanvas {
                                                 SourceType::Bevy3DText { .. } => "ðŸ“ 3D Text",
                                                 SourceType::BevyCamera { .. } => "\u{1F3A5} Bevy Camera",
                                                 SourceType::Bevy3DModel { .. } => "\u{1F3AE} 3D Model",
+                                                SourceType::HapVideo { .. } => "\u{1F4F9} HAP Video",
                                             };
 
                                             let mut next_type = None;
@@ -793,6 +794,7 @@ impl ModuleCanvas {
                                                     ui.label("--- File Based ---");
                                                     if ui.selectable_label(matches!(source, SourceType::MediaFile { .. }), "\u{1F4F9} Media File").clicked() { next_type = Some("MediaFile"); }
                                                     if ui.selectable_label(matches!(source, SourceType::VideoUni { .. }), "\u{1F4F9} Video (Uni)").clicked() { next_type = Some("VideoUni"); }
+                                                    if ui.selectable_label(matches!(source, SourceType::HapVideo { .. }), "\u{1F4F9} HAP Video").clicked() { next_type = Some("HapVideo"); }
                                                     if ui.selectable_label(matches!(source, SourceType::ImageUni { .. }), "\u{1F5BC} Image (Uni)").clicked() { next_type = Some("ImageUni"); }
 
                                                     ui.label("--- Shared ---");
@@ -823,6 +825,13 @@ impl ModuleCanvas {
                                                         target_width: None, target_height: None, target_fps: None,
                                                         flip_horizontal: false, flip_vertical: false, reverse_playback: false,
                                                     },
+                                                    "HapVideo" => SourceType::HapVideo {
+                                                        path: if path.is_empty() { shared_id } else { path },
+                                                        speed: 1.0, loop_enabled: true, start_time: 0.0, end_time: 0.0,
+                                                        opacity: 1.0, blend_mode: None, brightness: 0.0, contrast: 1.0, saturation: 1.0, hue_shift: 0.0,
+                                                        scale_x: 1.0, scale_y: 1.0, rotation: 0.0, offset_x: 0.0, offset_y: 0.0,
+                                                        flip_horizontal: false, flip_vertical: false, reverse_playback: false,
+                                                    },
                                                     "ImageUni" => SourceType::ImageUni {
                                                         path: if path.is_empty() { shared_id } else { path },
                                                         opacity: 1.0, blend_mode: None, brightness: 0.0, contrast: 1.0, saturation: 1.0, hue_shift: 0.0,
@@ -850,6 +859,127 @@ impl ModuleCanvas {
                                         ui.separator();
 
                                         match source {
+                                            SourceType::HapVideo {
+                                                path, speed, loop_enabled, start_time, end_time, opacity, blend_mode,
+                                                brightness, contrast, saturation, hue_shift, scale_x, scale_y, rotation,
+                                                offset_x, offset_y, flip_horizontal, flip_vertical, reverse_playback, ..
+                                            } => {
+                                                 // HAP Specific UI
+                                                if path.is_empty() {
+                                                    ui.vertical_centered(|ui| {
+                                                        ui.add_space(10.0);
+                                                        if ui.add(egui::Button::new("\u{1F4C2} Select HAP Video").min_size(egui::vec2(150.0, 30.0))).clicked() {
+                                                            actions.push(crate::UIAction::PickMediaFile(module_id, part_id, "mov,avi".to_string()));
+                                                        }
+                                                        ui.label(egui::RichText::new("No media loaded").weak());
+                                                        ui.add_space(10.0);
+                                                    });
+                                                } else {
+                                                    ui.collapsing("ðŸ“  File Info", |ui| {
+                                                        ui.horizontal(|ui| {
+                                                            ui.label("Path:");
+                                                            ui.add(egui::TextEdit::singleline(path).desired_width(160.0));
+                                                            if ui.button("\u{1F4C2}").on_hover_text("Select HAP Video").clicked() {
+                                                                actions.push(crate::UIAction::PickMediaFile(module_id, part_id, "mov,avi".to_string()));
+                                                            }
+                                                        });
+                                                    });
+                                                }
+                                                // Shared playback UI... (copying is necessary because of partial borrows in match arms)
+                                                // Ideally extracted to function, but inline for now to minimize diff risk.
+
+                                                // Playback Info
+                                                let player_info = self.player_info.get(&part_id).cloned().unwrap_or_default();
+                                                let video_duration = player_info.duration.max(1.0) as f32;
+                                                let current_pos = player_info.current_time as f32;
+                                                let is_playing = player_info.is_playing;
+
+                                                // Timecode
+                                                let current_min = (current_pos / 60.0) as u32;
+                                                let current_sec = (current_pos % 60.0) as u32;
+                                                let current_frac = ((current_pos * 100.0) % 100.0) as u32;
+                                                let duration_min = (video_duration / 60.0) as u32;
+                                                let duration_sec = (video_duration % 60.0) as u32;
+                                                let duration_frac = ((video_duration * 100.0) % 100.0) as u32;
+
+                                                ui.add_space(5.0);
+                                                ui.vertical_centered(|ui| {
+                                                    ui.label(
+                                                        egui::RichText::new(format!(
+                                                            "{:02}:{:02}.{:02} / {:02}:{:02}.{:02}",
+                                                            current_min, current_sec, current_frac,
+                                                            duration_min, duration_sec, duration_frac
+                                                        ))
+                                                        .monospace().size(22.0).strong()
+                                                        .color(if is_playing { Color32::from_rgb(100, 255, 150) } else { Color32::from_rgb(200, 200, 200) })
+                                                    );
+                                                });
+                                                ui.add_space(10.0);
+
+                                                self.render_transport_controls(ui, part_id, is_playing, current_pos, loop_enabled, reverse_playback);
+
+                                                ui.add_space(10.0);
+
+                                                // Preview
+                                                if let Some(tex_id) = self.node_previews.get(&(module_id, part_id)) {
+                                                    let size = Vec2::new(ui.available_width(), ui.available_width() * 9.0 / 16.0);
+                                                    ui.image((*tex_id, size));
+                                                }
+                                                ui.add_space(4.0);
+
+                                                self.render_timeline(ui, part_id, video_duration, current_pos, start_time, end_time);
+
+                                                // Safe Reset Clip (Mary StyleUX)
+                                                ui.vertical_centered(|ui| {
+                                                    ui.add_space(4.0);
+                                                    if crate::widgets::hold_to_action_button(
+                                                        ui,
+                                                        "\u{27F2} Reset Clip",
+                                                        colors::WARN_COLOR,
+                                                    ) {
+                                                        *start_time = 0.0;
+                                                        *end_time = 0.0;
+                                                    }
+                                                });
+
+                                                ui.add_space(8.0);
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Playback Speed:");
+                                                    let speed_slider = styled_slider(ui, speed, 0.1..=4.0, 1.0);
+                                                    ui.label("x");
+                                                    if speed_slider.changed() {
+                                                        actions.push(UIAction::MediaCommand(part_id, MediaPlaybackCommand::SetSpeed(*speed)));
+                                                    }
+                                                });
+                                                ui.separator();
+
+                                                // === VIDEO OPTIONS ===
+                                                ui.collapsing("\u{1F3AC} Video Options", |ui| {
+                                                    let mut reverse = *reverse_playback;
+                                                    if ui.checkbox(&mut reverse, "â ª Reverse Playback").changed() {
+                                                        actions.push(crate::UIAction::MediaCommand(part_id, MediaPlaybackCommand::SetReverse(reverse)));
+                                                    }
+
+                                                    ui.separator();
+                                                    ui.label("Seek Position:");
+                                                    let mut seek_pos: f64 = 0.0;
+                                                    let seek_slider = ui.add(
+                                                        egui::Slider::new(&mut seek_pos, 0.0..=100.0)
+                                                            .text("Position")
+                                                            .suffix("%")
+                                                            .show_value(true)
+                                                    );
+                                                    if seek_slider.drag_stopped() && seek_slider.changed() {
+                                                        self.pending_playback_commands.push((part_id, MediaPlaybackCommand::Seek(seek_pos / 100.0 * 300.0)));
+                                                    }
+                                                });
+                                                ui.separator();
+
+                                                Self::render_common_controls(
+                                                    ui, opacity, blend_mode, brightness, contrast, saturation, hue_shift,
+                                                    scale_x, scale_y, rotation, offset_x, offset_y, flip_horizontal, flip_vertical
+                                                );
+                                            }
                                             SourceType::MediaFile {
                                                 path, speed, loop_enabled, start_time, end_time, opacity, blend_mode,
                                                 brightness, contrast, saturation, hue_shift, scale_x, scale_y, rotation,
@@ -5433,6 +5563,7 @@ impl ModuleCanvas {
                     SourceType::BevyCamera { .. } => "Camera",
                     SourceType::Bevy3DShape { .. } => "3D Shape",
                     SourceType::Bevy3DModel { .. } => "3D Model",
+                    SourceType::HapVideo { .. } => "HAP Video",
                 };
                 (
                     Color32::from_rgb(50, 60, 70),
@@ -5664,6 +5795,16 @@ impl ModuleCanvas {
                 },
                 SourceType::Bevy3DShape { shape_type, .. } => format!("\u{1F9CA} {:?}", shape_type),
                 SourceType::Bevy3DModel { path, .. } => format!("\u{1F3AE} Model: {}", path),
+                SourceType::HapVideo { path, .. } => {
+                    if path.is_empty() {
+                        "ðŸ“  Select HAP...".to_string()
+                    } else {
+                        format!(
+                            "\u{1F4F9} {}",
+                            path.split(['/', '\\']).next_back().unwrap_or(path)
+                        )
+                    }
+                }
             },
             ModulePartType::Mask(mask_type) => match mask_type {
                 MaskType::File { path } => {

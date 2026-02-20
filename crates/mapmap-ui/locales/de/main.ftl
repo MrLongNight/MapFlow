@@ -342,11 +342,3 @@ param-offset = Versatz
 param-cell-size = Zellgröße
 param-distortion = Verzerrung
 param-zoom = Zoom
-
-# Added by Lina StyleUI
-audio-gain = Verstärkung
-audio-smoothing = Glättung
-btn-add-mapping = Mapping hinzufügen
-no-signal = Kein Signal
-no-device = Kein Gerät
-panel-audio = Audio-Panel

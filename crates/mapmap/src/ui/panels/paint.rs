@@ -14,7 +14,7 @@ pub struct PaintContext<'a> {
 
 /// Renders the paint panel.
 pub fn show(ctx: &Context, context: PaintContext) {
-    context.ui_state.paint_panel.show(
+    context.ui_state.paint_panel.render(
         ctx,
         &context.ui_state.i18n,
         context.state.paint_manager_mut(),

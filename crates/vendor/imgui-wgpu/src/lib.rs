@@ -219,7 +219,7 @@ impl Texture {
     pub fn write(&self, queue: &Queue, data: &[u8], width: u32, height: u32) {
         queue.write_texture(
             // destination (sub)texture
-            TexelCopyTextureInfo {
+            ImageCopyTexture {
                 texture: &self.texture,
                 mip_level: 0,
                 origin: Origin3d { x: 0, y: 0, z: 0 },
@@ -228,7 +228,7 @@ impl Texture {
             // source bitmap data
             data,
             // layout of the source bitmap
-            TexelCopyBufferLayout {
+            ImageDataLayout {
                 offset: 0,
                 bytes_per_row: Some(width * 4),
                 rows_per_image: Some(height),

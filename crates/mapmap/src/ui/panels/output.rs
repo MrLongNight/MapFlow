@@ -14,11 +14,10 @@ pub struct OutputContext<'a> {
 
 /// Renders the output panel.
 pub fn show(ctx: &Context, context: OutputContext) {
-    context.ui_state.output_panel.show(
+    context.ui_state.output_panel.render(
         ctx,
         &context.ui_state.i18n,
         context.state.output_manager_mut(),
         &[], // Monitors placeholder
-        context.ui_state.icon_manager.as_ref(),
     );
 }
