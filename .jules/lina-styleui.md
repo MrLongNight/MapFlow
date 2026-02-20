@@ -46,3 +46,12 @@
     - **Node Header:** `colors::LIGHTER_GREY` (creates contrast vs body).
     - **Separator:** `colors::STROKE_GREY` (sharp definition).
 **Action:** Refactored `ModuleCanvas` to use `crate::theme::colors` constants, enforcing the Cyber Dark palette on the node graph.
+
+## 2026-02-02 – [Sharp Corners & Borders]
+**Learning:** To fully align with the "Cyber Dark" (Resolume/MadMapper) aesthetic, UI elements must avoid rounded corners.
+- **Insight:** Rounded corners soften the interface, while sharp corners (`corner_radius: 0.0`) and defined borders (`STROKE_GREY`) create a more technical, precise look suitable for VJ software.
+- **Pattern:**
+    - **Panels/Sections:** Use `egui::Frame` with `corner_radius(0.0)` and `stroke(Stroke::new(1.0, colors::STROKE_GREY))`.
+    - **Bars/Meters:** Use `painter.rect_filled` with rounding `0.0`.
+    - **Frames:** Explicitly override default frame rounding.
+**Action:** Refactored `InspectorPanel` (sections) and `AudioPanel` (visualizations) to enforce this sharp, bordered style.
