@@ -1,9 +1,9 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
-> **Version:** 2.0
-
+> **Version:** 2.1
+> **Stand:** 2026-02-20 08:00
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
-> **Projekt-Version:** 0.2.0
+> **Projekt-Version:** 0.2.1
 
 ---
 
@@ -47,6 +47,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
 * **Priorität:** 🛡️ **HIGH**
 * **Ziel:** Fixen von Fehlern und Problemen, Verbesserung der Performance.
 * **Cleanup:** Entfernen von UI-Elementen, die keine Funktion haben.
+* **Refactoring:** Aufteilung übergroßer Dateien (insb. `module_canvas/mod.rs`).
 
 ### D) Release-Artefakte
 
@@ -378,9 +379,10 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   * ✅ ImGui Removal (Code Cleanup) – COMPLETED (2025-12-23)
 
 * 🟡 **UI Redesign (Resolume Style)**
-  * 🔄 Cyber Dark Theme (Jules Session: 15619292958684189574)
+  * ✅ **Cyber Dark Theme** (Polished & Completed 2026-02-20)
   * ✅ Zone-Based Layout (Left MediaBrowser, Right Inspector, Bottom Timeline) - COMPLETED 2025-12-24
   * ✅ Performance Overlay (Top-Right, Real FPS) - COMPLETED 2025-12-24
+  * ✅ **Inspector Panel** (Polished & Themed 2026-02-20)
   * ✅ Inspector Panel (Context-Sensitive: Layer/Output properties) - REMOVED 2025-12-30 (use Module Canvas)
   * ✅ Layers Section removed from sidebar - COMPLETED 2025-12-30 (use Module Canvas)
   * ✅ Icon System: Fader SVG Icon added - COMPLETED 2025-12-30
@@ -962,7 +964,7 @@ graph TD
     * Integration-Tests für `OSC` -> `Parameter` Mapping.
 
 3. **Documentation (Priorität: Niedrig)**
-    * Rustdoc für alle `pub` Structs in `mapmap-core`.
+    * ✅ Rustdoc für alle `pub` Structs in `mapmap-core` (COMPLETED 2026-02-12).
     * Tutorial "Wie erstelle ich einen neuen Node-Typ?".
 
 ## Task-Gruppen (Adaptiert für Rust)
