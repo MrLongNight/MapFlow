@@ -321,12 +321,16 @@ mod tests {
         assert!(ControlValue::String("normal_string".to_string())
             .validate()
             .is_ok());
-        assert!(ControlValue::String("/absolute/path/to/file.mp4".to_string())
-            .validate()
-            .is_ok());
-        assert!(ControlValue::String("relative/path/to/file.mp4".to_string())
-            .validate()
-            .is_ok());
+        assert!(
+            ControlValue::String("/absolute/path/to/file.mp4".to_string())
+                .validate()
+                .is_ok()
+        );
+        assert!(
+            ControlValue::String("relative/path/to/file.mp4".to_string())
+                .validate()
+                .is_ok()
+        );
         assert!(ControlValue::String("String with dots...".to_string())
             .validate()
             .is_ok());
