@@ -4,12 +4,12 @@ use crate::theme::colors;
 use crate::widgets::{styled_drag_value, styled_slider};
 use crate::UIAction;
 use egui::epaint::CubicBezierShape;
-use egui::{Color32, Pos2, Rect, Sense, Stroke, TextureHandle, Ui, Vec2};
+use egui::{Color32, Pos2, Rect, Sense, Shadow, Stroke, TextureHandle, Ui, Vec2};
 use mapmap_core::{
     audio_reactive::AudioTriggerData,
     module::{
-        BevyCameraMode, BlendModeType, EffectType as ModuleEffectType, HueNodeType, LayerType,
-        MapFlowModule, MaskType, ModuleId, ModuleManager, ModulePart, ModulePartId, ModulePartType,
+        BlendModeType, EffectType as ModuleEffectType, HueNodeType, LayerType, MapFlowModule,
+        MaskType, ModuleId, ModuleManager, ModulePart, ModulePartId, ModulePartType,
         ModuleSocketType, ModulizerType, NodeLinkData, SourceType, TriggerType,
     },
 };
@@ -387,7 +387,7 @@ impl ModuleCanvas {
 
         ui.add_space(8.0);
         ui.group(|ui| {
-            ui.label(egui::RichText::new("ðŸ•¸ï¸ Mesh/Geometry").strong());
+            ui.label(egui::RichText::new("🕸️ Mesh/Geometry").strong());
             ui.separator();
 
             egui::ComboBox::from_id_salt(format!("mesh_type_{}", id_salt))
@@ -568,11 +568,11 @@ impl ModuleCanvas {
                                         ui.label("Trigger Type:");
                                         match trigger {
                                             TriggerType::Beat => {
-                                                ui.label("ðŸ¥ Beat Sync");
+                                                ui.label("🥁 Beat Sync");
                                                 ui.label("Triggers on BPM beat.");
                                             }
                                             TriggerType::AudioFFT { band: _band, threshold, output_config } => {
-                                                ui.label("ðŸ”Š Audio FFT");
+                                                ui.label("🔊 Audio FFT");
                                                 ui.label("Outputs 9 frequency bands, plus volume and beat.");
                                                 ui.add(
                                                     egui::Slider::new(threshold, 0.0..=1.0)
@@ -580,14 +580,14 @@ impl ModuleCanvas {
                                                 );
 
                                                 ui.separator();
-                                                ui.label("ðŸ“¤ Output Configuration:");
-                                                ui.checkbox(&mut output_config.beat_output, "ðŸ¥ Beat Detection");
-                                                ui.checkbox(&mut output_config.bpm_output, "â±ï¸ BPM");
-                                                ui.checkbox(&mut output_config.volume_outputs, "ðŸ“Š Volume (RMS, Peak)");
-                                                ui.checkbox(&mut output_config.frequency_bands, "ðŸŽµ Frequency Bands (9)");
+                                                ui.label("📤 Output Configuration:");
+                                                ui.checkbox(&mut output_config.beat_output, "🥁 Beat Detection");
+                                                ui.checkbox(&mut output_config.bpm_output, "⏱️ BPM");
+                                                ui.checkbox(&mut output_config.volume_outputs, "📊 Volume (RMS, Peak)");
+                                                ui.checkbox(&mut output_config.frequency_bands, "🎵 Frequency Bands (9)");
 
                                                 ui.separator();
-                                                ui.collapsing("ðŸ”„ Invert Signals (NOT Logic)", |ui| {
+                                                ui.collapsing("🔄 Invert Signals (NOT Logic)", |ui| {
                                                     ui.label("Select signals to invert (Active = 0.0):");
 
                                                     let mut toggle_invert = |ui: &mut Ui, name: &str, label: &str| {
@@ -603,14 +603,14 @@ impl ModuleCanvas {
                                                     };
 
                                                     if output_config.beat_output {
-                                                        toggle_invert(ui, "Beat Out", "ðŸ¥ Beat Out");
+                                                        toggle_invert(ui, "Beat Out", "🥁 Beat Out");
                                                     }
                                                     if output_config.bpm_output {
-                                                        toggle_invert(ui, "BPM Out", "â±ï¸ BPM Out");
+                                                        toggle_invert(ui, "BPM Out", "⏱️ BPM Out");
                                                     }
                                                     if output_config.volume_outputs {
-                                                        toggle_invert(ui, "RMS Volume", "ðŸ“Š RMS Volume");
-                                                        toggle_invert(ui, "Peak Volume", "ðŸ“Š Peak Volume");
+                                                        toggle_invert(ui, "RMS Volume", "📊 RMS Volume");
+                                                        toggle_invert(ui, "Peak Volume", "📊 Peak Volume");
                                                     }
                                                     if output_config.frequency_bands {
                                                         ui.label("Bands:");
@@ -637,7 +637,7 @@ impl ModuleCanvas {
                                                 max_interval_ms,
                                                 probability,
                                             } => {
-                                                ui.label("ðŸŽ² Random");
+                                                ui.label("🎲 Random");
                                                 ui.add(
                                                     egui::Slider::new(min_interval_ms, 50..=5000)
                                                         .text("Min (ms)"),
@@ -656,7 +656,7 @@ impl ModuleCanvas {
                                                 offset_ms,
                                                 ..
                                             } => {
-                                                ui.label("â±ï¸ Fixed Timer");
+                                                ui.label("⏱️ Fixed Timer");
                                                 ui.add(
                                                     egui::Slider::new(interval_ms, 16..=10000)
                                                         .text("Interval (ms)"),
@@ -667,7 +667,7 @@ impl ModuleCanvas {
                                                 );
                                             }
                                             TriggerType::Midi { channel, note, device: _ } => {
-                                                ui.label("ðŸŽ¹ MIDI Trigger");
+                                                ui.label("🎹 MIDI Trigger");
 
                                                 // Available MIDI ports dropdown
                                                 ui.horizontal(|ui| {
@@ -714,9 +714,9 @@ impl ModuleCanvas {
                                                 let is_learning =
                                                     self.midi_learn_part_id == Some(part_id);
                                                 let learn_text = if is_learning {
-                                                    "â³ Waiting for MIDI..."
+                                                    "⏳ Waiting for MIDI..."
                                                 } else {
-                                                    "ðŸŽ¯ MIDI Learn"
+                                                    "🎯 MIDI Learn"
                                                 };
                                                 if ui.button(learn_text).clicked() {
                                                     if is_learning {
@@ -730,7 +730,7 @@ impl ModuleCanvas {
                                                 }
                                             }
                                             TriggerType::Osc { address } => {
-                                                ui.label("ðŸ“¡ OSC Trigger");
+                                                ui.label("📡 OSC Trigger");
                                                 ui.horizontal(|ui| {
                                                     ui.label("Address:");
                                                     ui.add(
@@ -745,7 +745,7 @@ impl ModuleCanvas {
                                                 key_code,
                                                 modifiers,
                                             } => {
-                                                ui.label("âŒ¨ï¸ Shortcut");
+                                                ui.label("⌨️ Shortcut");
                                                 ui.horizontal(|ui| {
                                                     ui.label("Key:");
                                                     ui.text_edit_singleline(key_code);
@@ -766,23 +766,21 @@ impl ModuleCanvas {
                                         ui.horizontal(|ui| {
                                             ui.label("Source Type:");
                                             let current_mode = match source {
-                                                SourceType::MediaFile { .. } => "ðŸ“¹ Media File",
-                                                SourceType::VideoUni { .. } => "ðŸ“¹ Video (Uni)",
-                                                SourceType::ImageUni { .. } => "ðŸ–¼ Image (Uni)",
-                                                SourceType::VideoMulti { .. } => "ðŸ”— Video (Multi)",
-                                                SourceType::ImageMulti { .. } => "ðŸ”— Image (Multi)",
-                                                SourceType::Shader { .. } => "ðŸŽ¨ Shader",
-                                                SourceType::LiveInput { .. } => "ðŸ“¹ Live Input",
-                                                SourceType::NdiInput { .. } => "ðŸ“¡ NDI Input",
+                                                SourceType::MediaFile { .. } => "📹 Media File",
+                                                SourceType::VideoUni { .. } => "📹 Video (Uni)",
+                                                SourceType::ImageUni { .. } => "🖼 Image (Uni)",
+                                                SourceType::VideoMulti { .. } => "🔗 Video (Multi)",
+                                                SourceType::ImageMulti { .. } => "🔗 Image (Multi)",
+                                                SourceType::Shader { .. } => "🎨 Shader",
+                                                SourceType::LiveInput { .. } => "📹 Live Input",
+                                                SourceType::NdiInput { .. } => "📡 NDI Input",
                                                 #[cfg(target_os = "windows")]
-                                                SourceType::SpoutInput { .. } => "ðŸš° Spout Input",
-                                                SourceType::Bevy => "ðŸŽ® Bevy Scene",
-                                                SourceType::BevyAtmosphere { .. } => "â˜ï¸ Atmosphere",
-                                                SourceType::BevyHexGrid { .. } => "ðŸ›‘ Hex Grid",
-                                                SourceType::BevyParticles { .. } => "âœ¨ Particles",
-                                                SourceType::Bevy3DShape { .. } => "ðŸ§Š 3D Shape",
-                                                SourceType::Bevy3DText { .. } => "ðŸ“ 3D Text",
-                                                SourceType::BevyCamera { .. } => "ðŸŽ¥ Bevy Camera",
+                                                SourceType::SpoutInput { .. } => "🚰 Spout Input",
+                                                SourceType::Bevy => "🎮 Bevy Scene",
+                                                SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere",
+                                                SourceType::BevyHexGrid { .. } => "🛑 Hex Grid",
+                                                SourceType::BevyParticles { .. } => "✨ Particles",
+                                                SourceType::Bevy3DText { .. } => "📝 3D Text",
                                             };
 
                                             let mut next_type = None;
@@ -790,13 +788,13 @@ impl ModuleCanvas {
                                                 .selected_text(current_mode)
                                                 .show_ui(ui, |ui| {
                                                     ui.label("--- File Based ---");
-                                                    if ui.selectable_label(matches!(source, SourceType::MediaFile { .. }), "ðŸ“¹ Media File").clicked() { next_type = Some("MediaFile"); }
-                                                    if ui.selectable_label(matches!(source, SourceType::VideoUni { .. }), "ðŸ“¹ Video (Uni)").clicked() { next_type = Some("VideoUni"); }
-                                                    if ui.selectable_label(matches!(source, SourceType::ImageUni { .. }), "ðŸ–¼ Image (Uni)").clicked() { next_type = Some("ImageUni"); }
+                                                    if ui.selectable_label(matches!(source, SourceType::MediaFile { .. }), "📹 Media File").clicked() { next_type = Some("MediaFile"); }
+                                                    if ui.selectable_label(matches!(source, SourceType::VideoUni { .. }), "📹 Video (Uni)").clicked() { next_type = Some("VideoUni"); }
+                                                    if ui.selectable_label(matches!(source, SourceType::ImageUni { .. }), "🖼 Image (Uni)").clicked() { next_type = Some("ImageUni"); }
 
                                                     ui.label("--- Shared ---");
-                                                    if ui.selectable_label(matches!(source, SourceType::VideoMulti { .. }), "ðŸ”— Video (Multi)").clicked() { next_type = Some("VideoMulti"); }
-                                                    if ui.selectable_label(matches!(source, SourceType::ImageMulti { .. }), "ðŸ”— Image (Multi)").clicked() { next_type = Some("ImageMulti"); }
+                                                    if ui.selectable_label(matches!(source, SourceType::VideoMulti { .. }), "🔗 Video (Multi)").clicked() { next_type = Some("VideoMulti"); }
+                                                    if ui.selectable_label(matches!(source, SourceType::ImageMulti { .. }), "🔗 Image (Multi)").clicked() { next_type = Some("ImageMulti"); }
                                                 });
 
                                             if let Some(t) = next_type {
@@ -862,18 +860,18 @@ impl ModuleCanvas {
                                                 if path.is_empty() {
                                                     ui.vertical_centered(|ui| {
                                                         ui.add_space(10.0);
-                                                        if ui.add(egui::Button::new("ðŸ“‚ Select Media File").min_size(egui::vec2(150.0, 30.0))).clicked() {
+                                                        if ui.add(egui::Button::new("📂 Select Media File").min_size(egui::vec2(150.0, 30.0))).clicked() {
                                                             actions.push(crate::UIAction::PickMediaFile(module_id, part_id, "".to_string()));
                                                         }
                                                         ui.label(egui::RichText::new("No media loaded").weak());
                                                         ui.add_space(10.0);
                                                     });
                                                 } else {
-                                                    ui.collapsing("ðŸ“ File Info", |ui| {
+                                                    ui.collapsing("📁 File Info", |ui| {
                                                         ui.horizontal(|ui| {
                                                             ui.label("Path:");
                                                             ui.add(egui::TextEdit::singleline(path).desired_width(160.0));
-                                                            if ui.button("ðŸ“‚").on_hover_text("Select Media File").clicked() {
+                                                            if ui.button("📂").on_hover_text("Select Media File").clicked() {
                                                                 actions.push(crate::UIAction::PickMediaFile(module_id, part_id, "".to_string()));
                                                             }
                                                         });
@@ -926,7 +924,7 @@ impl ModuleCanvas {
                                                     ui.add_space(4.0);
                                                     if crate::widgets::hold_to_action_button(
                                                         ui,
-                                                        "âŸ² Reset Clip",
+                                                        "⟲ Reset Clip",
                                                         colors::WARN_COLOR,
                                                     ) {
                                                         *start_time = 0.0;
@@ -946,9 +944,9 @@ impl ModuleCanvas {
                                                 ui.separator();
 
                                                 // === VIDEO OPTIONS ===
-                                                ui.collapsing("ðŸŽ¬ Video Options", |ui| {
+                                                ui.collapsing("🎬 Video Options", |ui| {
                                                     let mut reverse = *reverse_playback;
-                                                    if ui.checkbox(&mut reverse, "âª Reverse Playback").changed() {
+                                                    if ui.checkbox(&mut reverse, "⏪ Reverse Playback").changed() {
                                                         actions.push(crate::UIAction::MediaCommand(part_id, MediaPlaybackCommand::SetReverse(reverse)));
                                                     }
 
@@ -984,18 +982,18 @@ impl ModuleCanvas {
                                                 if path.is_empty() {
                                                     ui.vertical_centered(|ui| {
                                                         ui.add_space(10.0);
-                                                        if ui.add(egui::Button::new("ðŸ“‚ Select Image File").min_size(egui::vec2(150.0, 30.0))).clicked() {
+                                                        if ui.add(egui::Button::new("📂 Select Image File").min_size(egui::vec2(150.0, 30.0))).clicked() {
                                                             actions.push(crate::UIAction::PickMediaFile(module_id, part_id, "".to_string()));
                                                         }
                                                         ui.label(egui::RichText::new("No image loaded").weak());
                                                         ui.add_space(10.0);
                                                     });
                                                 } else {
-                                                    ui.collapsing("ðŸ“ File Info", |ui| {
+                                                    ui.collapsing("📁 File Info", |ui| {
                                                         ui.horizontal(|ui| {
                                                             ui.label("Path:");
                                                             ui.add(egui::TextEdit::singleline(path).desired_width(160.0));
-                                                            if ui.button("ðŸ“‚").on_hover_text("Select Image File").clicked() {
+                                                            if ui.button("📂").on_hover_text("Select Image File").clicked() {
                                                                 actions.push(crate::UIAction::PickMediaFile(module_id, part_id, "".to_string()));
                                                             }
                                                         });
@@ -1013,7 +1011,7 @@ impl ModuleCanvas {
                                                 shared_id, opacity, blend_mode, brightness, contrast, saturation, hue_shift,
                                                 scale_x, scale_y, rotation, offset_x, offset_y, flip_horizontal, flip_vertical, ..
                                             } => {
-                                                ui.label("ðŸ”— Shared Video Source");
+                                                ui.label("🔗 Shared Video Source");
                                                 ui.horizontal(|ui| {
                                                     ui.label("Shared ID:");
                                                     ui.add(egui::TextEdit::singleline(shared_id).hint_text("Enter ID...").desired_width(140.0));
@@ -1040,7 +1038,7 @@ impl ModuleCanvas {
                                                 shared_id, opacity, blend_mode, brightness, contrast, saturation, hue_shift,
                                                 scale_x, scale_y, rotation, offset_x, offset_y, flip_horizontal, flip_vertical, ..
                                             } => {
-                                                 ui.label("ðŸ”— Shared Image Source");
+                                                 ui.label("🔗 Shared Image Source");
                                                 ui.horizontal(|ui| {
                                                     ui.label("Shared ID:");
                                                     ui.add(egui::TextEdit::singleline(shared_id).hint_text("Enter ID...").desired_width(140.0));
@@ -1063,7 +1061,7 @@ impl ModuleCanvas {
                                                     scale_x, scale_y, rotation, offset_x, offset_y, flip_horizontal, flip_vertical
                                                 );
                                             }                                            SourceType::Shader { name, params: _ } => {
-                                                ui.label("ðŸŽ¨ Shader");
+                                                ui.label("🎨 Shader");
                                                 egui::Grid::new("shader_grid")
                                                     .num_columns(2)
                                                     .spacing([10.0, 8.0])
@@ -1074,7 +1072,7 @@ impl ModuleCanvas {
                                                     });
                                             }
                                             SourceType::LiveInput { device_id } => {
-                                                ui.label("ðŸ“¹ Live Input");
+                                                ui.label("📹 Live Input");
                                                 egui::Grid::new("live_input_grid")
                                                     .num_columns(2)
                                                     .spacing([10.0, 8.0])
@@ -1086,7 +1084,7 @@ impl ModuleCanvas {
                                             }
                                             #[cfg(feature = "ndi")]
                                             SourceType::NdiInput { source_name } => {
-                                                ui.label("ðŸ“¡ NDI Input");
+                                                ui.label("📡 NDI Input");
 
                                                 // Smart Empty State
                                                 if source_name.is_none()
@@ -1098,7 +1096,7 @@ impl ModuleCanvas {
                                                         if ui
                                                             .add(
                                                                 egui::Button::new(
-                                                                    "ðŸ” Discover Sources",
+                                                                    "🔍 Discover Sources",
                                                                 )
                                                                 .min_size(egui::vec2(150.0, 30.0)),
                                                             )
@@ -1132,7 +1130,7 @@ impl ModuleCanvas {
                                                     // Discover button
                                                     ui.horizontal(|ui| {
                                                         if ui
-                                                            .button("ðŸ” Discover Sources")
+                                                            .button("🔍 Discover Sources")
                                                             .clicked()
                                                         {
                                                             // Start async discovery
@@ -1173,7 +1171,7 @@ impl ModuleCanvas {
                                                             if ui
                                                                 .selectable_label(
                                                                     source_name.is_none(),
-                                                                    "âŒ None (Disconnect)",
+                                                                    "❌ None (Disconnect)",
                                                                 )
                                                                 .clicked()
                                                             {
@@ -1218,11 +1216,11 @@ impl ModuleCanvas {
                                             }
                                             #[cfg(not(feature = "ndi"))]
                                             SourceType::NdiInput { .. } => {
-                                                ui.label("ðŸ“¡ NDI Input (Feature Disabled)");
+                                                ui.label("📡 NDI Input (Feature Disabled)");
                                             }
                                             #[cfg(target_os = "windows")]
                                             SourceType::SpoutInput { sender_name } => {
-                                                ui.label("ðŸš° Spout Input");
+                                                ui.label("🚰 Spout Input");
                                                 ui.horizontal(|ui| {
                                                     ui.label("Sender:");
                                                     ui.text_edit_singleline(sender_name);
@@ -1236,7 +1234,7 @@ impl ModuleCanvas {
                                                 rotation,
                                                 alignment,
                                             } => {
-                                                ui.label("ðŸ“ 3D Text");
+                                                ui.label("📝 3D Text");
                                                 ui.add(
                                                     egui::TextEdit::multiline(text)
                                                         .desired_rows(3)
@@ -1282,7 +1280,7 @@ impl ModuleCanvas {
                                                 });
 
                                                 ui.separator();
-                                                ui.label("ðŸ“ Transform 3D");
+                                                ui.label("📐 Transform 3D");
 
                                                 ui.horizontal(|ui| {
                                                     ui.label("Pos:");
@@ -1296,172 +1294,27 @@ impl ModuleCanvas {
                                                     ui.add(
                                                         egui::DragValue::new(&mut rotation[0])
                                                             .prefix("X:")
-                                                            .suffix("Â°"),
+                                                            .suffix("°"),
                                                     );
                                                     ui.add(
                                                         egui::DragValue::new(&mut rotation[1])
                                                             .prefix("Y:")
-                                                            .suffix("Â°"),
+                                                            .suffix("°"),
                                                     );
                                                     ui.add(
                                                         egui::DragValue::new(&mut rotation[2])
                                                             .prefix("Z:")
-                                                            .suffix("Â°"),
+                                                            .suffix("°"),
                                                     );
                                                 });
-                                            }
-                                            SourceType::BevyCamera { mode, fov, active } => {
-                                                ui.label("ðŸŽ¥ Bevy Camera");
-                                                ui.checkbox(active, "Active Control");
-                                                ui.add(egui::Slider::new(fov, 10.0..=120.0).text("FOV"));
-
-                                                ui.separator();
-                                                ui.label("Mode:");
-
-                                                egui::ComboBox::from_id_salt("camera_mode")
-                                                    .selected_text(match mode {
-                                                        BevyCameraMode::Orbit { .. } => "Orbit",
-                                                        BevyCameraMode::Fly { .. } => "Fly",
-                                                        BevyCameraMode::Static { .. } => "Static",
-                                                    })
-                                                    .show_ui(ui, |ui| {
-                                                        if ui
-                                                            .selectable_label(
-                                                                matches!(mode, BevyCameraMode::Orbit { .. }),
-                                                                "Orbit",
-                                                            )
-                                                            .clicked()
-                                                        {
-                                                            *mode = BevyCameraMode::default(); // Default is Orbit
-                                                        }
-                                                        if ui
-                                                            .selectable_label(
-                                                                matches!(mode, BevyCameraMode::Fly { .. }),
-                                                                "Fly",
-                                                            )
-                                                            .clicked()
-                                                        {
-                                                            *mode = BevyCameraMode::Fly {
-                                                                speed: 5.0,
-                                                                sensitivity: 1.0,
-                                                            };
-                                                        }
-                                                        if ui
-                                                            .selectable_label(
-                                                                matches!(mode, BevyCameraMode::Static { .. }),
-                                                                "Static",
-                                                            )
-                                                            .clicked()
-                                                        {
-                                                            *mode = BevyCameraMode::Static {
-                                                                position: [0.0, 5.0, 10.0],
-                                                                look_at: [0.0, 0.0, 0.0],
-                                                            };
-                                                        }
-                                                    });
-
-                                                ui.separator();
-                                                match mode {
-                                                    BevyCameraMode::Orbit {
-                                                        radius,
-                                                        speed,
-                                                        target,
-                                                        height,
-                                                    } => {
-                                                        ui.label("Orbit Settings");
-                                                        ui.add(egui::Slider::new(radius, 1.0..=50.0).text("Radius"));
-                                                        ui.add(egui::Slider::new(speed, -90.0..=90.0).text("Speed (Â°/s)"));
-                                                        ui.add(egui::Slider::new(height, -10.0..=20.0).text("Height"));
-
-                                                        ui.label("Target:");
-                                                        ui.horizontal(|ui| {
-                                                            ui.add(egui::DragValue::new(&mut target[0]).prefix("X:").speed(0.1));
-                                                            ui.add(egui::DragValue::new(&mut target[1]).prefix("Y:").speed(0.1));
-                                                            ui.add(egui::DragValue::new(&mut target[2]).prefix("Z:").speed(0.1));
-                                                        });
-                                                    }
-                                                    BevyCameraMode::Fly {
-                                                        speed,
-                                                        sensitivity: _,
-                                                    } => {
-                                                        ui.label("Fly Settings");
-                                                        ui.add(egui::Slider::new(speed, 0.0..=50.0).text("Speed"));
-                                                        ui.label("Direction: Forward (Z-)");
-                                                    }
-                                                    BevyCameraMode::Static { position, look_at } => {
-                                                        ui.label("Static Settings");
-                                                        ui.label("Position:");
-                                                        ui.horizontal(|ui| {
-                                                            ui.add(egui::DragValue::new(&mut position[0]).prefix("X:").speed(0.1));
-                                                            ui.add(egui::DragValue::new(&mut position[1]).prefix("Y:").speed(0.1));
-                                                            ui.add(egui::DragValue::new(&mut position[2]).prefix("Z:").speed(0.1));
-                                                        });
-                                                        ui.label("Look At:");
-                                                        ui.horizontal(|ui| {
-                                                            ui.add(egui::DragValue::new(&mut look_at[0]).prefix("X:").speed(0.1));
-                                                            ui.add(egui::DragValue::new(&mut look_at[1]).prefix("Y:").speed(0.1));
-                                                            ui.add(egui::DragValue::new(&mut look_at[2]).prefix("Z:").speed(0.1));
-                                                        });
-                                                    }
-                                                }
                                             }
                                             SourceType::BevyAtmosphere { .. }
                                             | SourceType::BevyHexGrid { .. }
                                             | SourceType::BevyParticles { .. } => {
                                                 ui.label("Controls for this Bevy node are not yet implemented in UI.");
                                             }
-                                            SourceType::Bevy3DShape { shape_type, position, rotation, scale, color, unlit } => {
-                                                ui.label("ðŸ§Š Bevy 3D Shape");
-                                                ui.separator();
-
-                                                ui.horizontal(|ui| {
-                                                    ui.label("Shape:");
-                                                    egui::ComboBox::from_id_salt("shape_type_select")
-                                                        .selected_text(format!("{:?}", shape_type))
-                                                        .show_ui(ui, |ui| {
-                                                            ui.selectable_value(shape_type, mapmap_core::module::BevyShapeType::Cube, "Cube");
-                                                            ui.selectable_value(shape_type, mapmap_core::module::BevyShapeType::Sphere, "Sphere");
-                                                            ui.selectable_value(shape_type, mapmap_core::module::BevyShapeType::Capsule, "Capsule");
-                                                            ui.selectable_value(shape_type, mapmap_core::module::BevyShapeType::Torus, "Torus");
-                                                            ui.selectable_value(shape_type, mapmap_core::module::BevyShapeType::Cylinder, "Cylinder");
-                                                            ui.selectable_value(shape_type, mapmap_core::module::BevyShapeType::Plane, "Plane");
-                                                        });
-                                                });
-
-                                                ui.horizontal(|ui| {
-                                                    ui.label("Color:");
-                                                    ui.color_edit_button_rgba_unmultiplied(color);
-                                                });
-
-                                                ui.checkbox(unlit, "Unlit (No Shading)");
-
-                                                ui.separator();
-
-                                                ui.collapsing("ðŸ“ Transform (3D)", |ui| {
-                                                    ui.label("Position:");
-                                                    ui.horizontal(|ui| {
-                                                        ui.add(egui::DragValue::new(&mut position[0]).speed(0.1).prefix("X: "));
-                                                        ui.add(egui::DragValue::new(&mut position[1]).speed(0.1).prefix("Y: "));
-                                                        ui.add(egui::DragValue::new(&mut position[2]).speed(0.1).prefix("Z: "));
-                                                    });
-
-                                                    ui.label("Rotation:");
-                                                    ui.horizontal(|ui| {
-                                                        ui.add(egui::DragValue::new(&mut rotation[0]).speed(1.0).prefix("X: ").suffix("Â°"));
-                                                        ui.add(egui::DragValue::new(&mut rotation[1]).speed(1.0).prefix("Y: ").suffix("Â°"));
-                                                        ui.add(egui::DragValue::new(&mut rotation[2]).speed(1.0).prefix("Z: ").suffix("Â°"));
-                                                    });
-
-                                                    ui.label("Scale:");
-                                                    ui.horizontal(|ui| {
-                                                        ui.add(egui::DragValue::new(&mut scale[0]).speed(0.01).prefix("X: "));
-                                                        ui.add(egui::DragValue::new(&mut scale[1]).speed(0.01).prefix("Y: "));
-                                                        ui.add(egui::DragValue::new(&mut scale[2]).speed(0.01).prefix("Z: "));
-                                                    });
-                                                });
-                                            }
                                             SourceType::Bevy => {
-                                                ui.label("ðŸŽ® Bevy Scene");
+                                                ui.label("🎮 Bevy Scene");
                                                 ui.label(egui::RichText::new("Rendering Internal 3D Scene").weak());
                                                 ui.small("The scene is rendered internally and available as 'bevy_output'");
                                             }
@@ -1472,11 +1325,11 @@ impl ModuleCanvas {
                                         ui.label("Mask Type:");
                                         match mask {
                                             MaskType::File { path } => {
-                                                ui.label("ðŸ“ Mask File");
+                                                ui.label("📁 Mask File");
                                                 if path.is_empty() {
                                                     ui.vertical_centered(|ui| {
                                                         ui.add_space(10.0);
-                                                        if ui.add(egui::Button::new("ðŸ“‚ Select Mask File")
+                                                        if ui.add(egui::Button::new("📂 Select Mask File")
                                                             .min_size(egui::vec2(150.0, 30.0)))
                                                             .clicked()
                                                         {
@@ -1502,7 +1355,7 @@ impl ModuleCanvas {
                                                             egui::TextEdit::singleline(path)
                                                                 .desired_width(120.0),
                                                         );
-                                                        if ui.button("ðŸ“‚").on_hover_text("Select Mask File").clicked() {
+                                                        if ui.button("📂").on_hover_text("Select Mask File").clicked() {
                                                             if let Some(picked) = rfd::FileDialog::new()
                                                                 .add_filter(
                                                                     "Image",
@@ -1520,7 +1373,7 @@ impl ModuleCanvas {
                                                 }
                                             }
                                             MaskType::Shape(shape) => {
-                                                ui.label("ðŸ”· Shape Mask");
+                                                ui.label("🔷 Shape Mask");
                                                 egui::ComboBox::from_id_salt("mask_shape")
                                                     .selected_text(format!("{:?}", shape))
                                                     .show_ui(ui, |ui| {
@@ -1578,10 +1431,10 @@ impl ModuleCanvas {
                                                     });
                                             }
                                             MaskType::Gradient { angle, softness } => {
-                                                ui.label("ðŸŒˆ Gradient Mask");
+                                                ui.label("🌈 Gradient Mask");
                                                 ui.add(
                                                     egui::Slider::new(angle, 0.0..=360.0)
-                                                        .text("Angle Â°"),
+                                                        .text("Angle °"),
                                                 );
                                                 ui.add(
                                                     egui::Slider::new(softness, 0.0..=1.0)
@@ -1612,7 +1465,7 @@ impl ModuleCanvas {
                                                 ui.vertical_centered(|ui| {
                                                     if crate::widgets::hold_to_action_button(
                                                         ui,
-                                                        "âŸ² Safe Reset",
+                                                        "⟲ Safe Reset",
                                                         Color32::from_rgb(255, 180, 0),
                                                     ) {
                                                         Self::set_default_effect_params(
@@ -1705,7 +1558,7 @@ impl ModuleCanvas {
                                                 }
                                             }
                                             ModulizerType::BlendMode(blend) => {
-                                                ui.label("ðŸŽ¨ Blend Mode");
+                                                ui.label("🎨 Blend Mode");
                                                 egui::ComboBox::from_id_salt("blend_mode")
                                                     .selected_text(format!("{:?}", blend))
                                                     .show_ui(ui, |ui| {
@@ -1723,7 +1576,7 @@ impl ModuleCanvas {
                                                 );
                                             }
                                             ModulizerType::AudioReactive { source } => {
-                                                ui.label("ðŸ”Š Audio Reactive");
+                                                ui.label("🔊 Audio Reactive");
                                                 ui.horizontal(|ui| {
                                                     ui.label("Source:");
                                                     egui::ComboBox::from_id_salt("audio_source")
@@ -1749,7 +1602,7 @@ impl ModuleCanvas {
                                         }
                                     }
                                     ModulePartType::Layer(layer) => {
-                                        ui.label("ðŸ“‹ Layer:");
+                                        ui.label("📋 Layer:");
 
                                         // Helper to render mesh UI
                                         let mut render_mesh_ui = |ui: &mut Ui, mesh: &mut MeshType, id_salt: u64| {
@@ -1758,7 +1611,7 @@ impl ModuleCanvas {
 
                                         match layer {
                                             LayerType::Single { id, name, opacity, blend_mode, mesh, mapping_mode } => {
-                                                ui.label("ðŸ”² Single Layer");
+                                                ui.label("🔲 Single Layer");
                                                 ui.horizontal(|ui| { ui.label("ID:"); ui.add(egui::DragValue::new(id)); });
                                                 ui.text_edit_singleline(name);
                                                 ui.add(egui::Slider::new(opacity, 0.0..=1.0).text("Opacity"));
@@ -1777,20 +1630,20 @@ impl ModuleCanvas {
                                                 render_mesh_ui(ui, mesh, *id);
                                             }
                                             LayerType::Group { name, opacity, mesh, mapping_mode, .. } => {
-                                                ui.label("ðŸ“‚ Group");
+                                                ui.label("📂 Group");
                                                 ui.text_edit_singleline(name);
                                                 ui.add(egui::Slider::new(opacity, 0.0..=1.0).text("Opacity"));
                                                 ui.checkbox(mapping_mode, "Mapping Mode (Grid)");
                                                 render_mesh_ui(ui, mesh, 9999); // Dummy ID
                                             }
                                             LayerType::All { opacity, .. } => {
-                                                ui.label("ðŸŽšï¸ Master");
+                                                ui.label("🎚️ Master");
                                                 ui.add(egui::Slider::new(opacity, 0.0..=1.0).text("Opacity"));
                                             }
                                         }
                                     }
                                     ModulePartType::Mesh(mesh) => {
-                                        ui.label("ðŸ•¸ï¸ Mesh Node");
+                                        ui.label("🕸️ Mesh Node");
                                         ui.separator();
 
                                         self.render_mesh_editor_ui(ui, mesh, part_id, part_id);
@@ -1807,7 +1660,7 @@ impl ModuleCanvas {
                                                 extra_preview_window,
                                                 ..
                                             } => {
-                                                ui.label("ðŸ“½ï¸ Projector Output");
+                                                ui.label("📽️ Projector Output");
 
                                                 // Output ID selection
                                                 ui.horizontal(|ui| {
@@ -1821,7 +1674,7 @@ impl ModuleCanvas {
                                                 });
 
                                                 ui.separator();
-                                                ui.label("ðŸ–¥ï¸ Window Settings:");
+                                                ui.label("🖥️ Window Settings:");
 
                                                 // Target screen selection
                                                 ui.horizontal(|ui| {
@@ -1838,16 +1691,16 @@ impl ModuleCanvas {
                                                         });
                                                 });
 
-                                                ui.checkbox(hide_cursor, "ðŸ–±ï¸ Hide Mouse Cursor");
+                                                ui.checkbox(hide_cursor, "🖱️ Hide Mouse Cursor");
 
                                                 ui.separator();
-                                                ui.label("ðŸ‘ï¸ Preview:");
+                                                ui.label("👁️ Preview:");
                                                 ui.checkbox(show_in_preview_panel, "Show in Preview Panel");
                                                 ui.checkbox(extra_preview_window, "Extra Preview Window");
                                             }
                                             #[cfg(feature = "ndi")]
                                             OutputType::NdiOutput { name } => {
-                                                ui.label("ðŸ“¡ NDI Output");
+                                                ui.label("📡 NDI Output");
                                                 ui.horizontal(|ui| {
                                                     ui.label("Stream Name:");
                                                     ui.text_edit_singleline(name);
@@ -1855,11 +1708,11 @@ impl ModuleCanvas {
                                             }
                                             #[cfg(not(feature = "ndi"))]
                                             OutputType::NdiOutput { .. } => {
-                                                ui.label("ðŸ“¡ NDI Output (Feature Disabled)");
+                                                ui.label("📡 NDI Output (Feature Disabled)");
                                             }
                                             #[cfg(target_os = "windows")]
                                             OutputType::Spout { name } => {
-                                                ui.label("ðŸš° Spout Output");
+                                                ui.label("🚰 Spout Output");
                                                 ui.horizontal(|ui| {
                                                     ui.label("Stream Name:");
                                                     ui.text_edit_singleline(name);
@@ -1873,11 +1726,11 @@ impl ModuleCanvas {
                                                 lamp_positions,
                                                 mapping_mode,
                                             } => {
-                                                ui.label("ðŸ’¡ Philips Hue Entertainment");
+                                                ui.label("💡 Philips Hue Entertainment");
                                                 ui.separator();
 
                                                 // --- Tabs for Hue configuration ---
-                                                ui.collapsing("âš™ï¸ Setup (Bridge & Pairing)", |ui| {
+                                                ui.collapsing("⚙️ Setup (Bridge & Pairing)", |ui| {
                                                     // Discovery status
                                                     if let Some(msg) = &self.hue_status_message {
                                                         ui.label(format!("Status: {}", msg));
@@ -1915,21 +1768,21 @@ impl ModuleCanvas {
                                                     ui.text_edit_singleline(bridge_ip);
 
                                                     // Pairing (Requires bridge button press)
-                                                    if ui.button("ðŸ”— Pair with Bridge").on_hover_text("Press button on Bridge then click this").clicked() {
+                                                    if ui.button("🔗 Pair with Bridge").on_hover_text("Press button on Bridge then click this").clicked() {
                                                         // TODO: Implement pairing logic
                                                         // This requires async call to `register_user`
                                                         // Similar pattern to discovery
                                                     }
 
                                                     if !username.is_empty() {
-                                                        ui.label("âœ… Paired");
+                                                        ui.label("✅ Paired");
                                                         // ui.label(format!("User: {}", username)); // Keep secret?
                                                     } else {
-                                                        ui.label("âŒ Not Paired");
+                                                        ui.label("❌ Not Paired");
                                                     }
                                                 });
 
-                                                ui.collapsing("ðŸŽ­ Area & Mode", |ui| {
+                                                ui.collapsing("🎭 Area & Mode", |ui| {
                                                      ui.label("Entertainment Area:");
                                                      ui.text_edit_singleline(entertainment_area);
                                                      // TODO: Fetch areas from bridge if paired
@@ -1942,7 +1795,7 @@ impl ModuleCanvas {
                                                 });
 
                                                 if *mapping_mode == HueMappingMode::Spatial {
-                                                    ui.collapsing("ðŸ—ºï¸ Spatial Editor", |ui| {
+                                                    ui.collapsing("🗺️ Spatial Editor", |ui| {
                                                         ui.label("Position lamps in the virtual room:");
                                                         // Render 2D room editor
                                                         self.render_hue_spatial_editor(ui, lamp_positions);
@@ -1952,7 +1805,7 @@ impl ModuleCanvas {
                                         }
                                     }
                                      ModulePartType::Hue(hue_node) => {
-                                        ui.label("ðŸ’¡ Hue Node");
+                                        ui.label("💡 Hue Node");
                                         ui.separator();
 
                                         // Helper to render common Hue controls (duplicate of the one in render_node_inspector for now)
@@ -2045,7 +1898,7 @@ impl ModuleCanvas {
 
                                     if supports_link_system {
                                         ui.separator();
-                                        ui.collapsing("ðŸ”— Link System", |ui| {
+                                        ui.collapsing("🔗 Link System", |ui| {
                                             let mut changed = false;
                                             let link_data = &mut part.link_data;
 
@@ -2083,7 +1936,7 @@ impl ModuleCanvas {
                                                             }
                                                         });
                                                 });
-                                                ui.label("â„¹ï¸ Visibility controlled by Link Input");
+                                                ui.label("ℹ️ Visibility controlled by Link Input");
                                             } else if ui.checkbox(&mut link_data.trigger_input_enabled, "Enable Trigger Input (Visibility Control)").changed() {
                                                 changed = true;
                                             }
@@ -2104,7 +1957,7 @@ impl ModuleCanvas {
                                     part.position.0, part.position.1
                                 ));
                                 if let Some((w, h)) = part.size {
-                                    ui.label(format!("Size: {:.0} x {:.0}", w, h));
+                                    ui.label(format!("Size: {:.0} × {:.0}", w, h));
                                 }
                                 ui.label(format!("Inputs: {}", part.inputs.len()));
                                 ui.label(format!("Outputs: {}", part.outputs.len()));
@@ -2429,7 +2282,7 @@ impl ModuleCanvas {
     /// Render Hue bridge discovery UI
     #[rustfmt::skip]
     fn render_hue_bridge_discovery(&mut self, ui: &mut egui::Ui, current_ip: &mut String) {
-        if ui.button("ðŸ” Discover Bridges").clicked() {
+        if ui.button("🔍 Discover Bridges").clicked() {
             let (tx, rx) = std::sync::mpsc::channel();
             self.hue_discovery_rx = Some(rx);
             // Spawn async task
@@ -2472,8 +2325,8 @@ impl ModuleCanvas {
         manager: &mut ModuleManager,
         pos_override: Option<(f32, f32)>,
     ) {
-        ui.label("--- ðŸ“ File Based ---");
-        if ui.button("ðŸ“¹ Media File").clicked() {
+        ui.label("--- 📁 File Based ---");
+        if ui.button("📹 Media File").clicked() {
             self.add_source_node(
                 manager,
                 SourceType::new_media_file(String::new()),
@@ -2481,7 +2334,7 @@ impl ModuleCanvas {
             );
             ui.close();
         }
-        if ui.button("ðŸ“¹ Video (Uni)").clicked() {
+        if ui.button("📹 Video (Uni)").clicked() {
             self.add_source_node(
                 manager,
                 SourceType::VideoUni {
@@ -2512,7 +2365,7 @@ impl ModuleCanvas {
             );
             ui.close();
         }
-        if ui.button("ðŸ–¼ Image (Uni)").clicked() {
+        if ui.button("🖼 Image (Uni)").clicked() {
             self.add_source_node(
                 manager,
                 SourceType::ImageUni {
@@ -2539,8 +2392,8 @@ impl ModuleCanvas {
         }
 
         ui.add_space(4.0);
-        ui.label("--- ðŸ”— Shared (Multi) ---");
-        if ui.button("ðŸ“¹ Video (Multi)").clicked() {
+        ui.label("--- 🔗 Shared (Multi) ---");
+        if ui.button("📹 Video (Multi)").clicked() {
             self.add_source_node(
                 manager,
                 SourceType::VideoMulti {
@@ -2563,7 +2416,7 @@ impl ModuleCanvas {
             );
             ui.close();
         }
-        if ui.button("ðŸ–¼ Image (Multi)").clicked() {
+        if ui.button("🖼 Image (Multi)").clicked() {
             self.add_source_node(
                 manager,
                 SourceType::ImageMulti {
@@ -2588,8 +2441,8 @@ impl ModuleCanvas {
         }
 
         ui.add_space(4.0);
-        ui.label("--- ðŸ“¡ Hardware & Network ---");
-        if ui.button("ðŸ“¹ Live Input").clicked() {
+        ui.label("--- 📡 Hardware & Network ---");
+        if ui.button("📹 Live Input").clicked() {
             self.add_source_node(
                 manager,
                 SourceType::LiveInput { device_id: 0 },
@@ -2597,7 +2450,7 @@ impl ModuleCanvas {
             );
             ui.close();
         }
-        if ui.button("ðŸ“¡ NDI Input").clicked() {
+        if ui.button("📡 NDI Input").clicked() {
             self.add_source_node(
                 manager,
                 SourceType::NdiInput { source_name: None },
@@ -2606,7 +2459,7 @@ impl ModuleCanvas {
             ui.close();
         }
         #[cfg(target_os = "windows")]
-        if ui.button("ðŸš° Spout Input").clicked() {
+        if ui.button("🚰 Spout Input").clicked() {
             self.add_source_node(
                 manager,
                 SourceType::SpoutInput {
@@ -2618,8 +2471,8 @@ impl ModuleCanvas {
         }
 
         ui.add_space(4.0);
-        ui.label("--- ðŸŽ¨ Procedural & Misc ---");
-        if ui.button("ðŸŽ¨ Shader").clicked() {
+        ui.label("--- 🎨 Procedural & Misc ---");
+        if ui.button("🎨 Shader").clicked() {
             self.add_source_node(
                 manager,
                 SourceType::Shader {
@@ -2630,7 +2483,7 @@ impl ModuleCanvas {
             );
             ui.close();
         }
-        if ui.button("ðŸŽ® Bevy Scene").clicked() {
+        if ui.button("🎮 Bevy Scene").clicked() {
             self.add_source_node(manager, SourceType::Bevy, pos_override);
             ui.close();
         }
@@ -2645,12 +2498,12 @@ impl ModuleCanvas {
     ) {
         ui.set_min_width(150.0);
 
-        ui.menu_button("ðŸŽ¬ Sources", |ui| {
+        ui.menu_button("🎬 Sources", |ui| {
             self.render_sources_menu_content(ui, manager, pos_override);
         });
 
-        ui.menu_button("âš¡ Triggers", |ui| {
-            if ui.button("ðŸŽµ Audio FFT").clicked() {
+        ui.menu_button("⚡ Triggers", |ui| {
+            if ui.button("🎵 Audio FFT").clicked() {
                 self.add_trigger_node(
                     manager,
                     TriggerType::AudioFFT {
@@ -2662,7 +2515,7 @@ impl ModuleCanvas {
                 );
                 ui.close();
             }
-            if ui.button("ðŸŽ² Random").clicked() {
+            if ui.button("🎲 Random").clicked() {
                 self.add_trigger_node(
                     manager,
                     TriggerType::Random {
@@ -2674,7 +2527,7 @@ impl ModuleCanvas {
                 );
                 ui.close();
             }
-            if ui.button("â± Fixed").clicked() {
+            if ui.button("⏱ Fixed").clicked() {
                 self.add_trigger_node(
                     manager,
                     TriggerType::Fixed {
@@ -2685,7 +2538,7 @@ impl ModuleCanvas {
                 );
                 ui.close();
             }
-            if ui.button("ðŸŽ¹ MIDI").clicked() {
+            if ui.button("🎹 MIDI").clicked() {
                 self.add_trigger_node(
                     manager,
                     TriggerType::Midi {
@@ -2699,8 +2552,8 @@ impl ModuleCanvas {
             }
         });
 
-        ui.menu_button("ðŸŽ­ Masks", |ui| {
-            if ui.button("â­• Shape").clicked() {
+        ui.menu_button("🎭 Masks", |ui| {
+            if ui.button("⭕ Shape").clicked() {
                 self.add_mask_node(
                     manager,
                     MaskType::Shape(mapmap_core::module::MaskShape::Circle),
@@ -2708,7 +2561,7 @@ impl ModuleCanvas {
                 );
                 ui.close();
             }
-            if ui.button("ðŸŒˆ Gradient").clicked() {
+            if ui.button("🌈 Gradient").clicked() {
                 self.add_mask_node(
                     manager,
                     MaskType::Gradient {
@@ -2721,8 +2574,8 @@ impl ModuleCanvas {
             }
         });
 
-        ui.menu_button("ðŸŽ› Modulators", |ui| {
-            if ui.button("ðŸŽš Blend Mode").clicked() {
+        ui.menu_button("🎛 Modulators", |ui| {
+            if ui.button("🎚 Blend Mode").clicked() {
                 self.add_modulator_node(
                     manager,
                     ModulizerType::BlendMode(mapmap_core::module::BlendModeType::Normal),
@@ -2732,8 +2585,8 @@ impl ModuleCanvas {
             }
         });
 
-        ui.menu_button("ðŸ’¡ Philips Hue", |ui| {
-            if ui.button("ðŸ’¡ Single Lamp").clicked() {
+        ui.menu_button("💡 Philips Hue", |ui| {
+            if ui.button("💡 Single Lamp").clicked() {
                 self.add_hue_node(
                     manager,
                     HueNodeType::SingleLamp {
@@ -2752,7 +2605,7 @@ impl ModuleCanvas {
 
         ui.separator();
 
-        if ui.button("ðŸ–¼ Output").clicked() {
+        if ui.button("🖼 Output").clicked() {
             if let Some(id) = self.active_module_id {
                 if let Some(module) = manager.get_module_mut(id) {
                     let preferred_pos = pos_override.unwrap_or((600.0, 100.0));
@@ -2775,13 +2628,13 @@ impl ModuleCanvas {
                     );
                 }
             }
-            ui.close();
+            ui.close_menu();
         }
     }
 
     /// Renders the menu to add new nodes to the canvas
     fn render_add_node_menu(&mut self, ui: &mut egui::Ui, manager: &mut ModuleManager) {
-        ui.menu_button("âž• Add Node", |ui| {
+        ui.menu_button("➕ Add Node", |ui| {
             self.render_add_node_menu_content(ui, manager, None);
         });
     }
@@ -3006,7 +2859,7 @@ impl ModuleCanvas {
                                 .active_module_id
                                 .and_then(|id| manager.get_module(id))
                                 .map(|m| m.name.clone())
-                                .unwrap_or_else(|| "â€” Select Module â€”".to_string());
+                                .unwrap_or_else(|| "— Select Module —".to_string());
 
                             egui::ComboBox::from_id_salt("module_selector")
                                 .selected_text(current_name)
@@ -3015,7 +2868,7 @@ impl ModuleCanvas {
                                     ui.selectable_value(
                                         &mut self.active_module_id,
                                         None,
-                                        "â€” None â€”",
+                                        "— None —",
                                     );
                                     ui.separator();
                                     for (id, name) in &module_names {
@@ -3028,7 +2881,7 @@ impl ModuleCanvas {
                                 });
 
                             if ui
-                                .button("âž• New")
+                                .button("➕ New")
                                 .on_hover_text("Create a new module")
                                 .clicked()
                             {
@@ -3054,8 +2907,7 @@ impl ModuleCanvas {
                                         module.color = color_f32;
                                     }
 
-                                    if ui.button("ðŸ—‘").on_hover_text("Delete Module").clicked()
-                                    {
+                                    if ui.button("🗑").on_hover_text("Delete Module").clicked() {
                                         manager.delete_module(module_id);
                                         self.active_module_id = None;
                                     }
@@ -3090,24 +2942,24 @@ impl ModuleCanvas {
 
                         // Utility Buttons
                         if self.active_module_id.is_some() {
-                            if ui.button("ðŸ“‹ Presets").clicked() {
+                            if ui.button("📋 Presets").clicked() {
                                 self.show_presets = !self.show_presets;
                             }
-                            if ui.button("âŠž Auto Layout").clicked() {
+                            if ui.button("⊞ Auto Layout").clicked() {
                                 if let Some(id) = self.active_module_id {
                                     if let Some(m) = manager.get_module_mut(id) {
                                         Self::auto_layout_parts(&mut m.parts);
                                     }
                                 }
                             }
-                            if ui.button("ðŸ” Search").clicked() {
+                            if ui.button("🔍 Search").clicked() {
                                 self.show_search = !self.show_search;
                             }
 
                             let check_label = if self.diagnostic_issues.is_empty() {
-                                "âœ“"
+                                "✓"
                             } else {
-                                "âš "
+                                "⚠"
                             };
                             if ui
                                 .button(check_label)
@@ -3126,7 +2978,7 @@ impl ModuleCanvas {
 
                         // Right Aligned View Controls
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            if ui.button("âŠ¡").on_hover_text("Reset View").clicked() {
+                            if ui.button("⊡").on_hover_text("Reset View").clicked() {
                                 self.zoom = 1.0;
                                 self.pan_offset = Vec2::ZERO;
                             }
@@ -3139,7 +2991,7 @@ impl ModuleCanvas {
                                     .show_value(false)
                                     .trailing_fill(true),
                             );
-                            if ui.button("âˆ’").on_hover_text("Zoom Out").clicked() {
+                            if ui.button("−").on_hover_text("Zoom Out").clicked() {
                                 self.zoom = (self.zoom - 0.1).clamp(0.2, 3.0);
                             }
                             ui.label("Zoom:");
@@ -3160,9 +3012,9 @@ impl ModuleCanvas {
             ui.centered_and_justified(|ui| {
                 ui.vertical_centered(|ui| {
                     ui.add_space(50.0);
-                    ui.heading("ðŸ”§ Module Canvas");
+                    ui.heading("🔧 Module Canvas");
                     ui.add_space(10.0);
-                    ui.label("Click 'âž• New Module' to create a module.");
+                    ui.label("Click '➕ New Module' to create a module.");
                     ui.label("Or select an existing module from the dropdown above.");
                 });
             });
@@ -3403,22 +3255,8 @@ impl ModuleCanvas {
         // Draw grid
         self.draw_grid(&painter, canvas_rect);
 
-        // Empty State Guidance
-        if module.parts.is_empty() {
-            ui.painter().text(
-                response.rect.center(),
-                egui::Align2::CENTER_CENTER,
-                "ðŸ–± Right-Click to Add Node",
-                egui::FontId::proportional(24.0),
-                ui.visuals().weak_text_color(),
-            );
-        }
-
         // Draw connections first (behind nodes)
-        if let Some(idx_to_remove) = self.draw_connections(ui, &painter, module, &to_screen) {
-            let conn = module.connections[idx_to_remove].clone();
-            actions.push(UIAction::DeleteConnection(module_id, conn));
-        }
+        self.draw_connections(ui, &painter, module, &to_screen);
 
         // Collect socket positions for hit detection
         let mut all_sockets: Vec<SocketInfo> = Vec::new();
@@ -3584,7 +3422,7 @@ impl ModuleCanvas {
                 let select_rect = Rect::from_two_pos(start_pos, current_pos);
                 painter.rect_stroke(
                     select_rect,
-                    0.0,
+                    egui::CornerRadius::same(0),
                     Stroke::new(2.0, Color32::from_rgb(100, 200, 255)),
                     egui::StrokeKind::Middle,
                 );
@@ -3767,7 +3605,7 @@ impl ModuleCanvas {
                 self.dragging_part = None;
             }
 
-            // Check for delete button click (x in top-right corner of title bar)
+            // Check for delete button click (× in top-right corner of title bar)
             let delete_button_rect = self.get_delete_button_rect(*rect);
             let delete_id = egui::Id::new((*part_id, "delete"));
             let delete_response = ui
@@ -3822,7 +3660,7 @@ impl ModuleCanvas {
                 // "Cyber" selection: Neon Cyan, Sharp Corners
                 painter.rect_stroke(
                     highlight_rect,
-                    0.0, // Sharp corners
+                    egui::CornerRadius::same(0), // Sharp corners
                     Stroke::new(2.0 * self.zoom, Color32::from_rgb(0, 229, 255)),
                     egui::StrokeKind::Middle,
                 );
@@ -3963,7 +3801,7 @@ impl ModuleCanvas {
             );
             painter.rect_stroke(
                 menu_rect,
-                0.0,
+                egui::CornerRadius::same(0),
                 Stroke::new(1.0, Color32::from_rgb(80, 80, 100)),
                 egui::StrokeKind::Middle,
             );
@@ -3972,14 +3810,14 @@ impl ModuleCanvas {
             let inner_rect = menu_rect.shrink(4.0);
             ui.scope_builder(egui::UiBuilder::new().max_rect(inner_rect), |ui| {
                 ui.vertical(|ui| {
-                    if ui.button("âš™ Open Properties").clicked() {
+                    if ui.button("⚙ Open Properties").clicked() {
                         // Select the part to show it in the inspector
                         self.selected_parts.clear();
                         self.selected_parts.push(part_id);
                         self.context_menu_part = None;
                         self.context_menu_pos = None;
                     }
-                    if ui.button("ðŸ—‘ Delete").clicked() {
+                    if ui.button("🗑 Delete").clicked() {
                         // Remove connections and part
                         module
                             .connections
@@ -4015,7 +3853,7 @@ impl ModuleCanvas {
             );
             painter.rect_stroke(
                 menu_rect,
-                0.0,
+                egui::CornerRadius::same(0),
                 Stroke::new(1.0, Color32::from_rgb(80, 80, 100)),
                 egui::StrokeKind::Middle,
             );
@@ -4024,7 +3862,7 @@ impl ModuleCanvas {
             let inner_rect = menu_rect.shrink(4.0);
             ui.scope_builder(egui::UiBuilder::new().max_rect(inner_rect), |ui| {
                 ui.vertical(|ui| {
-                    if ui.button("ðŸ—‘ Delete Connection").clicked() {
+                    if ui.button("🗑 Delete Connection").clicked() {
                         if conn_idx < module.connections.len() {
                             module.connections.remove(conn_idx);
                         }
@@ -4059,7 +3897,7 @@ impl ModuleCanvas {
                 );
                 painter.rect_stroke(
                     menu_rect,
-                    4.0,
+                    egui::CornerRadius::same(4),
                     Stroke::new(1.0, Color32::from_rgb(80, 100, 150)),
                     egui::StrokeKind::Middle,
                 );
@@ -4068,7 +3906,7 @@ impl ModuleCanvas {
                 let inner_rect = menu_rect.shrink(8.0);
                 ui.scope_builder(egui::UiBuilder::new().max_rect(inner_rect), |ui| {
                     ui.vertical(|ui| {
-                        ui.heading("âž• Add Node");
+                        ui.heading("➕ Add Node");
                         ui.separator();
 
                         // Convert screen position to canvas position for node placement
@@ -4110,7 +3948,7 @@ impl ModuleCanvas {
         );
         painter.rect_stroke(
             popup_rect,
-            0.0,
+            egui::CornerRadius::same(0),
             Stroke::new(2.0, Color32::from_rgb(80, 120, 200)),
             egui::StrokeKind::Middle,
         );
@@ -4120,7 +3958,7 @@ impl ModuleCanvas {
         ui.scope_builder(egui::UiBuilder::new().max_rect(inner_rect), |ui| {
             ui.vertical(|ui| {
                 ui.horizontal(|ui| {
-                    ui.label("ðŸ”");
+                    ui.label("🔍");
                     ui.text_edit_singleline(&mut self.search_filter);
                 });
                 ui.add_space(8.0);
@@ -4191,7 +4029,7 @@ impl ModuleCanvas {
         );
         painter.rect_stroke(
             popup_rect,
-            0.0,
+            egui::CornerRadius::same(0),
             Stroke::new(2.0, Color32::from_rgb(100, 180, 80)),
             egui::StrokeKind::Middle,
         );
@@ -4200,7 +4038,7 @@ impl ModuleCanvas {
         let inner_rect = popup_rect.shrink(12.0);
         ui.scope_builder(egui::UiBuilder::new().max_rect(inner_rect), |ui| {
             ui.vertical(|ui| {
-                ui.heading("ðŸ“‹ Presets / Templates");
+                ui.heading("📋 Presets / Templates");
                 ui.add_space(8.0);
 
                 egui::ScrollArea::vertical()
@@ -4283,7 +4121,7 @@ impl ModuleCanvas {
         painter.rect_filled(rect, 4.0, Color32::from_gray(30));
         painter.rect_stroke(
             rect,
-            4.0,
+            egui::CornerRadius::same(4),
             Stroke::new(1.0, Color32::GRAY),
             egui::StrokeKind::Middle,
         );
@@ -4517,7 +4355,7 @@ impl ModuleCanvas {
         );
         painter.rect_stroke(
             map_rect,
-            0.0,
+            egui::CornerRadius::same(0),
             Stroke::new(1.0, Color32::from_gray(80)),
             egui::StrokeKind::Middle,
         );
@@ -4581,7 +4419,7 @@ impl ModuleCanvas {
         let viewport_rect = Rect::from_min_max(viewport_min, viewport_max).intersect(map_rect);
         painter.rect_stroke(
             viewport_rect,
-            0.0,
+            egui::CornerRadius::same(0),
             Stroke::new(1.5, Color32::WHITE),
             egui::StrokeKind::Middle,
         );
@@ -4614,8 +4452,7 @@ impl ModuleCanvas {
         painter: &egui::Painter,
         module: &MapFlowModule,
         to_screen: &F,
-    ) -> Option<usize>
-    where
+    ) where
         F: Fn(Pos2) -> Pos2,
     {
         let node_width = 200.0;
@@ -4624,10 +4461,6 @@ impl ModuleCanvas {
         let socket_spacing = 22.0;
         let pointer_pos = ui.input(|i| i.pointer.hover_pos());
         let secondary_clicked = ui.input(|i| i.pointer.secondary_clicked());
-        let alt_held = ui.input(|i| i.modifiers.alt);
-        let primary_clicked = ui.input(|i| i.pointer.primary_clicked());
-
-        let mut remove_idx = None;
 
         for (conn_idx, conn) in module.connections.iter().enumerate() {
             // Find source and target parts
@@ -4735,26 +4568,15 @@ impl ModuleCanvas {
                 }
 
                 // Handle Interaction
-                if is_hovered {
-                    if secondary_clicked {
-                        self.context_menu_connection = Some(conn_idx);
-                        self.context_menu_pos = pointer_pos;
-                        self.context_menu_part = None;
-                    }
-                    if alt_held && primary_clicked {
-                        remove_idx = Some(conn_idx);
-                    }
+                if is_hovered && secondary_clicked {
+                    self.context_menu_connection = Some(conn_idx);
+                    self.context_menu_pos = pointer_pos;
+                    self.context_menu_part = None;
                 }
 
                 // Visual Style
                 let (stroke_width, stroke_color, glow_width) = if is_hovered {
-                    if alt_held {
-                        // Destructive Mode
-                        (4.0 * self.zoom, Color32::RED, 10.0 * self.zoom)
-                    } else {
-                        // Normal Hover
-                        (3.0 * self.zoom, Color32::WHITE, 8.0 * self.zoom)
-                    }
+                    (3.0 * self.zoom, Color32::WHITE, 8.0 * self.zoom)
                 } else {
                     (2.0 * self.zoom, cable_color, 6.0 * self.zoom)
                 };
@@ -4822,8 +4644,6 @@ impl ModuleCanvas {
                 }
             }
         }
-
-        remove_idx
     }
 
     fn get_delete_button_rect(&self, part_rect: Rect) -> Rect {
@@ -4886,7 +4706,7 @@ impl ModuleCanvas {
 
                 painter.rect_stroke(
                     rect.expand(expansion),
-                    0.0,
+                    egui::CornerRadius::same(0),
                     Stroke::new(1.0 * self.zoom, color),
                     egui::StrokeKind::Middle,
                 );
@@ -4895,7 +4715,7 @@ impl ModuleCanvas {
             // Inner "Light" border
             painter.rect_stroke(
                 rect,
-                0.0,
+                egui::CornerRadius::same(0),
                 Stroke::new(
                     2.0 * self.zoom,
                     Color32::WHITE.gamma_multiply(180.0 * glow_intensity / 255.0),
@@ -4913,7 +4733,7 @@ impl ModuleCanvas {
 
             painter.rect_stroke(
                 rect.expand(4.0 * self.zoom),
-                0.0,
+                egui::CornerRadius::same(0),
                 Stroke::new(2.0 * self.zoom, learn_color),
                 egui::StrokeKind::Middle,
             );
@@ -4926,6 +4746,18 @@ impl ModuleCanvas {
                 Color32::WHITE.gamma_multiply(200.0 * pulse / 255.0),
             );
         }
+
+        // Draw shadow behind node
+        /*
+        let _shadow = Shadow {
+            offset: Vec2::new(2.0 * self.zoom, 4.0 * self.zoom),
+            blur: 0.0,
+            spread: 0.0,
+            color: Color32::from_black_alpha(100),
+        };
+        */
+        // TODO: Shadow::tessellate was removed in egui 0.33
+        // painter.add(shadow.tessellate(rect, (6.0 * self.zoom) as u8));
 
         // Draw background (Dark Neutral for high contrast)
         // We use a very dark grey/black to make the content pop
@@ -4945,7 +4777,7 @@ impl ModuleCanvas {
                 {
                     painter.rect_stroke(
                         rect,
-                        0.0,
+                        egui::CornerRadius::same(0),
                         egui::Stroke::new(2.0, egui::Color32::YELLOW),
                         egui::StrokeKind::Middle,
                     );
@@ -4965,7 +4797,7 @@ impl ModuleCanvas {
         // This replaces the generic gray border
         painter.rect_stroke(
             rect,
-            0.0, // Sharp corners
+            egui::CornerRadius::same(0), // Sharp corners
             Stroke::new(1.5 * self.zoom, title_color.linear_multiply(0.8)),
             egui::StrokeKind::Middle,
         );
@@ -5039,7 +4871,7 @@ impl ModuleCanvas {
             Color32::WHITE,
         );
 
-        // Delete button (x in top-right corner)
+        // Delete button (× in top-right corner)
         let delete_button_rect = self.get_delete_button_rect(rect);
 
         // Retrieve hold progress for visualization (Mary StyleUX)
@@ -5049,19 +4881,19 @@ impl ModuleCanvas {
             .data(|d| d.get_temp::<f32>(delete_id.with("progress")))
             .unwrap_or(0.0);
 
-        /*
-        crate::widgets::custom::draw_safety_radial_fill(ui.painter(),
+        // Use the shared helper for consistency
+        crate::widgets::custom::draw_safety_radial_fill(
+            ui,
             delete_button_rect.center(),
             10.0 * self.zoom,
             progress,
             Color32::from_rgb(255, 50, 50),
         );
-        */
 
         painter.text(
             delete_button_rect.center(),
             egui::Align2::CENTER_CENTER,
-            "x",
+            "×",
             egui::FontId::proportional(16.0 * self.zoom),
             Color32::from_rgba_unmultiplied(255, 100, 100, 200),
         );
@@ -5343,26 +5175,26 @@ impl ModuleCanvas {
                 (
                     Color32::from_rgb(60, 50, 70),
                     Color32::from_rgb(130, 80, 180),
-                    "âš¡",
+                    "⚡",
                     name,
                 )
             }
             ModulePartType::Source(SourceType::BevyAtmosphere { .. }) => (
                 Color32::from_rgb(40, 60, 80),
                 Color32::from_rgb(100, 180, 220),
-                "â˜ï¸",
+                "☁️",
                 "Atmosphere",
             ),
             ModulePartType::Source(SourceType::BevyHexGrid { .. }) => (
                 Color32::from_rgb(40, 60, 80),
                 Color32::from_rgb(100, 180, 220),
-                "ðŸ›‘",
+                "🛑",
                 "Hex Grid",
             ),
             ModulePartType::Source(SourceType::BevyParticles { .. }) => (
                 Color32::from_rgb(40, 60, 80),
                 Color32::from_rgb(100, 180, 220),
-                "âœ¨",
+                "✨",
                 "Particles",
             ),
             ModulePartType::Source(SourceType::Bevy3DText { .. }) => (
@@ -5370,18 +5202,6 @@ impl ModuleCanvas {
                 Color32::from_rgb(100, 220, 180),
                 "T",
                 "3D Text",
-            ),
-            ModulePartType::Source(SourceType::BevyCamera { .. }) => (
-                Color32::from_rgb(40, 60, 80),
-                Color32::from_rgb(180, 100, 220),
-                "ðŸŽ¥",
-                "Camera",
-            ),
-            ModulePartType::Source(SourceType::Bevy3DShape { .. }) => (
-                Color32::from_rgb(40, 60, 80),
-                Color32::from_rgb(100, 180, 220),
-                "ðŸ§Š",
-                "3D Shape",
             ),
             ModulePartType::Source(source) => {
                 let name = match source {
@@ -5400,13 +5220,11 @@ impl ModuleCanvas {
                     SourceType::BevyHexGrid { .. } => "Hex Grid",
                     SourceType::BevyParticles { .. } => "Particles",
                     SourceType::Bevy3DText { .. } => "3D Text",
-                    SourceType::BevyCamera { .. } => "Camera",
-                    SourceType::Bevy3DShape { .. } => "3D Shape",
                 };
                 (
                     Color32::from_rgb(50, 60, 70),
                     Color32::from_rgb(80, 140, 180),
-                    "ðŸŽ¬",
+                    "🎬",
                     name,
                 )
             }
@@ -5426,7 +5244,7 @@ impl ModuleCanvas {
                 (
                     Color32::from_rgb(60, 55, 70),
                     Color32::from_rgb(160, 100, 180),
-                    "ðŸŽ­",
+                    "🎭",
                     name,
                 )
             }
@@ -5476,14 +5294,14 @@ impl ModuleCanvas {
                 (
                     egui::Color32::from_rgb(60, 60, 50),
                     egui::Color32::from_rgb(180, 140, 60),
-                    "ã€°ï¸",
+                    "〰️",
                     name,
                 )
             }
             ModulePartType::Mesh(_) => (
                 egui::Color32::from_rgb(60, 60, 80),
                 egui::Color32::from_rgb(100, 100, 200),
-                "ðŸ•¸ï¸",
+                "🕸️",
                 "Mesh",
             ),
             ModulePartType::Layer(layer) => {
@@ -5495,7 +5313,7 @@ impl ModuleCanvas {
                 (
                     Color32::from_rgb(50, 70, 60),
                     Color32::from_rgb(80, 180, 120),
-                    "ðŸ“‘",
+                    "📑",
                     name,
                 )
             }
@@ -5510,7 +5328,7 @@ impl ModuleCanvas {
                 (
                     Color32::from_rgb(70, 50, 50),
                     Color32::from_rgb(180, 80, 80),
-                    "ðŸ“º",
+                    "📺",
                     name,
                 )
             }
@@ -5525,7 +5343,7 @@ impl ModuleCanvas {
                 (
                     Color32::from_rgb(60, 60, 40),
                     Color32::from_rgb(200, 200, 100),
-                    "ðŸ’¡",
+                    "💡",
                     name,
                 )
             }
@@ -5565,121 +5383,101 @@ impl ModuleCanvas {
         };
         match part_type {
             ModulePartType::Trigger(trigger_type) => match trigger_type {
-                TriggerType::AudioFFT { band, .. } => format!("ðŸ”Š Audio: {:?}", band),
-                TriggerType::Random { .. } => "ðŸŽ² Random".to_string(),
-                TriggerType::Fixed { interval_ms, .. } => format!("â±ï¸ {}ms", interval_ms),
-                TriggerType::Midi { channel, note, .. } => format!("ðŸŽ¹ Ch{} N{}", channel, note),
-                TriggerType::Osc { address } => format!("ðŸ“¡ {}", address),
-                TriggerType::Shortcut { key_code, .. } => format!("âŒ¨ï¸ {}", key_code),
-                TriggerType::Beat => "ðŸ¥ Beat".to_string(),
+                TriggerType::AudioFFT { band, .. } => format!("🔊 Audio: {:?}", band),
+                TriggerType::Random { .. } => "🎲 Random".to_string(),
+                TriggerType::Fixed { interval_ms, .. } => format!("⏱️ {}ms", interval_ms),
+                TriggerType::Midi { channel, note, .. } => format!("🎹 Ch{} N{}", channel, note),
+                TriggerType::Osc { address } => format!("📡 {}", address),
+                TriggerType::Shortcut { key_code, .. } => format!("⌨️ {}", key_code),
+                TriggerType::Beat => "🥁 Beat".to_string(),
             },
             ModulePartType::Source(source_type) => match source_type {
                 SourceType::MediaFile { path, .. } => {
                     if path.is_empty() {
-                        "ðŸ“ Select file...".to_string()
+                        "📁 Select file...".to_string()
                     } else {
-                        format!(
-                            "ðŸ“ {}",
-                            path.split(['/', '\\']).next_back().unwrap_or(path)
-                        )
+                        format!("📁 {}", path.split(['/', '\\']).next_back().unwrap_or(path))
                     }
                 }
-                SourceType::Shader { name, .. } => format!("ðŸŽ¨ {}", name),
-                SourceType::LiveInput { device_id } => format!("ðŸ“¹ Device {}", device_id),
+                SourceType::Shader { name, .. } => format!("🎨 {}", name),
+                SourceType::LiveInput { device_id } => format!("📹 Device {}", device_id),
                 SourceType::NdiInput { source_name } => {
-                    format!("ðŸ“¡ {}", source_name.as_deref().unwrap_or("None"))
+                    format!("📡 {}", source_name.as_deref().unwrap_or("None"))
                 }
-                SourceType::Bevy => "ðŸŽ® Bevy Scene".to_string(),
+                SourceType::Bevy => "🎮 Bevy Scene".to_string(),
                 #[cfg(target_os = "windows")]
-                SourceType::SpoutInput { sender_name } => format!("ðŸš° {}", sender_name),
+                SourceType::SpoutInput { sender_name } => format!("🚰 {}", sender_name),
                 SourceType::VideoUni { path, .. } => {
                     if path.is_empty() {
-                        "ðŸ“ Select video...".to_string()
+                        "📁 Select video...".to_string()
                     } else {
-                        format!(
-                            "ðŸ“¹ {}",
-                            path.split(['/', '\\']).next_back().unwrap_or(path)
-                        )
+                        format!("📹 {}", path.split(['/', '\\']).next_back().unwrap_or(path))
                     }
                 }
                 SourceType::ImageUni { path, .. } => {
                     if path.is_empty() {
-                        "ðŸ–¼ Select image...".to_string()
+                        "🖼 Select image...".to_string()
                     } else {
-                        format!(
-                            "ðŸ–¼ {}",
-                            path.split(['/', '\\']).next_back().unwrap_or(path)
-                        )
+                        format!("🖼 {}", path.split(['/', '\\']).next_back().unwrap_or(path))
                     }
                 }
-                SourceType::VideoMulti { shared_id, .. } => format!("ðŸ“¹ Shared: {}", shared_id),
-                SourceType::ImageMulti { shared_id, .. } => format!("ðŸ–¼ Shared: {}", shared_id),
-                SourceType::BevyAtmosphere { .. } => "â˜ï¸ Atmosphere".to_string(),
-                SourceType::BevyHexGrid { .. } => "ðŸ›‘ Hex Grid".to_string(),
-                SourceType::BevyParticles { .. } => "âœ¨ Particles".to_string(),
+                SourceType::VideoMulti { shared_id, .. } => format!("📹 Shared: {}", shared_id),
+                SourceType::ImageMulti { shared_id, .. } => format!("🖼 Shared: {}", shared_id),
+                SourceType::BevyAtmosphere { .. } => "☁️ Atmosphere".to_string(),
+                SourceType::BevyHexGrid { .. } => "🛑 Hex Grid".to_string(),
+                SourceType::BevyParticles { .. } => "✨ Particles".to_string(),
                 SourceType::Bevy3DText { text, .. } => {
                     format!("T: {}", text.chars().take(10).collect::<String>())
                 }
-                SourceType::BevyCamera { mode, .. } => match mode {
-                    BevyCameraMode::Orbit { .. } => "ðŸŽ¥ Orbit".to_string(),
-                    BevyCameraMode::Fly { .. } => "ðŸŽ¥ Fly".to_string(),
-                    BevyCameraMode::Static { .. } => "ðŸŽ¥ Static".to_string(),
-                },
-                SourceType::Bevy3DShape { shape_type, .. } => format!("ðŸ§Š {:?}", shape_type),
             },
             ModulePartType::Mask(mask_type) => match mask_type {
                 MaskType::File { path } => {
                     if path.is_empty() {
-                        "ðŸ“ Select mask...".to_string()
+                        "📁 Select mask...".to_string()
                     } else {
-                        format!(
-                            "ðŸ“ {}",
-                            path.split(['/', '\\']).next_back().unwrap_or(path)
-                        )
+                        format!("📁 {}", path.split(['/', '\\']).next_back().unwrap_or(path))
                     }
                 }
-                MaskType::Shape(shape) => format!("ðŸ”· {:?}", shape),
-                MaskType::Gradient { angle, .. } => format!("ðŸŒˆ Gradient {}Â°", *angle as i32),
+                MaskType::Shape(shape) => format!("🔷 {:?}", shape),
+                MaskType::Gradient { angle, .. } => format!("🌈 Gradient {}°", *angle as i32),
             },
             ModulePartType::Modulizer(modulizer_type) => match modulizer_type {
                 ModulizerType::Effect {
                     effect_type: effect,
                     ..
-                } => format!("âœ¨ {}", effect.name()),
-                ModulizerType::BlendMode(blend) => format!("ðŸ”€ {}", blend.name()),
-                ModulizerType::AudioReactive { source } => format!("ðŸ”Š {}", source),
+                } => format!("✨ {}", effect.name()),
+                ModulizerType::BlendMode(blend) => format!("🔀 {}", blend.name()),
+                ModulizerType::AudioReactive { source } => format!("🔊 {}", source),
             },
-            ModulePartType::Mesh(_) => "ðŸ•¸ï¸ Mesh".to_string(),
+            ModulePartType::Mesh(_) => "🕸️ Mesh".to_string(),
             ModulePartType::Layer(layer_type) => {
                 use mapmap_core::module::LayerType;
                 match layer_type {
-                    LayerType::Single { name, .. } => format!("ðŸ“‘ {}", name),
-                    LayerType::Group { name, .. } => format!("ðŸ“ {}", name),
-                    LayerType::All { .. } => "ðŸ“‘ All Layers".to_string(),
+                    LayerType::Single { name, .. } => format!("📑 {}", name),
+                    LayerType::Group { name, .. } => format!("📁 {}", name),
+                    LayerType::All { .. } => "📑 All Layers".to_string(),
                 }
             }
             ModulePartType::Output(output_type) => match output_type {
-                OutputType::Projector { name, .. } => format!("ðŸ“º {}", name),
-                OutputType::NdiOutput { name } => format!("ðŸ“¡ {}", name),
+                OutputType::Projector { name, .. } => format!("📺 {}", name),
+                OutputType::NdiOutput { name } => format!("📡 {}", name),
                 #[cfg(target_os = "windows")]
-                OutputType::Spout { name } => format!("ðŸš° {}", name),
+                OutputType::Spout { name } => format!("🚰 {}", name),
                 OutputType::Hue { bridge_ip, .. } => {
                     if bridge_ip.is_empty() {
-                        "ðŸ’¡ Not Connected".to_string()
+                        "💡 Not Connected".to_string()
                     } else {
-                        format!("ðŸ’¡ {}", bridge_ip)
+                        format!("💡 {}", bridge_ip)
                     }
                 }
             },
             ModulePartType::Hue(hue) => match hue {
-                mapmap_core::module::HueNodeType::SingleLamp { name, .. } => {
-                    format!("ðŸ’¡ {}", name)
-                }
+                mapmap_core::module::HueNodeType::SingleLamp { name, .. } => format!("💡 {}", name),
                 mapmap_core::module::HueNodeType::MultiLamp { name, .. } => {
-                    format!("ðŸ’¡ðŸ’¡ {}", name)
+                    format!("💡💡 {}", name)
                 }
                 mapmap_core::module::HueNodeType::EntertainmentGroup { name, .. } => {
-                    format!("ðŸŽ­ {}", name)
+                    format!("🎭 {}", name)
                 }
             },
         }
@@ -5708,7 +5506,7 @@ impl ModuleCanvas {
         );
         painter.rect_stroke(
             popup_rect,
-            0.0,
+            egui::CornerRadius::same(0),
             Stroke::new(2.0, Color32::from_rgb(180, 100, 80)),
             egui::StrokeKind::Middle,
         );
@@ -5717,9 +5515,9 @@ impl ModuleCanvas {
         ui.scope_builder(egui::UiBuilder::new().max_rect(inner_rect), |ui| {
             ui.vertical(|ui| {
                 ui.heading(if self.diagnostic_issues.is_empty() {
-                    "âœ“ Module Check: OK"
+                    "✓ Module Check: OK"
                 } else {
-                    "âš  Module Check: Issues Found"
+                    "⚠ Module Check: Issues Found"
                 });
                 ui.add_space(8.0);
 
@@ -5732,13 +5530,13 @@ impl ModuleCanvas {
                             for issue in &self.diagnostic_issues {
                                 let (icon, color) = match issue.severity {
                                     mapmap_core::diagnostics::IssueSeverity::Error => {
-                                        ("âŒ", Color32::RED)
+                                        ("❌", Color32::RED)
                                     }
                                     mapmap_core::diagnostics::IssueSeverity::Warning => {
-                                        ("âš ", Color32::YELLOW)
+                                        ("⚠", Color32::YELLOW)
                                     }
                                     mapmap_core::diagnostics::IssueSeverity::Info => {
-                                        ("â„¹", Color32::LIGHT_BLUE)
+                                        ("ℹ", Color32::LIGHT_BLUE)
                                     }
                                 };
                                 ui.horizontal(|ui| {
@@ -5774,7 +5572,7 @@ impl ModuleCanvas {
         }
     }
 
-    /// Auto-layout parts in a grid by type (left to right: Trigger â†’ Source â†’ Mask â†’ Modulator â†’ Layer â†’ Output)
+    /// Auto-layout parts in a grid by type (left to right: Trigger → Source → Mask → Modulator → Layer → Output)
     fn auto_layout_parts(parts: &mut [mapmap_core::module::ModulePart]) {
         use mapmap_core::module::ModulePartType;
 
@@ -6198,16 +5996,16 @@ impl ModuleCanvas {
         }
 
         ui.add_space(5.0);
-        egui::CollapsingHeader::new("âš¡ Trigger & Automation")
+        egui::CollapsingHeader::new("⚡ Trigger & Automation")
             .default_open(false)
             .show(ui, |ui| {
                 ui.horizontal(|ui| {
                     ui.label("MIDI Assignment:");
                     let is_learning = self.midi_learn_part_id == Some(part.id);
                     let btn_text = if is_learning {
-                        "ðŸ›‘ Stop Learning"
+                        "🛑 Stop Learning"
                     } else {
-                        "ðŸŽ¹ MIDI Learn"
+                        "🎹 MIDI Learn"
                     };
                     if ui.selectable_label(is_learning, btn_text).clicked() {
                         if is_learning {
@@ -6418,7 +6216,7 @@ impl ModuleCanvas {
         flip_vertical: &mut bool,
     ) {
         // === APPEARANCE ===
-        ui.collapsing("ðŸŽ¨ Appearance", |ui| {
+        ui.collapsing("🎨 Appearance", |ui| {
             egui::Grid::new("appearance_grid")
                 .num_columns(2)
                 .spacing([10.0, 8.0])
@@ -6503,33 +6301,28 @@ impl ModuleCanvas {
         });
 
         // === COLOR CORRECTION ===
-        if crate::widgets::collapsing_header_with_reset(
-            ui,
-            "ðŸŒˆ Color Correction",
-            false,
-            |ui| {
-                egui::Grid::new("color_correction_grid")
-                    .num_columns(2)
-                    .spacing([10.0, 8.0])
-                    .show(ui, |ui| {
-                        ui.label("Brightness:");
-                        styled_slider(ui, brightness, -1.0..=1.0, 0.0);
-                        ui.end_row();
+        if crate::widgets::collapsing_header_with_reset(ui, "🌈 Color Correction", false, |ui| {
+            egui::Grid::new("color_correction_grid")
+                .num_columns(2)
+                .spacing([10.0, 8.0])
+                .show(ui, |ui| {
+                    ui.label("Brightness:");
+                    styled_slider(ui, brightness, -1.0..=1.0, 0.0);
+                    ui.end_row();
 
-                        ui.label("Contrast:");
-                        styled_slider(ui, contrast, 0.0..=2.0, 1.0);
-                        ui.end_row();
+                    ui.label("Contrast:");
+                    styled_slider(ui, contrast, 0.0..=2.0, 1.0);
+                    ui.end_row();
 
-                        ui.label("Saturation:");
-                        styled_slider(ui, saturation, 0.0..=2.0, 1.0);
-                        ui.end_row();
+                    ui.label("Saturation:");
+                    styled_slider(ui, saturation, 0.0..=2.0, 1.0);
+                    ui.end_row();
 
-                        ui.label("Hue Shift:");
-                        styled_slider(ui, hue_shift, -180.0..=180.0, 0.0);
-                        ui.end_row();
-                    });
-            },
-        ) {
+                    ui.label("Hue Shift:");
+                    styled_slider(ui, hue_shift, -180.0..=180.0, 0.0);
+                    ui.end_row();
+                });
+        }) {
             *brightness = 0.0;
             *contrast = 1.0;
             *saturation = 1.0;
@@ -6537,7 +6330,7 @@ impl ModuleCanvas {
         }
 
         // === TRANSFORM ===
-        if crate::widgets::collapsing_header_with_reset(ui, "ðŸ“ Transform", false, |ui| {
+        if crate::widgets::collapsing_header_with_reset(ui, "📐 Transform", false, |ui| {
             egui::Grid::new("transform_grid")
                 .num_columns(2)
                 .spacing([10.0, 8.0])
@@ -6595,7 +6388,7 @@ impl ModuleCanvas {
             let small_btn_size = Vec2::new(40.0, button_height);
 
             // PLAY (Primary Action - Green)
-            let play_btn = egui::Button::new(egui::RichText::new("â–¶").size(24.0))
+            let play_btn = egui::Button::new(egui::RichText::new("▶").size(24.0))
                 .min_size(big_btn_size)
                 .fill(if is_playing {
                     Color32::from_rgb(40, 180, 60)
@@ -6608,7 +6401,7 @@ impl ModuleCanvas {
             }
 
             // PAUSE (Secondary Action - Yellow)
-            let pause_btn = egui::Button::new(egui::RichText::new("â¸").size(24.0))
+            let pause_btn = egui::Button::new(egui::RichText::new("⏸").size(24.0))
                 .min_size(big_btn_size)
                 .fill(if !is_playing && current_pos > 0.1 {
                     Color32::from_rgb(200, 160, 40)
@@ -6627,7 +6420,7 @@ impl ModuleCanvas {
 
             // STOP (Destructive Action - Separated)
             // Mary StyleUX: Use hold-to-confirm for safety
-            if crate::widgets::hold_to_action_button(ui, "â¹", Color32::from_rgb(255, 80, 80)) {
+            if crate::widgets::hold_to_action_button(ui, "⏹", Color32::from_rgb(255, 80, 80)) {
                 self.pending_playback_commands
                     .push((part_id, MediaPlaybackCommand::Stop));
             }
@@ -6640,7 +6433,7 @@ impl ModuleCanvas {
             };
             if ui
                 .add(
-                    egui::Button::new(egui::RichText::new("ðŸ”").size(18.0))
+                    egui::Button::new(egui::RichText::new("🔁").size(18.0))
                         .min_size(small_btn_size)
                         .fill(loop_color),
                 )
@@ -6660,7 +6453,7 @@ impl ModuleCanvas {
             };
             if ui
                 .add(
-                    egui::Button::new(egui::RichText::new("âª").size(18.0))
+                    egui::Button::new(egui::RichText::new("⏪").size(18.0))
                         .min_size(small_btn_size)
                         .fill(rev_color),
                 )
@@ -6691,7 +6484,7 @@ impl ModuleCanvas {
         painter.rect_filled(rect, 0.0, Color32::from_gray(30));
         painter.rect_stroke(
             rect,
-            0.0,
+            egui::CornerRadius::same(0),
             Stroke::new(1.0 * self.zoom, Color32::from_gray(60)),
             egui::StrokeKind::Middle,
         );
@@ -6715,7 +6508,7 @@ impl ModuleCanvas {
         );
         painter.rect_stroke(
             region_rect,
-            0.0,
+            egui::CornerRadius::same(0),
             Stroke::new(1.0, Color32::from_rgb(60, 180, 100)),
             egui::StrokeKind::Middle,
         );
@@ -6820,3 +6613,7 @@ impl ModuleCanvas {
         ));
     }
 }
+
+
+
+

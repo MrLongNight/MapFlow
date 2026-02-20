@@ -3,7 +3,6 @@
 //! egui-based panel for managing effect chains with drag & drop reordering,
 //! parameter sliders, and preset browser.
 
-use crate::core::theme::colors;
 use crate::i18n::LocaleManager;
 use crate::icons::{AppIcon, IconManager};
 use crate::responsive::ResponsiveLayout;
@@ -61,25 +60,25 @@ impl EffectType {
 
     pub fn icon(&self) -> &'static str {
         match self {
-            EffectType::ColorAdjust => "ðŸŽ¨",
-            EffectType::Blur => "ðŸŒ«ï¸",
-            EffectType::ChromaticAberration => "ðŸŒˆ",
-            EffectType::EdgeDetect => "ðŸ“",
-            EffectType::Glow => "âœ¨",
-            EffectType::Kaleidoscope => "ðŸ”®",
-            EffectType::Invert => "ðŸ”„",
-            EffectType::Pixelate => "ðŸŸ©",
-            EffectType::Vignette => "ðŸŒ‘",
-            EffectType::FilmGrain => "ðŸŽžï¸",
-            EffectType::Wave => "ðŸŒŠ",
-            EffectType::Glitch => "ðŸ‘¾",
-            EffectType::RgbSplit => "ðŸŒˆ",
-            EffectType::Mirror => "ðŸªž",
-            EffectType::HueShift => "ðŸŽ¨",
-            EffectType::Voronoi => "ðŸ’ ",
-            EffectType::Tunnel => "ðŸŒ€",
-            EffectType::Galaxy => "ðŸŒŒ",
-            EffectType::Custom => "âš™ï¸",
+            EffectType::ColorAdjust => "🎨",
+            EffectType::Blur => "🌫️",
+            EffectType::ChromaticAberration => "🌈",
+            EffectType::EdgeDetect => "📐",
+            EffectType::Glow => "✨",
+            EffectType::Kaleidoscope => "🔮",
+            EffectType::Invert => "🔄",
+            EffectType::Pixelate => "🟩",
+            EffectType::Vignette => "🌑",
+            EffectType::FilmGrain => "🎞️",
+            EffectType::Wave => "🌊",
+            EffectType::Glitch => "👾",
+            EffectType::RgbSplit => "🌈",
+            EffectType::Mirror => "🪞",
+            EffectType::HueShift => "🎨",
+            EffectType::Voronoi => "💠",
+            EffectType::Tunnel => "🌀",
+            EffectType::Galaxy => "🌌",
+            EffectType::Custom => "⚙️",
         }
     }
 
@@ -417,7 +416,6 @@ impl EffectChainPanel {
             // Add effect button
             if ui
                 .button(locale.t("effect-add"))
-                .clone()
                 .on_hover_text(locale.t("effect-add"))
                 .clicked()
             {
@@ -427,7 +425,6 @@ impl EffectChainPanel {
             // Preset buttons
             if ui
                 .button(locale.t("effect-presets"))
-                .clone()
                 .on_hover_text(locale.t("effect-presets"))
                 .clicked()
             {
@@ -439,7 +436,6 @@ impl EffectChainPanel {
                     if let Some(img) = mgr.image(AppIcon::Remove, 16.0) {
                         if ui
                             .add(egui::Button::image(img))
-                            .clone()
                             .on_hover_text(locale.t("effect-clear"))
                             .clicked()
                         {
@@ -479,7 +475,7 @@ impl EffectChainPanel {
                                             ui.label("No recent configs");
                                         } else {
                                             for config in configs {
-                                                if ui.button(config.name.to_string()).clone().on_hover_text(format!("{:?}", config.params)).clicked() {
+                                                if ui.button(config.name.to_string()).on_hover_text(format!("{:?}", config.params)).clicked() {
                                                      self.chain.add_effect(*effect_type);
 
                                                      let id = self.chain.effects.last().unwrap().id;
@@ -572,7 +568,6 @@ impl EffectChainPanel {
                             is_first,
                             is_last,
                             is_dragging,
-                            idx,
                             locale,
                             icon_manager,
                         );
@@ -677,7 +672,6 @@ impl EffectChainPanel {
         is_first: bool,
         is_last: bool,
         is_dragging: bool,
-        index: usize,
         locale: &LocaleManager,
         icon_manager: Option<&IconManager>,
     ) -> (
@@ -701,10 +695,8 @@ impl EffectChainPanel {
             Color32::from_rgba_premultiplied(80, 100, 140, 220) // Highlight when dragging
         } else if enabled {
             Color32::from_rgba_premultiplied(60, 80, 120, 200)
-        } else if index % 2 == 0 {
-            colors::DARK_GREY
         } else {
-            colors::DARKER_GREY
+            Color32::from_rgba_premultiplied(60, 60, 60, 150)
         };
 
         // Add stroke if dragging
@@ -717,15 +709,15 @@ impl EffectChainPanel {
         let response = egui::Frame::default()
             .fill(frame_color)
             .stroke(stroke)
-            .corner_radius(0.0)
-            .inner_margin(4.0)
+            .rounding(8.0)
+            .inner_margin(8.0)
             .outer_margin(2.0)
             .show(ui, |ui| {
                 // Header row
                 ui.horizontal(|ui| {
                     // Drag Handle
                     let handle_resp = ui.add(
-                        egui::Button::new("â‹®â‹®")
+                        egui::Button::new("⋮⋮")
                             .frame(false)
                             .sense(egui::Sense::drag()),
                     );
@@ -758,19 +750,23 @@ impl EffectChainPanel {
                     }
 
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        // Delete button (Hold to Confirm)
-                        if crate::widgets::custom::delete_button(ui) {
-                            remove = true;
+                        // Delete button
+                        if let Some(mgr) = icon_manager {
+                            if let Some(img) = mgr.image(AppIcon::Remove, 16.0) {
+                                if ui.add(egui::Button::image(img)).clicked() {
+                                    remove = true;
+                                }
+                            }
                         }
 
                         // Move buttons
                         ui.add_enabled_ui(!is_last, |ui| {
-                            if ui.small_button("â–¼").clicked() {
+                            if ui.small_button("▼").clicked() {
                                 move_down = true;
                             }
                         });
                         ui.add_enabled_ui(!is_first, |ui| {
-                            if ui.small_button("â–²").clicked() {
+                            if ui.small_button("▲").clicked() {
                                 move_up = true;
                             }
                         });
@@ -1206,7 +1202,6 @@ impl EffectChainPanel {
                     if let Some(img) = mgr.image(AppIcon::FloppyDisk, 16.0) {
                         if ui
                             .add(egui::Button::image(img))
-                            .clone()
                             .on_hover_text(locale.t("effect-save"))
                             .clicked()
                         {
@@ -1235,7 +1230,7 @@ impl EffectChainPanel {
             .show(ctx, |ui| {
                 // Search bar
                 ui.horizontal(|ui| {
-                    ui.label("ðŸ”");
+                    ui.label("🔍");
                     ui.add(
                         egui::TextEdit::singleline(&mut self.preset_search)
                             .hint_text(locale.t("effect-search")),
@@ -1258,11 +1253,7 @@ impl EffectChainPanel {
                             }
 
                             ui.horizontal(|ui| {
-                                let star = if preset.is_favorite {
-                                    "â­"
-                                } else {
-                                    "â˜†"
-                                };
+                                let star = if preset.is_favorite { "⭐" } else { "☆" };
                                 ui.label(star);
 
                                 if ui.button(&preset.name).clicked() {
@@ -1289,7 +1280,6 @@ impl EffectChainPanel {
                         if let Some(img) = mgr.image(AppIcon::FloppyDisk, 16.0) {
                             if ui
                                 .add(egui::Button::image(img))
-                                .clone()
                                 .on_hover_text(locale.t("effect-save"))
                                 .clicked()
                                 && !self.save_preset_name.is_empty()

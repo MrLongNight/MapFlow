@@ -119,8 +119,9 @@ impl WgpuBackend {
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
                 label: Some("MapFlow Device"),
-                required_features: wgpu::Features::TIMESTAMP_QUERY | wgpu::Features::empty(),
+                required_features: wgpu::Features::TIMESTAMP_QUERY | wgpu::Features::PUSH_CONSTANTS,
                 required_limits: wgpu::Limits {
+                    max_push_constant_size: 128,
                     ..Default::default()
                 },
                 memory_hints: Default::default(),
@@ -310,15 +311,15 @@ mod tests {
     #[test]
     fn test_backend_creation() {
         pollster::block_on(async {
-            let backend = WgpuBackend::new(None).await.ok();
-            if backend.is_none() {
+            let backend = WgpuBackend::new(None).await;
+            if backend.is_err() {
                 // Skipping test on CI/Headless systems without GPU support.
                 eprintln!("SKIP: Backend konnte nicht initialisiert werden (möglicherweise kein GPU-Backend/HW im CI).");
                 return;
             }
-            assert!(backend.is_some());
+            assert!(backend.is_ok());
 
-            if let Some(backend) = backend {
+            if let Ok(backend) = backend {
                 println!("Backend: {:?}", backend.adapter_info);
             }
         });
@@ -329,10 +330,10 @@ mod tests {
         pollster::block_on(async {
             // This test ensures that trying to create a backend doesn't panic,
             // even if it fails.
-            let result = WgpuBackend::new(None).await.ok();
+            let result = WgpuBackend::new(None).await;
             match result {
-                Some(b) => println!("Backend init success: {:?}", b.adapter_info),
-                None => println!("Backend init failed gracefully"),
+                Ok(b) => println!("Backend init success: {:?}", b.adapter_info),
+                Err(e) => println!("Backend init failed gracefully: {}", e),
             }
         });
     }

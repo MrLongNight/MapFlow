@@ -117,7 +117,6 @@ impl Dashboard {
                         if let Some(img) = mgr.image(ic, icon_size) {
                             return ui
                                 .add(egui::Button::image(img))
-                                .clone()
                                 .on_hover_text(text)
                                 .clicked();
                         }

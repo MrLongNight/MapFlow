@@ -9,18 +9,13 @@
 //! - Effect Chain Panel (Phase 3)
 //! - Controller Overlay Panel (MIDI visualization)
 
-#![warn(missing_docs)]
+#![allow(missing_docs)]
 
 // Categorized modules
-#[allow(missing_docs)]
 pub mod core;
-#[allow(missing_docs)]
 pub mod editors;
-#[allow(missing_docs)]
 pub mod panels;
-#[allow(missing_docs)]
 pub mod view;
-#[allow(missing_docs)]
 pub mod widgets;
 
 // Re-export categorized modules to maintain API compatibility
@@ -30,245 +25,148 @@ pub use crate::panels::*;
 pub use crate::view::*;
 pub use crate::widgets::*;
 
-pub mod types {
-    pub use crate::editors::module_canvas::types::*;
-}
-
 /// UI actions that can be triggered by the user interface
 #[derive(Debug, Clone)]
 pub enum UIAction {
     // Playback actions
-    /// Start playback
     Play,
-    /// Pause playback
     Pause,
-    /// Stop playback
     Stop,
-    /// Set global playback speed
     SetSpeed(f32),
-    /// Set global loop mode
     SetLoopMode(mapmap_media::LoopMode),
 
     // File actions
-    /// Create a new project
     NewProject,
-    /// Load a video file
     LoadVideo(String),
-    /// Open file picker for media source
     PickMediaFile(
         mapmap_core::module::ModuleId,
         mapmap_core::module::ModulePartId,
         String,
     ),
-    /// Set media file for source
     SetMediaFile(
         mapmap_core::module::ModuleId,
         mapmap_core::module::ModulePartId,
         String,
     ),
 
-    /// Save current project
     SaveProject(String),
-    /// Save project as new file
     SaveProjectAs,
-    /// Load project from file
     LoadProject(String),
-    /// Load project from recent list
     LoadRecentProject(String),
-    /// Export project
     Export,
-    /// Open settings dialog
     OpenSettings,
-    /// Exit application
     Exit,
 
     // Edit actions
-    /// Undo last action
     Undo,
-    /// Redo last undone action
     Redo,
-    /// Cut selection
     Cut,
-    /// Copy selection
     Copy,
-    /// Paste from clipboard
     Paste,
-    /// Delete selection
     Delete,
-    /// Select all items
     SelectAll,
 
     // Mapping actions
-    /// Add new mapping
     AddMapping,
-    /// Remove mapping by ID
     RemoveMapping(u64),
-    /// Toggle mapping visibility
     ToggleMappingVisibility(u64, bool),
-    /// Select mapping by ID
     SelectMapping(u64),
-    /// Set MIDI assignment for UI element
     SetMidiAssignment(String, String), // element_id, target_id
 
     // Paint actions
-    /// Add new paint source
     AddPaint,
-    /// Remove paint source by ID
     RemovePaint(u64),
 
     // Layer actions (Phase 1)
-    /// Add new layer
     AddLayer,
-    /// Create layer group
     CreateGroup,
-    /// Remove layer by ID
     RemoveLayer(u64),
-    /// Duplicate layer by ID
     DuplicateLayer(u64),
-    /// Reparent layer
     ReparentLayer(u64, Option<u64>),
-    /// Swap layer order
     SwapLayers(u64, u64),
-    /// Toggle group collapse state
     ToggleGroupCollapsed(u64),
-    /// Rename layer
     RenameLayer(u64, String),
-    /// Toggle layer bypass
     ToggleLayerBypass(u64),
-    /// Toggle layer solo
     ToggleLayerSolo(u64),
-    /// Set layer opacity
     SetLayerOpacity(u64, f32),
-    /// Set layer blend mode
     SetLayerBlendMode(u64, mapmap_core::BlendMode),
-    /// Set layer visibility
     SetLayerVisibility(u64, bool),
-    /// Remove all layers
     EjectAllLayers,
 
     // Transform actions (Phase 1)
-    /// Set layer transform
     SetLayerTransform(u64, mapmap_core::Transform),
-    /// Apply resize mode to layer
     ApplyResizeMode(u64, mapmap_core::ResizeMode),
 
     // Master controls (Phase 1)
-    /// Set master opacity
     SetMasterOpacity(f32),
-    /// Set master playback speed
     SetMasterSpeed(f32),
-    /// Set composition name
     SetCompositionName(String),
 
     // Phase 2: Output management
-    /// Add new output
     AddOutput(String, mapmap_core::CanvasRegion, (u32, u32)),
-    /// Remove output by ID
     RemoveOutput(u64),
-    /// Configure output settings
     ConfigureOutput(u64, mapmap_core::OutputConfig),
-    /// Set output edge blend configuration
     SetOutputEdgeBlend(u64, mapmap_core::EdgeBlendConfig),
-    /// Set output color calibration
     SetOutputColorCalibration(u64, mapmap_core::ColorCalibration),
-    /// Create 2x2 projector array
     CreateProjectorArray2x2((u32, u32), f32),
 
     // View actions
-    /// Toggle fullscreen mode
     ToggleFullscreen,
-    /// Reset UI layout to default
     ResetLayout,
-    /// Toggle module canvas visibility
     ToggleModuleCanvas,
-    /// Toggle controller overlay visibility
     ToggleControllerOverlay,
-    /// Toggle media manager visibility
     ToggleMediaManager,
 
     // Audio actions
-    /// Select audio input device
     SelectAudioDevice(String),
-    /// Update audio configuration
     UpdateAudioConfig(mapmap_core::audio::AudioConfig),
-    /// Toggle audio panel visibility
     ToggleAudioPanel,
 
     // Settings
-    /// Set UI language
     SetLanguage(String),
-    /// Connect to Philips Hue bridge
     ConnectHue,
-    /// Disconnect from Philips Hue bridge
     DisconnectHue,
-    /// Start Hue bridge discovery
     DiscoverHueBridges,
-    /// Fetch Hue entertainment groups
     FetchHueGroups,
-    /// Register app with Hue bridge
     RegisterHue,
 
     // Help actions
-    /// Open documentation
     OpenDocs,
-    /// Open "About" dialog
     OpenAbout,
-    /// Open license information
     OpenLicense,
 
     // Module actions
     #[cfg(feature = "ndi")]
-    /// Connect NDI source to module part
     ConnectNdiSource {
-        /// The module part ID
         part_id: mapmap_core::module::ModulePartId,
-        /// The NDI source
         source: NdiSource,
     },
 
     // Cue actions (Phase 7)
-    /// Add new cue
     AddCue,
-    /// Remove cue by index
     RemoveCue(u32),
-    /// Update cue data
     UpdateCue(Box<mapmap_control::cue::Cue>),
-    /// Trigger cue execution
     GoCue(u32),
-    /// Go to next cue
     NextCue,
-    /// Go to previous cue
     PrevCue,
-    /// Stop current cue
     StopCue,
 
     // Shader Graph (Phase 6b)
-    /// Open shader graph editor
     OpenShaderGraph(mapmap_core::GraphId),
 
     // MIDI
-    /// Toggle MIDI learn mode
     ToggleMidiLearn,
 
     // Node Action (Phase 6)
-    /// Execute node editor action
     NodeAction(NodeEditorAction),
 
     // Global Fullscreen Setting
-    /// Set global fullscreen state
     SetGlobalFullscreen(bool),
 
     // Media commands for specific module parts
-    /// Send playback command to media module
     MediaCommand(
         mapmap_core::module::ModulePartId,
         crate::editors::module_canvas::types::MediaPlaybackCommand,
-    ),
-
-    // Module Connection Deletion
-    DeleteConnection(
-        mapmap_core::module::ModuleId,
-        mapmap_core::module::ModuleConnection,
     ),
 }
 
@@ -278,116 +176,64 @@ use mapmap_io::NdiSource;
 
 /// UI state for the application
 pub struct AppUI {
-    /// Main menu bar
     pub menu_bar: menu_bar::MenuBar,
-    /// Dashboard panel
     pub dashboard: Dashboard,
-    /// Paint manager panel
     pub paint_panel: PaintPanel,
-    /// Show OSC configuration panel
     pub show_osc_panel: bool,
-    /// Selected target for control assignment
     pub selected_control_target: ControlTarget,
-    /// OSC input port
     pub osc_port_input: String,
-    /// OSC client address
     pub osc_client_input: String,
-    /// Show playback controls window
     pub show_controls: bool,
-    /// Show performance statistics overlay
     pub show_stats: bool,
-    /// Show main toolbar
     pub show_toolbar: bool,
-    /// Show layers panel (legacy)
     pub show_layers: bool,
 
-    /// Show timeline panel
     pub show_timeline: bool,
-    /// Show shader graph editor
     pub show_shader_graph: bool,
-    /// Layer panel state
     pub layer_panel: LayerPanel,
-    /// Show mapping configuration
     pub show_mappings: bool,
-    /// Mapping panel state
     pub mapping_panel: MappingPanel,
-    /// Show transform controls (legacy)
-    pub show_transforms: bool, // Phase 1
-    /// Show master composition controls
+    pub show_transforms: bool,      // Phase 1
     pub show_master_controls: bool, // Phase 1
-    /// Show output configuration
-    pub show_outputs: bool, // Phase 2
-    /// Output panel state
+    pub show_outputs: bool,         // Phase 2
     pub output_panel: output_panel::OutputPanel,
-    /// Edge blend configuration panel
     pub edge_blend_panel: EdgeBlendPanel,
-    /// Oscillator control panel
     pub oscillator_panel: OscillatorPanel,
-    /// Show audio panel
     pub show_audio: bool,
-    /// Audio panel state
     pub audio_panel: AudioPanel,
-    /// Show cue list panel
     pub show_cue_panel: bool,
-    /// Assignment panel state
     pub assignment_panel: AssignmentPanel,
-    /// Show assignment panel
     pub show_assignment_panel: bool,
-    /// Global playback speed
     pub playback_speed: f32,
-    /// Global loop mode
     pub loop_mode: mapmap_media::LoopMode,
     // Phase 1: Transform editing state
-    /// Currently selected layer ID
     pub selected_layer_id: Option<u64>,
     // Phase 2: Output configuration state
-    /// Currently selected output ID
     pub selected_output_id: Option<u64>,
-    /// List of available audio devices
     pub audio_devices: Vec<String>,
-    /// Currently selected audio device
     pub selected_audio_device: Option<String>,
-    /// Recent project files
     pub recent_files: Vec<String>,
-    /// Pending UI actions to be processed
     pub actions: Vec<UIAction>,
-    /// Localization manager
     pub i18n: LocaleManager,
-    /// Effect chain editor panel
     pub effect_chain_panel: EffectChainPanel,
-    /// Cue list panel
     pub cue_panel: CuePanel,
-    /// Timeline V2 panel
     pub timeline_panel: timeline_v2::TimelineV2,
-    /// Node editor panel state
     pub node_editor_panel: node_editor::NodeEditor,
-    /// Transform control panel
     pub transform_panel: TransformPanel,
-    /// Shortcut editor panel
     pub shortcut_editor: ShortcutEditor,
-    /// Icon manager
     pub icon_manager: Option<icons::IconManager>,
-    /// Icon demo panel
     pub icon_demo_panel: icon_demo_panel::IconDemoPanel,
-    /// User configuration
     pub user_config: config::UserConfig,
     /// Show settings window
     pub show_settings: bool,
-    /// Show media browser
     pub show_media_browser: bool,
-    /// Media browser panel
     pub media_browser: MediaBrowser,
     /// Inspector panel for context-sensitive properties
     pub inspector_panel: InspectorPanel,
-    /// Show inspector panel
     pub show_inspector: bool,
-    /// Module sidebar panel
     pub module_sidebar: ModuleSidebar,
-    /// Show module sidebar
     pub show_module_sidebar: bool,
-    /// Module canvas (node editor)
     pub module_canvas: ModuleCanvas,
-    /// Show module canvas
     pub show_module_canvas: bool,
     /// Left sidebar visibility (collapsible)
     pub show_left_sidebar: bool,
@@ -405,9 +251,7 @@ pub struct AppUI {
     pub gpu_usage: f32,
     /// RAM usage in MB
     pub ram_usage_mb: f32,
-    /// Controller overlay panel
     pub controller_overlay: ControllerOverlayPanel,
-    /// Show controller overlay
     pub show_controller_overlay: bool,
     /// Global flag for "Hover" MIDI Learn Mode (Way 1)
     pub is_midi_learn_mode: bool,
@@ -569,12 +413,12 @@ impl AppUI {
             .min_width(200.0)
             .max_width(400.0)
             .frame(crate::widgets::panel::cyber_panel_frame(&ctx.style()))
-            .show(ctx, |ui: &mut egui::Ui| {
+            .show(ctx, |ui| {
                 crate::widgets::panel::render_panel_header(
                     ui,
                     &self.i18n.t("panel-media-browser"),
-                    |ui: &mut egui::Ui| {
-                        if ui.button("âœ•").clicked() {
+                    |ui| {
+                        if ui.button("✕").clicked() {
                             self.show_media_browser = false;
                         }
                     },
@@ -582,7 +426,7 @@ impl AppUI {
 
                 egui::Frame::default()
                     .inner_margin(egui::Margin::symmetric(8, 8))
-                    .show(ui, |ui: &mut egui::Ui| {
+                    .show(ui, |ui| {
                         let _ = self
                             .media_browser
                             .ui(ui, &self.i18n, self.icon_manager.as_ref());
@@ -598,7 +442,7 @@ impl AppUI {
 
         egui::Window::new(self.i18n.t("panel-playback"))
             .default_size([320.0, 360.0])
-            .show(ctx, |ui: &mut egui::Ui| {
+            .show(ctx, |ui| {
                 crate::widgets::panel::render_panel_header(
                     ui,
                     &self.i18n.t("header-video-playback"),
@@ -638,7 +482,7 @@ impl AppUI {
                         mapmap_media::LoopMode::Loop => self.i18n.t("mode-loop"),
                         mapmap_media::LoopMode::PlayOnce => self.i18n.t("mode-play-once"),
                     })
-                    .show_ui(ui, |ui: &mut egui::Ui| {
+                    .show_ui(ui, |ui| {
                         if ui
                             .selectable_value(
                                 &mut self.loop_mode,
@@ -676,12 +520,13 @@ impl AppUI {
             .anchor(egui::Align2::RIGHT_TOP, [-10.0, 50.0]) // Offset from menu bar
             .order(egui::Order::Foreground)
             .interactable(false)
-            .show(ctx, |ui: &mut egui::Ui| {
+            .show(ctx, |ui| {
                 egui::Frame::popup(ui.style())
                     .fill(egui::Color32::from_rgba_unmultiplied(20, 20, 30, 220))
+
                     .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(60, 60, 80)))
                     .inner_margin(egui::Margin::symmetric(16, 8))
-                    .show(ui, |ui: &mut egui::Ui| {
+                    .show(ui, |ui| {
                         ui.horizontal(|ui| {
                             ui.label(
                                 egui::RichText::new(format!("FPS: {:.0}", fps))
@@ -806,7 +651,7 @@ impl AppUI {
 
         egui::Window::new(self.i18n.t("panel-master"))
             .default_size([360.0, 300.0])
-            .show(ctx, |ui: &mut egui::Ui| {
+            .show(ctx, |ui| {
                 self.render_master_controls_embedded(ui, layer_manager);
             });
     }
@@ -886,7 +731,14 @@ impl AppUI {
             // Visual indicator (Pulse yellow)
             let time = ui.input(|i| i.time);
             let alpha = (time * 5.0).sin().abs() * 0.5 + 0.5;
-            let _color = egui::Color32::YELLOW.linear_multiply(alpha as f32);
+            let color = egui::Color32::YELLOW.linear_multiply(alpha as f32);
+
+            ui.painter().rect_stroke(
+                rect.expand(2.0),
+                egui::CornerRadius::same(2),
+                egui::Stroke::new(2.0, color),
+                egui::StrokeKind::Middle,
+            );
 
             // Check for recent MIDI activity (last 0.5s)
             if let Some(last_time) = last_active_time {
@@ -926,7 +778,7 @@ impl AppUI {
             .resizable(true)
             .vscroll(false) // Canvas handles panning
             .open(&mut open)
-            .show(ctx, |ui: &mut egui::Ui| {
+            .show(ctx, |ui| {
                 if let Some(action) = self.node_editor_panel.ui(ui, &self.i18n) {
                     self.actions.push(UIAction::NodeAction(action));
                 }
@@ -934,3 +786,6 @@ impl AppUI {
         self.show_shader_graph = open;
     }
 }
+
+
+

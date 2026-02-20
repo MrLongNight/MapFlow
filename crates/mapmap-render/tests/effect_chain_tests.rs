@@ -1,45 +1,261 @@
-//! Tests for the EffectChainRenderer
-
 use mapmap_core::{EffectChain, EffectType};
 use mapmap_render::{EffectChainRenderer, WgpuBackend};
 use std::sync::Arc;
-use wgpu::util::DeviceExt;
-use wgpu::{
-    CommandEncoderDescriptor, Extent3d, TexelCopyBufferInfo, TexelCopyBufferLayout,
-    TextureDescriptor, TextureUsages,
-};
+use wgpu::{Device, Queue};
 
-#[tokio::test]
-#[ignore = "GPU tests are unstable in headless CI environment"]
-async fn test_effect_chain_renderer_creation() {
-    let backend = WgpuBackend::new(None).await.unwrap();
-    let format = wgpu::TextureFormat::Rgba8UnormSrgb;
-    let renderer = EffectChainRenderer::new(backend.device.clone(), backend.queue.clone(), format);
-    assert!(renderer.is_ok());
+// --- Test Setup Boilerplate (adapted from multi_output_tests.rs) ---
+
+struct TestEnvironment {
+    device: Arc<Device>,
+    queue: Arc<Queue>,
 }
 
+async fn setup_test_environment() -> Option<TestEnvironment> {
+    WgpuBackend::new(None)
+        .await
+        .ok()
+        .map(|backend| TestEnvironment {
+            device: backend.device.clone(),
+            queue: backend.queue.clone(),
+        })
+}
+
+/// Helper to create a texture with a solid color
+fn create_solid_color_texture(
+    device: &Device,
+    queue: &Queue,
+    width: u32,
+    height: u32,
+    color: [u8; 4],
+) -> wgpu::Texture {
+    let texture = device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("Solid Color Texture"),
+        size: wgpu::Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+        view_formats: &[],
+    });
+
+    let data: Vec<u8> = (0..width * height).flat_map(|_| color).collect();
+
+    queue.write_texture(
+        texture.as_image_copy(),
+        &data,
+        wgpu::ImageDataLayout {
+            offset: 0,
+            bytes_per_row: Some(4 * width),
+            rows_per_image: Some(height),
+        },
+        wgpu::Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        },
+    );
+
+    texture
+}
+
+/// Helper to read texture data back to the CPU, handling row padding
+async fn read_texture_data(
+    device: &Device,
+    queue: &Queue,
+    texture: &wgpu::Texture,
+    width: u32,
+    height: u32,
+) -> Vec<u8> {
+    let bytes_per_pixel = 4;
+    let unpadded_bytes_per_row = bytes_per_pixel * width;
+    let alignment = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
+    // Padded bytes per row must be a multiple of the alignment.
+    let padded_bytes_per_row = (unpadded_bytes_per_row + alignment - 1) & !(alignment - 1);
+    let buffer_size = (padded_bytes_per_row * height) as u64;
+
+    let buffer = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("Readback Buffer"),
+        size: buffer_size,
+        usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+        mapped_at_creation: false,
+    });
+
+    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+        label: Some("Readback Encoder"),
+    });
+
+    encoder.copy_texture_to_buffer(
+        texture.as_image_copy(),
+        wgpu::ImageCopyBuffer {
+            buffer: &buffer,
+            layout: wgpu::ImageDataLayout {
+                offset: 0,
+                bytes_per_row: Some(padded_bytes_per_row),
+                rows_per_image: Some(height),
+            },
+        },
+        wgpu::Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        },
+    );
+
+    let _index = queue.submit(Some(encoder.finish()));
+
+    // Map the buffer
+    let slice = buffer.slice(..);
+    let (tx, rx) = futures_channel::oneshot::channel();
+    slice.map_async(wgpu::MapMode::Read, move |result| {
+        tx.send(result).unwrap();
+    });
+    device.poll(wgpu::Maintain::Wait);
+    rx.await.unwrap().unwrap();
+
+    // The view is a guard that must be dropped before unmap is called.
+    let data = {
+        let view = slice.get_mapped_range();
+        view.chunks_exact(padded_bytes_per_row as usize)
+            .flat_map(|row| &row[..unpadded_bytes_per_row as usize])
+            .copied()
+            .collect::<Vec<u8>>()
+    };
+
+    buffer.unmap();
+
+    data
+}
+
+// --- Foundational Tests ---
+
+#[test]
+fn test_add_and_remove_effects() {
+    let mut chain = EffectChain::new();
+    assert_eq!(chain.effects.len(), 0);
+
+    let blur_id = chain.add_effect(EffectType::Blur);
+    assert_eq!(chain.effects.len(), 1);
+    assert_eq!(chain.effects[0].effect_type, EffectType::Blur);
+
+    let color_id = chain.add_effect(EffectType::ColorAdjust);
+    assert_eq!(chain.effects.len(), 2);
+    assert_eq!(chain.effects[1].effect_type, EffectType::ColorAdjust);
+
+    let removed = chain.remove_effect(blur_id);
+    assert!(removed.is_some());
+    assert_eq!(removed.unwrap().id, blur_id);
+    assert_eq!(chain.effects.len(), 1);
+    assert_eq!(chain.effects[0].id, color_id);
+}
+
+#[test]
+fn test_reorder_effects() {
+    let mut chain = EffectChain::new();
+    let blur_id = chain.add_effect(EffectType::Blur);
+    let color_id = chain.add_effect(EffectType::ColorAdjust);
+    let vignette_id = chain.add_effect(EffectType::Vignette);
+
+    assert_eq!(chain.effects[0].id, blur_id);
+    assert_eq!(chain.effects[1].id, color_id);
+    assert_eq!(chain.effects[2].id, vignette_id);
+
+    // Move color adjust up
+    chain.move_up(color_id);
+    assert_eq!(chain.effects[0].id, color_id);
+    assert_eq!(chain.effects[1].id, blur_id);
+    assert_eq!(chain.effects[2].id, vignette_id);
+
+    // Move it up again (should do nothing)
+    chain.move_up(color_id);
+    assert_eq!(chain.effects[0].id, color_id);
+
+    // Move vignette down (should do nothing)
+    chain.move_down(vignette_id);
+    assert_eq!(chain.effects[2].id, vignette_id);
+
+    // Move blur down
+    chain.move_down(blur_id);
+    assert_eq!(chain.effects[0].id, color_id);
+    assert_eq!(chain.effects[1].id, vignette_id);
+    assert_eq!(chain.effects[2].id, blur_id);
+}
+
+#[test]
+fn test_toggle_effect() {
+    let mut chain = EffectChain::new();
+    let blur_id = chain.add_effect(EffectType::Blur);
+    chain.add_effect(EffectType::ColorAdjust);
+
+    assert_eq!(chain.enabled_effects().count(), 2);
+
+    let blur_effect = chain.get_effect_mut(blur_id).unwrap();
+    assert!(blur_effect.enabled);
+    blur_effect.enabled = false;
+    assert!(!blur_effect.enabled);
+
+    assert_eq!(chain.enabled_effects().count(), 1);
+    assert_eq!(
+        chain.enabled_effects().next().unwrap().effect_type,
+        EffectType::ColorAdjust
+    );
+}
+
+#[test]
+fn test_modify_effect_parameters() {
+    let mut chain = EffectChain::new();
+    let blur_id = chain.add_effect(EffectType::Blur);
+
+    let blur_effect = chain.get_effect_mut(blur_id).unwrap();
+    assert_eq!(blur_effect.get_param("radius", 0.0), 5.0); // Default value
+
+    blur_effect.set_param("radius", 15.5);
+    assert_eq!(blur_effect.get_param("radius", 0.0), 15.5);
+
+    blur_effect.intensity = 0.5;
+    assert_eq!(blur_effect.intensity, 0.5);
+}
+
+#[test]
+fn test_effect_chain_serialization() {
+    let mut chain = EffectChain::new();
+    let blur_id = chain.add_effect(EffectType::Blur);
+    chain.add_effect(EffectType::ColorAdjust);
+
+    let blur_effect = chain.get_effect_mut(blur_id).unwrap();
+    blur_effect.intensity = 0.75;
+    blur_effect.set_param("radius", 20.0);
+
+    let serialized = serde_json::to_string(&chain).unwrap();
+    let deserialized: EffectChain = serde_json::from_str(&serialized).unwrap();
+
+    assert_eq!(chain, deserialized);
+    assert_eq!(deserialized.effects.len(), 2);
+    assert_eq!(deserialized.effects[0].intensity, 0.75);
+}
+
+// --- GPU Integration Tests ---
+
 #[tokio::test]
 #[ignore = "GPU tests are unstable in headless CI environment"]
-async fn test_simple_invert() {
-    let backend = WgpuBackend::new(None).await.unwrap();
-    let device = &backend.device;
-    let queue = &backend.queue;
-    let format = wgpu::TextureFormat::Rgba8UnormSrgb;
+async fn test_empty_chain_is_passthrough() {
+    if let Some(env) = setup_test_environment().await {
+        let TestEnvironment { device, queue } = env;
+        let width = 32;
+        let height = 32;
+        let color = [255, 0, 0, 255]; // Red
+        let format = wgpu::TextureFormat::Rgba8UnormSrgb;
 
-    let width = 64;
-    let height = 64;
+        let source = create_solid_color_texture(&device, &queue, width, height, color);
+        let source_view = source.create_view(&Default::default());
 
-    // Create a red input texture
-    let mut input_data = Vec::new();
-    for _ in 0..width * height {
-        input_data.extend_from_slice(&[255, 0, 0, 255]);
-    }
-
-    let input_texture = device.create_texture_with_data(
-        queue,
-        &TextureDescriptor {
-            label: Some("Input Texture"),
-            size: Extent3d {
+        let output = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Output"),
+            size: wgpu::Extent3d {
                 width,
                 height,
                 depth_or_array_layers: 1,
@@ -48,104 +264,201 @@ async fn test_simple_invert() {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format,
-            usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_SRC,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                | wgpu::TextureUsages::COPY_SRC
+                | wgpu::TextureUsages::COPY_DST,
             view_formats: &[],
-        },
-        wgpu::util::TextureDataOrder::LayerMajor,
-        &input_data,
-    );
-    let input_view = Arc::new(input_texture.create_view(&wgpu::TextureViewDescriptor::default()));
+        });
+        let output_view = output.create_view(&Default::default());
 
-    // Create output texture
-    let output_texture = device.create_texture(&TextureDescriptor {
-        label: Some("Output Texture"),
-        size: Extent3d {
+        let mut renderer = EffectChainRenderer::new(device.clone(), queue.clone(), format).unwrap();
+        let chain = EffectChain::new(); // Empty chain
+        let shader_graph_manager = mapmap_render::ShaderGraphManager::new();
+
+        let mut encoder = device.create_command_encoder(&Default::default());
+        renderer.apply_chain(
+            &mut encoder,
+            &source_view,
+            &output_view,
+            &chain,
+            &shader_graph_manager,
+            0.0,
             width,
             height,
-            depth_or_array_layers: 1,
-        },
-        mip_level_count: 1,
-        sample_count: 1,
-        dimension: wgpu::TextureDimension::D2,
-        format,
-        usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::COPY_SRC,
-        view_formats: &[],
-    });
-    let output_view = Arc::new(output_texture.create_view(&wgpu::TextureViewDescriptor::default()));
+        );
+        queue.submit(Some(encoder.finish()));
 
-    let mut renderer = EffectChainRenderer::new(device.clone(), queue.clone(), format).unwrap();
-    let mut chain = EffectChain::new();
-    chain.add_effect(EffectType::Invert);
+        let data = read_texture_data(&device, &queue, &output, width, height).await;
 
-    let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor {
-        label: Some("Test Encoder"),
-    });
+        // With the fix, an empty chain should copy the source, so the output should be red.
+        assert_eq!(&data[0..4], &color);
+    }
+}
 
-    let shader_graph_manager = mapmap_render::ShaderGraphManager::new();
-    renderer.apply_chain(
-        &mut encoder,
-        &input_view,
-        &output_view,
-        &chain,
-        &shader_graph_manager,
-        0.0,
-        width,
-        height,
-    );
+#[tokio::test]
+#[ignore = "GPU tests are unstable in headless CI environment"]
+async fn test_blur_plus_coloradjust_chain() {
+    if let Some(env) = setup_test_environment().await {
+        let TestEnvironment { device, queue } = env;
+        let width = 32;
+        let height = 32;
+        let color = [0, 0, 255, 255]; // Blue
+        let format = wgpu::TextureFormat::Rgba8UnormSrgb;
 
-    queue.submit(Some(encoder.finish()));
+        // Create a texture that is blue, to check color adjust
+        let source = create_solid_color_texture(&device, &queue, width, height, color);
+        let source_view = source.create_view(&Default::default());
 
-    // Read back and verify
-    let bytes_per_pixel = 4;
-    let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("Readback Buffer"),
-        size: (width * height * bytes_per_pixel) as u64,
-        usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-        mapped_at_creation: false,
-    });
-
-    let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor {
-        label: Some("Readback Encoder"),
-    });
-
-    let bytes_per_row = width * bytes_per_pixel;
-    encoder.copy_texture_to_buffer(
-        wgpu::TexelCopyTextureInfo {
-            texture: &output_texture,
-            mip_level: 0,
-            origin: wgpu::Origin3d::ZERO,
-            aspect: wgpu::TextureAspect::All,
-        },
-        wgpu::TexelCopyBufferInfo {
-            buffer: &output_buffer,
-            layout: wgpu::TexelCopyBufferLayout {
-                offset: 0,
-                bytes_per_row: Some(bytes_per_row),
-                rows_per_image: Some(height),
+        let output = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Output"),
+            size: wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
             },
-        },
-        Extent3d {
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[],
+        });
+        let output_view = output.create_view(&Default::default());
+
+        let mut renderer = EffectChainRenderer::new(device.clone(), queue.clone(), format).unwrap();
+        let mut chain = EffectChain::new();
+        let blur_id = chain.add_effect(EffectType::Blur);
+        let color_id = chain.add_effect(EffectType::ColorAdjust);
+        let shader_graph_manager = mapmap_render::ShaderGraphManager::new();
+
+        // Make blur negligible but present
+        chain
+            .get_effect_mut(blur_id)
+            .unwrap()
+            .set_param("radius", 0.0);
+        // Drastically reduce saturation
+        chain
+            .get_effect_mut(color_id)
+            .unwrap()
+            .set_param("saturation", 0.0);
+
+        let mut encoder = device.create_command_encoder(&Default::default());
+        renderer.apply_chain(
+            &mut encoder,
+            &source_view,
+            &output_view,
+            &chain,
+            &shader_graph_manager,
+            0.0,
             width,
             height,
-            depth_or_array_layers: 1,
-        },
-    );
+        );
+        queue.submit(Some(encoder.finish()));
 
-    queue.submit(Some(encoder.finish()));
+        let data = read_texture_data(&device, &queue, &output, width, height).await;
+        let pixel = &data[0..4];
 
-    let slice = output_buffer.slice(..);
-    slice.map_async(wgpu::MapMode::Read, |_| {});
-    device
-        .poll(wgpu::PollType::Wait {
-            submission_index: None,
-            timeout: None,
-        })
-        .unwrap();
+        // Because saturation is 0, the color should be grayscale.
+        // sRGB (0,0,255) -> luma -> sRGB gray is ~81.
+        let r = pixel[0];
+        let g = pixel[1];
+        let b = pixel[2];
+        assert!(
+            (r as i16 - g as i16).abs() < 5,
+            "R ({}) and G ({}) should be equal for grayscale",
+            r,
+            g
+        );
+        assert!(
+            (g as i16 - b as i16).abs() < 5,
+            "G ({}) and B ({}) should be equal for grayscale",
+            g,
+            b
+        );
+        assert!(
+            r > 70 && r < 100,
+            "Gray value should be around 81, but was {}",
+            r
+        );
+    }
+}
 
-    let data = slice.get_mapped_range();
-    // First pixel should be cyan (inverted red) [0, 255, 255, 255]
-    assert!(data[0] < 10);
-    assert!(data[1] > 245);
-    assert!(data[2] > 245);
-    assert_eq!(data[3], 255);
+#[tokio::test]
+#[ignore = "GPU tests are unstable in headless CI environment"]
+async fn test_vignette_plus_filmgrain_chain() {
+    if let Some(env) = setup_test_environment().await {
+        let TestEnvironment { device, queue } = env;
+        let width = 32;
+        let height = 32;
+        let color = [255, 255, 255, 255]; // White
+        let format = wgpu::TextureFormat::Rgba8UnormSrgb;
+
+        let source = create_solid_color_texture(&device, &queue, width, height, color);
+        let source_view = source.create_view(&Default::default());
+
+        let output = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Output"),
+            size: wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[],
+        });
+        let output_view = output.create_view(&Default::default());
+        let mut renderer = EffectChainRenderer::new(device.clone(), queue.clone(), format).unwrap();
+        let mut chain = EffectChain::new();
+        let vignette_id = chain.add_effect(EffectType::Vignette);
+        let grain_id = chain.add_effect(EffectType::FilmGrain);
+        let shader_graph_manager = mapmap_render::ShaderGraphManager::new();
+
+        // Set aggressive parameters to make effects obvious
+        let vignette = chain.get_effect_mut(vignette_id).unwrap();
+        vignette.set_param("radius", 0.2);
+        vignette.set_param("softness", 0.2);
+
+        let grain = chain.get_effect_mut(grain_id).unwrap();
+        grain.set_param("amount", 0.4);
+
+        let mut encoder = device.create_command_encoder(&Default::default());
+        renderer.apply_chain(
+            &mut encoder,
+            &source_view,
+            &output_view,
+            &chain,
+            &shader_graph_manager,
+            1.23,
+            width,
+            height,
+        );
+        queue.submit(Some(encoder.finish()));
+
+        let data = read_texture_data(&device, &queue, &output, width, height).await;
+
+        // Center pixel should be affected by grain, so not pure white
+        let center_idx = ((height / 2 * width) + (width / 2)) * 4;
+        let center_pixel = &data[center_idx as usize..(center_idx + 4) as usize];
+        assert_ne!(
+            center_pixel, color,
+            "Center pixel should have grain, not be pure white"
+        );
+
+        // Corner pixel should be darker than center due to vignette
+        let corner_pixel = &data[0..4];
+        let corner_brightness =
+            corner_pixel[0] as u16 + corner_pixel[1] as u16 + corner_pixel[2] as u16;
+        let center_brightness =
+            center_pixel[0] as u16 + center_pixel[1] as u16 + center_pixel[2] as u16;
+        assert!(
+            corner_brightness < center_brightness,
+            "Corner ({}) should be darker than center ({})",
+            corner_brightness,
+            center_brightness
+        );
+    }
 }

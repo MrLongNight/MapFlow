@@ -303,7 +303,6 @@ impl CuePanel {
                 let button = egui::Button::image(img);
                 return ui
                     .add_enabled(enabled, button)
-                    .clone()
                     .on_hover_text(i18n.t(tooltip_key))
                     .clicked();
             }

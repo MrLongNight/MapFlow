@@ -198,7 +198,7 @@ impl ThemeConfig {
                     weak_bg_fill: Color32::from_rgb(10, 10, 10),
                     bg_stroke: egui::Stroke::new(2.0, Color32::WHITE),
                     fg_stroke: egui::Stroke::new(2.0, Color32::WHITE),
-                    corner_radius: egui::CornerRadius::ZERO,
+                    corner_radius: egui::CornerRadius::same(0),
                     expansion: 0.0,
                 },
                 inactive: egui::style::WidgetVisuals {
@@ -206,7 +206,7 @@ impl ThemeConfig {
                     weak_bg_fill: Color32::from_rgb(15, 15, 15),
                     bg_stroke: egui::Stroke::new(2.0, Color32::from_rgb(200, 200, 200)),
                     fg_stroke: egui::Stroke::new(2.0, Color32::WHITE),
-                    corner_radius: egui::CornerRadius::ZERO,
+                    corner_radius: egui::CornerRadius::same(0),
                     expansion: 0.0,
                 },
                 hovered: egui::style::WidgetVisuals {
@@ -214,7 +214,7 @@ impl ThemeConfig {
                     weak_bg_fill: Color32::from_rgb(40, 40, 40),
                     bg_stroke: egui::Stroke::new(3.0, Color32::from_rgb(255, 255, 0)),
                     fg_stroke: egui::Stroke::new(2.0, Color32::WHITE),
-                    corner_radius: egui::CornerRadius::ZERO,
+                    corner_radius: egui::CornerRadius::same(0),
                     expansion: 2.0,
                 },
                 active: egui::style::WidgetVisuals {
@@ -222,7 +222,7 @@ impl ThemeConfig {
                     weak_bg_fill: Color32::from_rgb(0, 180, 230),
                     bg_stroke: egui::Stroke::new(3.0, Color32::WHITE),
                     fg_stroke: egui::Stroke::new(3.0, Color32::BLACK),
-                    corner_radius: egui::CornerRadius::ZERO,
+                    corner_radius: egui::CornerRadius::same(0),
                     expansion: 2.0,
                 },
                 open: egui::style::WidgetVisuals {
@@ -230,7 +230,7 @@ impl ThemeConfig {
                     weak_bg_fill: Color32::from_rgb(25, 25, 25),
                     bg_stroke: egui::Stroke::new(2.0, Color32::from_rgb(220, 220, 220)),
                     fg_stroke: egui::Stroke::new(2.0, Color32::WHITE),
-                    corner_radius: egui::CornerRadius::ZERO,
+                    corner_radius: egui::CornerRadius::same(0),
                     expansion: 0.0,
                 },
             },
@@ -301,7 +301,7 @@ impl ThemeConfig {
                     weak_bg_fill: colors::DARK_GREY,
                     bg_stroke: egui::Stroke::new(1.0, colors::STROKE_GREY),
                     fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(180, 180, 180)),
-                    corner_radius: egui::CornerRadius::ZERO, // Sharp corners
+                    corner_radius: egui::CornerRadius::same(0), // Sharp corners
                     expansion: 0.0,
                 },
                 inactive: egui::style::WidgetVisuals {
@@ -309,7 +309,7 @@ impl ThemeConfig {
                     weak_bg_fill: colors::LIGHTER_GREY,
                     bg_stroke: egui::Stroke::new(1.0, colors::STROKE_GREY),
                     fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(220, 220, 220)),
-                    corner_radius: egui::CornerRadius::ZERO,
+                    corner_radius: egui::CornerRadius::same(0),
                     expansion: 0.0,
                 },
                 hovered: egui::style::WidgetVisuals {
@@ -317,7 +317,7 @@ impl ThemeConfig {
                     weak_bg_fill: Color32::from_rgb(60, 60, 60),
                     bg_stroke: egui::Stroke::new(1.0, colors::CYAN_ACCENT), // Cyan border on hover
                     fg_stroke: egui::Stroke::new(1.5, Color32::WHITE),
-                    corner_radius: egui::CornerRadius::ZERO,
+                    corner_radius: egui::CornerRadius::same(0),
                     expansion: 0.0,
                 },
                 active: egui::style::WidgetVisuals {
@@ -325,7 +325,7 @@ impl ThemeConfig {
                     weak_bg_fill: colors::CYAN_ACCENT,
                     bg_stroke: egui::Stroke::new(1.0, colors::CYAN_ACCENT),
                     fg_stroke: egui::Stroke::new(2.0, Color32::BLACK), // Black text on Cyan
-                    corner_radius: egui::CornerRadius::ZERO,
+                    corner_radius: egui::CornerRadius::same(0),
                     expansion: 0.0,
                 },
                 open: egui::style::WidgetVisuals {
@@ -333,7 +333,7 @@ impl ThemeConfig {
                     weak_bg_fill: colors::DARK_GREY,
                     bg_stroke: egui::Stroke::new(1.0, colors::STROKE_GREY),
                     fg_stroke: egui::Stroke::new(1.0, Color32::WHITE),
-                    corner_radius: egui::CornerRadius::ZERO,
+                    corner_radius: egui::CornerRadius::same(0),
                     expansion: 0.0,
                 },
             },
@@ -420,7 +420,7 @@ impl ThemeConfig {
             window_fill: deep_purple.linear_multiply(0.95),
             panel_fill: deep_purple,
             window_stroke: egui::Stroke::new(1.0, neon_cyan.linear_multiply(0.5)),
-            ..egui::Visuals::dark()
+            ..Default::default()
         }
     }
 }

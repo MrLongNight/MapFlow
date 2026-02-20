@@ -138,7 +138,7 @@ impl LayerPanel {
                         egui::Frame::default()
                             .fill(bg_color)
                             .stroke(stroke)
-                            .corner_radius(0.0) // Sharp corners for Cyber/Resolume style
+                            .corner_radius(0) // Sharp corners for Cyber/Resolume style
                             .inner_margin(4.0)
                             .show(ui, |ui| {
                                 ui.horizontal(|ui| {
@@ -168,11 +168,7 @@ impl LayerPanel {
                                     ui.vertical(|ui| {
                                         // Unindent (Left)
                                         if layer.parent_id.is_some()
-                                            && ui
-                                                .button("⬅")
-                                                .clone()
-                                                .on_hover_text("Unindent")
-                                                .clicked()
+                                            && ui.button("⬅").on_hover_text("Unindent").clicked()
                                         {
                                             if let Some(pid) = layer.parent_id {
                                                 if let Some(parent) = layer_manager.get_layer(pid) {
@@ -186,11 +182,7 @@ impl LayerPanel {
 
                                         // Indent (Right)
                                         if idx > 0
-                                            && ui
-                                                .button("➡")
-                                                .clone()
-                                                .on_hover_text("Indent")
-                                                .clicked()
+                                            && ui.button("➡").on_hover_text("Indent").clicked()
                                         {
                                             let prev_sibling_id = children[idx - 1];
                                             if let Some(prev) =

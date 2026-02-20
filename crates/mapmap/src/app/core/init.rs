@@ -314,16 +314,7 @@ impl App {
             None,
             None,
         );
-        let egui_renderer = Renderer::new(
-            &backend.device,
-            format,
-            egui_wgpu::RendererOptions {
-                msaa_samples: 1,
-                dithering: false,
-                depth_stencil_format: None,
-                predictable_texture_filtering: false,
-            },
-        );
+        let egui_renderer = Renderer::new(&backend.device, format, None, 1, false);
         let oscillator_renderer = match OscillatorRenderer::new(
             backend.device.clone(),
             backend.queue.clone(),

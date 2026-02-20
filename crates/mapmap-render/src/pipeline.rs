@@ -1,15 +1,5 @@
 use std::sync::Arc;
 
-/// Allocation from a uniform buffer allocator
-pub struct Allocation<'a> {
-    /// The buffer containing the allocation
-    pub buffer: &'a wgpu::Buffer,
-    /// The offset within the buffer
-    pub offset: u64,
-    /// The index of the page (for caching)
-    pub page_index: usize,
-}
-
 /// Manages uniform buffers to avoid frequent allocations.
 ///
 /// Uses a ring buffer strategy where a large buffer is allocated and sliced.
@@ -53,9 +43,9 @@ impl UniformBufferAllocator {
     }
 
     /// Allocate a uniform buffer with the given content.
-    /// Returns the buffer, the offset within it, and the page index.
+    /// Returns the buffer and the offset within it.
     /// Note: The buffer might be shared, so use dynamic offsets or the returned offset.
-    pub fn allocate(&mut self, queue: &wgpu::Queue, content: &[u8]) -> Allocation<'_> {
+    pub fn allocate(&mut self, queue: &wgpu::Queue, content: &[u8]) -> (&wgpu::Buffer, u64) {
         let size = content.len() as u64;
 
         // Alignment for uniform buffers is typically 256 bytes
@@ -75,13 +65,8 @@ impl UniformBufferAllocator {
             let page = &self.pages[self.current_page];
             queue.write_buffer(page, self.current_offset, content);
             let offset = self.current_offset;
-            let page_index = self.current_page;
             self.current_offset += padded_size;
-            return Allocation {
-                buffer: page,
-                offset,
-                page_index,
-            };
+            return (page, offset);
         }
 
         // If we have pages but didn't fit, move to next

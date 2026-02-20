@@ -1363,8 +1363,6 @@ impl ModuleEvaluator {
             SourceType::BevyHexGrid { .. } => Some(SourceCommand::BevyInput { trigger_value }),
             SourceType::BevyParticles { .. } => Some(SourceCommand::BevyInput { trigger_value }),
             SourceType::Bevy3DText { .. } => Some(SourceCommand::BevyInput { trigger_value }),
-            SourceType::BevyCamera { .. } => Some(SourceCommand::BevyInput { trigger_value }),
-            SourceType::Bevy3DShape { .. } => Some(SourceCommand::BevyInput { trigger_value }),
             SourceType::Bevy => Some(SourceCommand::BevyInput { trigger_value }),
         }
     }
