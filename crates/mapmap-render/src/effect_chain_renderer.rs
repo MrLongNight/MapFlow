@@ -352,11 +352,9 @@ impl EffectChainRenderer {
         // Cleanup LUT cache every 600 frames (approx 10 seconds at 60fps)
         if self.frame_count % 600 == 0 {
             let threshold = self.frame_count.saturating_sub(600);
-            self.lut_cache.retain(|path, _| {
-                *self.lut_last_used.get(path).unwrap_or(&0) >= threshold
-            });
-            self.lut_last_used
-                .retain(|_, frame| *frame >= threshold);
+            self.lut_cache
+                .retain(|path, _| *self.lut_last_used.get(path).unwrap_or(&0) >= threshold);
+            self.lut_last_used.retain(|_, frame| *frame >= threshold);
         }
     }
 

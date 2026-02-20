@@ -860,7 +860,11 @@ impl EffectChainPanel {
                         });
 
                         if let Some(err) = error {
-                            ui.label(RichText::new(format!("Error: {}", err)).color(Color32::RED).small());
+                            ui.label(
+                                RichText::new(format!("Error: {}", err))
+                                    .color(Color32::RED)
+                                    .small(),
+                            );
                         }
                     }
 

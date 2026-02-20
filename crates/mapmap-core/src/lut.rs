@@ -4,9 +4,9 @@
 //! Provides 3D LUT support for advanced color grading and correction
 
 use glam::Vec3;
+use image::GenericImageView;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
-use image::GenericImageView;
 
 /// LUT size (standard is 32x32x32 or 64x64x64)
 pub const LUT_SIZE_32: usize = 32;
@@ -78,8 +78,8 @@ impl Lut3D {
 
         match extension.as_str() {
             "cube" => {
-                let content = std::fs::read_to_string(path)
-                    .map_err(|e| LutError::IoError(e.to_string()))?;
+                let content =
+                    std::fs::read_to_string(path).map_err(|e| LutError::IoError(e.to_string()))?;
                 Self::parse_cube(&content, Some(path.to_path_buf()))
             }
             "png" => Self::from_png_file(path),
