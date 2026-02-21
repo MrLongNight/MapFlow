@@ -4800,7 +4800,8 @@ impl ModuleCanvas {
                     // Hold to delete (Alt + Click + Hold)
                     let is_interacting = alt_held && ui.input(|i| i.pointer.primary_down());
                     let conn_id = ui.id().with(("delete_conn", conn_idx));
-                    let (triggered, p) = crate::widgets::check_hold_state(ui, conn_id, is_interacting);
+                    let (triggered, p) =
+                        crate::widgets::check_hold_state(ui, conn_id, is_interacting);
                     progress = p;
 
                     if triggered {
@@ -4898,24 +4899,33 @@ impl ModuleCanvas {
                 if progress > 0.0 {
                     if let Some(pos) = pointer_pos {
                         // Draw arc using overlay painter
-                        let overlay_painter = ui.ctx().layer_painter(egui::LayerId::new(egui::Order::Tooltip, ui.id().with("overlay")));
+                        let overlay_painter = ui.ctx().layer_painter(egui::LayerId::new(
+                            egui::Order::Tooltip,
+                            ui.id().with("overlay"),
+                        ));
 
                         use std::f32::consts::TAU;
                         let radius = 15.0 * self.zoom;
                         let stroke = Stroke::new(3.0 * self.zoom, Color32::RED);
 
                         // Background ring
-                        overlay_painter.circle_stroke(pos, radius, Stroke::new(2.0, Color32::RED.linear_multiply(0.2)));
+                        overlay_painter.circle_stroke(
+                            pos,
+                            radius,
+                            Stroke::new(2.0, Color32::RED.linear_multiply(0.2)),
+                        );
 
                         // Progress arc
                         let start_angle = -TAU / 4.0;
                         let end_angle = start_angle + progress * TAU;
                         let n_points = 32;
-                        let points: Vec<Pos2> = (0..=n_points).map(|i| {
-                            let t = i as f32 / n_points as f32;
-                            let angle = egui::lerp(start_angle..=end_angle, t);
-                            pos + Vec2::new(angle.cos(), angle.sin()) * radius
-                        }).collect();
+                        let points: Vec<Pos2> = (0..=n_points)
+                            .map(|i| {
+                                let t = i as f32 / n_points as f32;
+                                let angle = egui::lerp(start_angle..=end_angle, t);
+                                pos + Vec2::new(angle.cos(), angle.sin()) * radius
+                            })
+                            .collect();
 
                         overlay_painter.add(egui::Shape::line(points, stroke));
 
@@ -4925,7 +4935,7 @@ impl ModuleCanvas {
                             egui::Align2::CENTER_TOP,
                             "HOLD TO DELETE",
                             egui::FontId::proportional(10.0 * self.zoom),
-                            Color32::RED
+                            Color32::RED,
                         );
                     }
                 }
