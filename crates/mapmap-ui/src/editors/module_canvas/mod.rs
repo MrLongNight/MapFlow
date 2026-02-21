@@ -4664,7 +4664,7 @@ impl ModuleCanvas {
 
     fn draw_connections<F>(
         &mut self,
-        ui: &Ui,
+        ui: &mut Ui,
         painter: &egui::Painter,
         module: &MapFlowModule,
         to_screen: &F,
@@ -4679,7 +4679,7 @@ impl ModuleCanvas {
         let pointer_pos = ui.input(|i| i.pointer.hover_pos());
         let secondary_clicked = ui.input(|i| i.pointer.secondary_clicked());
         let alt_held = ui.input(|i| i.modifiers.alt);
-        let primary_clicked = ui.input(|i| i.pointer.primary_clicked());
+        let _primary_clicked = ui.input(|i| i.pointer.primary_clicked());
 
         let mut remove_idx = None;
 
@@ -4789,13 +4789,22 @@ impl ModuleCanvas {
                 }
 
                 // Handle Interaction
+                let mut progress = 0.0;
                 if is_hovered {
                     if secondary_clicked {
                         self.context_menu_connection = Some(conn_idx);
                         self.context_menu_pos = pointer_pos;
                         self.context_menu_part = None;
                     }
-                    if alt_held && primary_clicked {
+
+                    // Hold to delete (Alt + Click + Hold)
+                    let is_interacting = alt_held && ui.input(|i| i.pointer.primary_down());
+                    let conn_id = ui.id().with(("delete_conn", conn_idx));
+                    let (triggered, p) =
+                        crate::widgets::check_hold_state(ui, conn_id, is_interacting);
+                    progress = p;
+
+                    if triggered {
                         remove_idx = Some(conn_idx);
                     }
                 }
@@ -4804,7 +4813,18 @@ impl ModuleCanvas {
                 let (stroke_width, stroke_color, glow_width) = if is_hovered {
                     if alt_held {
                         // Destructive Mode
-                        (4.0 * self.zoom, Color32::RED, 10.0 * self.zoom)
+                        if progress > 0.0 {
+                            // Animate while holding
+                            let pulse = (ui.input(|i| i.time) * 20.0).sin().abs() as f32;
+                            let color = Color32::RED.linear_multiply(0.5 + 0.5 * pulse);
+                            (
+                                (4.0 + progress * 4.0) * self.zoom,
+                                color,
+                                (10.0 + progress * 20.0) * self.zoom,
+                            )
+                        } else {
+                            (4.0 * self.zoom, Color32::RED, 10.0 * self.zoom)
+                        }
                     } else {
                         // Normal Hover
                         (3.0 * self.zoom, Color32::WHITE, 8.0 * self.zoom)
@@ -4873,6 +4893,51 @@ impl ModuleCanvas {
                     // Fallback circles
                     painter.circle_filled(start_pos, 6.0 * self.zoom, cable_color);
                     painter.circle_filled(end_pos, 6.0 * self.zoom, cable_color);
+                }
+
+                // Draw Hold Progress Overlay
+                if progress > 0.0 {
+                    if let Some(pos) = pointer_pos {
+                        // Draw arc using overlay painter
+                        let overlay_painter = ui.ctx().layer_painter(egui::LayerId::new(
+                            egui::Order::Tooltip,
+                            ui.id().with("overlay"),
+                        ));
+
+                        use std::f32::consts::TAU;
+                        let radius = 15.0 * self.zoom;
+                        let stroke = Stroke::new(3.0 * self.zoom, Color32::RED);
+
+                        // Background ring
+                        overlay_painter.circle_stroke(
+                            pos,
+                            radius,
+                            Stroke::new(2.0, Color32::RED.linear_multiply(0.2)),
+                        );
+
+                        // Progress arc
+                        let start_angle = -TAU / 4.0;
+                        let end_angle = start_angle + progress * TAU;
+                        let n_points = 32;
+                        let points: Vec<Pos2> = (0..=n_points)
+                            .map(|i| {
+                                let t = i as f32 / n_points as f32;
+                                let angle = egui::lerp(start_angle..=end_angle, t);
+                                pos + Vec2::new(angle.cos(), angle.sin()) * radius
+                            })
+                            .collect();
+
+                        overlay_painter.add(egui::Shape::line(points, stroke));
+
+                        // Text hint
+                        overlay_painter.text(
+                            pos + Vec2::new(0.0, radius + 5.0),
+                            egui::Align2::CENTER_TOP,
+                            "HOLD TO DELETE",
+                            egui::FontId::proportional(10.0 * self.zoom),
+                            Color32::RED,
+                        );
+                    }
                 }
             }
         }
