@@ -12,23 +12,12 @@ pub mod ui;
 mod window_manager;
 
 use anyhow::Result;
-#[cfg(feature = "midi")]
-use mapmap_core::{audio::backend::AudioBackend, audio_reactive::AudioTriggerData};
 
-// Define McpAction locally or import if we move it to core later -> Removed local definition
-
-use mapmap_io::{load_project, save_project};
-
-use mapmap_control::Action;
 use mapmap_core::OutputId;
-use mapmap_mcp::McpAction;
 use mapmap_media::PlaybackCommand;
 use mapmap_ui::types::MediaPlaybackCommand;
-use mapmap_ui::EdgeBlendAction;
 
-use rfd::FileDialog;
-use std::path::PathBuf;
-use tracing::{debug, error, info, warn};
+use tracing::{error, info, warn};
 
 use winit::{event::WindowEvent, event_loop::EventLoop};
 
@@ -129,6 +118,12 @@ impl App {
         }
 
         Ok(())
+    }
+
+    /// Global render update
+    pub fn render(&mut self, output_id: OutputId) -> Result<()> {
+        // Run modularized render loop
+        crate::app::loops::render::render(self, output_id)
     }
 
     /// Global logic update
