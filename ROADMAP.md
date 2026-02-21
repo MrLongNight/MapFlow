@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 2.1
-> **Stand:** 2026-02-17 10:00
+> **Stand:** 2026-02-20 10:00
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
 > **Projekt-Version:** 0.2.1
 
@@ -294,6 +294,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   * ✅ OSC-Address-Parser (`osc/address.rs`)
   * ✅ OSC-zu-Control-Value-Mapping (`osc/types.rs`)
   * ✅ Feature-Flag: `osc` (optional, muss aktiviert werden)
+  * ✅ **Security Hardening** (ControlManager Path Traversal Checks) (COMPLETED 2026-02-20)
 
 * ✅ **OSC-Integration (HAUPTPFAD – IMPLEMENTIERT)**
   * ✅ OSC-Command-Schema definiert und dokumentiert

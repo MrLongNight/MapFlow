@@ -16,3 +16,20 @@ I have addressed several broken links and outdated status indicators in the docu
 ### Observations
 - The `docs/` structure is comprehensive but has some legacy references to files that have been moved or renamed.
 - `ROADMAP.md` status fields need regular manual verification against the Changelog.
+
+# Scribe Journal - 2026-02-20
+
+## Documentation Structure Alignment
+
+I have aligned the root `README.md` links with the new `docs/` structure (`dev/`, `project/`, `user/`) and updated the roadmap.
+
+### Actions Taken
+- **Broken Links Fixed**:
+  - `README.md`: Pointed documentation links to the correct subfolders (`docs/user/`, `docs/dev/`, etc.) instead of legacy numbered folders (`docs/02-USER-GUIDE/`).
+- **Roadmap Update**:
+  - Verified and updated status for "LUT Color Grading" and added "ControlManager Security Hardening" to the feature list.
+  - Updated "Stand" date to 2026-02-20.
+
+### Observations
+- The legacy documentation structure (`01-OVERVIEW`, `02-USER-GUIDE`, etc.) is fully deprecated and should be removed if any remnants exist (none found in `README.md` now).
+- `scripts/check_links.py` is a valuable tool for catching these regressions.
