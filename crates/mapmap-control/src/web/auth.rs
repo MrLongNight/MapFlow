@@ -27,11 +27,17 @@ where
     let keys: HashSet<String> = HashSet::deserialize(deserializer)?;
     let mut hashed_keys = HashSet::new();
     for key in keys {
-        // If it looks like a hash (64 hex chars), assume it's already hashed.
-        // Otherwise hash it. Ideally we'd have a flag, but this heuristic supports legacy configs.
-        if key.len() == 64 && key.chars().all(|c| c.is_ascii_hexdigit()) {
+        if let Some(stripped) = key.strip_prefix("sha256:") {
+            // Explicit hash provided
+            hashed_keys.insert(stripped.to_string());
+        } else if let Some(stripped) = key.strip_prefix("plain:") {
+            // Explicit plaintext provided
+            hashed_keys.insert(AuthConfig::hash_key(stripped));
+        } else if key.len() == 64 && key.chars().all(|c| c.is_ascii_hexdigit()) {
+            // Legacy heuristic: if it looks like a hash (64 hex chars), assume it's already hashed.
             hashed_keys.insert(key);
         } else {
+            // Otherwise hash it.
             hashed_keys.insert(AuthConfig::hash_key(&key));
         }
     }
@@ -240,6 +246,62 @@ mod tests {
 
         // Internal storage should match the input hash (not double-hashed)
         assert!(config.api_keys.contains(&hash));
+    }
+
+    #[test]
+    fn test_prefixed_config_deserialization() {
+        // Test explicit prefixes
+        let secret = "my_secret_key";
+        let hash = AuthConfig::hash_key(secret);
+
+        let json = format!(
+            r#"
+        {{
+            "enabled": true,
+            "api_keys": ["sha256:{}", "plain:{}"]
+        }}
+        "#,
+            hash, secret
+        );
+
+        let config: AuthConfig =
+            serde_json::from_str(&json).expect("Failed to deserialize prefixed config");
+
+        // Both should result in valid authentication
+        assert!(config.validate(secret));
+
+        // Internal storage check
+        assert!(config.api_keys.contains(&hash));
+        // api_keys is a Set, so duplicate valid keys merge into one hash if they are same
+        assert_eq!(config.api_keys.len(), 1);
+    }
+
+    #[test]
+    fn test_ambiguous_plain_password() {
+        // A password that is exactly 64 hex characters
+        let ambiguous_pw = "0".repeat(64); // 64 chars of '0'
+        let hash_of_pw = AuthConfig::hash_key(&ambiguous_pw);
+
+        // If we use plain: prefix, it should be treated as password
+        let json = format!(
+            r#"
+        {{
+            "enabled": true,
+            "api_keys": ["plain:{}"]
+        }}
+        "#,
+            ambiguous_pw
+        );
+
+        let config: AuthConfig =
+            serde_json::from_str(&json).expect("Failed to deserialize ambiguous config");
+
+        // Should validate against the password
+        assert!(config.validate(&ambiguous_pw));
+
+        // Should NOT store the password as-is (which would happen with legacy heuristic)
+        assert!(!config.api_keys.contains(&ambiguous_pw));
+        assert!(config.api_keys.contains(&hash_of_pw));
     }
 
     #[test]
