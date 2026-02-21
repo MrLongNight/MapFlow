@@ -450,9 +450,7 @@ fn solve_cubic_bezier_y(x: f32, x1: f32, y1: f32, x2: f32, y2: f32) -> f32 {
         let t2 = t * t;
         let one_minus_t2 = one_minus_t * one_minus_t;
 
-        let xt = 3.0 * one_minus_t2 * t * x1
-               + 3.0 * one_minus_t * t2 * x2
-               + t * t2;
+        let xt = 3.0 * one_minus_t2 * t * x1 + 3.0 * one_minus_t * t2 * x2 + t * t2;
 
         if (xt - x).abs() < 1e-5 {
             break;
@@ -462,9 +460,8 @@ fn solve_cubic_bezier_y(x: f32, x1: f32, y1: f32, x2: f32, y2: f32) -> f32 {
         // d/dt = 3(1-t)^2(x1-x0) + 6(1-t)t(x2-x1) + 3t^2(x3-x2)
         // x0=0, x3=1
         // d/dt = 3(1-t)^2*x1 + 6(1-t)t*(x2-x1) + 3t^2*(1-x2)
-        let dxdt = 3.0 * one_minus_t2 * x1
-                 + 6.0 * one_minus_t * t * (x2 - x1)
-                 + 3.0 * t2 * (1.0 - x2);
+        let dxdt =
+            3.0 * one_minus_t2 * x1 + 6.0 * one_minus_t * t * (x2 - x1) + 3.0 * t2 * (1.0 - x2);
 
         if dxdt.abs() < 1e-5 {
             break;
@@ -480,9 +477,7 @@ fn solve_cubic_bezier_y(x: f32, x1: f32, y1: f32, x2: f32, y2: f32) -> f32 {
     let t2 = t * t;
     let one_minus_t2 = one_minus_t * one_minus_t;
 
-    3.0 * one_minus_t2 * t * y1
-    + 3.0 * one_minus_t * t2 * y2
-    + t * t2
+    3.0 * one_minus_t2 * t * y1 + 3.0 * one_minus_t * t2 * y2 + t * t2
 }
 
 #[cfg(test)]
@@ -522,12 +517,14 @@ mod test_bezier {
         let val_mid = track.evaluate(0.5);
         if let AnimValue::Float(v) = val_mid {
             assert!((v - 50.0).abs() < 1.0);
-        } else { panic!("Wrong type"); }
+        } else {
+            panic!("Wrong type");
+        }
 
         // At 0.2, should be < 20 (ease in)
         let val_early = track.evaluate(0.2);
         if let AnimValue::Float(v) = val_early {
-             assert!(v < 20.0);
+            assert!(v < 20.0);
         }
     }
 }

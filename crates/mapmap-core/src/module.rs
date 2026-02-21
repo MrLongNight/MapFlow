@@ -3505,7 +3505,9 @@ mod test_bezier_surface_new {
             points.push((col as f32 / 3.0, row as f32 / 3.0));
         }
 
-        let mesh_type = MeshType::BezierSurface { control_points: points };
+        let mesh_type = MeshType::BezierSurface {
+            control_points: points,
+        };
         let mesh = mesh_type.to_mesh();
 
         // Should generate 8x8 grid -> 9x9 vertices = 81
