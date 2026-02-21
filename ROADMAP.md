@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 2.1
-> **Stand:** 2026-02-17 10:00
+> **Stand:** 2026-02-21 06:00
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
 > **Projekt-Version:** 0.2.1
 
@@ -839,6 +839,7 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
 ### Packaging / Developer Experience (DX)
 
 * ✅ **CI/CD** (`.github/workflows/`)
+  * ✅ Restore CodeQL security scan workflow (COMPLETED 2026-02-20)
   * ✅ CI-Workflow vorhanden und optimiert (2025-12-18)
   * ✅ Workflow-Lints behoben (deprecation warnings entfernt)
   * ✅ FFmpeg-Installation in Linux-Builds korrigiert (libavutil-Fehler behoben)
@@ -963,6 +964,7 @@ graph TD
     * Integration-Tests für `OSC` -> `Parameter` Mapping.
 
 3. **Documentation (Priorität: Niedrig)**
+    * ✅ Professionalize README.md (COMPLETED 2026-02-20).
     * ✅ Rustdoc für alle `pub` Structs in `mapmap-core` (COMPLETED 2026-02-12).
     * Tutorial "Wie erstelle ich einen neuen Node-Typ?".
 
