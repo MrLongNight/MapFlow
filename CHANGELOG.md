@@ -7,7 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- 2026-02-21: fix(ci): Resolve CI clippy warnings by correctly gating Arc import in render.rs (6b998cf)
 - 2026-02-20: fix(ci): Restore CodeQL security scan workflow (CI-02) to resolve GitHub Security warnings
 - 2026-02-20: feat(render): Add 3D LUT effect support with GPU-accelerated color grading (#770)
 - 2026-02-20: fix(security): Enforce global path traversal checks in ControlManager (#758)

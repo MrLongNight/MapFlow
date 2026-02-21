@@ -1,16 +1,12 @@
 //! Main application render loop.
 
-#[cfg(feature = "ndi")]
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-
-use anyhow::Result;
-
-use mapmap_core::module::OutputType::Projector;
-use mapmap_core::OutputId;
-
 use crate::app::core::app_struct::App;
 use crate::app::ui_layout;
+use anyhow::Result;
+use mapmap_core::module::OutputType::Projector;
+use mapmap_core::OutputId;
+#[cfg(feature = "ndi")]
+use std::sync::atomic::{AtomicBool, Ordering};
 
 /// Renders the UI or content for the given output ID.
 pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
@@ -204,8 +200,10 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
                             usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
                             mapped_at_creation: false,
                         });
-                        app.ndi_readbacks
-                            .insert(output_id, (buffer, Arc::new(AtomicBool::new(false))));
+                        app.ndi_readbacks.insert(
+                            output_id,
+                            (buffer, std::sync::Arc::new(AtomicBool::new(false))),
+                        );
                         buffer_ready = true;
                     }
 
@@ -279,7 +277,7 @@ struct RenderContext<'a> {
     color_calibration_renderer: &'a Option<mapmap_render::ColorCalibrationRenderer>,
     mesh_renderer: &'a mut mapmap_render::MeshRenderer,
     texture_pool: &'a mapmap_render::TexturePool,
-    _dummy_view: &'a Option<Arc<wgpu::TextureView>>,
+    _dummy_view: &'a Option<std::sync::Arc<wgpu::TextureView>>,
     mesh_buffer_cache: &'a mut mapmap_render::MeshBufferCache,
     egui_renderer: &'a mut egui_wgpu::Renderer,
 }
@@ -571,7 +569,7 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
                         if needs_recreate {
                             let target_view =
                                 target_tex.create_view(&wgpu::TextureViewDescriptor::default());
-                            let target_view_arc = Arc::new(target_view);
+                            let target_view_arc = std::sync::Arc::new(target_view);
                             app.egui_renderer.update_egui_texture_from_wgpu_texture(
                                 &app.backend.device,
                                 &target_view_arc,
@@ -587,7 +585,7 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
                     Entry::Vacant(e) => {
                         let target_view =
                             target_tex.create_view(&wgpu::TextureViewDescriptor::default());
-                        let target_view_arc = Arc::new(target_view);
+                        let target_view_arc = std::sync::Arc::new(target_view);
                         let id = app.egui_renderer.register_native_texture(
                             &app.backend.device,
                             &target_view_arc,
