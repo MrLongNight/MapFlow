@@ -1755,11 +1755,20 @@ impl MeshType {
             }
             MeshType::BezierSurface { control_points } => {
                 // For Bezier surface, create a grid and warp it based on control points
-                // For now, use a simple grid as a placeholder until full Bezier implementation
-                if control_points.len() >= 4 {
-                    // TODO: Implement proper Bezier surface interpolation
-                    Mesh::create_grid(8, 8)
+                if control_points.len() == 16 {
+                    let mut patch = crate::mesh::BezierPatch::new();
+                    // Map flat vector to 4x4 control points
+                    for (i, p) in control_points.iter().take(16).enumerate() {
+                        let row = i / 4;
+                        let col = i % 4;
+                        patch.control_points[row][col] = Vec2::new(p.0, p.1);
+                    }
+
+                    let mut mesh = Mesh::create_grid(8, 8);
+                    patch.apply_to_mesh(&mut mesh);
+                    mesh
                 } else {
+                    // Fallback to simple quad if we don't have enough points for a cubic patch
                     Mesh::quad()
                 }
             }
@@ -3479,4 +3488,37 @@ fn test_trigger_config_smoothed_fallback_with_invert_external() {
     // 0.2 -> 0.8
     // Smoothed (Direct Fallback): 0.0 + (100.0 - 0.0) * 0.8 = 80.0
     assert_eq!(config.apply(0.2), 80.0);
+}
+
+#[cfg(test)]
+mod test_bezier_surface_new {
+    use super::*;
+
+    #[test]
+    fn test_bezier_surface_mesh_generation() {
+        // Create 16 flat control points
+        let mut points = Vec::new();
+        for i in 0..16 {
+            let row = i / 4;
+            let col = i % 4;
+            // 0.0, 0.33, 0.66, 1.0
+            points.push((col as f32 / 3.0, row as f32 / 3.0));
+        }
+
+        let mesh_type = MeshType::BezierSurface { control_points: points };
+        let mesh = mesh_type.to_mesh();
+
+        // Should generate 8x8 grid -> 9x9 vertices = 81
+        assert_eq!(mesh.vertex_count(), 81);
+
+        // Check corner (0,0) - should match first CP
+        let v0 = mesh.vertices[0].position;
+        assert!(v0.x.abs() < 0.001);
+        assert!(v0.y.abs() < 0.001);
+
+        // Check corner (1,1) - should match last CP
+        let v_last = mesh.vertices.last().unwrap().position;
+        assert!((v_last.x - 1.0).abs() < 0.001);
+        assert!((v_last.y - 1.0).abs() < 0.001);
+    }
 }
