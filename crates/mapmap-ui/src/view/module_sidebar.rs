@@ -1,10 +1,12 @@
 use crate::i18n::LocaleManager;
 use egui::{Color32, Pos2, Rect, Response, Sense, Ui, Vec2};
-use mapmap_core::module::{MapFlowModule, ModuleManager};
+use mapmap_core::module::ModuleManager;
 
 #[derive(Default)]
 pub struct ModuleSidebar {
-    // Add state here if needed, e.g., for renaming a module
+    renaming_id: Option<mapmap_core::module::ModuleId>,
+    rename_buffer: String,
+    should_focus_rename: bool,
 }
 
 impl ModuleSidebar {
@@ -26,76 +28,105 @@ impl ModuleSidebar {
             }
             ui.separator();
 
+            // Collect data to decouple from manager borrow
+            let modules: Vec<(mapmap_core::module::ModuleId, String, [f32; 4])> = manager
+                .list_modules()
+                .iter()
+                .map(|m| (m.id, m.name.clone(), m.color))
+                .collect();
+
             // List of modules
-            let modules = manager.list_modules();
-            // Optimization: Iterate over references to avoid deep cloning MapFlowModule every frame
-            for module in modules {
-                let response = self.module_list_item(ui, module);
-                response.context_menu(|ui| {
-                    if ui.button(locale.t("menu-rename")).clicked() {
-                        // TODO: Implement renaming
-                        ui.close();
-                    }
-                    if ui.button(locale.t("menu-duplicate")).clicked() {
-                        // TODO: Implement duplication
-                        ui.close();
-                    }
-                    if ui.button(locale.t("menu-delete")).clicked() {
-                        action = Some(ModuleSidebarAction::DeleteModule(module.id));
-                        ui.close();
-                    }
-                    ui.separator();
-                    // Color picker
-                    ui.label("Change Color");
-                    let color_palette: Vec<[f32; 4]> = vec![
-                        [1.0, 0.2, 0.2, 1.0],
-                        [1.0, 0.5, 0.2, 1.0],
-                        [1.0, 1.0, 0.2, 1.0],
-                        [0.5, 1.0, 0.2, 1.0],
-                        [0.2, 1.0, 0.2, 1.0],
-                        [0.2, 1.0, 0.5, 1.0],
-                        [0.2, 1.0, 1.0, 1.0],
-                        [0.2, 0.5, 1.0, 1.0],
-                        [0.2, 0.2, 1.0, 1.0],
-                        [0.5, 0.2, 1.0, 1.0],
-                        [1.0, 0.2, 1.0, 1.0],
-                        [1.0, 0.2, 0.5, 1.0],
-                        [0.5, 0.5, 0.5, 1.0],
-                        [1.0, 0.5, 0.8, 1.0],
-                        [0.5, 1.0, 0.8, 1.0],
-                        [0.8, 0.5, 1.0, 1.0],
-                    ];
-                    ui.horizontal_wrapped(|ui| {
-                        for color in color_palette {
-                            let color32 = Color32::from_rgba_premultiplied(
-                                (color[0] * 255.0) as u8,
-                                (color[1] * 255.0) as u8,
-                                (color[2] * 255.0) as u8,
-                                (color[3] * 255.0) as u8,
-                            );
-                            if color_button(ui, color32, Vec2::splat(16.0)).clicked() {
-                                action = Some(ModuleSidebarAction::SetColor(module.id, color));
-                                ui.close();
+            for (id, name, color_arr) in modules {
+                if self.renaming_id == Some(id) {
+                    // Inline renaming
+                    ui.horizontal(|ui| {
+                        let response = ui.text_edit_singleline(&mut self.rename_buffer);
+                        if self.should_focus_rename {
+                            response.request_focus();
+                            self.should_focus_rename = false;
+                        }
+
+                        if response.lost_focus()
+                            || ui.input(|i| i.key_pressed(egui::Key::Enter))
+                        {
+                            if !self.rename_buffer.trim().is_empty() {
+                                manager.rename_module(id, self.rename_buffer.clone());
                             }
+                            self.renaming_id = None;
+                        } else if ui.input(|i| i.key_pressed(egui::Key::Escape)) {
+                            self.renaming_id = None;
                         }
                     });
-                });
+                } else {
+                    let response = self.module_list_item(ui, &name, color_arr);
+                    response.context_menu(|ui| {
+                        if ui.button(locale.t("menu-rename")).clicked() {
+                            self.renaming_id = Some(id);
+                            self.rename_buffer = name.clone();
+                            self.should_focus_rename = true;
+                            ui.close();
+                        }
+                        if ui.button(locale.t("menu-duplicate")).clicked() {
+                            manager.duplicate_module(id);
+                            ui.close();
+                        }
+                        if ui.button(locale.t("menu-delete")).clicked() {
+                            action = Some(ModuleSidebarAction::DeleteModule(id));
+                            ui.close();
+                        }
+                        ui.separator();
+                        // Color picker
+                        ui.label("Change Color");
+                        let color_palette: Vec<[f32; 4]> = vec![
+                            [1.0, 0.2, 0.2, 1.0],
+                            [1.0, 0.5, 0.2, 1.0],
+                            [1.0, 1.0, 0.2, 1.0],
+                            [0.5, 1.0, 0.2, 1.0],
+                            [0.2, 1.0, 0.2, 1.0],
+                            [0.2, 1.0, 0.5, 1.0],
+                            [0.2, 1.0, 1.0, 1.0],
+                            [0.2, 0.5, 1.0, 1.0],
+                            [0.2, 0.2, 1.0, 1.0],
+                            [0.5, 0.2, 1.0, 1.0],
+                            [1.0, 0.2, 1.0, 1.0],
+                            [1.0, 0.2, 0.5, 1.0],
+                            [0.5, 0.5, 0.5, 1.0],
+                            [1.0, 0.5, 0.8, 1.0],
+                            [0.5, 1.0, 0.8, 1.0],
+                            [0.8, 0.5, 1.0, 1.0],
+                        ];
+                        ui.horizontal_wrapped(|ui| {
+                            for color in color_palette {
+                                let color32 = Color32::from_rgba_premultiplied(
+                                    (color[0] * 255.0) as u8,
+                                    (color[1] * 255.0) as u8,
+                                    (color[2] * 255.0) as u8,
+                                    (color[3] * 255.0) as u8,
+                                );
+                                if color_button(ui, color32, Vec2::splat(16.0)).clicked() {
+                                    action = Some(ModuleSidebarAction::SetColor(id, color));
+                                    ui.close();
+                                }
+                            }
+                        });
+                    });
+                }
             }
         });
 
         action
     }
 
-    fn module_list_item(&self, ui: &mut Ui, module: &MapFlowModule) -> Response {
+    fn module_list_item(&self, ui: &mut Ui, name: &str, color_arr: [f32; 4]) -> Response {
         let item_size = Vec2::new(ui.available_width(), 24.0);
         let (rect, response) = ui.allocate_exact_size(item_size, Sense::click());
 
         if ui.is_rect_visible(rect) {
             let color = Color32::from_rgba_premultiplied(
-                (module.color[0] * 255.0) as u8,
-                (module.color[1] * 255.0) as u8,
-                (module.color[2] * 255.0) as u8,
-                (module.color[3] * 255.0) as u8,
+                (color_arr[0] * 255.0) as u8,
+                (color_arr[1] * 255.0) as u8,
+                (color_arr[2] * 255.0) as u8,
+                (color_arr[3] * 255.0) as u8,
             );
 
             let icon_rect = Rect::from_min_size(rect.min, Vec2::new(rect.height(), rect.height()));
@@ -106,7 +137,7 @@ impl ModuleSidebar {
             ui.painter().text(
                 label_rect.left_center(),
                 egui::Align2::LEFT_CENTER,
-                &module.name,
+                name,
                 egui::FontId::proportional(14.0),
                 Color32::WHITE,
             );
