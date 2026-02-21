@@ -1,12 +1,15 @@
 //! Main application render loop.
 
-use crate::app::core::app_struct::App;
-use crate::app::ui_layout;
-use anyhow::Result;
-use mapmap_core::module::OutputType::Projector;
-use mapmap_core::OutputId;
 #[cfg(feature = "ndi")]
 use std::sync::atomic::{AtomicBool, Ordering};
+
+use anyhow::Result;
+
+use mapmap_core::module::OutputType::Projector;
+use mapmap_core::OutputId;
+
+use crate::app::core::app_struct::App;
+use crate::app::ui_layout;
 
 /// Renders the UI or content for the given output ID.
 pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
