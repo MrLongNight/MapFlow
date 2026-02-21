@@ -200,8 +200,10 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
                             usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
                             mapped_at_creation: false,
                         });
-                        app.ndi_readbacks
-                            .insert(output_id, (buffer, std::sync::Arc::new(AtomicBool::new(false))));
+                        app.ndi_readbacks.insert(
+                            output_id,
+                            (buffer, std::sync::Arc::new(AtomicBool::new(false))),
+                        );
                         buffer_ready = true;
                     }
 
