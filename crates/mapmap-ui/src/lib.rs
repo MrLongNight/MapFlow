@@ -732,21 +732,21 @@ impl AppUI {
             .interactable(false)
             .show(ctx, |ui| {
                 egui::Frame::default()
-                    .fill(egui::Color32::from_rgba_unmultiplied(20, 20, 30, 220))
-                    .corner_radius(4.0)
-                    .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(60, 60, 80)))
+                    .fill(crate::theme::colors::DARKER_GREY.linear_multiply(0.9))
+                    .corner_radius(egui::CornerRadius::ZERO)
+                    .stroke(egui::Stroke::new(1.0, crate::theme::colors::STROKE_GREY))
                     .inner_margin(egui::Margin::symmetric(16, 8))
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {
                             ui.label(
                                 egui::RichText::new(format!("FPS: {:.0}", fps))
-                                    .color(egui::Color32::from_rgb(100, 200, 100))
+                                    .color(crate::theme::colors::MINT_ACCENT)
                                     .strong(),
                             );
                             ui.separator();
                             ui.label(
                                 egui::RichText::new(format!("{:.1}ms", frame_time_ms))
-                                    .color(egui::Color32::from_rgb(150, 150, 200)),
+                                    .color(crate::theme::colors::CYAN_ACCENT),
                             );
                         });
                     });
