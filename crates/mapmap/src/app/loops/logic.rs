@@ -176,7 +176,10 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     // Periodic Performance Status (every 10s)
     static PERF_LOG_COUNTER: std::sync::atomic::AtomicUsize =
         std::sync::atomic::AtomicUsize::new(0);
-    if PERF_LOG_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 600 == 0 {
+    if PERF_LOG_COUNTER
+        .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+        .is_multiple_of(600)
+    {
         let ram_mb = if let Ok(pid) = sysinfo::get_current_pid() {
             app.sys_info
                 .process(pid)
@@ -196,7 +199,9 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
 
     // Periodic VRAM Garbage Collection (every 10s)
     if app.last_texture_gc.elapsed().as_secs() >= 10 {
-        let removed = app.texture_pool.collect_garbage(std::time::Duration::from_secs(30));
+        let removed = app
+            .texture_pool
+            .collect_garbage(std::time::Duration::from_secs(30));
         if removed > 0 {
             info!("VRAM GC: Removed {} unused textures from pool", removed);
         }

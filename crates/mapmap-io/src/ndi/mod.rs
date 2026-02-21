@@ -332,23 +332,24 @@ impl NdiSender {
         };
 
         // Create NDI video frame and send
-        // We use send_video_v2_async or send_video_v2. Using async usually better but here we are in sync context.
-        // Construct a VideoFrameV2
-        let video_frame = grafton_ndi::VideoFrameV2 {
+        // Construct a VideoFrame
+        let video_frame = grafton_ndi::VideoFrame {
             xres: frame.format.width as i32,
             yres: frame.format.height as i32,
-            fourcc: grafton_ndi::FourCCType::BGRA,
+            fourcc: grafton_ndi::FourCCVideoType::BGRA,
             frame_rate_n: (frame.format.frame_rate * 1000.0) as i32,
             frame_rate_d: 1000,
             picture_aspect_ratio: frame.format.width as f32 / frame.format.height as f32,
             frame_format_type: grafton_ndi::FrameFormatType::Progressive,
-            timecode: grafton_ndi::NDI_LIB_SEND_TIME_VALID,
-            p_data: data.as_ptr() as *mut u8, // Cast const to mut, safe as NDI Send should just read
-            line_stride_in_bytes: (frame.format.width * 4) as i32,
+            timecode: 0, // Use 0 or appropriate value if NDI_LIB_SEND_TIME_VALID is not available
+            p_data: data.as_ptr() as *mut u8,
+            line_stride_or_size: grafton_ndi::LineStrideOrSize {
+                line_stride_in_bytes: (frame.format.width * 4) as i32,
+            },
             ..Default::default()
         };
 
-        send.send_video_v2(&video_frame);
+        send.send_video(&video_frame);
 
         self.frame_count += 1;
 

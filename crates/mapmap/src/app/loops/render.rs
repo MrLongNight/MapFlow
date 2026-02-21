@@ -5,6 +5,10 @@ use crate::app::ui_layout;
 use anyhow::Result;
 use mapmap_core::module::OutputType::Projector;
 use mapmap_core::OutputId;
+#[cfg(feature = "ndi")]
+use std::sync::atomic::{AtomicBool, Ordering};
+#[cfg(feature = "ndi")]
+use std::sync::Arc;
 
 /// Renders the UI or content for the given output ID.
 pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
@@ -133,8 +137,6 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
         #[cfg(feature = "ndi")]
         {
             // Find if this output has an NDI sender
-            // We need to map output_id (Projector ID) to part.id (Sender ID)
-            // Iterate render_ops to find the part ID for this output ID
             let part_id = app.render_ops.iter().find_map(|(_, op)| {
                 if let mapmap_core::module::OutputType::Projector { id, .. } = &op.output_type {
                     if *id == output_id {
@@ -146,22 +148,18 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
 
             if let Some(pid) = part_id {
                 if let Some(sender) = app.ndi_senders.get_mut(&pid) {
-                    // 1. Check if we have a pending readback for this output
                     let mut buffer_ready = false;
                     if let Some((buffer, mapping_requested)) = app.ndi_readbacks.get_mut(&output_id)
                     {
-                        if *mapping_requested {
-                            // Poll device to ensure mapping callbacks fire
-                            // Note: polling Wait might block slightly, usually acceptable for NDI thread/loop
-                            // For smoother UI, we might use Poll, but then we might miss frame readiness this frame
-                            app.backend.device.poll(wgpu::Maintain::Poll);
+                        if mapping_requested.load(Ordering::SeqCst) {
+                            let _ = app.backend.device.poll(wgpu::PollType::Wait {
+                                submission_index: None,
+                                timeout: Some(std::time::Duration::from_millis(0)),
+                            });
 
-                            if buffer.slice(..).get_mapped_range().len() > 0 {
-                                // Data is ready!
+                            if !buffer.slice(..).get_mapped_range().is_empty() {
                                 {
                                     let view = buffer.slice(..).get_mapped_range();
-                                    // Send to NDI
-                                    // Create a temporary frame wrapper
                                     let frame_data = view.to_vec();
                                     let width = window_context.surface_config.width;
                                     let height = window_context.surface_config.height;
@@ -171,10 +169,10 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
                                         format: mapmap_io::format::VideoFormat {
                                             width,
                                             height,
-                                            pixel_format: mapmap_io::format::PixelFormat::BGRA8, // Surface is usually BGRA
-                                            frame_rate: 60.0, // TODO: Get actual FPS
+                                            pixel_format: mapmap_io::format::PixelFormat::BGRA8,
+                                            frame_rate: 60.0,
                                         },
-                                        timestamp: std::time::Duration::from_secs(0), // TODO: Timestamp
+                                        timestamp: std::time::Duration::from_secs(0),
                                         metadata: Default::default(),
                                     };
 
@@ -183,18 +181,15 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
                                     }
                                 }
                                 buffer.unmap();
-                                *mapping_requested = false;
+                                mapping_requested.store(false, Ordering::SeqCst);
                                 buffer_ready = true;
                             }
                         } else {
-                            // Buffer is free to use
                             buffer_ready = true;
                         }
                     } else {
-                        // Create buffer if missing
                         let width = window_context.surface_config.width;
                         let height = window_context.surface_config.height;
-                        // Align stride to 256 bytes for COPY_DST/SRC usually required
                         let bytes_per_pixel = 4;
                         let unpadded_bytes_per_row = width * bytes_per_pixel;
                         let padding = (256 - unpadded_bytes_per_row % 256) % 256;
@@ -207,16 +202,15 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
                             usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
                             mapped_at_creation: false,
                         });
-                        app.ndi_readbacks.insert(output_id, (buffer, false));
+                        app.ndi_readbacks
+                            .insert(output_id, (buffer, Arc::new(AtomicBool::new(false))));
                         buffer_ready = true;
                     }
 
-                    // 2. Issue Copy if buffer is ready (not currently mapped)
                     if buffer_ready {
                         if let Some((buffer, mapping_requested)) =
                             app.ndi_readbacks.get_mut(&output_id)
                         {
-                            // We need width/height again
                             let width = window_context.surface_config.width;
                             let height = window_context.surface_config.height;
                             let bytes_per_pixel = 4;
@@ -246,158 +240,11 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
                                 },
                             );
 
-                            // Request mapping callback
                             let slice = buffer.slice(..);
-                            slice.map_async(wgpu::MapMode::Read, move |_| {
-                                // Callback just notifies that mapping is done.
-                                // We check get_mapped_range in the poll loop above.
-                            });
-                            *mapping_requested = true;
-                        }
-                    }
-                }
-            }
-        }
-
-        // --- NDI Readback (if enabled) ---
-        #[cfg(feature = "ndi")]
-        {
-            // Find if this output has an NDI sender
-            // We need to map output_id (Projector ID) to part.id (Sender ID)
-            // Iterate render_ops to find the part ID for this output ID
-            let part_id = app.render_ops.iter().find_map(|(_, op)| {
-                if let mapmap_core::module::OutputType::Projector { id, .. } = &op.output_type {
-                    if *id == output_id {
-                        return Some(op.output_part_id);
-                    }
-                }
-                None
-            });
-
-            if let Some(pid) = part_id {
-                if let Some(sender) = app.ndi_senders.get_mut(&pid) {
-                    // 1. Check if we have a pending readback for this output
-                    let mut buffer_ready = false;
-                    if let Some((buffer, mapping_flag)) = app.ndi_readbacks.get_mut(&output_id) {
-                        // Check if mapping was requested by checking strong count of flag
-                        // If strong count is 1, no callback holds it -> Idle/Ready
-                        // If strong count > 1, callback holds it -> Busy
-
-                        // We also need to know if it IS mapped.
-                        // We use the AtomicBool: true = Mapped & Ready. false = Idle or Busy.
-                        // But we need to distinguish Idle from Busy.
-                        // However, we can just check:
-
-                        // Poll to process callbacks
-                        app.backend.device.poll(wgpu::Maintain::Poll);
-
-                        if mapping_flag.load(std::sync::atomic::Ordering::Acquire) {
-                            // Mapping is ready!
-                            {
-                                let view = buffer.slice(..).get_mapped_range();
-                                // Send to NDI
-                                let frame_data = view.to_vec();
-                                let width = window_context.surface_config.width;
-                                let height = window_context.surface_config.height;
-
-                                let video_frame = mapmap_io::format::VideoFrame {
-                                    data: mapmap_io::format::FrameData::Cpu(frame_data),
-                                    format: mapmap_io::format::VideoFormat {
-                                        width,
-                                        height,
-                                        pixel_format: mapmap_io::format::PixelFormat::BGRA8, // Surface is usually BGRA
-                                        frame_rate: 60.0, // TODO: Get actual FPS
-                                    },
-                                    timestamp: std::time::Duration::from_secs(0), // TODO: Timestamp
-                                    metadata: Default::default(),
-                                };
-
-                                if let Err(e) = sender.send_frame(&video_frame) {
-                                    tracing::warn!("Failed to send NDI frame: {}", e);
-                                }
-                            }
-                            buffer.unmap();
-                            // Reset flag
-                            mapping_flag.store(false, std::sync::atomic::Ordering::Release);
-                            buffer_ready = true;
-                        } else {
-                            // Not ready. Check if busy.
-                            // If strong count is 1, it means the callback was dropped (executed).
-                            // If flag is false AND strong_count == 1, it means we are IDLE (start state or after unmap).
-                            // If flag is false AND strong_count > 1, it means we are BUSY (callback pending).
-                            if std::sync::Arc::strong_count(mapping_flag) == 1 {
-                                buffer_ready = true;
-                            }
-                        }
-                    } else {
-                        // Create buffer if missing
-                        let width = window_context.surface_config.width;
-                        let height = window_context.surface_config.height;
-                        // Align stride to 256 bytes for COPY_DST/SRC usually required
-                        let bytes_per_pixel = 4;
-                        let unpadded_bytes_per_row = width * bytes_per_pixel;
-                        let padding = (256 - unpadded_bytes_per_row % 256) % 256;
-                        let bytes_per_row = unpadded_bytes_per_row + padding;
-                        let size = (bytes_per_row * height) as u64;
-
-                        let buffer = app.backend.device.create_buffer(&wgpu::BufferDescriptor {
-                            label: Some("NDI Readback Buffer"),
-                            size,
-                            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-                            mapped_at_creation: false,
-                        });
-                        let flag = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
-                        app.ndi_readbacks.insert(output_id, (buffer, flag));
-                        buffer_ready = true;
-                    }
-
-                    // 2. Issue Copy if buffer is ready
-                    if buffer_ready {
-                        if let Some((buffer, mapping_flag)) = app.ndi_readbacks.get_mut(&output_id)
-                        {
-                            let width = window_context.surface_config.width;
-                            let height = window_context.surface_config.height;
-                            let bytes_per_pixel = 4;
-                            let unpadded_bytes_per_row = width * bytes_per_pixel;
-                            let padding = (256 - unpadded_bytes_per_row % 256) % 256;
-                            let bytes_per_row = unpadded_bytes_per_row + padding;
-
-                            encoder.copy_texture_to_buffer(
-                                wgpu::TexelCopyTextureInfo {
-                                    texture: &surface_texture.texture,
-                                    mip_level: 0,
-                                    origin: wgpu::Origin3d::ZERO,
-                                    aspect: wgpu::TextureAspect::All,
-                                },
-                                wgpu::TexelCopyBufferInfo {
-                                    buffer,
-                                    layout: wgpu::TexelCopyBufferLayout {
-                                        offset: 0,
-                                        bytes_per_row: Some(bytes_per_row),
-                                        rows_per_image: Some(height),
-                                    },
-                                },
-                                wgpu::Extent3d {
-                                    width,
-                                    height,
-                                    depth_or_array_layers: 1,
-                                },
-                            );
-
-                            // Request mapping
-                            let slice = buffer.slice(..);
-                            let flag_clone = mapping_flag.clone();
-
-                            // Important: ensure we reset flag before mapping just in case, though unmap handled it
-                            // mapping_flag.store(false, Ordering::Release); // Already false if we are here (strong_count==1)
-
+                            let requested_clone = mapping_requested.clone();
                             slice.map_async(wgpu::MapMode::Read, move |res| {
                                 if res.is_ok() {
-                                    flag_clone.store(true, std::sync::atomic::Ordering::Release);
-                                } else {
-                                    tracing::warn!("Buffer map failed");
-                                    // If map failed, we should probably still release the flag clone so strong_count drops?
-                                    // The closure is dropped after execution, so flag_clone is dropped.
+                                    requested_clone.store(true, Ordering::SeqCst);
                                 }
                             });
                         }

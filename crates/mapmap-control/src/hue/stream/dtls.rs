@@ -1,11 +1,10 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 
-pub struct HueStreamer {
-}
+pub struct HueStreamer {}
 
 impl HueStreamer {
     /// Connects to the Hue Bridge via DTLS for entertainment streaming.
-    /// 
+    ///
     /// STUBBED: OpenSSL is currently disabled due to build hangs on Windows.
     #[allow(unused_variables)]
     pub fn connect(ip: &str, application_id: &str, client_key: &str) -> Result<Self> {

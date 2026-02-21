@@ -35,8 +35,7 @@ impl ApplicationHandler for MapFlowApp {
         if self.app.is_none() {
             info!("Initializing MapFlow...");
             self.app = Some(
-                pollster::block_on(App::new(event_loop))
-                    .expect("Failed to initialize application"),
+                pollster::block_on(App::new(event_loop)).expect("Failed to initialize application"),
             );
         }
     }
@@ -187,7 +186,9 @@ impl App {
                 let player_key = (mod_id, part_id);
 
                 // If player doesn't exist and we get any command (except Reload), try to create it
-                if !self.media_players.contains_key(&player_key) && cmd != MediaPlaybackCommand::Reload {
+                if !self.media_players.contains_key(&player_key)
+                    && cmd != MediaPlaybackCommand::Reload
+                {
                     info!(
                         "Player doesn't exist for part_id={}, attempting to create...",
                         part_id
@@ -243,13 +244,15 @@ impl App {
                             } else {
                                 mapmap_media::LoopMode::PlayOnce
                             };
-                            let _ = player.command_sender().send(PlaybackCommand::SetLoopMode(mode));
+                            let _ = player
+                                .command_sender()
+                                .send(PlaybackCommand::SetLoopMode(mode));
                         }
                         MediaPlaybackCommand::Seek(position) => {
                             info!("Seeking to {} for part_id={}", position, part_id);
-                            let _ = player
-                                .command_sender()
-                                .send(PlaybackCommand::Seek(std::time::Duration::from_secs_f64(position)));
+                            let _ = player.command_sender().send(PlaybackCommand::Seek(
+                                std::time::Duration::from_secs_f64(position),
+                            ));
                         }
                         MediaPlaybackCommand::SetReverse(reverse) => {
                             info!(
@@ -263,7 +266,10 @@ impl App {
                 // Handle Reload by removing player and immediately recreating
                 if cmd == MediaPlaybackCommand::Reload {
                     if self.media_players.remove(&player_key).is_some() {
-                        info!("Removed old media player for part_id={} for reload", part_id);
+                        info!(
+                            "Removed old media player for part_id={} for reload",
+                            part_id
+                        );
                     }
                     // Immediately recreate the player
                     if let Some(module) = self.state.module_manager.get_module(mod_id) {
@@ -277,7 +283,8 @@ impl App {
                                         Ok(player) => {
                                             info!("Recreated player for '{}' after reload", path);
                                             // Auto-play after reload
-                                            let _ = player.command_sender().send(PlaybackCommand::Play);
+                                            let _ =
+                                                player.command_sender().send(PlaybackCommand::Play);
                                             self.media_players
                                                 .insert(player_key, (path.clone(), player));
                                         }
@@ -310,7 +317,10 @@ fn main() -> Result<()> {
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
 
     tracing_subscriber::fmt()
-        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env().add_directive(tracing::Level::INFO.into()))
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::from_default_env()
+                .add_directive(tracing::Level::INFO.into()),
+        )
         .with_writer(std::io::stdout) // Print to stdout
         .with_writer(non_blocking) // Also print to file
         .init();
