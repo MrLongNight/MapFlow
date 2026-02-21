@@ -91,41 +91,11 @@ pub mod sink;
 pub mod source;
 
 // Feature-gated modules
-#[cfg(feature = "ndi")]
-pub mod ndi;
-
-#[cfg(feature = "decklink")]
 pub mod decklink;
-
-#[cfg(feature = "spout")]
-pub mod spout;
-
-#[cfg(feature = "syphon")]
-pub mod syphon;
-
-#[cfg(feature = "stream")]
-pub mod stream;
-
-#[cfg(feature = "virtual-camera")]
-pub mod virtual_camera;
-
-// Stub modules when features are disabled (for API compatibility)
-#[cfg(not(feature = "ndi"))]
 pub mod ndi;
-
-#[cfg(not(feature = "decklink"))]
-pub mod decklink;
-
-#[cfg(not(feature = "spout"))]
 pub mod spout;
-
-#[cfg(not(feature = "syphon"))]
-pub mod syphon;
-
-#[cfg(not(feature = "stream"))]
 pub mod stream;
-
-#[cfg(not(feature = "virtual-camera"))]
+pub mod syphon;
 pub mod virtual_camera;
 
 // Re-exports for convenience

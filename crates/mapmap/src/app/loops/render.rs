@@ -7,7 +7,6 @@ use mapmap_core::module::OutputType::Projector;
 use mapmap_core::OutputId;
 #[cfg(feature = "ndi")]
 use std::sync::atomic::{AtomicBool, Ordering};
-#[cfg(feature = "ndi")]
 use std::sync::Arc;
 
 /// Renders the UI or content for the given output ID.
