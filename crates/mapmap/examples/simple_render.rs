@@ -4,89 +4,100 @@
 
 //! This example demonstrates the basics of rendering with mapmap_render.
 
-use mapmap_render::{QuadRenderer, RenderBackend, TextureDescriptor, WgpuBackend};
-use std::sync::Arc;
-use winit::{
-    event::{ElementState, Event, KeyEvent, WindowEvent},
-    event_loop::{ControlFlow, EventLoop},
-    keyboard::{Key, NamedKey},
-    window::WindowAttributes,
-};
+use winit::application::ApplicationHandler;
+use winit::event::{ElementState, KeyEvent, WindowEvent};
+use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
+use winit::window::{Window, WindowAttributes, WindowId};
 
-fn main() {
-    println!("MapFlow - Simple Render Example");
-    println!("==============================\n");
+struct SimpleApp {
+    window: Option<Arc<Window>>,
+    backend: Option<WgpuBackend>,
+    surface: Option<wgpu::Surface<'static>>,
+    quad_renderer: Option<QuadRenderer>,
+    texture: Option<Arc<wgpu::Texture>>,
+    surface_config: Option<wgpu::SurfaceConfiguration>,
+}
 
-    let event_loop = EventLoop::new().unwrap();
-    let window_attributes = WindowAttributes::default()
-        .with_title("MapFlow - Simple Render")
-        .with_inner_size(winit::dpi::PhysicalSize::new(800, 600));
-    let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
+impl ApplicationHandler for SimpleApp {
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        if self.window.is_none() {
+            let window_attributes = WindowAttributes::default()
+                .with_title("MapFlow - Simple Render")
+                .with_inner_size(winit::dpi::PhysicalSize::new(800, 600));
+            let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
+            self.window = Some(window.clone());
 
-    let mut backend = pollster::block_on(WgpuBackend::new(None)).unwrap();
-    let surface = backend.create_surface(window.clone()).unwrap();
+            let mut backend = pollster::block_on(WgpuBackend::new(None)).unwrap();
+            let surface = backend.create_surface(window.clone()).unwrap();
 
-    let surface_config = wgpu::SurfaceConfiguration {
-        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-        format: wgpu::TextureFormat::Bgra8Unorm,
-        width: 800,
-        height: 600,
-        present_mode: wgpu::PresentMode::Fifo,
-        alpha_mode: wgpu::CompositeAlphaMode::Opaque,
-        view_formats: vec![],
-        desired_maximum_frame_latency: 2,
-    };
+            let surface_config = wgpu::SurfaceConfiguration {
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                format: wgpu::TextureFormat::Bgra8Unorm,
+                width: 800,
+                height: 600,
+                present_mode: wgpu::PresentMode::Fifo,
+                alpha_mode: wgpu::CompositeAlphaMode::Opaque,
+                view_formats: vec![],
+                desired_maximum_frame_latency: 2,
+            };
 
-    surface.configure(backend.device(), &surface_config);
+            surface.configure(backend.device(), &surface_config);
 
-    let quad_renderer = QuadRenderer::new(backend.device(), surface_config.format).unwrap();
+            let quad_renderer = QuadRenderer::new(backend.device(), surface_config.format).unwrap();
 
-    // Create a dummy texture
-    let tex_desc = TextureDescriptor {
-        width: 256,
-        height: 256,
-        format: wgpu::TextureFormat::Rgba8UnormSrgb,
-        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-        mip_levels: 1,
-    };
+            // Create a dummy texture
+            let tex_desc = TextureDescriptor {
+                width: 256,
+                height: 256,
+                format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                mip_levels: 1,
+            };
 
-    let texture = backend.create_texture(tex_desc).unwrap();
-    let data = vec![255; 256 * 256 * 4];
-    backend.upload_texture(texture.clone(), &data).unwrap();
+            let texture = Arc::new(backend.create_texture(tex_desc).unwrap());
+            let data = vec![255; 256 * 256 * 4];
+            backend.upload_texture(texture.clone(), &data).unwrap();
 
-    event_loop.set_control_flow(ControlFlow::Poll);
+            self.backend = Some(backend);
+            self.surface = Some(surface);
+            self.quad_renderer = Some(quad_renderer);
+            self.texture = Some(texture);
+            self.surface_config = Some(surface_config);
+        }
+    }
 
-    #[allow(deprecated)]
-    event_loop
-        .run(move |event, elwt| match event {
-            Event::WindowEvent {
-                event: WindowEvent::CloseRequested,
-                ..
-            } => {
-                elwt.exit();
+    fn window_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        _window_id: WindowId,
+        event: WindowEvent,
+    ) {
+        match event {
+            WindowEvent::CloseRequested => {
+                event_loop.exit();
             }
-            Event::WindowEvent {
+            WindowEvent::KeyboardInput {
                 event:
-                    WindowEvent::KeyboardInput {
-                        event:
-                            KeyEvent {
-                                logical_key: Key::Named(NamedKey::Escape),
-                                state: ElementState::Pressed,
-                                ..
-                            },
+                    KeyEvent {
+                        logical_key: winit::keyboard::Key::Named(winit::keyboard::NamedKey::Escape),
+                        state: ElementState::Pressed,
                         ..
                     },
                 ..
             } => {
-                elwt.exit();
+                event_loop.exit();
             }
-            Event::AboutToWait => {
-                window.request_redraw();
-            }
-            Event::WindowEvent {
-                event: WindowEvent::RedrawRequested,
-                ..
-            } => {
+            WindowEvent::RedrawRequested => {
+                let (surface, backend, quad_renderer, texture) = match (
+                    &self.surface,
+                    &self.backend,
+                    &self.quad_renderer,
+                    &self.texture,
+                ) {
+                    (Some(s), Some(b), Some(q), Some(t)) => (s, b, q, t),
+                    _ => return,
+                };
+
                 let frame = match surface.get_current_texture() {
                     Ok(frame) => frame,
                     Err(_) => return,
@@ -135,6 +146,32 @@ fn main() {
                 frame.present();
             }
             _ => {}
-        })
-        .unwrap();
+        }
+    }
+
+    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
+        if let Some(window) = &self.window {
+            window.request_redraw();
+        }
+    }
+}
+
+fn main() {
+    println!("MapFlow - Simple Render Example");
+    println!("==============================\n");
+
+    let event_loop = EventLoop::new().unwrap();
+    event_loop.set_control_flow(ControlFlow::Poll);
+
+    let mut app = SimpleApp {
+        window: None,
+        backend: None,
+        surface: None,
+        quad_renderer: None,
+        texture: None,
+        surface_config: None,
+    };
+
+    event_loop.run_app(&mut app).unwrap();
+}
 }

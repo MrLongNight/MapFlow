@@ -9,191 +9,174 @@
 
 use glam::Vec2;
 use mapmap_core::{Mapping, Mesh, Paint};
-use mapmap_render::{QuadRenderer, RenderBackend, TextureDescriptor, WgpuBackend};
-use std::sync::Arc;
-use winit::{
-    event::{ElementState, Event, KeyEvent, WindowEvent},
-    event_loop::{ControlFlow, EventLoop},
-    keyboard::{Key, NamedKey},
-    window::WindowAttributes,
-};
+use winit::application::ApplicationHandler;
+use winit::event::{ElementState, KeyEvent, WindowEvent};
+use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
+use winit::window::{Window, WindowAttributes, WindowId};
+
+struct ProjectionApp {
+    window: Option<Arc<Window>>,
+    backend: Option<WgpuBackend>,
+    surface: Option<wgpu::Surface<'static>>,
+    quad_renderer: Option<QuadRenderer>,
+    texture: Option<Arc<wgpu::Texture>>,
+    paint: Option<Paint>,
+}
+
+impl ApplicationHandler for ProjectionApp {
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        if self.window.is_none() {
+            let window_attributes = WindowAttributes::default()
+                .with_title("Hello World Projection")
+                .with_inner_size(winit::dpi::LogicalSize::new(1280.0, 720.0));
+            let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
+            self.window = Some(window.clone());
+
+            let mut backend = pollster::block_on(WgpuBackend::new(None)).unwrap();
+            let surface = backend.create_surface(window.clone()).unwrap();
+
+            let surface_config = wgpu::SurfaceConfiguration {
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                format: wgpu::TextureFormat::Bgra8Unorm,
+                width: 1280,
+                height: 720,
+                present_mode: wgpu::PresentMode::Fifo,
+                alpha_mode: wgpu::CompositeAlphaMode::Opaque,
+                view_formats: vec![],
+                desired_maximum_frame_latency: 2,
+            };
+
+            surface.configure(backend.device(), &surface_config);
+
+            let quad_renderer = QuadRenderer::new(backend.device(), surface_config.format).unwrap();
+
+            let paint = Paint::color(1, "Hello World Paint", [0.2, 0.6, 1.0, 1.0]);
+
+            let tex_desc = TextureDescriptor {
+                width: 512,
+                height: 512,
+                format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                mip_levels: 1,
+            };
+
+            let texture = Arc::new(backend.create_texture(tex_desc).unwrap());
+            let texture_data = create_hello_world_texture(512, 512, paint.color);
+            backend
+                .upload_texture(texture.clone(), &texture_data)
+                .unwrap();
+
+            self.backend = Some(backend);
+            self.surface = Some(surface);
+            self.quad_renderer = Some(quad_renderer);
+            self.texture = Some(texture);
+            self.paint = Some(paint);
+        }
+    }
+
+    fn window_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        _window_id: WindowId,
+        event: WindowEvent,
+    ) {
+        match event {
+            WindowEvent::CloseRequested => {
+                event_loop.exit();
+            }
+            WindowEvent::KeyboardInput {
+                event:
+                    KeyEvent {
+                        logical_key: winit::keyboard::Key::Named(winit::keyboard::NamedKey::Escape),
+                        state: ElementState::Pressed,
+                        ..
+                    },
+                ..
+            } => {
+                event_loop.exit();
+            }
+            WindowEvent::RedrawRequested => {
+                let (surface, backend, quad_renderer, texture) = match (
+                    &self.surface,
+                    &self.backend,
+                    &self.quad_renderer,
+                    &self.texture,
+                ) {
+                    (Some(s), Some(b), Some(q), Some(t)) => (s, b, q, t),
+                    _ => return,
+                };
+
+                let frame = match surface.get_current_texture() {
+                    Ok(frame) => frame,
+                    Err(_) => return,
+                };
+
+                let view = frame
+                    .texture
+                    .create_view(&wgpu::TextureViewDescriptor::default());
+
+                let mut encoder =
+                    backend
+                        .device()
+                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                            label: Some("Render Encoder"),
+                        });
+
+                let texture_view = texture.create_view();
+                let bind_group = quad_renderer.create_bind_group(backend.device(), &texture_view);
+                {
+                    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("Main Render Pass"),
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            depth_slice: None,
+                            view: &view,
+                            resolve_target: None,
+
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                store: wgpu::StoreOp::Store,
+                            },
+                        })],
+                        depth_stencil_attachment: None,
+                        occlusion_query_set: None,
+                        timestamp_writes: None,
+                    });
+
+                    quad_renderer.draw(&mut render_pass, &bind_group);
+                }
+
+                backend.queue().submit(Some(encoder.finish()));
+                frame.present();
+            }
+            _ => {}
+        }
+    }
+
+    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
+        if let Some(window) = &self.window {
+            window.request_redraw();
+        }
+    }
+}
 
 fn main() {
     println!("MapFlow - Hello World Projection Mapping Example");
     println!("===============================================\n");
 
-    // Step 1: Create the window
     let event_loop = EventLoop::new().unwrap();
-    let window_attributes = WindowAttributes::default()
-        .with_title("Hello World Projection")
-        .with_inner_size(winit::dpi::LogicalSize::new(1280.0, 720.0));
-    let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
-
-    println!("✓ Window created (1280x720)");
-
-    // Step 2: Initialize GPU backend
-    let mut backend = pollster::block_on(WgpuBackend::new(None)).unwrap();
-    println!("✓ GPU Backend initialized");
-    println!("  Adapter: {:?}", backend.adapter_info());
-
-    // Step 3: Create surface for rendering
-    let surface = backend.create_surface(window.clone()).unwrap();
-
-    let surface_config = wgpu::SurfaceConfiguration {
-        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-        format: wgpu::TextureFormat::Bgra8Unorm,
-        width: 1280,
-        height: 720,
-        present_mode: wgpu::PresentMode::Fifo,
-        alpha_mode: wgpu::CompositeAlphaMode::Opaque,
-        view_formats: vec![],
-        desired_maximum_frame_latency: 2,
-    };
-
-    surface.configure(backend.device(), &surface_config);
-    println!("✓ Surface configured");
-
-    // Step 4: Create quad renderer
-    let quad_renderer = QuadRenderer::new(backend.device(), surface_config.format).unwrap();
-    println!("✓ Quad renderer created");
-
-    // Step 5: Create a Paint (media source)
-    // For this example, we'll create a simple colored texture
-    let paint = Paint::color(1, "Hello World Paint", [0.2, 0.6, 1.0, 1.0]); // Blue color
-    println!("✓ Paint created: '{}'", paint.name);
-
-    // Step 6: Create a Mesh (warping geometry)
-    // We'll use a simple quad mesh
-    let mut mesh = Mesh::quad();
-    mesh.vertices[0].position = Vec2::new(0.0, 0.0);
-    mesh.vertices[1].position = Vec2::new(800.0, 0.0);
-    mesh.vertices[2].position = Vec2::new(800.0, 600.0);
-    mesh.vertices[3].position = Vec2::new(0.0, 600.0);
-    println!("✓ Mesh created");
-
-    // Step 7: Create a Mapping (connects Paint to Mesh)
-    let mapping = Mapping::new(
-        1, // mapping_id
-        "Hello World Mapping",
-        paint.id, // paint_id
-        mesh,     // mesh
-    );
-    println!("✓ Mapping created: '{}'", mapping.name);
-
-    // Step 8: Create GPU texture for the Paint
-    let tex_desc = TextureDescriptor {
-        width: 512,
-        height: 512,
-        format: wgpu::TextureFormat::Rgba8UnormSrgb,
-        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-        mip_levels: 1,
-    };
-
-    let texture = backend.create_texture(tex_desc).unwrap();
-
-    // Create a "Hello World" pattern
-    // We'll create a simple gradient with the Paint's color
-    let texture_data = create_hello_world_texture(512, 512, paint.color);
-    backend
-        .upload_texture(texture.clone(), &texture_data)
-        .unwrap();
-    println!("✓ Texture uploaded (512x512)");
-
-    println!("\n🎉 Setup complete! Rendering...\n");
-    println!("Controls:");
-    println!("  ESC - Exit");
-    println!("  Any key - See the magic!\n");
-
-    // Step 9: Render loop
     event_loop.set_control_flow(ControlFlow::Poll);
 
-    #[allow(deprecated)]
-    event_loop
-        .run(move |event, elwt| {
-            match event {
-                Event::WindowEvent {
-                    event: WindowEvent::CloseRequested,
-                    ..
-                } => {
-                    println!("Goodbye! 👋");
-                    elwt.exit();
-                }
-                Event::WindowEvent {
-                    event:
-                        WindowEvent::KeyboardInput {
-                            event:
-                                KeyEvent {
-                                    logical_key: Key::Named(NamedKey::Escape),
-                                    state: ElementState::Pressed,
-                                    ..
-                                },
-                            ..
-                        },
-                    ..
-                } => {
-                    println!("Goodbye! 👋");
-                    elwt.exit();
-                }
-                Event::WindowEvent {
-                    event: WindowEvent::RedrawRequested,
-                    ..
-                } => {
-                    // Get the current frame
-                    let frame = match surface.get_current_texture() {
-                        Ok(frame) => frame,
-                        Err(_) => return,
-                    };
+    let mut app = ProjectionApp {
+        window: None,
+        backend: None,
+        surface: None,
+        quad_renderer: None,
+        texture: None,
+        paint: None,
+    };
 
-                    let view = frame
-                        .texture
-                        .create_view(&wgpu::TextureViewDescriptor::default());
-
-                    // Create command encoder
-                    let mut encoder =
-                        backend
-                            .device()
-                            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                                label: Some("Render Encoder"),
-                            });
-
-                    let texture_view = texture.create_view();
-                    let bind_group =
-                        quad_renderer.create_bind_group(backend.device(), &texture_view);
-                    {
-                        // Begin render pass
-                        let mut render_pass =
-                            encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                                label: Some("Main Render Pass"),
-                                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                    depth_slice: None,
-                                    view: &view,
-                                    resolve_target: None,
-
-                                    ops: wgpu::Operations {
-                                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                                        store: wgpu::StoreOp::Store,
-                                    },
-                                })],
-                                depth_stencil_attachment: None,
-                                occlusion_query_set: None,
-                                timestamp_writes: None,
-                            });
-
-                        // Render the textured quad (our projection mapping!)
-                        quad_renderer.draw(&mut render_pass, &bind_group);
-                    }
-
-                    // Submit commands and present
-                    backend.queue().submit(Some(encoder.finish()));
-                    frame.present();
-                }
-                Event::AboutToWait => {
-                    window.request_redraw();
-                }
-                _ => {}
-            }
-        })
-        .unwrap();
+    event_loop.run_app(&mut app).unwrap();
+}
 }
 
 /// Creates a "Hello World" texture with a gradient pattern
