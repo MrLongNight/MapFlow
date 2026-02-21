@@ -55,3 +55,13 @@
     - **List:** `egui::ScrollArea` + `egui::Frame` (zebra) + `ui.horizontal`
     - **Actions:** Right-aligned icon buttons (`delete_button`, `lock_button`, `solo_button`).
 **Action:** Applied this pattern to `MappingPanel` and `AudioPanel`. Also added `lock_button` to `custom.rs` for reuse.
+
+## 2024-05-24 – [Unified Widget Colors]
+**Learning:** Hardcoded RGB values in widgets (like `AudioMeter` and overlays) create subtle visual noise and drift from the core theme.
+- **Insight:** Even "utility" widgets like meters and overlays must strictly adhere to the `crate::theme::colors` palette to maintain the "Cyber Dark" immersion.
+- **Pattern:**
+    - **Utility Backgrounds:** `colors::DARKER_GREY` (for meter backgrounds, overlays).
+    - **Utility Frames:** `colors::LIGHTER_GREY` (frames) + `colors::STROKE_GREY` (strokes).
+    - **Geometry:** `CornerRadius::ZERO` (sharp corners) for all panels and overlays.
+    - **Status Colors:** `colors::MINT_ACCENT` (Good/FPS), `colors::CYAN_ACCENT` (Info/Time), `colors::ERROR_COLOR` (Locked/Error).
+**Action:** Removed hardcoded colors and rounded corners from `AudioMeter`, `StyledPanel`, `lock_button`, and `render_stats_overlay`. Replaced with theme constants and sharp corners.

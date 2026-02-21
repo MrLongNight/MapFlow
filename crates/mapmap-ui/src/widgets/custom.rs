@@ -306,7 +306,7 @@ pub fn lock_button(ui: &mut Ui, active: bool) -> Response {
     let mut btn = egui::Button::new("🔒");
     if active {
         // Reddish fill for Locked state
-        btn = btn.fill(Color32::from_rgb(200, 50, 50));
+        btn = btn.fill(colors::ERROR_COLOR);
     }
     ui.add(btn)
 }
