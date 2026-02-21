@@ -358,6 +358,19 @@ btn-add = Add
 header-address-mappings = Address Mappings
 text-osc-edit-tip = (Edit osc_mappings.json for now)
 check-show-cues = Show Cues
+panel-cues = Cues
+label-jump-to = Jump to:
+btn-jump = Jump
+label-no-cues = No cues in list
+header-cue-editor = Cue Editor
+label-fade-duration = Fade Duration:
+label-trigger-type = Trigger Type:
+label-osc-address = OSC Address:
+btn-add-cue = Add Cue
+btn-remove-cue = Remove Cue
+btn-go = Go
+btn-back = Back
+btn-stop = Stop
 
 # Shortcuts
 shortcuts-panel-title = Keyboard Shortcuts

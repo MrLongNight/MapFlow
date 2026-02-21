@@ -313,6 +313,19 @@ btn-add = Hinzufügen
 header-address-mappings = Adress-Mappings
 text-osc-edit-tip = (Bearbeite vorerst osc_mappings.json)
 check-show-cues = Cues anzeigen
+panel-cues = Cues
+label-jump-to = Springe zu:
+btn-jump = Los
+label-no-cues = Keine Cues in der Liste
+header-cue-editor = Cue-Editor
+label-fade-duration = Überblendzeit:
+label-trigger-type = Auslöser-Typ:
+label-osc-address = OSC-Adresse:
+btn-add-cue = Cue hinzufügen
+btn-remove-cue = Cue entfernen
+btn-go = Start
+btn-back = Zurück
+btn-stop = Stopp
 
 # egui Oscillator Panel
 oscillator-panel-title = Oszillator-Steuerung

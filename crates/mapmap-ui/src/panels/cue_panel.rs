@@ -248,8 +248,9 @@ impl CuePanel {
         });
 
         // --- Trigger Type ---
-        // TODO: The Cue struct in mapmap-core doesn't have an OSC trigger field yet.
-        let mut current_trigger_type = if cue.midi_trigger.is_some() {
+        let mut current_trigger_type = if cue.osc_trigger.is_some() {
+            TriggerTypeUI::Osc
+        } else if cue.midi_trigger.is_some() {
             TriggerTypeUI::Midi
         } else if cue.time_trigger.is_some() {
             TriggerTypeUI::Time
@@ -270,9 +271,13 @@ impl CuePanel {
 
         if current_trigger_type != old_trigger_type {
             changed = true;
+            cue.osc_trigger = None;
             cue.midi_trigger = None;
             cue.time_trigger = None;
             match current_trigger_type {
+                TriggerTypeUI::Osc => {
+                    cue.osc_trigger = Some(OscTrigger::new("/mapmap/cue/".to_string()));
+                }
                 TriggerTypeUI::Midi => {
                     cue.midi_trigger = Some(MidiTrigger::note(0, 60)); // Default trigger
                 }
@@ -286,7 +291,14 @@ impl CuePanel {
         // --- Trigger-specific settings ---
         match current_trigger_type {
             TriggerTypeUI::Osc => {
-                ui.label("OSC trigger settings (not implemented).");
+                if let Some(osc_trigger) = &mut cue.osc_trigger {
+                    ui.horizontal(|ui| {
+                        ui.label(i18n.t("label-osc-address"));
+                        if ui.text_edit_singleline(&mut osc_trigger.address).changed() {
+                            changed = true;
+                        }
+                    });
+                }
             }
             TriggerTypeUI::Midi => {
                 if let Some(_midi_trigger) = &mut cue.midi_trigger {
