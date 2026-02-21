@@ -230,4 +230,49 @@ mod tests {
         assert_eq!(curve.apply(-0.5), 0.0);
         assert_eq!(curve.apply(1.5), 1.0);
     }
+
+    #[test]
+    fn test_midi_mapping_unmapped() {
+        let mut mapping = MidiMapping::new();
+        let key = MidiMappingKey::Control(0, 10);
+        mapping.add_mapping(
+            key,
+            ControlTarget::MasterOpacity,
+            0.0,
+            1.0,
+            MappingCurve::Linear,
+        );
+
+        // Mapped message
+        let msg_mapped = MidiMessage::ControlChange {
+            channel: 0,
+            controller: 10,
+            value: 127,
+        };
+        assert!(mapping.get_control_value(&msg_mapped).is_some());
+
+        // Unmapped controller
+        let msg_unmapped_cc = MidiMessage::ControlChange {
+            channel: 0,
+            controller: 11,
+            value: 127,
+        };
+        assert!(mapping.get_control_value(&msg_unmapped_cc).is_none());
+
+        // Unmapped channel
+        let msg_unmapped_ch = MidiMessage::ControlChange {
+            channel: 1,
+            controller: 10,
+            value: 127,
+        };
+        assert!(mapping.get_control_value(&msg_unmapped_ch).is_none());
+
+        // Unmapped message type (Note On)
+        let msg_note = MidiMessage::NoteOn {
+            channel: 0,
+            note: 10,
+            velocity: 127,
+        };
+        assert!(mapping.get_control_value(&msg_note).is_none());
+    }
 }

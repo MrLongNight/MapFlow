@@ -1,3 +1,14 @@
+## 2025-05-24 - Initial Insights
+
+**Erkenntnis:** `TriggerConfig::apply` in `mapmap-core` creates a new `rand::rng()` instance on every call for `RandomInRange` mode. This is likely a performance bottleneck in hot paths (e.g., audio triggers).
+**Aktion:** Consider refactoring `TriggerConfig::apply` to accept a mutable reference to an RNG or use `thread_rng()` more efficiently. For now, testing acknowledges this behavior.
+
+**Erkenntnis:** `VideoFrame` in `mapmap-io` uses `FrameData::Gpu(Arc<wgpu::Texture>)`, making it difficult to unit test without a GPU context.
+**Aktion:** Use `#[ignore]` for GPU-dependent tests or separate logic from resource holding where possible. Ensure CPU fallback paths are robustly tested.
+
+**Erkenntnis:** `MidiMappingKey` implements `From<&MidiMessage>` returning `Option<MidiMappingKey>`. This is unconventional (vs `TryFrom`) but enables ergonomic `let key: Option<_> = msg.into()` in event loops.
+**Aktion:** Document this pattern in `MidiMappingKey` docs to avoid confusion during future refactoring.
+
 ## 2025-02-18 - [Critical Test Gaps]
 
 **Erkenntnis:** Critical socket generation logic in `module.rs` was relying on untested `match` arms, particularly for `Bevy` source types and `Hue` integration. `Layer` transformation logic also lacked explicit verification of delegate calls to `Transform`.
@@ -6,6 +17,9 @@
 
 **Aktion:** Audio-Input-Buffer immer am Eingangspunkt sanitizen (nicht-finite Werte durch 0.0 ersetzen). `test_sanitization_of_bad_input` wurde zu `AudioAnalyzerV2` hinzugefügt, um dies strikt durchzusetzen.
 **Aktion:** Implemented comprehensive socket verification tests (`test_bevy_source_sockets`, `test_hue_sockets`) and transform delegation tests (`test_layer_transform_delegation`). Future PRs should strictly enforce `socket_type` verification for any new `ModulePartType`.
+
+**Erkenntnis:** `ControlValue::validate` uses `std::path::Path::components()` to check for `ParentDir` (`..`) traversal attempts in string values.
+**Aktion:** Verify this pattern is consistently applied across all user-input paths to prevent directory traversal attacks.
 
 ## 2024-10-24 - Initial Setup
 
