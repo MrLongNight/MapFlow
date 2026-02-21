@@ -19,9 +19,48 @@ use mapmap_ui::types::MediaPlaybackCommand;
 
 use tracing::{error, info, warn};
 
-use winit::{event::WindowEvent, event_loop::EventLoop};
+use winit::application::ApplicationHandler;
+use winit::event::WindowEvent;
+use winit::event_loop::{ActiveEventLoop, EventLoop};
+use winit::window::WindowId;
 
 use crate::app::core::app_struct::App;
+
+struct MapFlowApp {
+    app: Option<App>,
+}
+
+impl ApplicationHandler for MapFlowApp {
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        if self.app.is_none() {
+            info!("Initializing MapFlow...");
+            self.app = Some(
+                pollster::block_on(App::new(event_loop))
+                    .expect("Failed to initialize application"),
+            );
+        }
+    }
+
+    fn window_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        window_id: WindowId,
+        event: WindowEvent,
+    ) {
+        if let Some(app) = &mut self.app {
+            let _ = app.handle_event(
+                winit::event::Event::WindowEvent { window_id, event },
+                event_loop,
+            );
+        }
+    }
+
+    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+        if let Some(app) = &mut self.app {
+            let _ = app.handle_event(winit::event::Event::AboutToWait, event_loop);
+        }
+    }
+}
 
 impl App {
     /// Handles a window event.
@@ -279,20 +318,9 @@ fn main() -> Result<()> {
     info!("Starting MapFlow...");
 
     let event_loop = EventLoop::new()?;
-    let mut app: Option<App> = None;
+    let mut app_handler = MapFlowApp { app: None };
 
-    event_loop.run(move |event, elwt| {
-        if app.is_none() {
-            // Async initialization
-            app = Some(pollster::block_on(App::new(elwt)).expect("Failed to initialize application"));
-        }
-
-        if let Some(app_ref) = &mut app {
-            if let Err(e) = app_ref.handle_event(event, elwt) {
-                error!("Application event error: {}", e);
-            }
-        }
-    })?;
+    event_loop.run_app(&mut app_handler)?;
 
     Ok(())
 }
