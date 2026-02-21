@@ -276,7 +276,7 @@ struct RenderContext<'a> {
     color_calibration_renderer: &'a Option<mapmap_render::ColorCalibrationRenderer>,
     mesh_renderer: &'a mut mapmap_render::MeshRenderer,
     texture_pool: &'a mapmap_render::TexturePool,
-    _dummy_view: &'a Option<std::sync::Arc<wgpu::TextureView>>,
+    _dummy_view: &'a Option<Arc<wgpu::TextureView>>,
     mesh_buffer_cache: &'a mut mapmap_render::MeshBufferCache,
     egui_renderer: &'a mut egui_wgpu::Renderer,
 }
@@ -568,7 +568,7 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
                         if needs_recreate {
                             let target_view =
                                 target_tex.create_view(&wgpu::TextureViewDescriptor::default());
-                            let target_view_arc = std::sync::Arc::new(target_view);
+                            let target_view_arc = Arc::new(target_view);
                             app.egui_renderer.update_egui_texture_from_wgpu_texture(
                                 &app.backend.device,
                                 &target_view_arc,
@@ -584,7 +584,7 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
                     Entry::Vacant(e) => {
                         let target_view =
                             target_tex.create_view(&wgpu::TextureViewDescriptor::default());
-                        let target_view_arc = std::sync::Arc::new(target_view);
+                        let target_view_arc = Arc::new(target_view);
                         let id = app.egui_renderer.register_native_texture(
                             &app.backend.device,
                             &target_view_arc,
