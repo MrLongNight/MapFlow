@@ -2455,6 +2455,39 @@ impl ModuleManager {
         self.next_part_id += 1;
         id
     }
+
+    /// Duplicate a module
+    pub fn duplicate_module(&mut self, module_id: ModuleId) -> Option<ModuleId> {
+        let module = self.modules.get(&module_id)?;
+        let mut new_module = module.clone();
+        let new_id = self.next_module_id;
+        self.next_module_id += 1;
+
+        new_module.id = new_id;
+        new_module.name = self.get_next_available_name(&format!("{} (Copy)", module.name));
+
+        self.modules.insert(new_id, new_module);
+        Some(new_id)
+    }
+
+    /// Rename a module
+    pub fn rename_module(&mut self, module_id: ModuleId, new_name: String) -> bool {
+        // Check uniqueness
+        if self
+            .modules
+            .values()
+            .any(|m| m.name == new_name && m.id != module_id)
+        {
+            return false;
+        }
+
+        if let Some(module) = self.modules.get_mut(&module_id) {
+            module.name = new_name;
+            true
+        } else {
+            false
+        }
+    }
 }
 
 impl Default for ModuleManager {
@@ -2726,6 +2759,43 @@ mod tests {
         manager.delete_module(id1);
         assert_eq!(manager.list_modules().len(), 1);
         assert!(manager.get_module(id1).is_none());
+    }
+
+    #[test]
+    fn test_module_manager_duplication() {
+        let mut manager = ModuleManager::new();
+        let id1 = manager.create_module("Original".to_string());
+
+        let id2 = manager.duplicate_module(id1).expect("Failed to duplicate");
+        assert_ne!(id1, id2);
+
+        let m1 = manager.get_module(id1).unwrap();
+        let m2 = manager.get_module(id2).unwrap();
+
+        // Check name generation: "Original" -> "Original (Copy) 1" (because get_next_available_name appends 1)
+        assert_eq!(m1.name, "Original");
+        assert!(m2.name.starts_with("Original (Copy)"));
+
+        // Deep copy verification (simple check)
+        assert_eq!(m1.parts.len(), m2.parts.len());
+    }
+
+    #[test]
+    fn test_module_manager_renaming() {
+        let mut manager = ModuleManager::new();
+        let id1 = manager.create_module("M1".to_string());
+        let _id2 = manager.create_module("M2".to_string());
+
+        // Rename M1 -> M3 (Success)
+        assert!(manager.rename_module(id1, "M3".to_string()));
+        assert_eq!(manager.get_module(id1).unwrap().name, "M3");
+
+        // Rename M3 -> M2 (Fail - taken)
+        assert!(!manager.rename_module(id1, "M2".to_string()));
+        assert_eq!(manager.get_module(id1).unwrap().name, "M3");
+
+        // Rename non-existent (Fail)
+        assert!(!manager.rename_module(999, "M4".to_string()));
     }
 }
 
