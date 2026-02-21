@@ -114,12 +114,13 @@ impl VideoPlayer {
     }
 
     /// Update the player (call every frame)
+    /// Returns Some(frame) only if a NEW frame was decoded this update.
     pub fn update(&mut self, dt: Duration) -> Option<VideoFrame> {
         self.process_commands();
 
-        // If not playing, return last frame or None
+        // If not playing, don't try to decode new frames
         if self.state != PlaybackState::Playing {
-            return self.last_frame.clone();
+            return None;
         }
 
         let duration = self.decoder.duration();
@@ -135,7 +136,7 @@ impl VideoPlayer {
                     self.current_time = Duration::ZERO;
                     if let Err(e) = self.seek_internal(Duration::ZERO) {
                         self.transition_to_error(e);
-                        return self.last_frame.clone();
+                        return None;
                     }
                     let _ = self.status_sender.send(PlaybackStatus::Looped);
                 }
@@ -145,14 +146,10 @@ impl VideoPlayer {
                         self.current_time = duration; // Clamp to end
                         let _ = self.transition_state(PlaybackState::Stopped); // Auto-stop
                         let _ = self.status_sender.send(PlaybackStatus::ReachedEnd);
-                        return self.last_frame.clone();
+                        return None;
                     }
                 }
             }
-        } else if duration == Duration::ZERO {
-            // For 0 duration (unknown/stream), we don't check time >= duration.
-            // We rely on decoder error/EOF.
-            // BUT: If it was PlayOnce, we should be careful not to loop if we hit EOF.
         }
 
         match self.decoder.next_frame() {
@@ -166,24 +163,21 @@ impl VideoPlayer {
                     match self.loop_mode {
                         LoopMode::Loop => {
                             self.current_time = Duration::ZERO;
-                            // For 0 duration, seeking might not be supported or needed.
-                            // If we have a duration, we seek.
                             if duration > Duration::ZERO {
                                 if let Err(seek_err) = self.seek_internal(Duration::ZERO) {
                                     self.transition_to_error(seek_err);
-                                    return self.last_frame.clone();
+                                    return None;
                                 }
                             }
 
                             let _ = self.status_sender.send(PlaybackStatus::Looped);
-                            // Try to get the first frame again immediately so we don't drop a frame
+                            // Try to get the first frame again immediately
                             if let Ok(frame) = self.decoder.next_frame() {
                                 self.last_frame = Some(frame.clone());
                                 return Some(frame);
                             }
                         }
                         LoopMode::PlayOnce => {
-                            // For 0 duration, if we hit EOF, we stop.
                             if duration > Duration::ZERO {
                                 self.current_time = duration;
                             }
@@ -193,14 +187,16 @@ impl VideoPlayer {
                     }
                 } else {
                     warn!("Decoder error during playback: {}", e);
-                    // Only transition to error if it's a critical decode error,
-                    // otherwise keep trying next frame
                 }
 
-                // Return last frame to avoid visual glitches
-                self.last_frame.clone()
+                None
             }
         }
+    }
+
+    /// Get the last decoded frame (even if not new)
+    pub fn last_frame(&self) -> Option<VideoFrame> {
+        self.last_frame.clone()
     }
 
     fn process_commands(&mut self) {

@@ -398,12 +398,12 @@ fn render_content(
             // Fallback for Bevy nodes
             Some(ctx.texture_pool.get_view("bevy_output"))
         } else {
-            // MAGENTA FALLBACK for missing textures
+            // BLACK FALLBACK for missing textures
             let fallback_name = "missing_texture_fallback";
             if !ctx.texture_pool.has_texture(fallback_name) {
                 let width = 64;
                 let height = 64;
-                let data = [255, 0, 255, 255].repeat((width * height) as usize);
+                let data = [0, 0, 0, 255].repeat((width * height) as usize);
                 ctx.texture_pool.ensure_texture(
                     fallback_name,
                     width,

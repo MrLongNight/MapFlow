@@ -15,7 +15,8 @@ pub fn sync_media_players(app: &mut App) {
                 let path_result = match source_type {
                     SourceType::MediaFile { path, .. } => Some(path.clone()),
                     SourceType::VideoUni { path, .. } => Some(path.clone()),
-                    SourceType::VideoMulti { shared_id, .. } => {
+                    SourceType::ImageUni { path, .. } => Some(path.clone()),
+                    SourceType::VideoMulti { shared_id, .. } | SourceType::ImageMulti { shared_id, .. } => {
                         // Look up path in shared media
                         app.state
                             .module_manager
@@ -105,19 +106,44 @@ pub fn update_media_players(app: &mut App, dt: f32) {
 
     for ((mod_id, part_id), (_, player)) in &mut app.media_players {
         let player: &mut mapmap_media::player::VideoPlayer = player;
+        let tex_name = format!("part_{}_{}", mod_id, part_id);
+
+        // Ensure texture entry exists in pool so we don't hit MAGENTA fallback
+        if !texture_pool.has_texture(&tex_name) {
+            let (width, height) = player.resolution();
+            let (w, h) = if width == 0 || height == 0 { (1280, 720) } else { (width, height) };
+            
+            texture_pool.ensure_texture(
+                &tex_name,
+                w,
+                h,
+                wgpu::TextureFormat::Rgba8UnormSrgb,
+                wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            );
+            
+            // Initial black fill
+            let black_data = vec![0u8; (w * h * 4) as usize];
+            texture_pool.upload_data(queue, &tex_name, &black_data, w, h);
+        }
+
         // Update player logic
+        let update_start = std::time::Instant::now();
         if let Some(frame) = player.update(std::time::Duration::from_secs_f32(dt)) {
-            let tex_name = format!("part_{}_{}", mod_id, part_id);
+            let elapsed = update_start.elapsed().as_secs_f64() * 1000.0;
+            if log_this_frame {
+                tracing::debug!("Player update took {:.2}ms for {}:{}", elapsed, mod_id, part_id);
+            }
 
             // Upload to GPU if data is on CPU
             if let mapmap_io::format::FrameData::Cpu(data) = &frame.data {
                 if log_this_frame {
                     tracing::info!(
-                        "Frame upload: mod={} part={} size={}x{}",
+                        "Frame upload: mod={} part={} size={}x{} pts={:?}",
                         mod_id,
                         part_id,
                         frame.format.width,
-                        frame.format.height
+                        frame.format.height,
+                        frame.timestamp
                     );
                 }
 
