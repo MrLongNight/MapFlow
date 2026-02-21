@@ -3553,7 +3553,7 @@ fn test_trigger_config_random_range() {
     for _ in 0..100 {
         let val = config.apply(1.0); // Trigger active
         assert!(
-            val >= 10.0 && val <= 20.0,
+            (10.0..=20.0).contains(&val),
             "Random value {} out of range [10.0, 20.0]",
             val
         );
