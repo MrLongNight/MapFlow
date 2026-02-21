@@ -15,8 +15,8 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 ---
 
 ## 2026-02-21 - Audit of recent changes (Feb 21)
-**Erkenntnis:** Found a recent fix (6b998cf) missing from CHANGELOG.md. ROADMAP.md Stand date was outdated (Feb 17).
-**Aktion:** Added missing entry to CHANGELOG.md and updated ROADMAP.md Stand date and task status (CodeQL, README).
+**Erkenntnis:** Found a recent fix (6b998cf) missing from CHANGELOG.md. ROADMAP.md Stand date was outdated (Feb 17). Also detected and fixed a potential rustfmt inconsistency in `render.rs` that caused CI failure.
+**Aktion:** Added missing entry to CHANGELOG.md, updated ROADMAP.md, and refactored imports in `render.rs` to satisfy strict CI formatting.
 
 ## 2026-01-18 - Missing Documentation for PR #286
 **Erkenntnis:** PR #286 (Archivist Cleanup) was merged and effective (audit reports moved), but missing from `CHANGELOG.md`.
