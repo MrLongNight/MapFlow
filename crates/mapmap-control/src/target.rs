@@ -328,4 +328,33 @@ mod tests {
         let dots_in_name = ControlValue::String("my..file".to_string());
         assert!(dots_in_name.validate().is_ok());
     }
+
+    #[test]
+    fn test_control_target_to_id_string() {
+        assert_eq!(
+            ControlTarget::LayerOpacity(5).to_id_string(),
+            "layer/5/opacity"
+        );
+        assert_eq!(
+            ControlTarget::PaintParameter(2, "brightness".into()).to_id_string(),
+            "paint/2/brightness"
+        );
+        assert_eq!(
+            ControlTarget::MasterOpacity.to_id_string(),
+            "master/opacity"
+        );
+        assert_eq!(
+            ControlTarget::Custom("my_param".into()).to_id_string(),
+            "custom/my_param"
+        );
+    }
+
+    #[test]
+    fn test_control_value_as_string() {
+        let s = ControlValue::String("hello".to_string());
+        assert_eq!(s.as_string(), Some("hello"));
+
+        let f = ControlValue::Float(1.0);
+        assert_eq!(f.as_string(), None);
+    }
 }

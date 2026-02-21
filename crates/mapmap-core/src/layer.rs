@@ -1311,4 +1311,63 @@ mod additional_tests {
         assert!(scale.is_finite());
         assert_eq!(scale, Vec2::ZERO);
     }
+
+    #[test]
+    fn test_transform_matrix_scaling_with_anchor() {
+        let size = Vec2::new(100.0, 100.0);
+
+        // Test 2x scaling from Center (default anchor 0.5, 0.5)
+        let mut transform = Transform::with_uniform_scale(2.0);
+        let matrix = transform.to_matrix(size);
+
+        // Center point (50, 50) should stay at (50, 50)
+        let center = Vec3::new(50.0, 50.0, 0.0);
+        let transformed_center = matrix.transform_point3(center);
+        assert!((transformed_center.x - 50.0).abs() < 0.001);
+        assert!((transformed_center.y - 50.0).abs() < 0.001);
+
+        // Top-Left (0, 0) should move to (-50, -50) relative to center expansion
+        // Relative to pivot (50, 50), TL is (-50, -50). Scaled by 2 = (-100, -100).
+        // Absolute = Pivot + Relative = (50-100, 50-100) = (-50, -50).
+        let tl = Vec3::new(0.0, 0.0, 0.0);
+        let transformed_tl = matrix.transform_point3(tl);
+        assert!((transformed_tl.x - -50.0).abs() < 0.001);
+        assert!((transformed_tl.y - -50.0).abs() < 0.001);
+
+        // Test 2x scaling from Top-Left (anchor 0.0, 0.0)
+        transform.anchor = Vec2::ZERO;
+        let matrix_tl = transform.to_matrix(size);
+
+        // TL (0,0) should stay at (0,0)
+        let transformed_tl_2 = matrix_tl.transform_point3(tl);
+        assert!(transformed_tl_2.abs_diff_eq(Vec3::ZERO, 0.001));
+
+        // Center (50, 50) should move to (100, 100)
+        let transformed_center_2 = matrix_tl.transform_point3(center);
+        assert!((transformed_center_2.x - 100.0).abs() < 0.001);
+        assert!((transformed_center_2.y - 100.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_layer_manager_move_layer_to_bounds() {
+        let mut manager = LayerManager::new();
+        let id1 = manager.create_layer("L1");
+        let _id2 = manager.create_layer("L2");
+
+        // Move to 0 (already at 0)
+        assert!(manager.move_layer_to(id1, 0));
+        assert_eq!(manager.layers()[0].id, id1);
+
+        // Move to last valid index (1)
+        assert!(manager.move_layer_to(id1, 1));
+        assert_eq!(manager.layers()[1].id, id1); // [L2, L1]
+
+        // Move out of bounds (index 2, size is 2)
+        // Should fail and change nothing
+        assert!(!manager.move_layer_to(id1, 2));
+        assert_eq!(manager.layers()[1].id, id1);
+
+        // Move non-existent layer
+        assert!(!manager.move_layer_to(999, 0));
+    }
 }

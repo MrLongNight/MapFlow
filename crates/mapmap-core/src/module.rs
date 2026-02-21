@@ -3480,3 +3480,85 @@ fn test_trigger_config_smoothed_fallback_with_invert_external() {
     // Smoothed (Direct Fallback): 0.0 + (100.0 - 0.0) * 0.8 = 80.0
     assert_eq!(config.apply(0.2), 80.0);
 }
+
+#[test]
+fn test_part_type_socket_generation_coverage() {
+    let mut module = MapFlowModule {
+        id: 1,
+        name: "Test".to_string(),
+        color: [1.0; 4],
+        parts: vec![],
+        connections: vec![],
+        playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+        next_part_id: 1,
+    };
+
+    // Iterate over PartType variants to ensure we can create parts for all of them
+    // and they have valid socket configurations.
+    let types = [
+        PartType::Trigger,
+        PartType::Source,
+        PartType::BevyParticles,
+        PartType::Bevy3DShape,
+        PartType::Mask,
+        PartType::Modulator,
+        PartType::Mesh,
+        PartType::Layer,
+        PartType::Hue,
+        PartType::Output,
+    ];
+
+    for pt in types {
+        let id = module.add_part(pt, (0.0, 0.0));
+        let part = module.parts.iter().find(|p| p.id == id).unwrap();
+
+        // Verify basic socket presence
+        let socket_count = part.inputs.len() + part.outputs.len();
+        assert!(
+            socket_count > 0,
+            "PartType {:?} should have at least one socket",
+            pt
+        );
+    }
+}
+
+#[test]
+fn test_effect_type_all_names() {
+    // Iterate all effects and ensure they have valid names
+    for effect in EffectType::all() {
+        let name = effect.name();
+        assert!(!name.is_empty(), "Effect {:?} has empty name", effect);
+    }
+}
+
+#[test]
+fn test_blend_mode_all_names() {
+    // Iterate all blend modes and ensure they have valid names
+    for mode in BlendModeType::all() {
+        let name = mode.name();
+        assert!(!name.is_empty(), "BlendMode {:?} has empty name", mode);
+    }
+}
+
+#[test]
+fn test_trigger_config_random_range() {
+    let config = TriggerConfig {
+        mode: TriggerMappingMode::RandomInRange,
+        min_value: 10.0,
+        max_value: 20.0,
+        ..Default::default()
+    };
+
+    // Run multiple times to verify range
+    for _ in 0..100 {
+        let val = config.apply(1.0); // Trigger active
+        assert!(
+            (10.0..=20.0).contains(&val),
+            "Random value {} out of range [10.0, 20.0]",
+            val
+        );
+    }
+
+    // When inactive (<= 0), should return min
+    assert_eq!(config.apply(0.0), 10.0);
+}
