@@ -2,6 +2,7 @@
 
 use crate::audio_reactive::AudioTriggerData;
 use crate::module::{ModuleManager, ModulePartType, TriggerType};
+use rand::Rng;
 use std::collections::{HashMap, HashSet};
 
 /// A set of active trigger outputs. Each entry is (part_id, socket_idx).
@@ -51,6 +52,9 @@ impl TriggerSystem {
         dt: f32,
     ) {
         self.active_triggers.clear();
+
+        // Hoist RNG initialization to avoid repeated thread-local access in the loop
+        let mut rng = rand::rng();
 
         for module in module_manager.modules() {
             for part in &module.parts {
@@ -142,8 +146,6 @@ impl TriggerSystem {
 
                             // Initialize target if needed (first run or after type switch)
                             if state.target < 0.0 {
-                                use rand::Rng;
-                                let mut rng = rand::rng();
                                 state.target = rng.random_range(*min_interval_ms..=*max_interval_ms)
                                     as f32
                                     / 1000.0;
@@ -156,8 +158,6 @@ impl TriggerSystem {
                                 self.active_triggers.insert((part.id, 0));
 
                                 // Pick new target
-                                use rand::Rng;
-                                let mut rng = rand::rng();
                                 state.target = rng.random_range(*min_interval_ms..=*max_interval_ms)
                                     as f32
                                     / 1000.0;
