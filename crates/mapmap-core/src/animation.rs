@@ -207,8 +207,27 @@ impl AnimationTrack {
                     InterpolationMode::Linear => kf1.value.lerp(&kf2.value, t),
                     InterpolationMode::Smooth => kf1.value.smooth_lerp(&kf2.value, t),
                     InterpolationMode::Bezier => {
-                        // TODO: Implement Bezier interpolation
-                        kf1.value.lerp(&kf2.value, t)
+                        let mut eased_t = t;
+                        if let (Some(out_tan), Some(in_tan)) = (kf1.out_tangent, kf2.in_tangent) {
+                            let duration = (kf2.time - kf1.time) as f32;
+                            if duration > 0.0 {
+                                // Convert tangents to normalized control points
+                                // P0 = (0,0), P3 = (1,1)
+                                // P1 = (time_offset/dur, val_offset)
+                                // P2 = (1 + time_offset/dur, 1 + val_offset)
+
+                                // Note: tangent[0] is time offset in seconds, so we divide by duration to normalize.
+                                // tangent[1] is treated as normalized value offset (dimensionless weight)
+                                // because AnimValue can be non-scalar (Color, Vec3), making absolute value offsets ambiguous.
+                                let x1 = (out_tan[0] / duration).clamp(0.0, 1.0);
+                                let y1 = out_tan[1];
+                                let x2 = (1.0 + in_tan[0] / duration).clamp(0.0, 1.0);
+                                let y2 = 1.0 + in_tan[1];
+
+                                eased_t = solve_cubic_bezier_y(t, x1, y1, x2, y2);
+                            }
+                        }
+                        kf1.value.lerp(&kf2.value, eased_t)
                     }
                 }
             }
@@ -413,6 +432,99 @@ mod tests {
         if let AnimValue::Float(v) = mid {
             // Smoothstep at 0.5 should be 0.5
             assert!((v - 0.5).abs() < 0.01);
+        }
+    }
+}
+
+/// Solves cubic Bezier curve for t given x, then evaluates y at t.
+/// P0=(0,0), P3=(1,1). P1=(x1, y1), P2=(x2, y2).
+fn solve_cubic_bezier_y(x: f32, x1: f32, y1: f32, x2: f32, y2: f32) -> f32 {
+    // Solve for t such that B_x(t) = x
+    // B_x(t) = (1-t)^3*0 + 3(1-t)^2*t*x1 + 3(1-t)t^2*x2 + t^3*1
+    //        = 3(1-t)^2*t*x1 + 3(1-t)t^2*x2 + t^3
+
+    // Newton-Raphson
+    let mut t = x; // Initial guess
+    for _ in 0..8 {
+        let one_minus_t = 1.0 - t;
+        let t2 = t * t;
+        let one_minus_t2 = one_minus_t * one_minus_t;
+
+        let xt = 3.0 * one_minus_t2 * t * x1 + 3.0 * one_minus_t * t2 * x2 + t * t2;
+
+        if (xt - x).abs() < 1e-5 {
+            break;
+        }
+
+        // Derivative d/dt B_x(t)
+        // d/dt = 3(1-t)^2(x1-x0) + 6(1-t)t(x2-x1) + 3t^2(x3-x2)
+        // x0=0, x3=1
+        // d/dt = 3(1-t)^2*x1 + 6(1-t)t*(x2-x1) + 3t^2*(1-x2)
+        let dxdt =
+            3.0 * one_minus_t2 * x1 + 6.0 * one_minus_t * t * (x2 - x1) + 3.0 * t2 * (1.0 - x2);
+
+        if dxdt.abs() < 1e-5 {
+            break;
+        }
+
+        t -= (xt - x) / dxdt;
+        t = t.clamp(0.0, 1.0);
+    }
+
+    // Calculate y at t
+    // B_y(t) = (1-t)^3*0 + 3(1-t)^2*t*y1 + 3(1-t)t^2*y2 + t^3*1
+    let one_minus_t = 1.0 - t;
+    let t2 = t * t;
+    let one_minus_t2 = one_minus_t * one_minus_t;
+
+    3.0 * one_minus_t2 * t * y1 + 3.0 * one_minus_t * t2 * y2 + t * t2
+}
+
+#[cfg(test)]
+mod test_bezier {
+    use super::*;
+
+    #[test]
+    fn test_cubic_bezier_solver() {
+        // Linear
+        let y = solve_cubic_bezier_y(0.5, 0.0, 0.0, 1.0, 1.0);
+        assert!((y - 0.5).abs() < 0.01);
+
+        // Ease-In (P1=(0.5, 0.0), P2=(1.0, 1.0))
+        // Curve stays flat longer
+        let y_ease_in = solve_cubic_bezier_y(0.25, 0.5, 0.0, 1.0, 1.0);
+        // Should be < 0.25
+        assert!(y_ease_in < 0.25);
+    }
+
+    #[test]
+    fn test_track_bezier_evaluation() {
+        let mut track = AnimationTrack::new("test".to_string(), AnimValue::Float(0.0));
+
+        let mut kf1 = Keyframe::new(0.0, AnimValue::Float(0.0));
+        kf1.interpolation = InterpolationMode::Bezier;
+        // Tangent: 1s duration.
+        // P1 = (0.5, 0.0) -> Out tangent = [0.5, 0.0]
+        kf1.out_tangent = Some([0.5, 0.0]);
+
+        let mut kf2 = Keyframe::new(1.0, AnimValue::Float(100.0));
+        // P2 = (0.5, 1.0) -> In tangent = [-0.5, 0.0] (since x2 = 1 + -0.5 = 0.5)
+        kf2.in_tangent = Some([-0.5, 0.0]);
+
+        track.add_keyframe(kf1);
+        track.add_keyframe(kf2);
+
+        let val_mid = track.evaluate(0.5);
+        if let AnimValue::Float(v) = val_mid {
+            assert!((v - 50.0).abs() < 1.0);
+        } else {
+            panic!("Wrong type");
+        }
+
+        // At 0.2, should be < 20 (ease in)
+        let val_early = track.evaluate(0.2);
+        if let AnimValue::Float(v) = val_early {
+            assert!(v < 20.0);
         }
     }
 }
