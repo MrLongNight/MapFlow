@@ -1,6 +1,7 @@
 //! MapFlow - Open source Vj Projection Mapping Software
 //!
 //! This is the main application crate for MapFlow.
+//! VERSION: 2026-02-21-FIX-WINIT-RUN-APP-V2
 
 #![warn(missing_docs)]
 
