@@ -73,9 +73,9 @@ impl Widget for AudioMeter {
 
 /// Draws the mounting frame with 4 phillips screws
 fn draw_rack_frame(painter: &egui::Painter, rect: Rect) {
-    let frame_color = Color32::from_rgb(45, 45, 50);
-    let frame_highlight = Color32::from_rgb(65, 65, 70);
-    let frame_shadow = Color32::from_rgb(25, 25, 30);
+    let frame_color = crate::theme::colors::LIGHTER_GREY;
+    let frame_highlight = crate::theme::colors::STROKE_GREY;
+    let frame_shadow = crate::theme::colors::DARK_GREY;
 
     // Main frame
     painter.rect_filled(rect, 0.0, frame_color);
@@ -300,7 +300,7 @@ fn draw_digital_stereo(ui: &mut egui::Ui, rect: Rect, db_left: f32, db_right: f3
     let painter = ui.painter();
 
     // Dark background
-    painter.rect_filled(rect, 0.0, Color32::from_rgb(10, 10, 12));
+    painter.rect_filled(rect, 0.0, crate::theme::colors::DARKER_GREY);
 
     // Layout:
     // Top: L
