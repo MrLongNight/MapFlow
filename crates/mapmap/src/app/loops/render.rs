@@ -51,13 +51,11 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
 
     // SCOPE for Window Context Borrow
     {
-        // Safety check for window existence
-        let has_window = app.window_manager.get(output_id).is_some();
-        if !has_window {
-            return Ok(());
-        }
-
-        let window_context = app.window_manager.get(output_id).unwrap();
+        let window_context = match app.window_manager.get(output_id) {
+            Some(ctx) => ctx,
+            None => return Ok(()),
+        };
+        
         let surface_texture = window_context.surface.get_current_texture()?;
         let view = surface_texture
             .texture
@@ -506,25 +504,35 @@ fn render_content(
 }
 
 fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
-    let module_output_infos: Vec<(u64, u64, String)> = app
-        .state
-        .module_manager
-        .list_modules()
-        .iter()
-        .flat_map(|m| m.parts.iter().map(move |p| (m.id, p)))
-        .filter_map(|(mid, part)| {
-            if let mapmap_core::module::ModulePartType::Output(
-                mapmap_core::module::OutputType::Projector { id, .. },
-            ) = &part.part_type
-            {
-                Some((mid, *id, format!("output_{}", id)))
-            } else {
-                None
-            }
-        })
-        .collect();
+    // 1. THROTTLING: Only update previews every 5 frames to save GPU time
+    app.frame_counter = app.frame_counter.wrapping_add(1);
+    if app.frame_counter % 5 != 0 {
+        return;
+    }
 
-    for (_mid, output_id, _name) in module_output_infos {
+    // 2. CACHING: Only rebuild the list of output parts if graph changed
+    if app.cached_output_infos.is_empty() || app.last_graph_revision != app.state.module_manager.graph_revision {
+        app.cached_output_infos = app
+            .state
+            .module_manager
+            .list_modules()
+            .iter()
+            .flat_map(|m| m.parts.iter().map(move |p| (m.id, p)))
+            .filter_map(|(mid, part)| {
+                if let mapmap_core::module::ModulePartType::Output(
+                    mapmap_core::module::OutputType::Projector { id, .. },
+                ) = &part.part_type
+                {
+                    Some((mid, *id, format!("output_{}", id)))
+                } else {
+                    None
+                }
+            })
+            .collect();
+    }
+
+    for (_mid, output_id, _name) in &app.cached_output_infos {
+        let output_id = *output_id;
         if let Some(texture_name) = app
             .output_assignments
             .get(&output_id)

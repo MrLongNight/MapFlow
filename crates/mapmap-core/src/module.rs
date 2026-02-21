@@ -2336,6 +2336,9 @@ pub struct ModuleManager {
     /// Shared media registry
     #[serde(default)]
     pub shared_media: SharedMediaState,
+    /// Incrementing counter tracking graph structural changes
+    #[serde(skip)]
+    pub graph_revision: u64,
 }
 
 impl PartialEq for ModuleManager {
@@ -2358,7 +2361,13 @@ impl ModuleManager {
             color_palette: default_color_palette(),
             next_color_index: 0,
             shared_media: SharedMediaState::new(),
+            graph_revision: 1,
         }
+    }
+
+    /// Mark the graph as dirty by incrementing revision
+    pub fn mark_dirty(&mut self) {
+        self.graph_revision = self.graph_revision.wrapping_add(1);
     }
 
     /// Add a part to a specific module
@@ -2368,6 +2377,7 @@ impl ModuleManager {
         part_type: PartType,
         position: (f32, f32),
     ) -> Option<ModulePartId> {
+        self.mark_dirty();
         self.modules
             .get_mut(&module_id)
             .map(|module| module.add_part(part_type, position))
@@ -2387,6 +2397,7 @@ impl ModuleManager {
 
     /// Create a new module
     pub fn create_module(&mut self, mut name: String) -> ModuleId {
+        self.mark_dirty();
         // Enforce uniqueness to prevent duplicate names
         if self.modules.values().any(|m| m.name == name) {
             name = self.get_next_available_name(&name);
@@ -2414,6 +2425,7 @@ impl ModuleManager {
 
     /// Delete a module
     pub fn delete_module(&mut self, id: ModuleId) {
+        self.mark_dirty();
         self.modules.remove(&id);
     }
 
@@ -2431,6 +2443,7 @@ impl ModuleManager {
 
     /// Get module by ID (mutable)
     pub fn get_module_mut(&mut self, id: ModuleId) -> Option<&mut MapFlowModule> {
+        self.mark_dirty();
         self.modules.get_mut(&id)
     }
 

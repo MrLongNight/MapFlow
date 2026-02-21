@@ -93,6 +93,12 @@ pub struct App {
     pub dummy_view: Option<std::sync::Arc<wgpu::TextureView>>,
     /// Module evaluator
     pub module_evaluator: ModuleEvaluator,
+    /// Last processed graph revision
+    pub last_graph_revision: u64,
+    /// Cached info about output parts for preview rendering
+    pub cached_output_infos: Vec<(u64, u64, String)>,
+    /// Global frame counter for throttling
+    pub frame_counter: u64,
     /// Active media pipelines for source nodes ((ModuleID, PartID) -> Pipeline)
     pub media_players: HashMap<(ModulePartId, ModulePartId), (String, VideoPlayer)>,
     /// FPS calculation: accumulated frame times

@@ -304,10 +304,8 @@ impl ControllerOverlayPanel {
     /// Load controller elements from JSON
     #[cfg(feature = "midi")]
     pub fn load_elements(&mut self, json: &str) -> Result<(), serde_json::Error> {
-        let mut elements = ControllerElements::from_json(json)?;
-        if elements.controller == "Ecler NUO 4" {
-            self.expand_nuo4_elements(&mut elements);
-        }
+        let elements = ControllerElements::from_json(json)?;
+        // Dynamic expansion removed - now using static elements from JSON for better control
         self.elements = Some(elements);
         Ok(())
     }
@@ -549,7 +547,7 @@ impl ControllerOverlayPanel {
             .collapsible(true)
             .min_width(400.0)
             .min_height(300.0)
-            .max_width(2500.0)
+            .max_width(MAX_WIDTH * self.scale * 0.65) // Limit to Mixer section width (approx 65%)
             .show(ctx, |ui| {
                 // === TOOLBAR ===
                 ui.horizontal(|ui| {

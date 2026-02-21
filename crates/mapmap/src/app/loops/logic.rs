@@ -25,15 +25,25 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
         tracing::trace!("Effect updates: {}", param_updates.len());
     }
 
+    // --- Graph & Renderer Evaluation ---
+    let graph_dirty = app.state.module_manager.graph_revision != app.last_graph_revision;
+    
+    // Always clear and rebuild render_ops for now to ensure reactive triggers work,
+    // BUT we could optimize this further if we separate structural from value changes.
+    app.render_ops.clear();
+    
     // --- Bevy Runner Update ---
     if let Some(runner) = &mut app.bevy_runner {
         let runner: &mut mapmap_bevy::BevyRunner = runner;
         let mut node_triggers = std::collections::HashMap::new();
 
-        // First sync graph state and collect triggers
         for module in app.state.module_manager.list_modules() {
             let module_id = module.id;
-            runner.apply_graph_state(module);
+            
+            // OPTIMIZATION: Only apply structural graph state to Bevy if changed
+            if graph_dirty {
+                runner.apply_graph_state(module);
+            }
 
             if let Some(module_ref) = app.state.module_manager.get_module(module_id) {
                 let eval_result = app
@@ -45,6 +55,15 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
                         node_triggers.insert((module_id, *part_id), *last_val);
                     }
                 }
+                
+                // Collect render ops while we are already evaluating for triggers
+                app.render_ops.extend(
+                    eval_result
+                        .render_ops
+                        .iter()
+                        .cloned()
+                        .map(|op| (module_id, op)),
+                );
             }
         }
 
@@ -58,64 +77,63 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
             bpm: analysis.tempo_bpm,
         };
         runner.update(&trigger_data, &node_triggers);
-    }
-    // --- Module Graph Evaluation ---
-    // Evaluate ALL modules and merge render_ops for multi-output support
-    app.render_ops.clear();
-    for module in app.state.module_manager.list_modules() {
-        let module_id = module.id;
-        if let Some(module_ref) = app.state.module_manager.get_module(module_id) {
-            let eval_result = app
-                .module_evaluator
-                .evaluate(module_ref, &app.state.module_manager.shared_media);
-            // Push (ModuleId, RenderOp) tuple
-            app.render_ops.extend(
-                eval_result
-                    .render_ops
-                    .iter()
-                    .cloned()
-                    .map(|op| (module_id, op)),
-            );
-        }
-    }
-
-    // Sync output windows based on MODULE GRAPH STRUCTURE (stable),
-    // NOT render_ops (which can be empty/fluctuate).
-    let current_output_ids: HashSet<u64> = app
-        .state
-        .module_manager
-        .list_modules()
-        .iter()
-        .flat_map(|m| m.parts.iter())
-        .filter_map(|part| {
-            if let ModulePartType::Output(OutputType::Projector { id, .. }) = &part.part_type {
-                Some(*id)
-            } else {
-                None
+    } else {
+        // Fallback for when Bevy is disabled: still need to evaluate for render_ops
+        for module in app.state.module_manager.list_modules() {
+            let module_id = module.id;
+            if let Some(module_ref) = app.state.module_manager.get_module(module_id) {
+                let eval_result = app
+                    .module_evaluator
+                    .evaluate(module_ref, &app.state.module_manager.shared_media);
+                app.render_ops.extend(
+                    eval_result
+                        .render_ops
+                        .iter()
+                        .cloned()
+                        .map(|op| (module_id, op)),
+                );
             }
-        })
-        .collect();
-
-    // Get current window IDs (excluding main window 0)
-    let prev_output_ids: HashSet<u64> = app
-        .window_manager
-        .iter()
-        .filter(|wc| wc.output_id != 0)
-        .map(|wc| wc.output_id)
-        .collect();
-
-    // Only sync if module graph's projector set changed
-    if ui_needs_sync || current_output_ids != prev_output_ids {
-        info!(
-            "Output set changed: {:?} -> {:?}",
-            prev_output_ids, current_output_ids
-        );
-        // Create temp list of ops for sync
-        let ops_only: Vec<mapmap_core::module_eval::RenderOp> =
-            app.render_ops.iter().map(|(_, op)| op.clone()).collect();
-        if let Err(e) = sync_output_windows(app, elwt, &ops_only, None) {
-            tracing::error!("Failed to sync output windows: {}", e);
         }
+    }
+
+    // --- Output Window Sync (Optimized) ---
+    if ui_needs_sync || graph_dirty {
+        let current_output_ids: HashSet<u64> = app
+            .state
+            .module_manager
+            .list_modules()
+            .iter()
+            .flat_map(|m| m.parts.iter())
+            .filter_map(|part| {
+                if let ModulePartType::Output(OutputType::Projector { id, .. }) = &part.part_type {
+                    Some(*id)
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        let prev_output_ids: HashSet<u64> = app
+            .window_manager
+            .iter()
+            .filter(|wc| wc.output_id != 0)
+            .map(|wc| wc.output_id)
+            .collect();
+
+        if ui_needs_sync || current_output_ids != prev_output_ids {
+            info!(
+                "Output set changed: {:?} -> {:?}",
+                prev_output_ids, current_output_ids
+            );
+            let ops_only: Vec<mapmap_core::module_eval::RenderOp> =
+                app.render_ops.iter().map(|(_, op)| op.clone()).collect();
+            if let Err(e) = sync_output_windows(app, elwt, &ops_only, None) {
+                tracing::error!("Failed to sync output windows: {}", e);
+            }
+        }
+        
+        // Update revision after sync
+        app.last_graph_revision = app.state.module_manager.graph_revision;
     }
 
     // --- Oscillator Update ---

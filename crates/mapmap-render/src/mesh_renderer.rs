@@ -61,6 +61,9 @@ pub struct MeshRenderer {
     sampler: wgpu::Sampler,
     device: Arc<wgpu::Device>,
 
+    /// Cached matrix for normalizing coordinates from 0..1 to -1..1 (wgpu)
+    normalization_matrix: Mat4,
+
     // Caching
     uniform_cache: Vec<CachedMeshUniform>,
     current_cache_index: usize,
@@ -71,6 +74,10 @@ impl MeshRenderer {
     /// Create a new mesh renderer
     pub fn new(device: Arc<wgpu::Device>, target_format: wgpu::TextureFormat) -> Result<Self> {
         info!("Creating mesh renderer");
+
+        // Pre-calculate normalization matrix
+        let normalization_matrix = Mat4::from_translation(glam::vec3(-1.0, 1.0, 0.0))
+            * Mat4::from_scale(glam::vec3(2.0, -2.0, 1.0));
 
         // Create sampler
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
@@ -331,9 +338,7 @@ impl MeshRenderer {
     ) -> Arc<wgpu::BindGroup> {
         // Expand cache if needed
         if self.current_cache_index >= self.uniform_cache.len() {
-            let normalization = Mat4::from_translation(glam::vec3(-1.0, 1.0, 0.0))
-                * Mat4::from_scale(glam::vec3(2.0, -2.0, 1.0));
-            let final_transform = normalization * transform;
+            let final_transform = self.normalization_matrix * transform;
 
             let uniforms = MeshUniforms {
                 transform: final_transform.to_cols_array_2d(),
@@ -373,9 +378,7 @@ impl MeshRenderer {
 
         // Update current buffer
         let cache_entry = &mut self.uniform_cache[self.current_cache_index];
-        let normalization = Mat4::from_translation(glam::vec3(-1.0, 1.0, 0.0))
-            * Mat4::from_scale(glam::vec3(2.0, -2.0, 1.0));
-        let final_transform = normalization * transform;
+        let final_transform = self.normalization_matrix * transform;
 
         let uniforms = MeshUniforms {
             transform: final_transform.to_cols_array_2d(),
@@ -416,9 +419,7 @@ impl MeshRenderer {
     ) -> Arc<wgpu::BindGroup> {
         // Expand cache if needed
         if self.current_cache_index >= self.uniform_cache.len() {
-            let normalization = Mat4::from_translation(glam::vec3(-1.0, 1.0, 0.0))
-                * Mat4::from_scale(glam::vec3(2.0, -2.0, 1.0));
-            let final_transform = normalization * transform;
+            let final_transform = self.normalization_matrix * transform;
 
             let uniforms = MeshUniforms {
                 transform: final_transform.to_cols_array_2d(),
@@ -458,9 +459,7 @@ impl MeshRenderer {
 
         // Update current buffer
         let cache_entry = &mut self.uniform_cache[self.current_cache_index];
-        let normalization = Mat4::from_translation(glam::vec3(-1.0, 1.0, 0.0))
-            * Mat4::from_scale(glam::vec3(2.0, -2.0, 1.0));
-        let final_transform = normalization * transform;
+        let final_transform = self.normalization_matrix * transform;
 
         let uniforms = MeshUniforms {
             transform: final_transform.to_cols_array_2d(),

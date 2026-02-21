@@ -156,6 +156,7 @@ pub fn update_media_players(app: &mut App, dt: f32) {
                     wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
                 );
 
+                let upload_start = std::time::Instant::now();
                 texture_pool.upload_data(
                     queue,
                     &tex_name,
@@ -163,6 +164,10 @@ pub fn update_media_players(app: &mut App, dt: f32) {
                     frame.format.width,
                     frame.format.height,
                 );
+                let upload_elapsed = upload_start.elapsed().as_secs_f64() * 1000.0;
+                if log_this_frame {
+                    tracing::debug!("Texture upload took {:.2}ms for {}:{}", upload_elapsed, mod_id, part_id);
+                }
             }
         }
 
