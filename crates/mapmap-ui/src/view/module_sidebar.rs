@@ -46,9 +46,7 @@ impl ModuleSidebar {
                             self.should_focus_rename = false;
                         }
 
-                        if response.lost_focus()
-                            || ui.input(|i| i.key_pressed(egui::Key::Enter))
-                        {
+                        if response.lost_focus() || ui.input(|i| i.key_pressed(egui::Key::Enter)) {
                             if !self.rename_buffer.trim().is_empty() {
                                 manager.rename_module(id, self.rename_buffer.clone());
                             }
