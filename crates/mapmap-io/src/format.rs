@@ -444,4 +444,34 @@ mod tests {
         assert_eq!(frame.size(), Some(format.buffer_size()));
         assert!(frame.is_valid());
     }
+
+    #[test]
+    fn test_pixel_format_is_planar() {
+        assert!(PixelFormat::YUV420P.is_planar());
+        assert!(PixelFormat::YUV422P.is_planar());
+        assert!(PixelFormat::NV12.is_planar());
+        assert!(!PixelFormat::RGBA8.is_planar());
+        assert!(!PixelFormat::UYVY.is_planar());
+    }
+
+    #[test]
+    fn test_pixel_format_is_rgb() {
+        assert!(PixelFormat::RGBA8.is_rgb());
+        assert!(PixelFormat::BGRA8.is_rgb());
+        assert!(PixelFormat::RGB8.is_rgb());
+        assert!(!PixelFormat::YUV420P.is_rgb());
+    }
+
+    #[test]
+    fn test_video_format_non_standard() {
+        // Odd resolution
+        let format = VideoFormat::new(1366, 768, PixelFormat::RGBA8, 59.94);
+        // 1366x768 is HD (>= 1280x720)
+        assert!(format.is_hd());
+
+        let format_odd = VideoFormat::new(100, 100, PixelFormat::RGBA8, 10.0);
+        assert!(!format_odd.is_hd());
+        assert!(!format_odd.is_4k());
+        assert_eq!(format_odd.aspect_ratio(), 1.0);
+    }
 }
