@@ -61,3 +61,8 @@
 **Vulnerability:** API responses containing sensitive system status and configuration were potentially cacheable by intermediaries and browsers because `Cache-Control` headers were missing.
 **Learning:** Default `security_headers` middleware in Axum does not automatically prevent caching. Explicit `no-store` is required for control interfaces exposing sensitive data.
 **Prevention:** Always add `Cache-Control: no-store, max-age=0` and `Pragma: no-cache` to the security headers middleware for authenticated API routes.
+
+## 2026-10-31 - Missing File Size Limit on Project Load
+**Vulnerability:** The `ProjectFile::load` function read the entire file content into memory without checking its size first. This allowed a potential Denial of Service (DoS) attack where a malicious actor could trigger the application to load a massive file (e.g., via MCP or API), causing an Out of Memory (OOM) crash.
+**Learning:** Always validate resource limits (like file size) before allocating memory for external inputs. Trust boundaries apply to files on disk when they can be influenced by external inputs.
+**Prevention:** Enforce a strict `MAX_PROJECT_FILE_SIZE` (e.g., 50MB) and check `std::fs::metadata(path).len()` before opening the file.

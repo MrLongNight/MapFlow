@@ -18,6 +18,11 @@ use std::path::Path;
 /// changes are made to the `ProjectFile` struct or its children.
 pub const PROJECT_FILE_VERSION: &str = "1.0.0";
 
+/// Maximum allowed project file size (50 MB).
+///
+/// This limit prevents unbounded resource consumption (DoS) when loading project files.
+pub const MAX_PROJECT_FILE_SIZE: u64 = 50 * 1024 * 1024;
+
 /// Represents the top-level structure of a saved MapFlow project file.
 ///
 /// This struct is what gets serialized to/from RON or JSON. It wraps the
@@ -52,6 +57,18 @@ impl ProjectFile {
     /// This function handles the low-level deserialization from either RON or JSON,
     /// depending on the file extension.
     pub fn load(path: &Path) -> Result<Self> {
+        Self::load_with_limit(path, MAX_PROJECT_FILE_SIZE)
+    }
+
+    /// Loads a `ProjectFile` with a specific file size limit.
+    fn load_with_limit(path: &Path, limit: u64) -> Result<Self> {
+        // Check file size first
+        let metadata = std::fs::metadata(path)?;
+        let size = metadata.len();
+        if size > limit {
+            return Err(IoError::FileTooLarge { size, limit });
+        }
+
         let extension = path
             .extension()
             .and_then(|ext| ext.to_str())
@@ -177,5 +194,28 @@ mod tests {
         let second_modified_at = project_file.metadata.modified_at;
 
         assert!(second_modified_at > first_modified_at);
+    }
+
+    #[test]
+    fn test_load_file_too_large() {
+        use std::io::Write;
+
+        let file = NamedTempFile::new().unwrap();
+        let path = file.path().with_extension("ron");
+        let mut file = File::create(&path).unwrap();
+
+        // Write 1KB of data
+        let data = vec![b' '; 1024];
+        file.write_all(&data).unwrap();
+
+        // Try to load with a small limit (500 bytes)
+        let result = ProjectFile::load_with_limit(&path, 500);
+
+        assert!(matches!(result, Err(IoError::FileTooLarge { .. })));
+
+        if let Err(IoError::FileTooLarge { size, limit }) = result {
+            assert_eq!(size, 1024);
+            assert_eq!(limit, 500);
+        }
     }
 }
