@@ -2,7 +2,7 @@
 //!
 //! Provides a consistent frame and background for UI panels.
 
-use egui::{Stroke, Style, Ui};
+use egui::{Color32, Stroke, Style, Ui};
 
 pub struct StyledPanel {
     title: String,
@@ -17,11 +17,11 @@ impl StyledPanel {
 
     pub fn show<R>(self, ui: &mut Ui, add_contents: impl FnOnce(&mut Ui) -> R) -> R {
         let frame = egui::Frame {
-            fill: crate::theme::colors::DARK_GREY,
-            corner_radius: egui::CornerRadius::ZERO,
+            fill: Color32::from_rgb(35, 35, 40),
+            corner_radius: egui::CornerRadius::same(4),
             inner_margin: egui::Margin::same(8),
             outer_margin: egui::Margin::same(0),
-            stroke: Stroke::new(1.0, crate::theme::colors::STROKE_GREY),
+            stroke: Stroke::new(1.0, Color32::from_gray(60)),
             ..Default::default()
         };
 

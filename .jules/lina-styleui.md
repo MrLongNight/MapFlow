@@ -1,9 +1,57 @@
 # Lina StyleUI Journal
 
-## 2024-05-23 – Initial Observation
-**Learning:** The "Cyber Dark" theme is defined with specific colors (`DARK_GREY`, `CYAN_ACCENT`) and sharp corners (`CornerRadius::ZERO`), but `StyledPanel` in `widgets/panel.rs` uses rounded corners and hardcoded RGB values that deviate from the theme.
-**Action:** specific widgets must be audited to ensure they reference `theme::colors` and `CornerRadius::ZERO` instead of hardcoded defaults.
+## 2024-05-22 – [Visual Gap Analysis]
+**Learning:** MapFlow's current UI is "flat dark" but lacks the "Cyber Dark" structure found in industry standards (Resolume, MadMapper).
+- **Problem:** Visual Hierarchy is weak. Panels blend together. Lists are dense and unstyled. Active states are low-contrast.
+- **Reference Standard:** Resolume/MadMapper use:
+    - **Strong Borders:** Panels are clearly contained.
+    - **Neon Accents:** Active states (play, selected) are high-contrast Cyan or Orange.
+    - **Headers:** Content vs. Controls is strictly separated.
+**Action:** Implement "Cyber Dark" theme:
+1.  **Container Strategy:** Use `egui::Frame` with visible strokes/rounding for panels.
+2.  **Accent Strategy:** Define a "Cyber Cyan" or "Neon Orange" for `Visuals.selection`.
+3.  **Typography:** Ensure headers are distinct (e.g., Bold/Different Color) from data.
 
-## 2024-05-23 – LayerPanel Clutter
-**Learning:** `LayerPanel` uses nested `ui.indent` which creates uneven spacing and wastes horizontal space. The "zebra striping" and selection highlight are implemented with ad-hoc logic in the loop, making it hard to maintain consistent row heights and alignments.
-**Action:** Refactor list rendering to use a flat or controlled indentation approach with consistent row heights, and centralized styling for "selected" and "hovered" states.
+## 2024-05-22 – [Theme Definition]
+**Learning:** `egui` default dark theme is functional but too "gray".
+**Action:** Will look for `ctx.set_visuals` to inject:
+- Background: Darker (almost black).
+- Panel Background: Dark Gray.
+- Stroke: Lighter Gray for definition.
+- Accent: High saturation.
+
+## 2024-05-23 – [Hierarchy via Color Depth]
+**Learning:** To create hierarchy without adding layout complexity (margins/padding), color depth is effective.
+- **Insight:** Separating `window_fill` (Background) and `panel_fill` (Foreground) creates a "floating panel" effect even with standard `egui` layouts.
+- **Palette:**
+    - Window: `(5, 5, 8)` (Almost Black/Navy)
+    - Panel: `(18, 18, 24)` (Deep Navy)
+    - Border: `(80, 80, 90)` (Blue-Grey)
+**Action:** Applied these constants to `Theme::Resolume`. Future panels should respect `ui.visuals().panel_fill` to inherit this depth automatically.
+
+## 2024-05-24 – [List & Table Patterns]
+**Learning:** Using `ui.group` for list items creates excessive visual noise ("box-in-box").
+- **Insight:** Clean lists use `egui::Frame` with subtle background variations (zebra striping) and no stroke for individual rows.
+- **Pattern:**
+    - **Selection:** `Visuals.selection.bg_fill.linear_multiply(0.2)` for row background.
+    - **Striping:** `Visuals.faint_bg_color` for odd rows.
+    - **Buttons:** Consolidate repeated widget logic into helpers (e.g., `icon_button`) to enforce consistent active/hover states.
+**Action:** Refactored `LayerPanel` to use this pattern, removing nested groups and aligning controls horizontally.
+
+## 2026-02-01 – [Node Visual Hierarchy]
+**Learning:** Hardcoded colors in custom painting code (like `module_canvas`) drift from the central theme, causing visual inconsistency.
+- **Insight:** Node editors are "Canvas" elements and should use the `Panel` color for bodies but require a distinct `Header` color to establish hierarchy within the node itself.
+- **Pattern:**
+    - **Node Body:** `colors::DARK_GREY` (matches panels).
+    - **Node Header:** `colors::LIGHTER_GREY` (creates contrast vs body).
+    - **Separator:** `colors::STROKE_GREY` (sharp definition).
+**Action:** Refactored `ModuleCanvas` to use `crate::theme::colors` constants, enforcing the Cyber Dark palette on the node graph.
+
+## 2026-02-16 – [Refactoring Mapping and Audio Panels]
+**Learning:** `egui::Frame` with `corner_radius(0.0)` and zebra striping is essential for the Cyber Dark look.
+- **Insight:** `MappingPanel` was using mixed UI paradigms. Refactoring it to use `render_panel_header` and consistent row layouts significantly improves readability.
+- **Pattern:**
+    - **Header:** `render_panel_header`
+    - **List:** `egui::ScrollArea` + `egui::Frame` (zebra) + `ui.horizontal`
+    - **Actions:** Right-aligned icon buttons (`delete_button`, `lock_button`, `solo_button`).
+**Action:** Applied this pattern to `MappingPanel` and `AudioPanel`. Also added `lock_button` to `custom.rs` for reuse.
