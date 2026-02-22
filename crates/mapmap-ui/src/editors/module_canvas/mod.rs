@@ -2485,7 +2485,10 @@ impl ModuleCanvas {
             if let Some(module) = manager.get_module_mut(id) {
                 let preferred_pos = pos_override.unwrap_or((400.0, 200.0));
                 let pos = Self::find_free_position(&module.parts, preferred_pos);
-                module.add_part_with_type(mapmap_core::module::ModulePartType::Layer(layer_type), pos);
+                module.add_part_with_type(
+                    mapmap_core::module::ModulePartType::Layer(layer_type),
+                    pos,
+                );
             }
         }
     }
@@ -5156,19 +5159,18 @@ impl ModuleCanvas {
 
         // Retrieve hold progress for visualization (Mary StyleUX)
         let delete_id = egui::Id::new((part.id, "delete"));
-        let _progress = ui
+        let progress = ui
             .ctx()
             .data(|d| d.get_temp::<f32>(delete_id.with("progress")))
             .unwrap_or(0.0);
 
-        /*
-        crate::widgets::custom::draw_safety_radial_fill(ui.painter(),
+        crate::widgets::custom::draw_safety_radial_fill(
+            painter,
             delete_button_rect.center(),
             10.0 * self.zoom,
             progress,
             Color32::from_rgb(255, 50, 50),
         );
-        */
 
         painter.text(
             delete_button_rect.center(),
@@ -5693,10 +5695,7 @@ impl ModuleCanvas {
                     if path.is_empty() {
                         "📁 Select file...".to_string()
                     } else {
-                        format!(
-                            "📁 {}",
-                            path.split(['/', '\\']).next_back().unwrap_or(path)
-                        )
+                        format!("📁 {}", path.split(['/', '\\']).next_back().unwrap_or(path))
                     }
                 }
                 SourceType::Shader { name, .. } => format!("\u{1F3A8} {}", name),
@@ -5752,10 +5751,7 @@ impl ModuleCanvas {
                     if path.is_empty() {
                         "📁 Select mask...".to_string()
                     } else {
-                        format!(
-                            "📁 {}",
-                            path.split(['/', '\\']).next_back().unwrap_or(path)
-                        )
+                        format!("📁 {}", path.split(['/', '\\']).next_back().unwrap_or(path))
                     }
                 }
                 MaskType::Shape(shape) => format!("\u{1F537} {:?}", shape),
