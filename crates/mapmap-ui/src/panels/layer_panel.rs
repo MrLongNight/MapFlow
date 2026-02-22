@@ -37,7 +37,7 @@ impl LayerPanel {
         selected_layer_id: &mut Option<u64>,
         actions: &mut Vec<UIAction>,
         i18n: &LocaleManager,
-        _icon_manager: Option<&IconManager>,
+        icon_manager: Option<&IconManager>,
     ) {
         if !self.visible {
             return;
@@ -88,6 +88,8 @@ impl LayerPanel {
                             selected_layer_id,
                             actions,
                             i18n,
+                            icon_manager,
+                            0,
                         );
                     });
 
@@ -108,6 +110,204 @@ impl LayerPanel {
     }
 
     #[allow(clippy::too_many_arguments)]
+    fn render_layer_row(
+        ui: &mut egui::Ui,
+        layer: &mapmap_core::Layer,
+        layer_manager: &LayerManager,
+        idx: usize,
+        count: usize,
+        depth: usize,
+        prev_id: Option<u64>,
+        next_id: Option<u64>,
+        selected_layer_id: &mut Option<u64>,
+        actions: &mut Vec<UIAction>,
+        _i18n: &LocaleManager,
+        icon_manager: Option<&IconManager>,
+    ) {
+        let is_selected = *selected_layer_id == Some(layer.id);
+        let is_group = layer.is_group;
+        let collapsed = layer.collapsed;
+
+        // Zebra striping
+        let bg_color = if is_selected {
+            colors::CYAN_ACCENT.linear_multiply(0.2)
+        } else if idx % 2 == 1 {
+            colors::DARKER_GREY.linear_multiply(1.2)
+        } else {
+            colors::DARKER_GREY
+        };
+
+        // Selection stroke
+        let stroke = if is_selected {
+            Stroke::new(1.0, colors::CYAN_ACCENT)
+        } else {
+            Stroke::NONE
+        };
+
+        // Row container
+        let row_response = egui::Frame::default()
+            .fill(bg_color)
+            .stroke(stroke)
+            .corner_radius(0.0)
+            .inner_margin(egui::Margin::symmetric(8, 4))
+            .show(ui, |ui| {
+                ui.horizontal(|ui| {
+                    // Manual Indentation
+                    if depth > 0 {
+                        ui.add_space(depth as f32 * 20.0);
+                    }
+
+                    // 1. Group Toggle / Spacer
+                    if is_group {
+                        // Use ArrowRight (collapsed) / ArrowDown (expanded) if available, else text
+                        // We use ArrowRight for collapsed, and ArrowDown for expanded.
+                        // Since we might not have ArrowDown, we can rotate ArrowRight?
+                        // Or just use text for now to be safe.
+                        let icon = if collapsed { "▶" } else { "▼" };
+                         if ui.add(Button::new(icon).frame(false).min_size(Vec2::new(16.0, 16.0))).clicked() {
+                            actions.push(UIAction::ToggleGroupCollapsed(layer.id));
+                        }
+                    } else {
+                        ui.add_space(16.0); // Align with group toggle
+                    }
+
+                    // 2. Visibility
+                    let vis_icon = if layer.visible {
+                        crate::widgets::icons::AppIcon::Eye
+                    } else {
+                        crate::widgets::icons::AppIcon::EyeSlash
+                    };
+                    if widgets::custom::icon_button_simple(ui, icon_manager, vis_icon, 16.0, colors::CYAN_ACCENT).clicked() {
+                         actions.push(UIAction::SetLayerVisibility(layer.id, !layer.visible));
+                    }
+
+                    // 3. Name (Selectable)
+                    let name_text = if is_group {
+                        RichText::new(&layer.name).strong().color(Color32::WHITE)
+                    } else {
+                        RichText::new(&layer.name).color(if is_selected { Color32::WHITE } else { Color32::from_gray(200) })
+                    };
+
+                    let label_resp = ui.add(Label::new(name_text).sense(Sense::click()));
+                    if label_resp.clicked() {
+                        *selected_layer_id = Some(layer.id);
+                    }
+
+                    // Spacer to push right-side controls
+                    ui.allocate_ui_with_layout(
+                        Vec2::new(ui.available_width(), ui.available_height()),
+                        egui::Layout::right_to_left(egui::Align::Center),
+                        |ui| {
+
+                            // Indent/Unindent
+                            // Unindent (Left)
+                            if layer.parent_id.is_some() {
+                                if widgets::custom::icon_button_simple(ui, icon_manager, crate::widgets::icons::AppIcon::ArrowLeft, 16.0, Color32::WHITE).clicked() {
+                                     if let Some(pid) = layer.parent_id {
+                                        if let Some(parent) = layer_manager.get_layer(pid) {
+                                            actions.push(UIAction::ReparentLayer(
+                                                layer.id,
+                                                parent.parent_id,
+                                            ));
+                                        }
+                                    }
+                                }
+                            } else {
+                                ui.add_space(20.0);
+                            }
+
+                            // Indent (Right)
+                            if idx > 0 {
+                                // Check if prev sibling is a group
+                                let mut can_indent = false;
+                                if let Some(pid) = prev_id {
+                                    if let Some(prev) = layer_manager.get_layer(pid) {
+                                        if prev.is_group {
+                                            can_indent = true;
+                                        }
+                                    }
+                                }
+
+                                if can_indent {
+                                    if widgets::custom::icon_button_simple(ui, icon_manager, crate::widgets::icons::AppIcon::ArrowRight, 16.0, Color32::WHITE).clicked() {
+                                         if let Some(pid) = prev_id {
+                                             actions.push(UIAction::ReparentLayer(layer.id, Some(pid)));
+                                         }
+                                    }
+                                } else {
+                                    ui.add_space(20.0);
+                                }
+                            } else {
+                                ui.add_space(20.0);
+                            }
+
+                            ui.separator();
+
+                            // Delete
+                            if widgets::custom::icon_button_simple(ui, icon_manager, crate::widgets::icons::AppIcon::Remove, 16.0, colors::ERROR_COLOR).clicked() {
+                                actions.push(UIAction::RemoveLayer(layer.id));
+                            }
+
+                            // Duplicate
+                            if !is_group {
+                                if widgets::custom::icon_button_simple(ui, icon_manager, crate::widgets::icons::AppIcon::Duplicate, 16.0, colors::CYAN_ACCENT).clicked() {
+                                    actions.push(UIAction::DuplicateLayer(layer.id));
+                                }
+                            }
+
+                            ui.add_space(4.0);
+
+                            // Solo
+                            let solo_color = if layer.solo { colors::MINT_ACCENT } else { Color32::from_gray(100) };
+                            if widgets::custom::icon_button_simple(ui, icon_manager, crate::widgets::icons::AppIcon::Solo, 16.0, solo_color).clicked() {
+                                actions.push(UIAction::ToggleLayerSolo(layer.id));
+                            }
+
+                            // Bypass
+                            let bypass_color = if layer.bypass { colors::WARN_COLOR } else { Color32::from_gray(100) };
+                            if widgets::custom::icon_button_simple(ui, icon_manager, crate::widgets::icons::AppIcon::Bypass, 16.0, bypass_color).clicked() {
+                                actions.push(UIAction::ToggleLayerBypass(layer.id));
+                            }
+
+                            ui.separator();
+
+                             // Reorder (Up/Down)
+                            if idx < count - 1 {
+                                 if widgets::move_down_button(ui).clicked() {
+                                     if let Some(nid) = next_id {
+                                         actions.push(UIAction::SwapLayers(layer.id, nid));
+                                     }
+                                 }
+                            } else {
+                                ui.add_space(24.0); // Placeholder size for button
+                            }
+
+                            if idx > 0 {
+                                if widgets::move_up_button(ui).clicked() {
+                                    if let Some(pid) = prev_id {
+                                        actions.push(UIAction::SwapLayers(layer.id, pid));
+                                    }
+                                }
+                            } else {
+                                ui.add_space(24.0);
+                            }
+                        }
+                    );
+                });
+            });
+
+        // Hover effect for the whole row
+        if row_response.response.hovered() {
+            ui.painter().rect_stroke(
+                row_response.response.rect,
+                0.0,
+                Stroke::new(1.0, colors::CYAN_ACCENT.linear_multiply(0.5)),
+                egui::StrokeKind::Middle,
+            );
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
     fn render_tree(
         ui: &mut egui::Ui,
         parent_id: Option<u64>,
@@ -116,212 +316,91 @@ impl LayerPanel {
         selected_layer_id: &mut Option<u64>,
         actions: &mut Vec<UIAction>,
         i18n: &LocaleManager,
+        icon_manager: Option<&IconManager>,
+        depth: usize,
     ) {
         if let Some(children) = children_map.get(&parent_id) {
             let count = children.len();
             for (idx, &layer_id) in children.iter().enumerate() {
                 if let Some(layer) = layer_manager.get_layer(layer_id) {
-                    ui.push_id(layer.id, |ui| {
-                        let is_selected = *selected_layer_id == Some(layer.id);
-                        let is_group = layer.is_group;
-                        let collapsed = layer.collapsed;
+                    let prev_id = if idx > 0 { Some(children[idx - 1]) } else { None };
+                    let next_id = if idx < count - 1 { Some(children[idx + 1]) } else { None };
 
-                        // Zebra striping for better list readability
-                        let bg_color = if is_selected {
-                            colors::CYAN_ACCENT.linear_multiply(0.2)
-                        } else if idx % 2 == 1 {
-                            colors::DARKER_GREY // Subtle alternating background
-                        } else {
-                            Color32::TRANSPARENT
-                        };
+                    Self::render_layer_row(
+                        ui,
+                        layer,
+                        layer_manager,
+                        idx,
+                        count,
+                        depth,
+                        prev_id,
+                        next_id,
+                        selected_layer_id,
+                        actions,
+                        i18n,
+                        icon_manager,
+                    );
 
-                        // Selection stroke or subtle border
-                        let stroke = if is_selected {
-                            Stroke::new(1.0, colors::CYAN_ACCENT)
-                        } else {
-                            Stroke::new(1.0, colors::STROKE_GREY)
-                        };
+                    // Inline Properties
+                    if *selected_layer_id == Some(layer.id) {
+                        ui.horizontal(|ui| {
+                            if depth > 0 {
+                                ui.add_space(depth as f32 * 20.0 + 20.0);
+                            } else {
+                                ui.add_space(20.0);
+                            }
+                            ui.vertical(|ui| {
+                                // Opacity
+                                let mut opacity = layer.opacity;
+                                if ui
+                                    .add(
+                                        Slider::new(&mut opacity, 0.0..=1.0)
+                                            .text(i18n.t("label-master-opacity")),
+                                    )
+                                    .changed()
+                                {
+                                    actions.push(UIAction::SetLayerOpacity(layer.id, opacity));
+                                }
 
-                        egui::Frame::default()
-                            .fill(bg_color)
-                            .stroke(stroke)
-                            .corner_radius(0.0) // Sharp corners for Cyber/Resolume style
-                            .inner_margin(4.0)
-                            .show(ui, |ui| {
-                                ui.horizontal(|ui| {
-                                    // Reorder Buttons (Move Up/Down)
-                                    ui.vertical(|ui| {
-                                        // Move Up
-                                        ui.add_enabled_ui(idx > 0, |ui| {
-                                            if widgets::move_up_button(ui).clicked() && idx > 0 {
-                                                let prev_id = children[idx - 1];
-                                                actions
-                                                    .push(UIAction::SwapLayers(layer.id, prev_id));
-                                            }
-                                        });
-                                        // Move Down
-                                        ui.add_enabled_ui(idx < count - 1, |ui| {
-                                            if widgets::move_down_button(ui).clicked()
-                                                && idx < count - 1
-                                            {
-                                                let next_id = children[idx + 1];
-                                                actions
-                                                    .push(UIAction::SwapLayers(layer.id, next_id));
-                                            }
-                                        });
-                                    });
-
-                                    // Indent/Unindent
-                                    ui.vertical(|ui| {
-                                        // Unindent (Left)
-                                        if layer.parent_id.is_some()
-                                            && ui
-                                                .button("⬅")
-                                                .clone()
-                                                .on_hover_text("Unindent")
-                                                .clicked()
-                                        {
-                                            if let Some(pid) = layer.parent_id {
-                                                if let Some(parent) = layer_manager.get_layer(pid) {
-                                                    actions.push(UIAction::ReparentLayer(
-                                                        layer.id,
-                                                        parent.parent_id,
-                                                    ));
-                                                }
-                                            }
-                                        }
-
-                                        // Indent (Right)
-                                        if idx > 0
-                                            && ui
-                                                .button("➡")
-                                                .clone()
-                                                .on_hover_text("Indent")
-                                                .clicked()
-                                        {
-                                            let prev_sibling_id = children[idx - 1];
-                                            if let Some(prev) =
-                                                layer_manager.get_layer(prev_sibling_id)
-                                            {
-                                                if prev.is_group {
-                                                    actions.push(UIAction::ReparentLayer(
-                                                        layer.id,
-                                                        Some(prev.id),
-                                                    ));
-                                                }
-                                            }
+                                // Blend Mode
+                                let blend_modes = BlendMode::all();
+                                let current_mode = layer.blend_mode;
+                                let mut selected_mode = current_mode;
+                                egui::ComboBox::from_id_salt(format!("blend_{}", layer.id))
+                                    .selected_text(format!("{:?}", current_mode))
+                                    .show_ui(ui, |ui| {
+                                        for mode in blend_modes {
+                                            ui.selectable_value(
+                                                &mut selected_mode,
+                                                *mode,
+                                                format!("{:?}", mode),
+                                            );
                                         }
                                     });
-
-                                    // Group Expander
-                                    if is_group {
-                                        let icon = if collapsed { "▶" } else { "▼" };
-                                        if ui.add(Button::new(icon).frame(false)).clicked() {
-                                            actions.push(UIAction::ToggleGroupCollapsed(layer.id));
-                                        }
-                                    } else {
-                                        ui.add_space(16.0);
-                                    }
-
-                                    // Visibility
-                                    let mut visible = layer.visible;
-                                    if ui.checkbox(&mut visible, "").changed() {
-                                        actions
-                                            .push(UIAction::SetLayerVisibility(layer.id, visible));
-                                    }
-
-                                    // Name
-                                    let name_label = if is_group {
-                                        RichText::new(&layer.name).strong()
-                                    } else {
-                                        RichText::new(&layer.name)
-                                    };
-
-                                    if ui.selectable_label(is_selected, name_label).clicked() {
-                                        *selected_layer_id = Some(layer.id);
-                                    }
-
-                                    ui.with_layout(
-                                        egui::Layout::right_to_left(egui::Align::Center),
-                                        |ui| {
-                                            if widgets::delete_button(ui) {
-                                                actions.push(UIAction::RemoveLayer(layer.id));
-                                            }
-
-                                            if !is_group && widgets::duplicate_button(ui).clicked()
-                                            {
-                                                actions.push(UIAction::DuplicateLayer(layer.id));
-                                            }
-
-                                            ui.add_space(4.0);
-                                            if widgets::solo_button(ui, layer.solo).clicked() {
-                                                actions.push(UIAction::ToggleLayerSolo(layer.id));
-                                            }
-
-                                            ui.add_space(4.0);
-                                            if widgets::bypass_button(ui, layer.bypass).clicked() {
-                                                actions.push(UIAction::ToggleLayerBypass(layer.id));
-                                            }
-                                        },
-                                    );
-                                });
-
-                                // Inline Properties for Selected Layer
-                                if is_selected {
-                                    ui.indent("props", |ui| {
-                                        // Opacity
-                                        let mut opacity = layer.opacity;
-                                        if ui
-                                            .add(
-                                                Slider::new(&mut opacity, 0.0..=1.0)
-                                                    .text(i18n.t("label-master-opacity")),
-                                            )
-                                            .changed()
-                                        {
-                                            actions
-                                                .push(UIAction::SetLayerOpacity(layer.id, opacity));
-                                        }
-
-                                        // Blend Mode
-                                        let blend_modes = BlendMode::all();
-                                        let current_mode = layer.blend_mode;
-                                        let mut selected_mode = current_mode;
-                                        egui::ComboBox::from_id_salt(format!("blend_{}", layer.id))
-                                            .selected_text(format!("{:?}", current_mode))
-                                            .show_ui(ui, |ui| {
-                                                for mode in blend_modes {
-                                                    ui.selectable_value(
-                                                        &mut selected_mode,
-                                                        *mode,
-                                                        format!("{:?}", mode),
-                                                    );
-                                                }
-                                            });
-                                        if selected_mode != current_mode {
-                                            actions.push(UIAction::SetLayerBlendMode(
-                                                layer.id,
-                                                selected_mode,
-                                            ));
-                                        }
-                                    });
+                                if selected_mode != current_mode {
+                                    actions.push(UIAction::SetLayerBlendMode(
+                                        layer.id,
+                                        selected_mode,
+                                    ));
                                 }
                             });
+                        });
+                    }
 
-                        // Children
-                        if is_group && !collapsed {
-                            ui.indent(format!("group_{}", layer.id), |ui| {
-                                Self::render_tree(
-                                    ui,
-                                    Some(layer.id),
-                                    children_map,
-                                    layer_manager,
-                                    selected_layer_id,
-                                    actions,
-                                    i18n,
-                                );
-                            });
-                        }
-                    });
+                    // Recursion
+                    if layer.is_group && !layer.collapsed {
+                        Self::render_tree(
+                            ui,
+                            Some(layer.id),
+                            children_map,
+                            layer_manager,
+                            selected_layer_id,
+                            actions,
+                            i18n,
+                            icon_manager,
+                            depth + 1,
+                        );
+                    }
                 }
             }
         }
