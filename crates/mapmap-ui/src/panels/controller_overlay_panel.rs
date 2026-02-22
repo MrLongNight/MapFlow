@@ -11,7 +11,7 @@ use crate::config::{MidiAssignment, MidiAssignmentTarget, UserConfig};
 #[cfg(feature = "midi")]
 use mapmap_control::midi::{
     ControllerElement, ControllerElements, ElementState, ElementStateManager, ElementType,
-    MidiConfig, MidiLearnManager, MidiMessage,
+    MidiLearnManager, MidiMessage,
 };
 use mapmap_control::target::ControlTarget;
 use std::collections::{HashMap, HashSet};
