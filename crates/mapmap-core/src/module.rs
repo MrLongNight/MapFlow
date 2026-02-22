@@ -3504,3 +3504,201 @@ fn test_trigger_config_smoothed_fallback_with_invert_external() {
     // Smoothed (Direct Fallback): 0.0 + (100.0 - 0.0) * 0.8 = 80.0
     assert_eq!(config.apply(0.2), 80.0);
 }
+
+#[test]
+fn test_bevy_source_sockets() {
+    let sources = [
+        SourceType::BevyAtmosphere {
+            turbidity: 1.0,
+            rayleigh: 1.0,
+            mie_coeff: 0.0,
+            mie_directional_g: 0.0,
+            sun_position: (0.0, 0.0),
+            exposure: 1.0,
+        },
+        SourceType::BevyHexGrid {
+            radius: 1.0,
+            rings: 1,
+            pointy_top: true,
+            spacing: 0.0,
+            position: [0.0; 3],
+            rotation: [0.0; 3],
+            scale: 1.0,
+        },
+        SourceType::BevyParticles {
+            rate: 10.0,
+            lifetime: 1.0,
+            speed: 1.0,
+            color_start: [1.0; 4],
+            color_end: [1.0; 4],
+            position: [0.0; 3],
+            rotation: [0.0; 3],
+        },
+        SourceType::Bevy3DShape {
+            shape_type: BevyShapeType::Cube,
+            position: [0.0; 3],
+            rotation: [0.0; 3],
+            scale: [1.0; 3],
+            color: [1.0; 4],
+            unlit: false,
+            outline_width: 0.0,
+            outline_color: [1.0; 4],
+        },
+    ];
+
+    for source in sources {
+        let part_type = ModulePartType::Source(source);
+        let (inputs, outputs) = part_type.get_default_sockets();
+
+        // All should have at least Media Out
+        assert!(outputs.iter().any(|s| s.name == "Media Out"));
+
+        // BevyParticles has "Spawn Trigger", others "Trigger In"
+        match part_type {
+            ModulePartType::Source(SourceType::BevyParticles { .. }) => {
+                assert!(inputs.iter().any(|s| s.name == "Spawn Trigger"));
+            }
+            _ => {
+                assert!(inputs.iter().any(|s| s.name == "Trigger In"));
+            }
+        }
+    }
+}
+
+#[test]
+fn test_bezier_surface_mesh_generation() {
+    // Should fallback to 8x8 grid (placeholder)
+    let bezier = MeshType::BezierSurface {
+        control_points: vec![(0.0, 0.0); 16],
+    };
+    let mesh = bezier.to_mesh();
+
+    // 8x8 grid -> (8+1)*(8+1) = 81 vertices
+    assert_eq!(mesh.vertex_count(), 81);
+
+    // If not enough points, fallback to quad
+    let invalid_bezier = MeshType::BezierSurface {
+        control_points: vec![(0.0, 0.0); 3],
+    };
+    let fallback_mesh = invalid_bezier.to_mesh();
+    assert_eq!(fallback_mesh.vertex_count(), 4);
+}
+
+#[test]
+fn test_mask_sockets() {
+    let mask_type = ModulePartType::Mask(MaskType::Shape(MaskShape::Circle));
+    let (inputs, outputs) = mask_type.get_default_sockets();
+
+    assert_eq!(inputs.len(), 2);
+    assert_eq!(inputs[0].name, "Media In");
+    assert_eq!(inputs[1].name, "Mask In");
+
+    assert_eq!(outputs.len(), 1);
+    assert_eq!(outputs[0].name, "Media Out");
+}
+
+#[test]
+fn test_modulizer_sockets() {
+    let mod_type = ModulePartType::Modulizer(ModulizerType::Effect {
+        effect_type: EffectType::Blur,
+        params: HashMap::new(),
+    });
+    let (inputs, outputs) = mod_type.get_default_sockets();
+
+    assert_eq!(inputs.len(), 2);
+    assert_eq!(inputs[0].name, "Media In");
+    assert_eq!(inputs[1].name, "Trigger In");
+
+    assert_eq!(outputs.len(), 1);
+    assert_eq!(outputs[0].name, "Media Out");
+}
+
+#[test]
+fn test_layer_sockets() {
+    let layer_type = ModulePartType::Layer(LayerType::Single {
+        id: 1,
+        name: "L1".to_string(),
+        opacity: 1.0,
+        blend_mode: None,
+        mesh: MeshType::default(),
+        mapping_mode: false,
+    });
+    let (inputs, outputs) = layer_type.get_default_sockets();
+
+    assert_eq!(inputs.len(), 2);
+    assert_eq!(inputs[0].name, "Input");
+    assert_eq!(inputs[1].name, "Trigger");
+
+    assert_eq!(outputs.len(), 1);
+    assert_eq!(outputs[0].name, "Output");
+}
+
+#[test]
+fn test_hue_sockets() {
+    let hue_type = ModulePartType::Hue(HueNodeType::SingleLamp {
+        id: "1".to_string(),
+        name: "L".to_string(),
+        brightness: 1.0,
+        color: [1.0; 3],
+        effect: None,
+        effect_active: false,
+    });
+    let (inputs, outputs) = hue_type.get_default_sockets();
+
+    assert_eq!(inputs.len(), 3);
+    assert!(inputs.iter().any(|s| s.name == "Brightness"));
+    assert!(inputs.iter().any(|s| s.name == "Color (RGB)"));
+    assert!(inputs.iter().any(|s| s.name == "Strobe"));
+
+    assert!(outputs.is_empty());
+}
+
+#[test]
+fn test_mesh_sockets() {
+    let mesh_type = ModulePartType::Mesh(MeshType::Grid { rows: 2, cols: 2 });
+    let (inputs, outputs) = mesh_type.get_default_sockets();
+
+    assert_eq!(inputs.len(), 2);
+    assert_eq!(inputs[0].name, "Vertex In");
+    assert_eq!(inputs[1].name, "Control In");
+
+    assert_eq!(outputs.len(), 1);
+    assert_eq!(outputs[0].name, "Geometry Out");
+}
+
+#[test]
+fn test_output_sockets() {
+    // Projector
+    let proj = ModulePartType::Output(OutputType::Projector {
+        id: 1,
+        name: "Out".to_string(),
+        hide_cursor: false,
+        target_screen: 0,
+        show_in_preview_panel: true,
+        extra_preview_window: false,
+        output_width: 1920,
+        output_height: 1080,
+        output_fps: 60.0,
+        ndi_enabled: false,
+        ndi_stream_name: "".to_string(),
+    });
+    let (inputs, outputs) = proj.get_default_sockets();
+    assert_eq!(inputs.len(), 1);
+    assert_eq!(inputs[0].name, "Layer In");
+    assert!(outputs.is_empty());
+
+    // Hue Output (Entertainment)
+    let hue = ModulePartType::Output(OutputType::Hue {
+        bridge_ip: "".to_string(),
+        username: "".to_string(),
+        client_key: "".to_string(),
+        entertainment_area: "".to_string(),
+        lamp_positions: HashMap::new(),
+        mapping_mode: HueMappingMode::Ambient,
+    });
+    let (inputs_hue, outputs_hue) = hue.get_default_sockets();
+    assert_eq!(inputs_hue.len(), 2);
+    assert_eq!(inputs_hue[0].name, "Layer In");
+    assert_eq!(inputs_hue[1].name, "Trigger In");
+    assert!(outputs_hue.is_empty());
+}

@@ -1311,4 +1311,69 @@ mod additional_tests {
         assert!(scale.is_finite());
         assert_eq!(scale, Vec2::ZERO);
     }
+
+    #[test]
+    fn test_layer_transform_delegation() {
+        let mut layer = Layer::new(1, "Test");
+        layer.transform = Transform::with_position(Vec2::new(50.0, 50.0));
+
+        let size = Vec2::new(100.0, 100.0);
+        let matrix = layer.get_transform_matrix(size);
+        let expected = layer.transform.to_matrix(size);
+
+        assert_eq!(matrix, expected);
+    }
+
+    #[test]
+    fn test_layer_set_transform_resize() {
+        let mut layer = Layer::new(1, "Test");
+        let source = Vec2::new(100.0, 50.0);
+        let target = Vec2::new(200.0, 200.0);
+
+        // Fill Mode -> Scale 4.0 (200/50), Pos (0,0)
+        layer.set_transform_with_resize(ResizeMode::Fill, source, target);
+
+        assert_eq!(layer.transform.scale, Vec2::splat(4.0));
+        assert_eq!(layer.transform.position, Vec2::ZERO);
+    }
+
+    #[test]
+    fn test_composition_defaults() {
+        let comp = Composition::default();
+        assert_eq!(comp.size, (1920, 1080));
+        assert_eq!(comp.frame_rate, 60.0);
+        assert_eq!(comp.master_opacity, 1.0);
+        assert_eq!(comp.master_speed, 1.0);
+    }
+
+    #[test]
+    fn test_swap_layers_explicit() {
+        let mut manager = LayerManager::new();
+        let id1 = manager.create_layer("L1");
+        let id2 = manager.create_layer("L2");
+
+        // [L1, L2]
+        assert!(manager.swap_layers(id1, id2));
+
+        // [L2, L1]
+        assert_eq!(manager.layers()[0].id, id2);
+        assert_eq!(manager.layers()[1].id, id1);
+
+        // Swap with invalid ID
+        assert!(!manager.swap_layers(id1, 999));
+    }
+
+    #[test]
+    fn test_layer_group_defaults() {
+        let mut manager = LayerManager::new();
+        let id = manager.create_group("My Group");
+        let layer = manager.get_layer(id).unwrap();
+
+        assert!(layer.is_group);
+        assert_eq!(layer.name, "My Group");
+        // Groups default to visible
+        assert!(layer.visible);
+        // Groups default to opacity 1.0
+        assert_eq!(layer.opacity, 1.0);
+    }
 }

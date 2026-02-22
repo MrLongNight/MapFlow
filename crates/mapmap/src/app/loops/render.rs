@@ -55,7 +55,7 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
             Some(ctx) => ctx,
             None => return Ok(()),
         };
-        
+
         let surface_texture = window_context.surface.get_current_texture()?;
         let view = surface_texture
             .texture
@@ -511,7 +511,9 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
     }
 
     // 2. CACHING: Only rebuild the list of output parts if graph changed
-    if app.cached_output_infos.is_empty() || app.last_graph_revision != app.state.module_manager.graph_revision {
+    if app.cached_output_infos.is_empty()
+        || app.last_graph_revision != app.state.module_manager.graph_revision
+    {
         app.cached_output_infos = app
             .state
             .module_manager
