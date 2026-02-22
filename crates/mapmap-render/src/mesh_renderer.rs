@@ -337,22 +337,22 @@ impl MeshRenderer {
         transform: Mat4,
         opacity: f32,
     ) -> Arc<wgpu::BindGroup> {
+        let final_transform = self.normalization_matrix * transform;
+
+        let uniforms = MeshUniforms {
+            transform: final_transform.to_cols_array_2d(),
+            opacity,
+            flip_h: 0.0,
+            flip_v: 0.0,
+            brightness: 0.0,
+            contrast: 1.0,
+            saturation: 1.0,
+            hue_shift: 0.0,
+            _padding: 0.0,
+        };
+
         // Expand cache if needed
         if self.current_cache_index >= self.uniform_cache.len() {
-            let final_transform = self.normalization_matrix * transform;
-
-            let uniforms = MeshUniforms {
-                transform: final_transform.to_cols_array_2d(),
-                opacity,
-                flip_h: 0.0,
-                flip_v: 0.0,
-                brightness: 0.0,
-                contrast: 1.0,
-                saturation: 1.0,
-                hue_shift: 0.0,
-                _padding: 0.0,
-            };
-
             let buffer = self
                 .device
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -373,25 +373,12 @@ impl MeshRenderer {
             self.uniform_cache.push(CachedMeshUniform {
                 buffer,
                 bind_group: Arc::new(bind_group),
-                last_uniforms: None,
+                last_uniforms: Some(uniforms),
             });
         }
 
         // Update current buffer
         let cache_entry = &mut self.uniform_cache[self.current_cache_index];
-        let final_transform = self.normalization_matrix * transform;
-
-        let uniforms = MeshUniforms {
-            transform: final_transform.to_cols_array_2d(),
-            opacity,
-            flip_h: 0.0,
-            flip_v: 0.0,
-            brightness: 0.0,
-            contrast: 1.0,
-            saturation: 1.0,
-            hue_shift: 0.0,
-            _padding: 0.0,
-        };
 
         if cache_entry.last_uniforms != Some(uniforms) {
             queue.write_buffer(&cache_entry.buffer, 0, bytemuck::cast_slice(&[uniforms]));
@@ -418,22 +405,22 @@ impl MeshRenderer {
         saturation: f32,
         hue_shift: f32,
     ) -> Arc<wgpu::BindGroup> {
+        let final_transform = self.normalization_matrix * transform;
+
+        let uniforms = MeshUniforms {
+            transform: final_transform.to_cols_array_2d(),
+            opacity,
+            flip_h: if flip_h { 1.0 } else { 0.0 },
+            flip_v: if flip_v { 1.0 } else { 0.0 },
+            brightness,
+            contrast,
+            saturation,
+            hue_shift,
+            _padding: 0.0,
+        };
+
         // Expand cache if needed
         if self.current_cache_index >= self.uniform_cache.len() {
-            let final_transform = self.normalization_matrix * transform;
-
-            let uniforms = MeshUniforms {
-                transform: final_transform.to_cols_array_2d(),
-                opacity,
-                flip_h: if flip_h { 1.0 } else { 0.0 },
-                flip_v: if flip_v { 1.0 } else { 0.0 },
-                brightness,
-                contrast,
-                saturation,
-                hue_shift,
-                _padding: 0.0,
-            };
-
             let buffer = self
                 .device
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -454,25 +441,12 @@ impl MeshRenderer {
             self.uniform_cache.push(CachedMeshUniform {
                 buffer,
                 bind_group: Arc::new(bind_group),
-                last_uniforms: None,
+                last_uniforms: Some(uniforms),
             });
         }
 
         // Update current buffer
         let cache_entry = &mut self.uniform_cache[self.current_cache_index];
-        let final_transform = self.normalization_matrix * transform;
-
-        let uniforms = MeshUniforms {
-            transform: final_transform.to_cols_array_2d(),
-            opacity,
-            flip_h: if flip_h { 1.0 } else { 0.0 },
-            flip_v: if flip_v { 1.0 } else { 0.0 },
-            brightness,
-            contrast,
-            saturation,
-            hue_shift,
-            _padding: 0.0,
-        };
 
         if cache_entry.last_uniforms != Some(uniforms) {
             queue.write_buffer(&cache_entry.buffer, 0, bytemuck::cast_slice(&[uniforms]));
