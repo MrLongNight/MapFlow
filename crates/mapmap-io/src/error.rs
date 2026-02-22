@@ -29,6 +29,15 @@ pub enum IoError {
     #[error("Format not supported: {0}")]
     UnsupportedFormat(String),
 
+    /// File too large
+    #[error("Project file too large: {size} bytes (limit: {limit} bytes)")]
+    FileTooLarge {
+        /// Actual file size
+        size: u64,
+        /// Maximum allowed size
+        limit: u64,
+    },
+
     /// Project file version mismatch
     #[error("Project file version mismatch. Expected {expected}, got {found}.")]
     VersionMismatch {

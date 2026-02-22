@@ -27,11 +27,11 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
 
     // --- Graph & Renderer Evaluation ---
     let graph_dirty = app.state.module_manager.graph_revision != app.last_graph_revision;
-    
+
     // Always clear and rebuild render_ops for now to ensure reactive triggers work,
     // BUT we could optimize this further if we separate structural from value changes.
     app.render_ops.clear();
-    
+
     // --- Bevy Runner Update ---
     if let Some(runner) = &mut app.bevy_runner {
         let runner: &mut mapmap_bevy::BevyRunner = runner;
@@ -39,7 +39,7 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
 
         for module in app.state.module_manager.list_modules() {
             let module_id = module.id;
-            
+
             // OPTIMIZATION: Only apply structural graph state to Bevy if changed
             if graph_dirty {
                 runner.apply_graph_state(module);
@@ -55,7 +55,7 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
                         node_triggers.insert((module_id, *part_id), *last_val);
                     }
                 }
-                
+
                 // Collect render ops while we are already evaluating for triggers
                 app.render_ops.extend(
                     eval_result
@@ -131,7 +131,7 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
                 tracing::error!("Failed to sync output windows: {}", e);
             }
         }
-        
+
         // Update revision after sync
         app.last_graph_revision = app.state.module_manager.graph_revision;
     }
