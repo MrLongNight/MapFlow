@@ -112,7 +112,7 @@ pub fn update_media_players(app: &mut App, dt: f32) {
         if !texture_pool.has_texture(&tex_name) {
             let (width, height) = player.resolution();
             let (w, h) = if width == 0 || height == 0 { (1280, 720) } else { (width, height) };
-            
+
             texture_pool.ensure_texture(
                 &tex_name,
                 w,
@@ -120,7 +120,7 @@ pub fn update_media_players(app: &mut App, dt: f32) {
                 wgpu::TextureFormat::Rgba8UnormSrgb,
                 wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             );
-            
+
             // Initial black fill
             let black_data = vec![0u8; (w * h * 4) as usize];
             texture_pool.upload_data(queue, &tex_name, &black_data, w, h);
