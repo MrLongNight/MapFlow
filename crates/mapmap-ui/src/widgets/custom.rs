@@ -307,8 +307,7 @@ pub fn lock_button(ui: &mut Ui, active: bool) -> Response {
 }
 
 pub fn move_up_button(ui: &mut Ui) -> Response {
-    icon_button(ui, "⏶", Color32::TRANSPARENT, colors::CYAN_ACCENT, false)
-        .on_hover_text("Move Up")
+    icon_button(ui, "⏶", Color32::TRANSPARENT, colors::CYAN_ACCENT, false).on_hover_text("Move Up")
 }
 
 pub fn move_down_button(ui: &mut Ui) -> Response {
