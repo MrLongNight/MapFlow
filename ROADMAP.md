@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 2.1
-> **Stand:** 2026-02-17 10:00
+> **Stand:** 2026-02-22 10:00
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
 > **Projekt-Version:** 0.2.1
 
@@ -840,6 +840,7 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
 
 * ✅ **CI/CD** (`.github/workflows/`)
   * ✅ CI-Workflow vorhanden und optimiert (2025-12-18)
+  * ✅ Restore CodeQL security scan workflow (CI-02) (COMPLETED 2026-02-20)
   * ✅ Workflow-Lints behoben (deprecation warnings entfernt)
   * ✅ FFmpeg-Installation in Linux-Builds korrigiert (libavutil-Fehler behoben)
   * ✅ Toolchain-Updates (stable verwendet, dtolnay/rust-toolchain@stable)
