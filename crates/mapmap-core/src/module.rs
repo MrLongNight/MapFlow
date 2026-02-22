@@ -1661,6 +1661,17 @@ pub enum MeshType {
     },
 }
 
+impl Default for MeshType {
+    fn default() -> Self {
+        Self::Quad {
+            tl: (0.0, 0.0),
+            tr: (1.0, 0.0),
+            br: (1.0, 1.0),
+            bl: (0.0, 1.0),
+        }
+    }
+}
+
 impl MeshType {
     fn compute_revision_hash(&self) -> u64 {
         use std::collections::hash_map::DefaultHasher;

@@ -244,6 +244,7 @@ impl MeshRenderer {
             texture_bind_group_layout,
             sampler,
             device,
+            normalization_matrix,
             uniform_cache: Vec::new(),
             current_cache_index: 0,
             texture_bind_group_cache: HashMap::new(),
