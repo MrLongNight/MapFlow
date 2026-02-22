@@ -381,4 +381,24 @@ mod tests {
             assert_eq!(Arc::strong_count(&state1.assignment_manager), 1);
         }
     }
+
+    #[test]
+    fn test_settings_cow_behavior() {
+        let state1 = AppState::new("Settings COW");
+        let mut state2 = state1.clone();
+
+        // 1. Initial State: Shared
+        assert_eq!(Arc::strong_count(&state1.settings), 2);
+
+        // 2. Mutate state2 settings
+        state2.settings_mut().master_volume = 0.5;
+
+        // 3. Should split
+        assert_eq!(Arc::strong_count(&state1.settings), 1);
+        assert_eq!(Arc::strong_count(&state2.settings), 1);
+
+        // 4. Values should differ
+        assert_eq!(state1.settings.master_volume, 1.0);
+        assert_eq!(state2.settings.master_volume, 0.5);
+    }
 }
