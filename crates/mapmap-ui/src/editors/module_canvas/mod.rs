@@ -5156,19 +5156,18 @@ impl ModuleCanvas {
 
         // Retrieve hold progress for visualization (Mary StyleUX)
         let delete_id = egui::Id::new((part.id, "delete"));
-        let _progress = ui
+        let progress = ui
             .ctx()
             .data(|d| d.get_temp::<f32>(delete_id.with("progress")))
             .unwrap_or(0.0);
 
-        /*
-        crate::widgets::custom::draw_safety_radial_fill(ui.painter(),
+        crate::widgets::custom::draw_safety_radial_fill(
+            painter,
             delete_button_rect.center(),
             10.0 * self.zoom,
             progress,
             Color32::from_rgb(255, 50, 50),
         );
-        */
 
         painter.text(
             delete_button_rect.center(),

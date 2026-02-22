@@ -298,25 +298,22 @@ pub fn duplicate_button(ui: &mut Ui) -> Response {
 }
 
 pub fn delete_button(ui: &mut Ui) -> bool {
-    ui.button("🗑").clicked()
+    hold_to_action_button(ui, "🗑", colors::ERROR_COLOR)
 }
 
 pub fn lock_button(ui: &mut Ui, active: bool) -> Response {
-    // Using a simple "L" as fallback for Lock icon
-    let mut btn = egui::Button::new("🔒");
-    if active {
-        // Reddish fill for Locked state
-        btn = btn.fill(Color32::from_rgb(200, 50, 50));
-    }
-    ui.add(btn)
+    icon_button(ui, "🔒", Color32::TRANSPARENT, colors::WARN_COLOR, active)
+        .on_hover_text("Lock Layer")
 }
 
 pub fn move_up_button(ui: &mut Ui) -> Response {
-    ui.button("⏶")
+    icon_button(ui, "⏶", Color32::TRANSPARENT, colors::CYAN_ACCENT, false)
+        .on_hover_text("Move Up")
 }
 
 pub fn move_down_button(ui: &mut Ui) -> Response {
-    ui.button("⏷")
+    icon_button(ui, "⏷", Color32::TRANSPARENT, colors::CYAN_ACCENT, false)
+        .on_hover_text("Move Down")
 }
 
 /// Helper function to handle hold-to-confirm logic.
@@ -558,12 +555,33 @@ pub fn hold_to_action_icon(
 }
 
 pub fn draw_safety_radial_fill(
-    _painter: &egui::Painter,
-    _center: Pos2,
-    _radius: f32,
-    _progress: f32,
-    _color: Color32,
+    painter: &egui::Painter,
+    center: Pos2,
+    radius: f32,
+    progress: f32,
+    color: Color32,
 ) {
+    if progress > 0.0 {
+        use std::f32::consts::TAU;
+        let stroke = Stroke::new(2.0, color);
+
+        // Background ring (faint)
+        painter.circle_stroke(center, radius, Stroke::new(2.0, color.linear_multiply(0.2)));
+
+        // Better visual: Arc using points
+        let start_angle = -TAU / 4.0; // Top
+        let end_angle = start_angle + progress * TAU;
+        let n_points = 32;
+        let points: Vec<Pos2> = (0..=n_points)
+            .map(|i| {
+                let t = i as f32 / n_points as f32;
+                let angle = lerp(start_angle..=end_angle, t);
+                center + Vec2::new(angle.cos(), angle.sin()) * radius
+            })
+            .collect();
+
+        painter.add(egui::Shape::line(points, stroke));
+    }
 }
 
 pub fn collapsing_header_with_reset(
