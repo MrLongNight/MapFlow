@@ -89,3 +89,11 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 - `PR_MAINTENANCE_OVERVIEW.md` und `pr_tracking.md` nach `docs/project/` verschoben.
 - `check_links.py` nach `scripts/` verschoben und Funktionalität verifiziert.
 - `GEMINI.md` nach `.temp-archive/2026-02-18-GEMINI.md` archiviert.
+
+## 2026-02-18 - Cleanup Verification & Completion
+
+**Erkenntnis:** Trotz des vorangegangenen Eintrags vom selben Tag befanden sich `PR_MAINTENANCE_OVERVIEW.md`, `pr_tracking.md` und `GEMINI.md` weiterhin im Root-Verzeichnis.
+
+**Aktion:**
+- Dateien erneut verschoben bzw. archiviert.
+- Verifikation der Dateipfade erfolgreich durchgeführt.
