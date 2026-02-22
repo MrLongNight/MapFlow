@@ -481,7 +481,11 @@ pub fn icon_button_simple(
 
     // Background on hover
     if response.hovered() || response.has_focus() {
-        painter.rect_filled(rect, CornerRadius::ZERO, ui.visuals().widgets.hovered.bg_fill);
+        painter.rect_filled(
+            rect,
+            CornerRadius::ZERO,
+            ui.visuals().widgets.hovered.bg_fill,
+        );
     }
 
     // Draw Icon

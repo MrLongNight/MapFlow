@@ -164,7 +164,14 @@ impl LayerPanel {
                         // Since we might not have ArrowDown, we can rotate ArrowRight?
                         // Or just use text for now to be safe.
                         let icon = if collapsed { "▶" } else { "▼" };
-                         if ui.add(Button::new(icon).frame(false).min_size(Vec2::new(16.0, 16.0))).clicked() {
+                        if ui
+                            .add(
+                                Button::new(icon)
+                                    .frame(false)
+                                    .min_size(Vec2::new(16.0, 16.0)),
+                            )
+                            .clicked()
+                        {
                             actions.push(UIAction::ToggleGroupCollapsed(layer.id));
                         }
                     } else {
@@ -177,15 +184,27 @@ impl LayerPanel {
                     } else {
                         crate::widgets::icons::AppIcon::EyeSlash
                     };
-                    if widgets::custom::icon_button_simple(ui, icon_manager, vis_icon, 16.0, colors::CYAN_ACCENT).clicked() {
-                         actions.push(UIAction::SetLayerVisibility(layer.id, !layer.visible));
+                    if widgets::custom::icon_button_simple(
+                        ui,
+                        icon_manager,
+                        vis_icon,
+                        16.0,
+                        colors::CYAN_ACCENT,
+                    )
+                    .clicked()
+                    {
+                        actions.push(UIAction::SetLayerVisibility(layer.id, !layer.visible));
                     }
 
                     // 3. Name (Selectable)
                     let name_text = if is_group {
                         RichText::new(&layer.name).strong().color(Color32::WHITE)
                     } else {
-                        RichText::new(&layer.name).color(if is_selected { Color32::WHITE } else { Color32::from_gray(200) })
+                        RichText::new(&layer.name).color(if is_selected {
+                            Color32::WHITE
+                        } else {
+                            Color32::from_gray(200)
+                        })
                     };
 
                     let label_resp = ui.add(Label::new(name_text).sense(Sense::click()));
@@ -198,12 +217,19 @@ impl LayerPanel {
                         Vec2::new(ui.available_width(), ui.available_height()),
                         egui::Layout::right_to_left(egui::Align::Center),
                         |ui| {
-
                             // Indent/Unindent
                             // Unindent (Left)
                             if layer.parent_id.is_some() {
-                                if widgets::custom::icon_button_simple(ui, icon_manager, crate::widgets::icons::AppIcon::ArrowLeft, 16.0, Color32::WHITE).clicked() {
-                                     if let Some(pid) = layer.parent_id {
+                                if widgets::custom::icon_button_simple(
+                                    ui,
+                                    icon_manager,
+                                    crate::widgets::icons::AppIcon::ArrowLeft,
+                                    16.0,
+                                    Color32::WHITE,
+                                )
+                                .clicked()
+                                {
+                                    if let Some(pid) = layer.parent_id {
                                         if let Some(parent) = layer_manager.get_layer(pid) {
                                             actions.push(UIAction::ReparentLayer(
                                                 layer.id,
@@ -229,10 +255,19 @@ impl LayerPanel {
                                 }
 
                                 if can_indent {
-                                    if widgets::custom::icon_button_simple(ui, icon_manager, crate::widgets::icons::AppIcon::ArrowRight, 16.0, Color32::WHITE).clicked() {
-                                         if let Some(pid) = prev_id {
-                                             actions.push(UIAction::ReparentLayer(layer.id, Some(pid)));
-                                         }
+                                    if widgets::custom::icon_button_simple(
+                                        ui,
+                                        icon_manager,
+                                        crate::widgets::icons::AppIcon::ArrowRight,
+                                        16.0,
+                                        Color32::WHITE,
+                                    )
+                                    .clicked()
+                                    {
+                                        if let Some(pid) = prev_id {
+                                            actions
+                                                .push(UIAction::ReparentLayer(layer.id, Some(pid)));
+                                        }
                                     }
                                 } else {
                                     ui.add_space(20.0);
@@ -244,40 +279,79 @@ impl LayerPanel {
                             ui.separator();
 
                             // Delete
-                            if widgets::custom::icon_button_simple(ui, icon_manager, crate::widgets::icons::AppIcon::Remove, 16.0, colors::ERROR_COLOR).clicked() {
+                            if widgets::custom::icon_button_simple(
+                                ui,
+                                icon_manager,
+                                crate::widgets::icons::AppIcon::Remove,
+                                16.0,
+                                colors::ERROR_COLOR,
+                            )
+                            .clicked()
+                            {
                                 actions.push(UIAction::RemoveLayer(layer.id));
                             }
 
                             // Duplicate
-                            if !is_group {
-                                if widgets::custom::icon_button_simple(ui, icon_manager, crate::widgets::icons::AppIcon::Duplicate, 16.0, colors::CYAN_ACCENT).clicked() {
-                                    actions.push(UIAction::DuplicateLayer(layer.id));
-                                }
+                            if !is_group
+                                && widgets::custom::icon_button_simple(
+                                    ui,
+                                    icon_manager,
+                                    crate::widgets::icons::AppIcon::Duplicate,
+                                    16.0,
+                                    colors::CYAN_ACCENT,
+                                )
+                                .clicked()
+                            {
+                                actions.push(UIAction::DuplicateLayer(layer.id));
                             }
 
                             ui.add_space(4.0);
 
                             // Solo
-                            let solo_color = if layer.solo { colors::MINT_ACCENT } else { Color32::from_gray(100) };
-                            if widgets::custom::icon_button_simple(ui, icon_manager, crate::widgets::icons::AppIcon::Solo, 16.0, solo_color).clicked() {
+                            let solo_color = if layer.solo {
+                                colors::MINT_ACCENT
+                            } else {
+                                Color32::from_gray(100)
+                            };
+                            if widgets::custom::icon_button_simple(
+                                ui,
+                                icon_manager,
+                                crate::widgets::icons::AppIcon::Solo,
+                                16.0,
+                                solo_color,
+                            )
+                            .clicked()
+                            {
                                 actions.push(UIAction::ToggleLayerSolo(layer.id));
                             }
 
                             // Bypass
-                            let bypass_color = if layer.bypass { colors::WARN_COLOR } else { Color32::from_gray(100) };
-                            if widgets::custom::icon_button_simple(ui, icon_manager, crate::widgets::icons::AppIcon::Bypass, 16.0, bypass_color).clicked() {
+                            let bypass_color = if layer.bypass {
+                                colors::WARN_COLOR
+                            } else {
+                                Color32::from_gray(100)
+                            };
+                            if widgets::custom::icon_button_simple(
+                                ui,
+                                icon_manager,
+                                crate::widgets::icons::AppIcon::Bypass,
+                                16.0,
+                                bypass_color,
+                            )
+                            .clicked()
+                            {
                                 actions.push(UIAction::ToggleLayerBypass(layer.id));
                             }
 
                             ui.separator();
 
-                             // Reorder (Up/Down)
+                            // Reorder (Up/Down)
                             if idx < count - 1 {
-                                 if widgets::move_down_button(ui).clicked() {
-                                     if let Some(nid) = next_id {
-                                         actions.push(UIAction::SwapLayers(layer.id, nid));
-                                     }
-                                 }
+                                if widgets::move_down_button(ui).clicked() {
+                                    if let Some(nid) = next_id {
+                                        actions.push(UIAction::SwapLayers(layer.id, nid));
+                                    }
+                                }
                             } else {
                                 ui.add_space(24.0); // Placeholder size for button
                             }
@@ -291,7 +365,7 @@ impl LayerPanel {
                             } else {
                                 ui.add_space(24.0);
                             }
-                        }
+                        },
                     );
                 });
             });
@@ -323,8 +397,16 @@ impl LayerPanel {
             let count = children.len();
             for (idx, &layer_id) in children.iter().enumerate() {
                 if let Some(layer) = layer_manager.get_layer(layer_id) {
-                    let prev_id = if idx > 0 { Some(children[idx - 1]) } else { None };
-                    let next_id = if idx < count - 1 { Some(children[idx + 1]) } else { None };
+                    let prev_id = if idx > 0 {
+                        Some(children[idx - 1])
+                    } else {
+                        None
+                    };
+                    let next_id = if idx < count - 1 {
+                        Some(children[idx + 1])
+                    } else {
+                        None
+                    };
 
                     Self::render_layer_row(
                         ui,
@@ -378,10 +460,8 @@ impl LayerPanel {
                                         }
                                     });
                                 if selected_mode != current_mode {
-                                    actions.push(UIAction::SetLayerBlendMode(
-                                        layer.id,
-                                        selected_mode,
-                                    ));
+                                    actions
+                                        .push(UIAction::SetLayerBlendMode(layer.id, selected_mode));
                                 }
                             });
                         });
