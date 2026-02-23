@@ -55,7 +55,7 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
             Some(ctx) => ctx,
             None => return Ok(()),
         };
-        
+
         let surface_texture = window_context.surface.get_current_texture()?;
         let view = surface_texture
             .texture
