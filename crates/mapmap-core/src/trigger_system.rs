@@ -321,18 +321,24 @@ mod tests {
 
         // 1. Update to initialize state
         system.update(&manager, &audio, 0.01);
-        assert!(system.states.contains_key(&part_id), "State should be created");
+        assert!(
+            system.states.contains_key(&part_id),
+            "State should be created"
+        );
 
         // 2. Remove the part
         if let Some(module) = manager.get_module_mut(module_id) {
-             module.parts.retain(|p| p.id != part_id);
+            module.parts.retain(|p| p.id != part_id);
         }
 
         // 3. Update again
         system.update(&manager, &audio, 0.01);
 
         // 4. Assert state is gone
-        assert!(!system.states.contains_key(&part_id), "State should be garbage collected");
+        assert!(
+            !system.states.contains_key(&part_id),
+            "State should be garbage collected"
+        );
     }
 
     #[test]
@@ -355,7 +361,7 @@ mod tests {
         // Setup part
         let trigger_type = ModulePartType::Trigger(TriggerType::AudioFFT {
             band: crate::module::AudioBand::Bass, // Irrelevant for this test
-            threshold: 0.0, // Low threshold to trigger everything
+            threshold: 0.0,                       // Low threshold to trigger everything
             output_config: config,
         });
 
@@ -371,10 +377,12 @@ mod tests {
 
         let mut system = TriggerSystem::new();
         // Mock audio data that triggers EVERYTHING
-        let mut audio = AudioTriggerData::default();
-        audio.beat_detected = true;
-        audio.peak_volume = 1.0;
-        audio.rms_volume = 1.0;
+        let mut audio = AudioTriggerData {
+            beat_detected: true,
+            peak_volume: 1.0,
+            rms_volume: 1.0,
+            ..Default::default()
+        };
         for i in 0..9 {
             audio.band_energies[i] = 1.0;
         }
@@ -400,6 +408,9 @@ mod tests {
         }
 
         // Check no extra sockets active (e.g. index 100)
-        assert!(!system.is_active(part_id, expected_sockets.len()), "Index out of bounds should not be active");
+        assert!(
+            !system.is_active(part_id, expected_sockets.len()),
+            "Index out of bounds should not be active"
+        );
     }
 }
