@@ -4094,7 +4094,11 @@ impl ModuleCanvas {
                         self.context_menu_part = None;
                         self.context_menu_pos = None;
                     }
-                    if crate::widgets::hold_to_action_button(ui, "\u{1F5D1} Delete", colors::ERROR_COLOR) {
+                    if crate::widgets::hold_to_action_button(
+                        ui,
+                        "\u{1F5D1} Delete",
+                        colors::ERROR_COLOR,
+                    ) {
                         // Remove connections and part
                         module
                             .connections
