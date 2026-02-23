@@ -7,7 +7,6 @@ use crate::core::responsive::ResponsiveLayout;
 use crate::i18n::LocaleManager;
 use crate::icons::{AppIcon, IconManager};
 use crate::theme::colors;
-use crate::widgets::custom::{move_down_button, move_up_button, styled_slider};
 use crate::widgets::panel::{cyber_panel_frame, render_panel_header};
 use egui::{Color32, RichText, Ui};
 use serde::{Deserialize, Serialize};
@@ -739,7 +738,9 @@ impl EffectChainPanel {
         let mut new_error = None;
 
         let frame_color = if is_dragging {
-            colors::CYAN_ACCENT.linear_multiply(0.2)
+            Color32::from_rgba_premultiplied(80, 100, 140, 220) // Highlight when dragging
+        } else if enabled {
+            Color32::from_rgba_premultiplied(60, 80, 120, 200)
         } else if index % 2 == 0 {
             colors::DARK_GREY
         } else {
@@ -748,9 +749,7 @@ impl EffectChainPanel {
 
         // Add stroke if dragging
         let stroke = if is_dragging {
-            egui::Stroke::new(2.0, colors::CYAN_ACCENT)
-        } else if enabled {
-            egui::Stroke::new(1.0, colors::STROKE_GREY)
+            egui::Stroke::new(2.0, Color32::WHITE)
         } else {
             egui::Stroke::NONE
         };
@@ -758,7 +757,7 @@ impl EffectChainPanel {
         let response = egui::Frame::default()
             .fill(frame_color)
             .stroke(stroke)
-            .corner_radius(egui::CornerRadius::ZERO)
+            .corner_radius(0.0)
             .inner_margin(4.0)
             .outer_margin(2.0)
             .show(ui, |ui| {
@@ -806,12 +805,12 @@ impl EffectChainPanel {
 
                         // Move buttons
                         ui.add_enabled_ui(!is_last, |ui| {
-                            if move_down_button(ui).clicked() {
+                            if ui.small_button("▼").clicked() {
                                 move_down = true;
                             }
                         });
                         ui.add_enabled_ui(!is_first, |ui| {
-                            if move_up_button(ui).clicked() {
+                            if ui.small_button("▲").clicked() {
                                 move_up = true;
                             }
                         });
@@ -825,7 +824,7 @@ impl EffectChainPanel {
                     // Intensity slider
                     ui.horizontal(|ui| {
                         ui.label(locale.t("effect-intensity"));
-                        styled_slider(ui, &mut intensity, 0.0..=1.0, 1.0);
+                        ui.add(egui::Slider::new(&mut intensity, 0.0..=1.0));
                     });
 
                     // LUT Path
@@ -914,7 +913,6 @@ impl EffectChainPanel {
                     &locale.t("param-brightness"),
                     -1.0,
                     1.0,
-                    0.0,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -924,7 +922,6 @@ impl EffectChainPanel {
                     &locale.t("param-contrast"),
                     0.0,
                     2.0,
-                    1.0,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -934,7 +931,6 @@ impl EffectChainPanel {
                     &locale.t("param-saturation"),
                     0.0,
                     2.0,
-                    1.0,
                 );
             }
             EffectType::Blur => {
@@ -946,7 +942,6 @@ impl EffectChainPanel {
                     &locale.t("param-radius"),
                     0.0,
                     20.0,
-                    5.0,
                 );
             }
             EffectType::ChromaticAberration => {
@@ -958,7 +953,6 @@ impl EffectChainPanel {
                     &locale.t("param-amount"),
                     0.0,
                     0.1,
-                    0.01,
                 );
             }
             EffectType::Glow => {
@@ -970,7 +964,6 @@ impl EffectChainPanel {
                     &locale.t("param-threshold"),
                     0.0,
                     1.0,
-                    0.5,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -980,7 +973,6 @@ impl EffectChainPanel {
                     &locale.t("param-radius"),
                     0.0,
                     30.0,
-                    10.0,
                 );
             }
             EffectType::Kaleidoscope => {
@@ -992,7 +984,6 @@ impl EffectChainPanel {
                     &locale.t("param-segments"),
                     2.0,
                     16.0,
-                    6.0,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1002,7 +993,6 @@ impl EffectChainPanel {
                     &locale.t("param-rotation"),
                     0.0,
                     360.0,
-                    0.0,
                 );
             }
             EffectType::Pixelate => {
@@ -1014,7 +1004,6 @@ impl EffectChainPanel {
                     &locale.t("param-pixel-size"),
                     1.0,
                     64.0,
-                    8.0,
                 );
             }
             EffectType::Vignette => {
@@ -1026,7 +1015,6 @@ impl EffectChainPanel {
                     &locale.t("param-radius"),
                     0.0,
                     1.0,
-                    0.5,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1036,7 +1024,6 @@ impl EffectChainPanel {
                     &locale.t("param-softness"),
                     0.0,
                     1.0,
-                    0.5,
                 );
             }
             EffectType::FilmGrain => {
@@ -1048,7 +1035,6 @@ impl EffectChainPanel {
                     &locale.t("param-amount"),
                     0.0,
                     0.5,
-                    0.1,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1058,7 +1044,6 @@ impl EffectChainPanel {
                     &locale.t("param-speed"),
                     0.0,
                     5.0,
-                    1.0,
                 );
             }
             EffectType::Wave => {
@@ -1070,7 +1055,6 @@ impl EffectChainPanel {
                     &locale.t("param-frequency"),
                     0.0,
                     50.0,
-                    10.0,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1080,7 +1064,6 @@ impl EffectChainPanel {
                     &locale.t("param-amplitude"),
                     0.0,
                     2.0,
-                    0.5,
                 );
             }
             EffectType::Glitch => {
@@ -1092,7 +1075,6 @@ impl EffectChainPanel {
                     &locale.t("param-block-size"),
                     1.0,
                     50.0,
-                    10.0,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1102,7 +1084,6 @@ impl EffectChainPanel {
                     &locale.t("param-color-shift"),
                     0.0,
                     20.0,
-                    5.0,
                 );
             }
             EffectType::RgbSplit => {
@@ -1114,7 +1095,6 @@ impl EffectChainPanel {
                     &locale.t("param-offset-x"),
                     -50.0,
                     50.0,
-                    0.0,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1124,7 +1104,6 @@ impl EffectChainPanel {
                     &locale.t("param-offset-y"),
                     -50.0,
                     50.0,
-                    0.0,
                 );
             }
             EffectType::Mirror => {
@@ -1136,7 +1115,6 @@ impl EffectChainPanel {
                     &locale.t("param-center"),
                     0.0,
                     1.0,
-                    0.5,
                 );
             }
             EffectType::HueShift => {
@@ -1148,7 +1126,6 @@ impl EffectChainPanel {
                     &locale.t("param-hue-shift"),
                     0.0,
                     1.0,
-                    0.0,
                 );
             }
             EffectType::Voronoi => {
@@ -1160,7 +1137,6 @@ impl EffectChainPanel {
                     &locale.t("param-scale"),
                     1.0,
                     50.0,
-                    10.0,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1170,7 +1146,6 @@ impl EffectChainPanel {
                     &locale.t("param-offset"),
                     0.0,
                     10.0,
-                    1.0,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1180,7 +1155,6 @@ impl EffectChainPanel {
                     &locale.t("param-cell-size"),
                     0.1,
                     5.0,
-                    1.0,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1190,7 +1164,6 @@ impl EffectChainPanel {
                     &locale.t("param-distortion"),
                     0.0,
                     2.0,
-                    0.5,
                 );
             }
             EffectType::Tunnel => {
@@ -1202,7 +1175,6 @@ impl EffectChainPanel {
                     &locale.t("param-scale"),
                     0.1,
                     2.0,
-                    0.5,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1212,7 +1184,6 @@ impl EffectChainPanel {
                     &locale.t("param-rotation"),
                     0.0,
                     5.0,
-                    0.5,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1222,7 +1193,6 @@ impl EffectChainPanel {
                     &locale.t("param-speed"),
                     0.0,
                     5.0,
-                    0.5,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1232,7 +1202,6 @@ impl EffectChainPanel {
                     &locale.t("param-distortion"),
                     0.0,
                     2.0,
-                    0.5,
                 );
             }
             EffectType::Galaxy => {
@@ -1244,7 +1213,6 @@ impl EffectChainPanel {
                     &locale.t("param-zoom"),
                     0.1,
                     5.0,
-                    0.5,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1254,7 +1222,6 @@ impl EffectChainPanel {
                     &locale.t("param-speed"),
                     0.0,
                     2.0,
-                    0.2,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1264,7 +1231,6 @@ impl EffectChainPanel {
                     &locale.t("param-radius"),
                     0.1,
                     3.0,
-                    1.0,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1274,7 +1240,6 @@ impl EffectChainPanel {
                     &locale.t("param-brightness"),
                     0.0,
                     2.0,
-                    1.0,
                 );
             }
 
@@ -1285,7 +1250,6 @@ impl EffectChainPanel {
         let _ = effect_id; // Silence unused warning
     }
 
-    #[allow(clippy::too_many_arguments)]
     fn render_param_slider_static(
         ui: &mut Ui,
         parameters: &std::collections::HashMap<String, f32>,
@@ -1294,13 +1258,12 @@ impl EffectChainPanel {
         label: &str,
         min: f32,
         max: f32,
-        default_value: f32,
     ) {
         ui.horizontal(|ui| {
             ui.label(format!("{}:", label));
-            let old_value = *parameters.get(param_name).unwrap_or(&default_value);
+            let old_value = *parameters.get(param_name).unwrap_or(&0.0);
             let mut value = old_value;
-            styled_slider(ui, &mut value, min..=max, default_value);
+            ui.add(egui::Slider::new(&mut value, min..=max));
             if (value - old_value).abs() > 0.0001 {
                 param_changes.push((param_name.to_string(), value));
             }
