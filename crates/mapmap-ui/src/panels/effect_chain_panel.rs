@@ -1285,6 +1285,7 @@ impl EffectChainPanel {
         let _ = effect_id; // Silence unused warning
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn render_param_slider_static(
         ui: &mut Ui,
         parameters: &std::collections::HashMap<String, f32>,
