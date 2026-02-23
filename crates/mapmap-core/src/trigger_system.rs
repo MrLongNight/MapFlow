@@ -53,7 +53,12 @@ impl TriggerSystem {
     ) {
         self.active_triggers.clear();
 
+<<<<<<< HEAD
         // Hoist RNG initialization to avoid repeated thread-local access in the loop
+=======
+        // Hoist RNG to avoid repeated initialization inside the loop
+        use rand::Rng;
+>>>>>>> 23d054a3 (Guardian: Fix TriggerSystem memory leak and add consistency tests)
         let mut rng = rand::rng();
 
         // Track parts that actively use state to perform Garbage Collection
@@ -321,6 +326,7 @@ mod tests {
 
         // 1. Update to initialize state
         system.update(&manager, &audio, 0.01);
+<<<<<<< HEAD
         assert!(
             system.states.contains_key(&part_id),
             "State should be created"
@@ -329,16 +335,27 @@ mod tests {
         // 2. Remove the part
         if let Some(module) = manager.get_module_mut(module_id) {
             module.parts.retain(|p| p.id != part_id);
+=======
+        assert!(system.states.contains_key(&part_id), "State should be created");
+
+        // 2. Remove the part
+        if let Some(module) = manager.get_module_mut(module_id) {
+             module.parts.retain(|p| p.id != part_id);
+>>>>>>> 23d054a3 (Guardian: Fix TriggerSystem memory leak and add consistency tests)
         }
 
         // 3. Update again
         system.update(&manager, &audio, 0.01);
 
         // 4. Assert state is gone
+<<<<<<< HEAD
         assert!(
             !system.states.contains_key(&part_id),
             "State should be garbage collected"
         );
+=======
+        assert!(!system.states.contains_key(&part_id), "State should be garbage collected");
+>>>>>>> 23d054a3 (Guardian: Fix TriggerSystem memory leak and add consistency tests)
     }
 
     #[test]
@@ -361,7 +378,11 @@ mod tests {
         // Setup part
         let trigger_type = ModulePartType::Trigger(TriggerType::AudioFFT {
             band: crate::module::AudioBand::Bass, // Irrelevant for this test
+<<<<<<< HEAD
             threshold: 0.0,                       // Low threshold to trigger everything
+=======
+            threshold: 0.0, // Low threshold to trigger everything
+>>>>>>> 23d054a3 (Guardian: Fix TriggerSystem memory leak and add consistency tests)
             output_config: config,
         });
 
@@ -377,12 +398,19 @@ mod tests {
 
         let mut system = TriggerSystem::new();
         // Mock audio data that triggers EVERYTHING
+<<<<<<< HEAD
         let mut audio = AudioTriggerData {
             beat_detected: true,
             peak_volume: 1.0,
             rms_volume: 1.0,
             ..Default::default()
         };
+=======
+        let mut audio = AudioTriggerData::default();
+        audio.beat_detected = true;
+        audio.peak_volume = 1.0;
+        audio.rms_volume = 1.0;
+>>>>>>> 23d054a3 (Guardian: Fix TriggerSystem memory leak and add consistency tests)
         for i in 0..9 {
             audio.band_energies[i] = 1.0;
         }
@@ -408,9 +436,13 @@ mod tests {
         }
 
         // Check no extra sockets active (e.g. index 100)
+<<<<<<< HEAD
         assert!(
             !system.is_active(part_id, expected_sockets.len()),
             "Index out of bounds should not be active"
         );
+=======
+        assert!(!system.is_active(part_id, expected_sockets.len()), "Index out of bounds should not be active");
+>>>>>>> 23d054a3 (Guardian: Fix TriggerSystem memory leak and add consistency tests)
     }
 }
