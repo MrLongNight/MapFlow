@@ -18,6 +18,12 @@ use std::path::Path;
 /// changes are made to the `ProjectFile` struct or its children.
 pub const PROJECT_FILE_VERSION: &str = "1.0.0";
 
+/// Maximum project file size (50MB).
+#[cfg(not(test))]
+const MAX_PROJECT_FILE_SIZE: u64 = 50 * 1024 * 1024;
+#[cfg(test)]
+const MAX_PROJECT_FILE_SIZE: u64 = 10 * 1024; // 10 KB for testing
+
 /// Represents the top-level structure of a saved MapFlow project file.
 ///
 /// This struct is what gets serialized to/from RON or JSON. It wraps the
@@ -58,19 +64,40 @@ impl ProjectFile {
             .unwrap_or("ron");
 
         match extension {
+            "json" | "ron" | "mapmap" | "mflow" => {}
+            _ => return Err(IoError::UnsupportedFormat(extension.to_string())),
+        }
+
+        let file = File::open(path)?;
+        let metadata = file.metadata()?;
+        if metadata.len() > MAX_PROJECT_FILE_SIZE {
+            return Err(IoError::FileTooLarge {
+                size: metadata.len(),
+                limit: MAX_PROJECT_FILE_SIZE,
+            });
+        }
+
+        let mut content = String::with_capacity(metadata.len() as usize);
+        file.take(MAX_PROJECT_FILE_SIZE + 1)
+            .read_to_string(&mut content)?;
+
+        if content.len() as u64 > MAX_PROJECT_FILE_SIZE {
+            return Err(IoError::FileTooLarge {
+                size: content.len() as u64,
+                limit: MAX_PROJECT_FILE_SIZE,
+            });
+        }
+
+        match extension {
             "json" => {
-                let mut content = String::new();
-                File::open(path)?.read_to_string(&mut content)?;
                 let file: ProjectFile = serde_json::from_str(&content)?;
                 Ok(file)
             }
             "ron" | "mapmap" | "mflow" => {
-                let mut content = String::new();
-                File::open(path)?.read_to_string(&mut content)?;
                 let file: ProjectFile = ron::from_str(&content)?;
                 Ok(file)
             }
-            _ => Err(IoError::UnsupportedFormat(extension.to_string())),
+            _ => unreachable!(),
         }
     }
 
@@ -177,5 +204,28 @@ mod tests {
         let second_modified_at = project_file.metadata.modified_at;
 
         assert!(second_modified_at > first_modified_at);
+    }
+
+    #[test]
+    fn test_file_too_large() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("large.ron");
+
+        let limit = MAX_PROJECT_FILE_SIZE;
+        // Create a file larger than the limit
+        let f = File::create(&path).unwrap();
+        f.set_len(limit + 100).unwrap();
+
+        let result = ProjectFile::load(&path);
+
+        // Should return FileTooLarge
+        match result {
+            Err(IoError::FileTooLarge { size, limit: l }) => {
+                assert_eq!(size, limit + 100);
+                assert_eq!(l, MAX_PROJECT_FILE_SIZE);
+            }
+            Err(e) => panic!("Wrong error type: {:?}", e),
+            Ok(_) => panic!("Should have failed"),
+        }
     }
 }

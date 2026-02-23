@@ -61,3 +61,8 @@
 **Vulnerability:** API responses containing sensitive system status and configuration were potentially cacheable by intermediaries and browsers because `Cache-Control` headers were missing.
 **Learning:** Default `security_headers` middleware in Axum does not automatically prevent caching. Explicit `no-store` is required for control interfaces exposing sensitive data.
 **Prevention:** Always add `Cache-Control: no-store, max-age=0` and `Pragma: no-cache` to the security headers middleware for authenticated API routes.
+
+## 2026-02-14 - Project File DoS Vulnerability
+**Vulnerability:** The project loading mechanism (`ProjectFile::load`) in `mapmap-io` read the entire file content into memory without checking its size first. A malicious actor could provide a massive file (e.g., 10GB of zeroes), causing the application to crash due to memory exhaustion (OOM).
+**Learning:** Reading entire files into memory (`read_to_string`) is dangerous without explicit limits. `File::metadata()` provides a quick check, but a race condition (TOCTOU) could allow the file to grow between check and read.
+**Prevention:** Always enforce a hard limit on file size (`MAX_PROJECT_FILE_SIZE`). Use `file.metadata()?.len()` for a fast check, and `file.take(LIMIT).read_to_string()` for a robust, race-condition-safe read.
