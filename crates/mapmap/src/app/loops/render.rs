@@ -506,12 +506,14 @@ fn render_content(
 fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
     // 1. THROTTLING: Only update previews every 5 frames to save GPU time
     app.frame_counter = app.frame_counter.wrapping_add(1);
-    if app.frame_counter % 5 != 0 {
+    if !app.frame_counter.is_multiple_of(5) {
         return;
     }
 
     // 2. CACHING: Only rebuild the list of output parts if graph changed
-    if app.cached_output_infos.is_empty() || app.last_graph_revision != app.state.module_manager.graph_revision {
+    if app.cached_output_infos.is_empty()
+        || app.last_graph_revision != app.state.module_manager.graph_revision
+    {
         app.cached_output_infos = app
             .state
             .module_manager
