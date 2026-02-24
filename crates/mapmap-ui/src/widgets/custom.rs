@@ -205,6 +205,95 @@ pub fn styled_button(ui: &mut Ui, text: &str, _active: bool) -> Response {
     ui.button(text)
 }
 
+/// Simple Icon Button Helper (Stateless)
+pub fn icon_button_simple(
+    ui: &mut Ui,
+    icon_manager: Option<&IconManager>,
+    icon: AppIcon,
+    size: f32,
+    hover_text: &str,
+) -> Response {
+    let desired_size = Vec2::splat(size + 8.0); // Padding
+    let (rect, response) = ui.allocate_at_least(desired_size, Sense::click());
+
+    // Accessibility info
+    response.widget_info(|| {
+        WidgetInfo::labeled(WidgetType::Button, ui.is_enabled(), hover_text)
+    });
+
+    let visuals = ui.style().interact(&response);
+
+    // Background fill logic
+    let bg_fill = if response.hovered() {
+        ui.visuals().widgets.hovered.bg_fill
+    } else {
+        visuals.bg_fill
+    };
+
+    // Stroke logic
+    let stroke = if response.hovered() {
+        ui.visuals().widgets.hovered.bg_stroke
+    } else {
+        visuals.bg_stroke
+    };
+
+    ui.painter().rect(
+        rect,
+        CornerRadius::ZERO,
+        bg_fill,
+        stroke,
+        egui::StrokeKind::Middle,
+    );
+
+    // Draw focus ring if focused
+    if response.has_focus() {
+        ui.painter().rect_stroke(
+            rect.expand(2.0),
+            CornerRadius::ZERO,
+            Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
+            egui::StrokeKind::Middle,
+        );
+    }
+
+    // Draw Icon
+    if let Some(mgr) = icon_manager {
+        if let Some(texture) = mgr.get(icon) {
+            let icon_rect = Rect::from_center_size(rect.center(), Vec2::splat(size));
+            let tint = if response.hovered() {
+                Color32::WHITE
+            } else {
+                ui.visuals().text_color()
+            };
+            ui.painter().image(
+                texture.id(),
+                icon_rect,
+                Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
+                tint,
+            );
+        } else {
+            // Fallback text if texture not found
+            ui.painter().text(
+                rect.center(),
+                egui::Align2::CENTER_CENTER,
+                "?",
+                egui::FontId::proportional(size),
+                ui.visuals().text_color(),
+            );
+        }
+    } else {
+        // Fallback if no manager
+        ui.painter().text(
+            rect.center(),
+            egui::Align2::CENTER_CENTER,
+            "!",
+            egui::FontId::proportional(size),
+            ui.visuals().text_color(),
+        );
+    }
+
+    response.on_hover_text(hover_text)
+}
+
 /// Generic Icon Button Helper
 pub fn icon_button(
     ui: &mut Ui,

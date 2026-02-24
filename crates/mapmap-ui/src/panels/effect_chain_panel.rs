@@ -8,6 +8,7 @@ use crate::i18n::LocaleManager;
 use crate::icons::{AppIcon, IconManager};
 use crate::theme::colors;
 use crate::widgets::panel::{cyber_panel_frame, render_panel_header};
+use crate::widgets::custom::{styled_slider, icon_button_simple, delete_button};
 use egui::{Color32, RichText, Ui};
 use serde::{Deserialize, Serialize};
 
@@ -136,27 +137,11 @@ impl EffectType {
             EffectType::Custom,
         ]
     }
-}
 
-/// Effect instance for UI
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UIEffect {
-    pub id: u64,
-    pub effect_type: EffectType,
-    pub enabled: bool,
-    pub intensity: f32,
-    pub expanded: bool,
-    pub lut_path: String,
-    pub error: Option<String>,
-    pub parameters: std::collections::HashMap<String, f32>,
-}
-
-impl UIEffect {
-    pub fn new(id: u64, effect_type: EffectType) -> Self {
+    pub fn default_params(&self) -> std::collections::HashMap<String, f32> {
         let mut parameters = std::collections::HashMap::new();
 
-        // Default parameters
-        match effect_type {
+        match self {
             EffectType::LoadLUT => {
                 parameters.insert("intensity".to_string(), 1.0);
             }
@@ -210,7 +195,25 @@ impl UIEffect {
             }
             _ => {}
         }
+        parameters
+    }
+}
 
+/// Effect instance for UI
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UIEffect {
+    pub id: u64,
+    pub effect_type: EffectType,
+    pub enabled: bool,
+    pub intensity: f32,
+    pub expanded: bool,
+    pub lut_path: String,
+    pub error: Option<String>,
+    pub parameters: std::collections::HashMap<String, f32>,
+}
+
+impl UIEffect {
+    pub fn new(id: u64, effect_type: EffectType) -> Self {
         Self {
             id,
             effect_type,
@@ -219,7 +222,7 @@ impl UIEffect {
             expanded: true,
             lut_path: String::new(),
             error: None,
-            parameters,
+            parameters: effect_type.default_params(),
         }
     }
 
@@ -455,18 +458,17 @@ impl EffectChainPanel {
             }
 
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if let Some(mgr) = icon_manager {
-                    if let Some(img) = mgr.image(AppIcon::Remove, 16.0) {
-                        if ui
-                            .add(egui::Button::image(img))
-                            .clone()
-                            .on_hover_text(locale.t("effect-clear"))
-                            .clicked()
-                        {
-                            self.actions.push(EffectChainAction::ClearAll);
-                            self.chain.effects.clear();
-                        }
-                    }
+                if icon_button_simple(
+                    ui,
+                    icon_manager,
+                    AppIcon::Remove,
+                    16.0,
+                    &locale.t("effect-clear"),
+                )
+                .clicked()
+                {
+                    self.actions.push(EffectChainAction::ClearAll);
+                    self.chain.effects.clear();
                 }
             });
         });
@@ -738,26 +740,29 @@ impl EffectChainPanel {
         let mut new_error = None;
 
         let frame_color = if is_dragging {
-            Color32::from_rgba_premultiplied(80, 100, 140, 220) // Highlight when dragging
+            colors::CYAN_ACCENT.linear_multiply(0.4) // Highlight when dragging
         } else if enabled {
-            Color32::from_rgba_premultiplied(60, 80, 120, 200)
+            // Active effect background - subtle tint
+            colors::CYAN_ACCENT.linear_multiply(0.05).gamma_multiply(0.5)
         } else if index % 2 == 0 {
             colors::DARK_GREY
         } else {
             colors::DARKER_GREY
         };
 
-        // Add stroke if dragging
+        // Add stroke if dragging or enabled
         let stroke = if is_dragging {
-            egui::Stroke::new(2.0, Color32::WHITE)
+            egui::Stroke::new(2.0, colors::CYAN_ACCENT)
+        } else if enabled {
+            egui::Stroke::new(1.0, colors::CYAN_ACCENT.linear_multiply(0.5))
         } else {
-            egui::Stroke::NONE
+            egui::Stroke::new(1.0, colors::STROKE_GREY)
         };
 
         let response = egui::Frame::default()
             .fill(frame_color)
             .stroke(stroke)
-            .corner_radius(0.0)
+            .corner_radius(egui::CornerRadius::ZERO)
             .inner_margin(4.0)
             .outer_margin(2.0)
             .show(ui, |ui| {
@@ -799,7 +804,7 @@ impl EffectChainPanel {
 
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         // Delete button (Hold to Confirm)
-                        if crate::widgets::custom::delete_button(ui) {
+                        if delete_button(ui) {
                             remove = true;
                         }
 
@@ -913,6 +918,7 @@ impl EffectChainPanel {
                     &locale.t("param-brightness"),
                     -1.0,
                     1.0,
+                    0.0,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -922,6 +928,7 @@ impl EffectChainPanel {
                     &locale.t("param-contrast"),
                     0.0,
                     2.0,
+                    1.0,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -931,6 +938,7 @@ impl EffectChainPanel {
                     &locale.t("param-saturation"),
                     0.0,
                     2.0,
+                    1.0,
                 );
             }
             EffectType::Blur => {
@@ -942,6 +950,7 @@ impl EffectChainPanel {
                     &locale.t("param-radius"),
                     0.0,
                     20.0,
+                    5.0,
                 );
             }
             EffectType::ChromaticAberration => {
@@ -953,6 +962,7 @@ impl EffectChainPanel {
                     &locale.t("param-amount"),
                     0.0,
                     0.1,
+                    0.01,
                 );
             }
             EffectType::Glow => {
@@ -964,6 +974,7 @@ impl EffectChainPanel {
                     &locale.t("param-threshold"),
                     0.0,
                     1.0,
+                    0.5,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -973,6 +984,7 @@ impl EffectChainPanel {
                     &locale.t("param-radius"),
                     0.0,
                     30.0,
+                    10.0,
                 );
             }
             EffectType::Kaleidoscope => {
@@ -984,6 +996,7 @@ impl EffectChainPanel {
                     &locale.t("param-segments"),
                     2.0,
                     16.0,
+                    6.0,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -993,6 +1006,7 @@ impl EffectChainPanel {
                     &locale.t("param-rotation"),
                     0.0,
                     360.0,
+                    0.0,
                 );
             }
             EffectType::Pixelate => {
@@ -1004,6 +1018,7 @@ impl EffectChainPanel {
                     &locale.t("param-pixel-size"),
                     1.0,
                     64.0,
+                    8.0,
                 );
             }
             EffectType::Vignette => {
@@ -1015,6 +1030,7 @@ impl EffectChainPanel {
                     &locale.t("param-radius"),
                     0.0,
                     1.0,
+                    0.5,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1024,6 +1040,7 @@ impl EffectChainPanel {
                     &locale.t("param-softness"),
                     0.0,
                     1.0,
+                    0.5,
                 );
             }
             EffectType::FilmGrain => {
@@ -1035,6 +1052,7 @@ impl EffectChainPanel {
                     &locale.t("param-amount"),
                     0.0,
                     0.5,
+                    0.1,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1044,6 +1062,7 @@ impl EffectChainPanel {
                     &locale.t("param-speed"),
                     0.0,
                     5.0,
+                    1.0,
                 );
             }
             EffectType::Wave => {
@@ -1055,6 +1074,7 @@ impl EffectChainPanel {
                     &locale.t("param-frequency"),
                     0.0,
                     50.0,
+                    0.0,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1064,6 +1084,7 @@ impl EffectChainPanel {
                     &locale.t("param-amplitude"),
                     0.0,
                     2.0,
+                    0.0,
                 );
             }
             EffectType::Glitch => {
@@ -1075,6 +1096,7 @@ impl EffectChainPanel {
                     &locale.t("param-block-size"),
                     1.0,
                     50.0,
+                    0.0,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1084,6 +1106,7 @@ impl EffectChainPanel {
                     &locale.t("param-color-shift"),
                     0.0,
                     20.0,
+                    0.0,
                 );
             }
             EffectType::RgbSplit => {
@@ -1095,6 +1118,7 @@ impl EffectChainPanel {
                     &locale.t("param-offset-x"),
                     -50.0,
                     50.0,
+                    0.0,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1104,6 +1128,7 @@ impl EffectChainPanel {
                     &locale.t("param-offset-y"),
                     -50.0,
                     50.0,
+                    0.0,
                 );
             }
             EffectType::Mirror => {
@@ -1115,6 +1140,7 @@ impl EffectChainPanel {
                     &locale.t("param-center"),
                     0.0,
                     1.0,
+                    0.0,
                 );
             }
             EffectType::HueShift => {
@@ -1126,6 +1152,7 @@ impl EffectChainPanel {
                     &locale.t("param-hue-shift"),
                     0.0,
                     1.0,
+                    0.0,
                 );
             }
             EffectType::Voronoi => {
@@ -1137,6 +1164,7 @@ impl EffectChainPanel {
                     &locale.t("param-scale"),
                     1.0,
                     50.0,
+                    10.0,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1146,6 +1174,7 @@ impl EffectChainPanel {
                     &locale.t("param-offset"),
                     0.0,
                     10.0,
+                    1.0,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1155,6 +1184,7 @@ impl EffectChainPanel {
                     &locale.t("param-cell-size"),
                     0.1,
                     5.0,
+                    1.0,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1164,6 +1194,7 @@ impl EffectChainPanel {
                     &locale.t("param-distortion"),
                     0.0,
                     2.0,
+                    0.5,
                 );
             }
             EffectType::Tunnel => {
@@ -1175,6 +1206,7 @@ impl EffectChainPanel {
                     &locale.t("param-scale"),
                     0.1,
                     2.0,
+                    0.5,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1184,6 +1216,7 @@ impl EffectChainPanel {
                     &locale.t("param-rotation"),
                     0.0,
                     5.0,
+                    0.5,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1193,6 +1226,7 @@ impl EffectChainPanel {
                     &locale.t("param-speed"),
                     0.0,
                     5.0,
+                    0.5,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1202,6 +1236,7 @@ impl EffectChainPanel {
                     &locale.t("param-distortion"),
                     0.0,
                     2.0,
+                    0.5,
                 );
             }
             EffectType::Galaxy => {
@@ -1213,6 +1248,7 @@ impl EffectChainPanel {
                     &locale.t("param-zoom"),
                     0.1,
                     5.0,
+                    0.5,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1222,6 +1258,7 @@ impl EffectChainPanel {
                     &locale.t("param-speed"),
                     0.0,
                     2.0,
+                    0.2,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1231,6 +1268,7 @@ impl EffectChainPanel {
                     &locale.t("param-radius"),
                     0.1,
                     3.0,
+                    1.0,
                 );
                 Self::render_param_slider_static(
                     ui,
@@ -1240,6 +1278,7 @@ impl EffectChainPanel {
                     &locale.t("param-brightness"),
                     0.0,
                     2.0,
+                    1.0,
                 );
             }
 
@@ -1258,12 +1297,13 @@ impl EffectChainPanel {
         label: &str,
         min: f32,
         max: f32,
+        default_value: f32,
     ) {
         ui.horizontal(|ui| {
             ui.label(format!("{}:", label));
-            let old_value = *parameters.get(param_name).unwrap_or(&0.0);
+            let old_value = *parameters.get(param_name).unwrap_or(&default_value);
             let mut value = old_value;
-            ui.add(egui::Slider::new(&mut value, min..=max));
+            styled_slider(ui, &mut value, min..=max, default_value);
             if (value - old_value).abs() > 0.0001 {
                 param_changes.push((param_name.to_string(), value));
             }
@@ -1285,17 +1325,16 @@ impl EffectChainPanel {
 
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 // Save preset button
-                if let Some(mgr) = icon_manager {
-                    if let Some(img) = mgr.image(AppIcon::FloppyDisk, 16.0) {
-                        if ui
-                            .add(egui::Button::image(img))
-                            .clone()
-                            .on_hover_text(locale.t("effect-save"))
-                            .clicked()
-                        {
-                            self.show_preset_browser = true;
-                        }
-                    }
+                if icon_button_simple(
+                    ui,
+                    icon_manager,
+                    AppIcon::FloppyDisk,
+                    16.0,
+                    &locale.t("effect-save"),
+                )
+                .clicked()
+                {
+                    self.show_preset_browser = true;
                 }
             });
         });
@@ -1364,21 +1403,20 @@ impl EffectChainPanel {
                 ui.horizontal(|ui| {
                     ui.label(locale.t("effect-save-as"));
                     ui.text_edit_singleline(&mut self.save_preset_name);
-                    if let Some(mgr) = icon_manager {
-                        if let Some(img) = mgr.image(AppIcon::FloppyDisk, 16.0) {
-                            if ui
-                                .add(egui::Button::image(img))
-                                .clone()
-                                .on_hover_text(locale.t("effect-save"))
-                                .clicked()
-                                && !self.save_preset_name.is_empty()
-                            {
-                                self.actions.push(EffectChainAction::SavePreset(
-                                    self.save_preset_name.clone(),
-                                ));
-                                self.save_preset_name.clear();
-                            }
-                        }
+                    if icon_button_simple(
+                        ui,
+                        icon_manager,
+                        AppIcon::FloppyDisk,
+                        16.0,
+                        &locale.t("effect-save"),
+                    )
+                    .clicked()
+                        && !self.save_preset_name.is_empty()
+                    {
+                        self.actions.push(EffectChainAction::SavePreset(
+                            self.save_preset_name.clone(),
+                        ));
+                        self.save_preset_name.clear();
                     }
                 });
             });
