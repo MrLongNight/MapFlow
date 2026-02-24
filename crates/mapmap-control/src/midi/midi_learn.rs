@@ -304,6 +304,21 @@ mod tests {
     }
 
     #[test]
+    fn test_midi_learn_reset() {
+        let mut manager = MidiLearnManager::new();
+        manager.start_learning("test");
+
+        // Simulate some state change like timeout or cancel
+        manager.cancel();
+        assert!(matches!(manager.state(), MidiLearnState::Cancelled));
+
+        // Reset should bring it back to Inactive
+        manager.reset();
+        assert!(matches!(manager.state(), MidiLearnState::Inactive));
+        assert!(!manager.is_learning());
+    }
+
+    #[test]
     fn test_midi_learn_state_remaining_time() {
         let state = MidiLearnState::start("test".to_string(), 5);
 
@@ -311,6 +326,29 @@ mod tests {
             assert!(remaining.as_secs() <= 5);
         } else {
             panic!("Should have remaining time");
+        }
+    }
+
+    #[test]
+    fn test_midi_learn_timeout() {
+        // Set timeout to 1 second (minimum possible with current API)
+        let mut manager = MidiLearnManager::new().with_timeout(1);
+        manager.start_learning("test_timeout");
+
+        assert!(manager.is_learning());
+
+        // Wait for timeout
+        std::thread::sleep(Duration::from_millis(1100));
+
+        // Check timeout
+        let timed_out = manager.update();
+        assert!(timed_out, "Should have timed out");
+        assert!(!manager.is_learning());
+
+        if let MidiLearnState::TimedOut { target_element } = manager.state() {
+            assert_eq!(target_element, "test_timeout");
+        } else {
+            panic!("State should be TimedOut, was {:?}", manager.state());
         }
     }
 }

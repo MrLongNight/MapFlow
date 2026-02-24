@@ -444,4 +444,35 @@ mod tests {
         assert_eq!(frame.size(), Some(format.buffer_size()));
         assert!(frame.is_valid());
     }
+
+    #[test]
+    fn test_video_format_odd_resolution() {
+        let format = VideoFormat::new(1921, 1081, PixelFormat::RGBA8, 60.0);
+        assert_eq!(format.width, 1921);
+        assert_eq!(format.height, 1081);
+
+        // Buffer size should be width * height * 4
+        assert_eq!(format.buffer_size(), 1921 * 1081 * 4);
+    }
+
+    #[test]
+    fn test_video_format_zero_size() {
+        let format = VideoFormat::new(0, 0, PixelFormat::RGBA8, 60.0);
+        assert_eq!(format.buffer_size(), 0);
+
+        let frame = VideoFrame::empty(format.clone());
+        assert!(frame.is_valid());
+        assert_eq!(frame.size(), Some(0));
+    }
+
+    #[test]
+    fn test_video_frame_clone() {
+        let format = VideoFormat::hd_1080p60_rgba();
+        let frame = VideoFrame::empty(format.clone());
+        let cloned = frame.clone();
+
+        assert_eq!(frame.format, cloned.format);
+        assert!(frame.is_valid());
+        assert!(cloned.is_valid());
+    }
 }

@@ -525,11 +525,32 @@ mod tests {
     #[test]
     fn test_yuv_to_rgb() {
         // Test with known YUV values (white)
+        // Y=235, U=0, V=0 -> RGB(235, 235, 235) approximately
         let (r, g, b) = yuv_to_rgb(235, 0, 0);
         assert!(r > 200 && g > 200 && b > 200); // Should be close to white
 
         // Test with black
+        // Y=16, U=0, V=0 -> RGB(16, 16, 16) approximately
         let (r, g, b) = yuv_to_rgb(16, 0, 0);
         assert!(r < 50 && g < 50 && b < 50); // Should be close to black
+    }
+
+    #[test]
+    fn test_yuv_colors() {
+        // Green
+        // Y=145, U=-54, V=-142
+        let (r, g, b) = yuv_to_rgb(145, -54, -142);
+        assert!(g > r && g > b);
+        assert!(g > 100);
+
+        // Blue
+        // Y=41, U=110, V=-110
+        let (r, g, b) = yuv_to_rgb(41, 110, -110);
+        assert!(b > r && b > g);
+
+        // Red
+        // Y=81, U=-90, V=240
+        let (r, g, b) = yuv_to_rgb(81, -90, 240); // High V for Red
+        assert!(r > g && r > b);
     }
 }
