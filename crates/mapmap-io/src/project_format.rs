@@ -18,6 +18,13 @@ use std::path::Path;
 /// changes are made to the `ProjectFile` struct or its children.
 pub const PROJECT_FILE_VERSION: &str = "1.0.0";
 
+/// Maximum allowed project file size (50MB).
+/// During tests, this is reduced to 10KB to facilitate verification.
+#[cfg(not(test))]
+const MAX_PROJECT_FILE_SIZE: u64 = 50 * 1024 * 1024; // 50 MB
+#[cfg(test)]
+const MAX_PROJECT_FILE_SIZE: u64 = 10 * 1024; // 10 KB
+
 /// Represents the top-level structure of a saved MapFlow project file.
 ///
 /// This struct is what gets serialized to/from RON or JSON. It wraps the
@@ -57,16 +64,26 @@ impl ProjectFile {
             .and_then(|ext| ext.to_str())
             .unwrap_or("ron");
 
+        let file = File::open(path)?;
+        let metadata = file.metadata()?;
+        if metadata.len() > MAX_PROJECT_FILE_SIZE {
+            return Err(IoError::FileTooLarge {
+                size: metadata.len(),
+                limit: MAX_PROJECT_FILE_SIZE,
+            });
+        }
+
+        let mut content = String::new();
+        // Use take to limit read even if file grows (TOCTOU mitigation)
+        file.take(MAX_PROJECT_FILE_SIZE)
+            .read_to_string(&mut content)?;
+
         match extension {
             "json" => {
-                let mut content = String::new();
-                File::open(path)?.read_to_string(&mut content)?;
                 let file: ProjectFile = serde_json::from_str(&content)?;
                 Ok(file)
             }
             "ron" | "mapmap" | "mflow" => {
-                let mut content = String::new();
-                File::open(path)?.read_to_string(&mut content)?;
                 let file: ProjectFile = ron::from_str(&content)?;
                 Ok(file)
             }
@@ -177,5 +194,31 @@ mod tests {
         let second_modified_at = project_file.metadata.modified_at;
 
         assert!(second_modified_at > first_modified_at);
+    }
+
+    #[test]
+    fn test_file_too_large() {
+        let file = tempfile::Builder::new()
+            .suffix(".ron")
+            .tempfile()
+            .unwrap();
+        let path = file.path();
+
+        // Write content larger than 10KB (MAX_PROJECT_FILE_SIZE in test)
+        // We write to the file directly to avoid creating a new unmanaged file
+        let data = vec![b' '; 11 * 1024]; // 11KB of spaces
+        std::fs::write(path, data).unwrap();
+
+        let result = ProjectFile::load(path);
+
+        // Should return FileTooLarge error
+        assert!(matches!(result, Err(IoError::FileTooLarge { .. })));
+
+        if let Err(IoError::FileTooLarge { size, limit }) = result {
+            assert_eq!(size, 11 * 1024);
+            assert_eq!(limit, 10 * 1024);
+        } else {
+            panic!("Expected FileTooLarge error");
+        }
     }
 }

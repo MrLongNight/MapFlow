@@ -61,3 +61,8 @@
 **Vulnerability:** API responses containing sensitive system status and configuration were potentially cacheable by intermediaries and browsers because `Cache-Control` headers were missing.
 **Learning:** Default `security_headers` middleware in Axum does not automatically prevent caching. Explicit `no-store` is required for control interfaces exposing sensitive data.
 **Prevention:** Always add `Cache-Control: no-store, max-age=0` and `Pragma: no-cache` to the security headers middleware for authenticated API routes.
+
+## 2026-02-21 - Unbounded File Read in Project Loader
+**Vulnerability:** `ProjectFile::load` read the entire file content into memory using `read_to_string` without checking the size. A malicious or corrupted project file (e.g., a zip bomb or `/dev/zero`) could cause an Out-Of-Memory (OOM) crash, leading to Denial of Service.
+**Learning:** `read_to_string` on a `File` is dangerous for untrusted inputs as it reads until EOF. Checking `metadata().len()` is insufficient due to TOCTOU race conditions or special files that report size 0 but are infinite.
+**Prevention:** Always use `file.take(LIMIT).read_to_string(...)` to enforce a hard limit on the number of bytes read, regardless of what metadata reports.
