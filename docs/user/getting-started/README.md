@@ -11,6 +11,6 @@ Welcome to the MapFlow documentation!
 ## Documentation Structure
 
 - **[CONTRIBUTING](../../CONTRIBUTING.md)**: Guidelines for developers and contributors.
-- **[03-ARCHITECTURE](../03-ARCHITECTURE/)**: Technical design documents and diagrams.
-- **[02-USER-GUIDE](../02-USER-GUIDE/)**: Detailed manual for all features.
-- **[06-ROADMAP](../06-ROADMAP/)**: Future plans and feature status.
+- **[Architecture](../../dev/architecture/)**: Technical design documents and diagrams.
+- **[Manual](../manual/)**: Detailed manual for all features.
+- **[Project Roadmap](../../../ROADMAP.md)**: Future plans and feature status.

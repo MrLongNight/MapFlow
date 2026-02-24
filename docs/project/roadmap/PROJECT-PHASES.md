@@ -76,7 +76,7 @@ The goal of this phase was to migrate the legacy ImGui interface to a profession
 
 ## Phase 8: Multi-PC Architecture (NEW)
 
-> **Detailed Documentation:** [`docs/03-ARCHITECTURE/MULTI-PC-FEASIBILITY.md`](../03-ARCHITECTURE/MULTI-PC-FEASIBILITY.md)
+> **Detailed Documentation:** [`docs/dev/architecture/MULTI-PC-FEASIBILITY.md`](../../dev/architecture/MULTI-PC-FEASIBILITY.md)
 
 This phase enables distributed output across multiple PCs, supporting professional multi-projector installations.
 

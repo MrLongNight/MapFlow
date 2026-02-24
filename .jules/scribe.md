@@ -16,3 +16,28 @@ I have addressed several broken links and outdated status indicators in the docu
 ### Observations
 - The `docs/` structure is comprehensive but has some legacy references to files that have been moved or renamed.
 - `ROADMAP.md` status fields need regular manual verification against the Changelog.
+
+# Scribe Journal - 2026-02-23
+
+## Documentation Structure Transition
+
+I have completed the migration of documentation references from the legacy numbered folder structure (`01-GETTING-STARTED`, `02-USER-GUIDE`, etc.) to the new semantic directory structure (`docs/user/`, `docs/dev/`, `docs/project/`).
+
+### Actions Taken
+- **Updated Main Documentation**:
+  - `README.md`: Updated links to point to semantic directories.
+  - `CONTRIBUTING.md`: Updated links to build and architecture docs.
+  - `crates/mapmap/README.md`: Updated links to user guide and architecture.
+- **Updated User Documentation**:
+  - `docs/user/getting-started/README.md`: Updated links to manual and architecture.
+  - `docs/user/getting-started/QUICK-START.md`: Fixed link to User Manual.
+  - `docs/user/getting-started/BUILD.md`: Fixed link to Architecture docs.
+  - `docs/user/tutorials/01-HELLO-WORLD.md`: Fixed link to Build instructions.
+- **Updated Developer/Project Documentation**:
+  - `docs/dev/setup/DEVELOPMENT-SETUP.md`: Fixed link to Installation guide.
+  - `docs/project/roadmap/PROJECT-PHASES.md`: Fixed link to Multi-PC architecture doc.
+  - `docs/project/cicd/WORKFLOW_CONTROL.md`: Fixed link to Installation guide.
+
+### Observations
+- The codebase now consistently uses the semantic documentation structure.
+- Legacy numbered folders are no longer referenced in active documentation files.

@@ -136,9 +136,9 @@ This granularity makes the code easier to deal with in cases where some things h
 
 ## Additional resources
 
-- [Build Instructions](docs/01-GETTING-STARTED/BUILD.md)
-- [Architecture Documentation](docs/03-ARCHITECTURE/ARCHITECTURE.md)
-- [Development Setup](docs/05-DEVELOPMENT/DEVELOPMENT-SETUP.md)
+- [Build Instructions](docs/user/getting-started/BUILD.md)
+- [Architecture Documentation](docs/dev/architecture/ARCHITECTURE.md)
+- [Development Setup](docs/dev/setup/DEVELOPMENT-SETUP.md)
 - [Roadmap](ROADMAP.md)
 
 ## Questions?
