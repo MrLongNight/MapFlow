@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 2.1
-> **Stand:** 2026-02-17 10:00
+> **Stand:** 2026-02-22 10:00
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
 > **Projekt-Version:** 0.2.1
 
@@ -63,6 +63,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
 
 ### General Updates
 
+* ✅ **Professional README Overhaul** (COMPLETED 2026-02-20)
 * ✅ **Rebranding: VjMapper -> MapFlow** (COMPLETED 2025-12-22)
   * ✅ Rename Project (2025-12-22)
   * ✅ Update UI Strings & Docs (2025-12-22)
@@ -288,6 +289,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
 
 ### Control (OSC als Hauptpfad / MIDI low priority)
 
+* ✅ **Security: Global path traversal checks** (Sentinel) (COMPLETED 2026-02-20)
 * ✅ **OSC-System** (`mapmap-control/src/osc/`)
   * ✅ OSC-Server (`osc/server.rs`) mit UDP-Socket
   * ✅ OSC-Client (`osc/client.rs`) für Outgoing-Messages
@@ -349,7 +351,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   * ❌ ImGui entfernt (Phase 6 Complete - 2025-12-23)
   * ✅ egui-Integration (`egui`, `egui-wgpu`, `egui-winit`, `egui_dock`, `egui_extras`)
   * ✅ **Phase 6: Migration von ImGui zu egui ABGESCHLOSSEN**
-  * ⬜ WGPU 0.27, Winit 0.30 & Egui 0.33 Upgrade ist jetzt vollständig abgeschlossen aber es gibt noch diverse Fehler die gerade gefixt werden
+  * ✅ WGPU 0.27, Winit 0.30 & Egui 0.33 Upgrade (COMPLETED 2026-02-20)
 
 * ✅ **UI-Module (Migriert zu egui)** (`mapmap-ui/src/`)
   * ✅ Dashboard (`dashboard.rs`) – Hauptansicht
@@ -839,6 +841,8 @@ MapFlow unterstützt verteilte Ausgabe über mehrere PCs. Vier Architektur-Optio
 ### Packaging / Developer Experience (DX)
 
 * ✅ **CI/CD** (`.github/workflows/`)
+  * ✅ Restore CodeQL Security Scan (COMPLETED 2026-02-20)
+  * ✅ Fix wgpu v27 / hexx v0.18 compatibility (COMPLETED 2026-02-20)
   * ✅ CI-Workflow vorhanden und optimiert (2025-12-18)
   * ✅ Workflow-Lints behoben (deprecation warnings entfernt)
   * ✅ FFmpeg-Installation in Linux-Builds korrigiert (libavutil-Fehler behoben)
