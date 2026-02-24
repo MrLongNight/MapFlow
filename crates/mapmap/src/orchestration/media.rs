@@ -16,7 +16,8 @@ pub fn sync_media_players(app: &mut App) {
                     SourceType::MediaFile { path, .. } => Some(path.clone()),
                     SourceType::VideoUni { path, .. } => Some(path.clone()),
                     SourceType::ImageUni { path, .. } => Some(path.clone()),
-                    SourceType::VideoMulti { shared_id, .. } | SourceType::ImageMulti { shared_id, .. } => {
+                    SourceType::VideoMulti { shared_id, .. }
+                    | SourceType::ImageMulti { shared_id, .. } => {
                         // Look up path in shared media
                         app.state
                             .module_manager
@@ -111,7 +112,11 @@ pub fn update_media_players(app: &mut App, dt: f32) {
         // Ensure texture entry exists in pool so we don't hit MAGENTA fallback
         if !texture_pool.has_texture(&tex_name) {
             let (width, height) = player.resolution();
-            let (w, h) = if width == 0 || height == 0 { (1280, 720) } else { (width, height) };
+            let (w, h) = if width == 0 || height == 0 {
+                (1280, 720)
+            } else {
+                (width, height)
+            };
 
             texture_pool.ensure_texture(
                 &tex_name,
@@ -131,7 +136,12 @@ pub fn update_media_players(app: &mut App, dt: f32) {
         if let Some(frame) = player.update(std::time::Duration::from_secs_f32(dt)) {
             let elapsed = update_start.elapsed().as_secs_f64() * 1000.0;
             if log_this_frame {
-                tracing::debug!("Player update took {:.2}ms for {}:{}", elapsed, mod_id, part_id);
+                tracing::debug!(
+                    "Player update took {:.2}ms for {}:{}",
+                    elapsed,
+                    mod_id,
+                    part_id
+                );
             }
 
             // Upload to GPU if data is on CPU
@@ -166,7 +176,12 @@ pub fn update_media_players(app: &mut App, dt: f32) {
                 );
                 let upload_elapsed = upload_start.elapsed().as_secs_f64() * 1000.0;
                 if log_this_frame {
-                    tracing::debug!("Texture upload took {:.2}ms for {}:{}", upload_elapsed, mod_id, part_id);
+                    tracing::debug!(
+                        "Texture upload took {:.2}ms for {}:{}",
+                        upload_elapsed,
+                        mod_id,
+                        part_id
+                    );
                 }
             }
         }
