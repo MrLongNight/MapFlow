@@ -506,6 +506,7 @@ fn render_content(
 fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
     // 1. THROTTLING: Only update previews every 5 frames to save GPU time
     app.frame_counter = app.frame_counter.wrapping_add(1);
+    #[allow(clippy::manual_is_multiple_of)]
     if app.frame_counter % 5 != 0 {
         return;
     }
