@@ -198,10 +198,7 @@ mod tests {
 
     #[test]
     fn test_file_too_large() {
-        let file = tempfile::Builder::new()
-            .suffix(".ron")
-            .tempfile()
-            .unwrap();
+        let file = tempfile::Builder::new().suffix(".ron").tempfile().unwrap();
         let path = file.path();
 
         // Write content larger than 10KB (MAX_PROJECT_FILE_SIZE in test)
