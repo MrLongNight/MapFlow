@@ -16,3 +16,19 @@ I have addressed several broken links and outdated status indicators in the docu
 ### Observations
 - The `docs/` structure is comprehensive but has some legacy references to files that have been moved or renamed.
 - `ROADMAP.md` status fields need regular manual verification against the Changelog.
+
+---
+
+# Scribe Journal - 2026-02-21
+
+## API Documentation Enhancement
+
+I have significantly improved the `docs/dev/api/README.md` to serve as a proper landing page for developers.
+
+### Actions Taken
+- **API Reference**: Overhauled `docs/dev/api/README.md` to provide a clear overview of the workspace structure, listing key crates and their purposes.
+- **Documentation Guide**: Added instructions for generating documentation locally, including feature flags for optional components like Audio and NDI.
+- **Project Tracking**: Updated `ROADMAP.md` to reflect the current status date (2026-02-21) and added a changelog entry.
+
+### Observations
+- The documentation structure is stabilizing. The API docs were a weak point, previously just a placeholder. Now they offer a map of the codebase structure.
