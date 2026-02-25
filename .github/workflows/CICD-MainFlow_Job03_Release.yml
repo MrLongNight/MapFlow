@@ -1,13 +1,5 @@
 name: "Stable Release"
 
-# ═══════════════════════════════════════════════════════════════
-# WICHTIG: Dieser Workflow erstellt produktionsreife Releases.
-# FIX 2026-02-25:
-# - Windows: Bypass pkg-config, zwinge vcpkg-Pfade für ffmpeg-sys-next.
-# - Header: Fix für avfft.h (entfernt in FFmpeg 7.x) durch explizite Versionierung.
-# - Linux: Zusätzliche dev-Pakete für volle Header-Abdeckung.
-# ═══════════════════════════════════════════════════════════════
-
 on:
   workflow_dispatch:
     inputs:
@@ -24,9 +16,6 @@ permissions:
   contents: write
 
 jobs:
-  # ═══════════════════════════════════════════════════════════════
-  # BUILD WINDOWS (MSI & ZIP)
-  # ═══════════════════════════════════════════════════════════════
   build-windows:
     name: "Build (Windows x64)"
     runs-on: windows-latest
@@ -76,22 +65,17 @@ jobs:
           $LibPath = "$InstalledDir\lib"
           $BinPath = "$InstalledDir\bin"
 
-          # CRITICAL: Directly tell the crate where to look
           echo "FFMPEG_DIR=$InstalledDir" >> $env:GITHUB_ENV
           echo "FFMPEG_INCLUDE_DIR=$IncludePath" >> $env:GITHUB_ENV
           echo "FFMPEG_LIB_DIR=$LibPath" >> $env:GITHUB_ENV
-          
-          # Force version compatibility
           echo "FFMPEG_VERSION=7.1" >> $env:GITHUB_ENV
           
-          # Ensure bindgen finds system headers via INCLUDE env
-          $ClangArgs = "-I$IncludePath"
-          if ($env:INCLUDE) {
-            foreach ($inc in ($env:INCLUDE -split ';')) {
-              if ($inc.Trim()) { $ClangArgs += " -isystem `"$inc`"" }
-            }
+          # HARD FIX: Clear BINDGEN_EXTRA_CLANG_ARGS and set them manually with absolute paths
+          $args = "-I$IncludePath"
+          foreach ($p in ($env:INCLUDE -split ';')) {
+            if ($p.Trim()) { $args += " -I`"$($p.Trim())`"" }
           }
-          echo "BINDGEN_EXTRA_ClANG_ARGS=$ClangArgs" >> $env:GITHUB_ENV
+          echo "BINDGEN_EXTRA_CLANG_ARGS=$args" >> $env:GITHUB_ENV
           echo "$BinPath" >> $env:GITHUB_PATH
 
       - name: Install WiX Toolset
@@ -134,18 +118,13 @@ jobs:
             MapFlow-${{ inputs.version }}-Windows-x64.zip
             MapFlow-${{ inputs.version }}-x64.msi
 
-  # ═══════════════════════════════════════════════════════════════
-  # BUILD LINUX (TAR.GZ)
-  # ═══════════════════════════════════════════════════════════════
   build-linux:
     name: "Build (Linux x64)"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
-
       - name: Install System Dependencies
         run: |
           sudo apt-get update -y
@@ -157,52 +136,38 @@ jobs:
             libudev-dev libx11-dev libxcursor-dev libxi-dev libxrandr-dev \
             libxinerama-dev libwayland-dev libxkbcommon-dev libssl-dev \
             ffmpeg
-
       - name: Build (Release)
         run: cargo build --release -p mapmap --features "audio,ffmpeg"
-
       - name: Create Tarball
         run: |
           VERSION="${{ inputs.version }}"
           TAR_NAME="MapFlow-$VERSION-Linux-x64.tar.gz"
           cd target/release
           tar -czf "../../$TAR_NAME" MapFlow
-          echo "TAR_PATH=$TAR_NAME" >> $GITHUB_ENV
-
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: linux-artifacts
           path: MapFlow-${{ inputs.version }}-Linux-x64.tar.gz
 
-  # ═══════════════════════════════════════════════════════════════
-  # CREATE GITHUB RELEASE
-  # ═══════════════════════════════════════════════════════════════
   publish-release:
     name: "Publish Release"
     needs: [build-windows, build-linux]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
           merge-multiple: true
-
       - name: Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          PRERELEASE_FLAG=""
-          if [ "${{ inputs.is_prerelease }}" == "true" ]; then
-            PRERELEASE_FLAG="--prerelease"
-          fi
-
           gh release create "${{ inputs.version }}" \
             --title "MapFlow ${{ inputs.version }}" \
             --generate-notes \
-            $PRERELEASE_FLAG \
+            ${{ inputs.is_prerelease && '--prerelease' || '' }} \
             MapFlow-${{ inputs.version }}-Windows-x64.zip \
             MapFlow-${{ inputs.version }}-x64.msi \
             MapFlow-${{ inputs.version }}-Linux-x64.tar.gz
