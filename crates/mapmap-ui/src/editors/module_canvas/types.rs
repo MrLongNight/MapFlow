@@ -1,6 +1,9 @@
 use crate::theme::colors;
+use egui::Pos2;
 use egui_node_editor::*;
-use mapmap_core::module::{ModulePartId, ModulePartType};
+use mapmap_core::module::{
+    ModuleConnection, ModulePart, ModulePartId, ModulePartType, ModuleSocketType, PartType,
+};
 use std::borrow::Cow;
 
 /// Playback commands for media players
@@ -30,6 +33,66 @@ pub struct MediaPlayerInfo {
     pub duration: f64,
     /// Whether the player is currently playing
     pub is_playing: bool,
+}
+
+/// Information about a socket position for hit detection
+#[derive(Clone)]
+pub struct SocketInfo {
+    pub part_id: ModulePartId,
+    pub socket_idx: usize,
+    pub is_output: bool,
+    pub socket_type: ModuleSocketType,
+    pub position: Pos2,
+}
+
+pub type PresetPart = (ModulePartType, (f32, f32), Option<(f32, f32)>);
+pub type PresetConnection = (usize, usize, usize, usize); // from_idx, from_socket, to_idx, to_socket
+
+/// A saved module preset/template
+#[derive(Debug, Clone)]
+pub struct ModulePreset {
+    pub name: String,
+    pub parts: Vec<PresetPart>,
+    pub connections: Vec<PresetConnection>,
+}
+
+/// Actions that can be undone/redone
+#[derive(Debug, Clone)]
+pub enum CanvasAction {
+    AddPart {
+        part_id: ModulePartId,
+        part_data: ModulePart,
+    },
+    DeletePart {
+        part_data: ModulePart,
+    },
+    MovePart {
+        part_id: ModulePartId,
+        old_pos: (f32, f32),
+        new_pos: (f32, f32),
+    },
+    AddConnection {
+        connection: ModuleConnection,
+    },
+    DeleteConnection {
+        connection: ModuleConnection,
+    },
+    Batch(Vec<CanvasAction>),
+}
+
+/// Convert ModulePartType back to PartType for add_part
+pub fn part_type_from_module_part_type(mpt: &ModulePartType) -> PartType {
+    use mapmap_core::module::ModulePartType;
+    match mpt {
+        ModulePartType::Trigger(_) => PartType::Trigger,
+        ModulePartType::Source(_) => PartType::Source,
+        ModulePartType::Mask(_) => PartType::Mask,
+        ModulePartType::Modulizer(_) => PartType::Modulator,
+        ModulePartType::Mesh(_) => PartType::Mesh,
+        ModulePartType::Layer(_) => PartType::Layer,
+        ModulePartType::Output(_) => PartType::Output,
+        ModulePartType::Hue(_) => PartType::Hue,
+    }
 }
 
 #[derive(Clone, Debug, Copy, PartialEq, Eq)]
