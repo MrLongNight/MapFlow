@@ -69,12 +69,12 @@ jobs:
           echo "FFMPEG_INCLUDE_DIR=$IncludePath" >> $env:GITHUB_ENV
           echo "FFMPEG_LIB_DIR=$LibPath" >> $env:GITHUB_ENV
           echo "FFMPEG_VERSION=7.1" >> $env:GITHUB_ENV
-          
+
           # CRITICAL FIX for Clang/Bindgen on Windows:
           # We MUST pass absolute Windows paths and avoid any Unix-style pathing.
           # We also include the MSVC and Windows SDK headers explicitly.
           $ClangArgs = "-I`"$IncludePath`""
-          
+
           if ($env:INCLUDE) {
             foreach ($p in ($env:INCLUDE -split ';')) {
               $trimmed = $p.Trim()
@@ -85,7 +85,7 @@ jobs:
               }
             }
           }
-          
+
           echo "BINDGEN_EXTRA_CLANG_ARGS=$ClangArgs" >> $env:GITHUB_ENV
           echo "$BinPath" >> $env:GITHUB_PATH
 
