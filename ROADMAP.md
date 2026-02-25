@@ -200,16 +200,16 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   * ⬜ Multi-threaded Decode-Pipeline
   * ⬜ Frame-Queue-Management
 
-* ✅ **libmpv Integration** (`mapmap-media/src/mpv_decoder.rs`) – **COMPLETED (2026-01-09)**
+* 🟡 **libmpv Integration** (`mapmap-media/src/mpv_decoder.rs`) – **IN PROGRESS**
   * ✅ `libmpv2` crate integration (optional feature `libmpv`)
-  * ✅ Alternative decoder backend
+  * 🟡 Alternative decoder backend (Placeholder frames only)
   * ✅ Fallback strategy implementation
 
 * ⬜ **Image-Decoder** (`mapmap-media/src/image_decoder.rs`)
   * ⬜ PNG, JPG, BMP, TGA Support
   * ⬜ Image-Crate-basierte Dekodierung
-  * ⬜ GIF-Animation vollständig implementiert (COMPLETED 2025-12-23)
-  * ⬜ Image-Sequence-Playback via walkdir (COMPLETED 2025-12-23)
+  * ✅ GIF-Animation vollständig implementiert (COMPLETED 2025-12-23)
+  * ✅ Image-Sequence-Playback via walkdir (COMPLETED 2025-12-23)
 
 * ✅ **Player** (`mapmap-media/src/player.rs`)
   * ✅ Robust State-Machine (Idle, Loading, Playing, Paused, Stopped, Error)
@@ -220,7 +220,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   * ✅ Reverse Playback & Speed Control (COMPLETED 2026-01-10)
   * ✅ Flip (Horizontal/Vertical) Support (COMPLETED 2026-01-10)
   * ✅ Interactive Clip Region (Fluid drag & snap) (COMPLETED 2026-01-16)
-  * ⬜ Es gibt noch diverse Funktionen in der Media Node die nicht korrekt funktionieren
+  * 🟡 Es gibt noch diverse Funktionen in der Media Node die nicht korrekt funktionieren (In Review)
 
 * ✅ **Pipeline** (`mapmap-media/src/pipeline.rs`)
   * ✅ Media-Pipeline-Abstraktion
@@ -236,7 +236,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
 * ⬜ **Codec-Support**
   * ✅ H.264, H.265, VP8, VP9 über FFmpeg
   * ⬜ ProRes noch nicht getestet/optimiert
-  * ✅ **HAP-Codec (COMPLETED 2025-12-31)**
+  * 🟡 **HAP-Codec (PARTIAL)**
     * ✅ HAP Decoder Modul (`mapmap-media/src/hap_decoder.rs`)
     * ✅ Snappy Dekompression für HAP-Frames
     * ✅ BC1/BC3 Textur-Upload (`mapmap-render/src/compressed_texture.rs`)
@@ -244,6 +244,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
     * ✅ HAP Video Player (`mapmap-media/src/hap_player.rs`)
     * ✅ Auto-Erkennung bei .mov-Dateien in `open_path()`
     * ✅ MediaBrowser: Hap MediaType mit ⚡ Icon
+    * 🟡 HAP Q / HAP Q Alpha support (In Progress)
     * ⬜ Runtime-Test mit echtem HAP-Video (benötigt FFmpeg)
   * ⬜ DXV-Codec fehlt
 
@@ -448,9 +449,9 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   * ⬜ ControlSource zu ControlTarget Routing
 
 * 🟡 **NDI/Spout Video I/O** (mapmap-io)
-  * ✅ **NDI Support** (`mapmap-io/src/ndi/`)
-    * ✅ NdiReceiver für NDI-Source-Empfang
-    * ✅ NdiSender für NDI-Output
+  * 🟡 **NDI Support** (`mapmap-io/src/ndi/`) – **IN PROGRESS**
+    * ✅ NdiReceiver für NDI-Source-Empfang (Single-threaded)
+    * 🟡 NdiSender für NDI-Output (Currently a Placeholder)
     * ✅ Source Discovery (async)
     * ✅ Feature-Flag: `ndi`
     * ✅ Integration in Module Canvas mit Presets (PR #155)
