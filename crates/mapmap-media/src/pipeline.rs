@@ -21,7 +21,7 @@
 //! - Pre-buffering prevents frame stutters
 //! - Overlapped decode + GPU upload
 
-use crate::{DecodedFrame, MediaError, Result, VideoDecoder, VideoPlayer};
+use crate::VideoPlayer;
 use crossbeam_channel::{bounded, Receiver, Sender};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -76,7 +76,7 @@ impl Default for PipelineConfig {
 /// Frame with metadata for pipeline processing
 #[derive(Clone)]
 pub struct PipelineFrame {
-    pub frame: DecodedFrame,
+    pub frame: mapmap_io::VideoFrame,
     pub sequence: u64,
     pub priority: Priority,
 }
@@ -98,6 +98,12 @@ pub struct FramePipeline {
     // Threads
     decode_thread: Option<JoinHandle<()>>,
     config: PipelineConfig,
+}
+
+impl Default for FramePipeline {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl FramePipeline {
@@ -124,11 +130,7 @@ impl FramePipeline {
     }
 
     /// Start the decode thread
-    pub fn start_decode_thread<D: VideoDecoder + 'static>(
-        &mut self,
-        mut decoder: D,
-        mut player: VideoPlayer,
-    ) {
+    pub fn start_decode_thread(&mut self, mut player: VideoPlayer) {
         if self.running.load(Ordering::Relaxed) {
             warn!("Decode thread already running");
             return;
@@ -151,7 +153,7 @@ impl FramePipeline {
                     let start = std::time::Instant::now();
 
                     // Update player and get next frame
-                    if let Some(frame) = player.update(Duration::from_secs_f64(1.0 / decoder.fps()))
+                    if let Some(frame) = player.update(Duration::from_secs_f64(1.0 / player.fps()))
                     {
                         let pipeline_frame = PipelineFrame {
                             frame,
@@ -184,7 +186,7 @@ impl FramePipeline {
 
                     // Throttle to approximately match video FPS
                     let elapsed = start.elapsed();
-                    let frame_duration = Duration::from_secs_f64(1.0 / decoder.fps());
+                    let frame_duration = Duration::from_secs_f64(1.0 / player.fps());
                     if elapsed < frame_duration {
                         std::thread::sleep(frame_duration - elapsed);
                     }
@@ -197,9 +199,13 @@ impl FramePipeline {
         self.decode_thread = Some(thread);
     }
 
-    /// Start the upload thread (requires render backend)
-    /// Note: In Phase 1, this is a placeholder. Full implementation requires wgpu integration.
-    pub fn start_upload_thread(&mut self) {
+    /// Start the upload thread with a custom upload function
+    pub fn start_upload_thread<F>(&mut self, upload_fn: F)
+    where
+        F: Fn(&PipelineFrame) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>>
+            + Send
+            + 'static,
+    {
         let decode_rx = self.decode_rx.clone();
         let upload_tx = self.upload_tx.clone();
         let running = self.running.clone();
@@ -215,15 +221,18 @@ impl FramePipeline {
                         Ok(pipeline_frame) => {
                             let start = std::time::Instant::now();
 
-                            // TODO: Upload to GPU here (Phase 1 placeholder)
-                            // In real implementation:
-                            // 1. Get staging buffer from pool
-                            // 2. Copy frame data to staging buffer
-                            // 3. Record copy command
-                            // 4. Submit to GPU queue
-                            // 5. Send texture handle to render thread
+                            // Execute the upload function
+                            if let Err(e) = upload_fn(&pipeline_frame) {
+                                error!("Failed to upload frame: {}", e);
+                                // Don't forward failed uploads? Or forward anyway?
+                                // If upload failed, the texture is not ready.
+                                // If we don't forward, the render thread won't know.
+                                // But if we forward, the render thread might try to use an old texture.
+                                // Let's continue and NOT forward.
+                                continue;
+                            }
 
-                            // For now, just forward the frame
+                            // Forward to render thread
                             if upload_tx.send(pipeline_frame).is_ok() {
                                 let mut stats = stats.write();
                                 stats.uploaded_frames += 1;
@@ -328,7 +337,7 @@ impl FrameScheduler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::decoder::{TestPatternDecoder, VideoDecoder};
+    use crate::decoder::TestPatternDecoder;
     use crate::player::VideoPlayer;
 
     #[test]
@@ -343,24 +352,32 @@ mod tests {
         let mut scheduler = FrameScheduler::new(3);
 
         let frame1 = PipelineFrame {
-            frame: DecodedFrame {
-                data: vec![],
-                format: crate::decoder::PixelFormat::RGBA8,
-                width: 100,
-                height: 100,
-                pts: Duration::ZERO,
+            frame: mapmap_io::VideoFrame {
+                data: mapmap_io::format::FrameData::Cpu(vec![]),
+                format: mapmap_io::VideoFormat {
+                    width: 100,
+                    height: 100,
+                    pixel_format: mapmap_io::PixelFormat::RGBA8,
+                    frame_rate: 60.0,
+                },
+                timestamp: Duration::ZERO,
+                metadata: mapmap_io::FrameMetadata::default(),
             },
             sequence: 1,
             priority: Priority::Low,
         };
 
         let frame2 = PipelineFrame {
-            frame: DecodedFrame {
-                data: vec![],
-                format: crate::decoder::PixelFormat::RGBA8,
-                width: 100,
-                height: 100,
-                pts: Duration::ZERO,
+            frame: mapmap_io::VideoFrame {
+                data: mapmap_io::format::FrameData::Cpu(vec![]),
+                format: mapmap_io::VideoFormat {
+                    width: 100,
+                    height: 100,
+                    pixel_format: mapmap_io::PixelFormat::RGBA8,
+                    frame_rate: 60.0,
+                },
+                timestamp: Duration::ZERO,
+                metadata: mapmap_io::FrameMetadata::default(),
             },
             sequence: 2,
             priority: Priority::High,
@@ -391,13 +408,12 @@ mod tests {
         let mut pipeline = FramePipeline::new();
         let decoder = TestPatternDecoder::new(640, 480, Duration::from_secs(1), 30.0);
         let mut player = VideoPlayer::new(decoder);
-        player.set_looping(true);
-        player.play();
+        let _ = player.set_loop_mode(crate::player::LoopMode::Loop);
+        let _ = player.play();
 
         // Start decode thread
-        let test_decoder = TestPatternDecoder::new(640, 480, Duration::from_secs(1), 30.0);
-        pipeline.start_decode_thread(test_decoder, player);
-        pipeline.start_upload_thread();
+        pipeline.start_decode_thread(player);
+        pipeline.start_upload_thread(|_| Ok(()));
 
         // Let it run for a bit
         std::thread::sleep(Duration::from_millis(200));

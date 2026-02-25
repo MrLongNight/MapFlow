@@ -171,7 +171,8 @@ mod tests {
         // Give server time to start
         thread::sleep(Duration::from_millis(100));
 
-        let client = OscClient::new(&format!("127.0.0.1:{}", port)).expect("Failed to create client");
+        let client =
+            OscClient::new(&format!("127.0.0.1:{}", port)).expect("Failed to create client");
 
         // Send more packets than the buffer size (MAX_PENDING_PACKETS = 1024)
         // We send 2000 packets quickly to trigger backpressure.
@@ -195,7 +196,8 @@ mod tests {
                 thread::sleep(Duration::from_millis(10));
             }
 
-            if empty_streak > 10 { // 100ms of silence
+            if empty_streak > 10 {
+                // 100ms of silence
                 break;
             }
             if count > 5000 {
@@ -213,14 +215,14 @@ mod tests {
         let mut found_alive = false;
         // Check next few packets for alive message
         for _ in 0..100 {
-             if let Some(rosc::OscPacket::Message(msg)) = server.poll_packet() {
-                 if msg.addr == "/test/alive" {
-                     found_alive = true;
-                     break;
-                 }
-             } else {
-                 break;
-             }
+            if let Some(rosc::OscPacket::Message(msg)) = server.poll_packet() {
+                if msg.addr == "/test/alive" {
+                    found_alive = true;
+                    break;
+                }
+            } else {
+                break;
+            }
         }
         assert!(found_alive, "Server should be responsive after flood");
     }

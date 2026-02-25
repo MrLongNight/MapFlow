@@ -16,7 +16,7 @@ use mapmap_core::{
     AppState, History, ModuleEvaluator, RenderOp,
 };
 use mapmap_mcp::McpAction;
-use mapmap_media::player::VideoPlayer;
+// use mapmap_media::player::VideoPlayer;
 use mapmap_render::{
     ColorCalibrationRenderer, Compositor, EdgeBlendRenderer, EffectChainRenderer, MeshBufferCache,
     MeshRenderer, OscillatorRenderer, QuadRenderer, TexturePool, WgpuBackend,
@@ -100,7 +100,8 @@ pub struct App {
     /// Global frame counter for throttling
     pub frame_counter: u64,
     /// Active media pipelines for source nodes ((ModuleID, PartID) -> Pipeline)
-    pub media_players: HashMap<(ModulePartId, ModulePartId), (String, VideoPlayer)>,
+    pub media_players:
+        HashMap<(ModulePartId, ModulePartId), crate::orchestration::media::MediaPlayerHandle>,
     /// FPS calculation: accumulated frame times
     pub fps_samples: VecDeque<f32>,
     /// Current calculated FPS

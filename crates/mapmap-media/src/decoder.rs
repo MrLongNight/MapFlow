@@ -55,10 +55,9 @@ fn yuv420p_to_rgba(yuv_data: &[u8], width: u32, height: u32) -> Vec<u8> {
 
 /// Video decoder trait
 ///
-/// Note: VideoDecoder does not require Send because FFmpeg's scaler context
-/// is not thread-safe. Decoders should be used on a single thread or wrapped
-/// in appropriate synchronization primitives.
-pub trait VideoDecoder {
+/// Note: VideoDecoder requires Send to support multi-threaded decoding.
+/// Implementations must ensure thread safety (e.g. by using Send wrappers for FFI types).
+pub trait VideoDecoder: Send {
     fn next_frame(&mut self) -> Result<VideoFrame>;
     fn seek(&mut self, timestamp: Duration) -> Result<()>;
     fn duration(&self) -> Duration;
@@ -124,12 +123,25 @@ mod ffmpeg_impl {
         ffi::avcodec_default_get_format(ctx, fmt)
     }
 
+    struct SendContext(ffmpeg::software::scaling::Context);
+    unsafe impl Send for SendContext {}
+    impl std::ops::Deref for SendContext {
+        type Target = ffmpeg::software::scaling::Context;
+        fn deref(&self) -> &Self::Target {
+            &self.0
+        }
+    }
+    impl std::ops::DerefMut for SendContext {
+        fn deref_mut(&mut self) -> &mut Self::Target {
+            &mut self.0
+        }
+    }
+
     pub struct RealFFmpegDecoder {
         input_ctx: ffmpeg::format::context::Input,
         decoder: ffmpeg::codec::decoder::Video,
-        // NOTE: Scaler is not thread-safe (SwsContext is not Send)
-        // For multi-threading: Move scaler creation to next_frame() or use thread_local!
-        scaler: ffmpeg::software::scaling::Context,
+        // Wrapped in SendContext to allow moving to decode thread
+        scaler: SendContext,
         video_stream_idx: usize,
         time_base: ffmpeg::Rational,
         duration: Duration,
@@ -243,7 +255,8 @@ mod ffmpeg_impl {
                 height,
                 ffmpeg::software::scaling::Flags::BILINEAR,
             )
-            .map_err(|e| MediaError::DecoderError(e.to_string()))?;
+            .map_err(|e| MediaError::DecoderError(e.to_string()))
+            .map(SendContext)?;
 
             info!(
                 "Decoder initialized successfully: {}x{} @ {:.2} fps, duration: {:.2}s, hw_accel: {:?}",
