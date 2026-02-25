@@ -11,4 +11,4 @@
 ## Kommunikationsregeln
 - **Sprache:** Deutsch.
 - **Stil:** Sachlich, direkt, lösungsorientiert.
-- **Berichterstattung:** Zusammenfassungen von abgeschlossenen Tasks und PR-Status-Updates. Update über aktuelle Tasks, offene Issues, geplante anstehende Tasks 
+- **Berichterstattung:** Zusammenfassungen von abgeschlossenen Tasks und PR-Status-Updates. Update über aktuelle Tasks, offene Issues, geplante anstehende Tasks
