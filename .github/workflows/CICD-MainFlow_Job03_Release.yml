@@ -59,10 +59,9 @@ jobs:
         shell: pwsh
         run: .\vcpkg\vcpkg install ffmpeg:x64-windows
 
-      - name: Install LLVM and Clang
+      - name: Set LIBCLANG_PATH
         shell: pwsh
         run: |
-          choco install llvm --version=18.1.8 -y --allow-downgrade --force
           echo "LIBCLANG_PATH=C:\Program Files\LLVM\bin" >> $env:GITHUB_ENV
           echo "C:\Program Files\LLVM\bin" >> $env:GITHUB_PATH
 
@@ -84,12 +83,13 @@ jobs:
 
           echo "FFMPEG_PKG_CONFIG_PATH=$PkgConfigPath" >> $env:GITHUB_ENV
           echo "PKG_CONFIG_PATH=$PkgConfigPath" >> $env:GITHUB_ENV
-          echo "INCLUDE=$IncludePath" >> $env:GITHUB_ENV
           echo "FFMPEG_DIR=$InstalledDir" >> $env:GITHUB_ENV
           echo "FFMPEG_INCLUDE_DIR=$IncludePath" >> $env:GITHUB_ENV
           echo "FFMPEG_LIB_DIR=$LibPath" >> $env:GITHUB_ENV
-          echo "BINDGEN_EXTRA_CLANG_ARGS=-I$IncludePath" >> $env:GITHUB_ENV
-          echo "LIB=$LibPath" >> $env:GITHUB_ENV
+          # Use -isystem to include vcpkg headers without breaking standard headers
+          echo "BINDGEN_EXTRA_CLANG_ARGS=-isystem $IncludePath" >> $env:GITHUB_ENV
+          echo "INCLUDE=$IncludePath;$env:INCLUDE" >> $env:GITHUB_ENV
+          echo "LIB=$LibPath;$env:LIB" >> $env:GITHUB_ENV
           echo "$BinPath" >> $env:GITHUB_PATH
 
       - name: Verify FFmpeg environment
