@@ -70,12 +70,23 @@ jobs:
           echo "FFMPEG_LIB_DIR=$LibPath" >> $env:GITHUB_ENV
           echo "FFMPEG_VERSION=7.1" >> $env:GITHUB_ENV
           
-          # HARD FIX: Clear BINDGEN_EXTRA_CLANG_ARGS and set them manually with absolute paths
-          $args = "-I$IncludePath"
-          foreach ($p in ($env:INCLUDE -split ';')) {
-            if ($p.Trim()) { $args += " -I`"$($p.Trim())`"" }
+          # CRITICAL FIX for Clang/Bindgen on Windows:
+          # We MUST pass absolute Windows paths and avoid any Unix-style pathing.
+          # We also include the MSVC and Windows SDK headers explicitly.
+          $ClangArgs = "-I`"$IncludePath`""
+          
+          if ($env:INCLUDE) {
+            foreach ($p in ($env:INCLUDE -split ';')) {
+              $trimmed = $p.Trim()
+              if ($trimmed) {
+                # Ensure path is quoted and uses backslashes
+                $fullPath = [System.IO.Path]::GetFullPath($trimmed)
+                $ClangArgs += " -I`"$fullPath`""
+              }
+            }
           }
-          echo "BINDGEN_EXTRA_CLANG_ARGS=$args" >> $env:GITHUB_ENV
+          
+          echo "BINDGEN_EXTRA_CLANG_ARGS=$ClangArgs" >> $env:GITHUB_ENV
           echo "$BinPath" >> $env:GITHUB_PATH
 
       - name: Install WiX Toolset
@@ -86,7 +97,9 @@ jobs:
 
       - name: Build (Release)
         shell: pwsh
-        run: cargo build --release -p mapmap --features "audio,ffmpeg"
+        run: |
+          # Use --verbose to see exact compiler calls if it fails
+          cargo build --release -p mapmap --features "audio,ffmpeg" --verbose
 
       - name: Prepare Release Folder & Copy DLLs
         shell: pwsh
