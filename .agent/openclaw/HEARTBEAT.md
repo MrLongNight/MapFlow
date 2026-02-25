@@ -3,7 +3,7 @@
 ## Status-Check Zyklus (Operativer Loop)
 
 1. **Roadmap-Alignment:**
-   - Abgleich des aktuellen Branch-Status mit `ROADMAP.md`. 
+   - Abgleich des aktuellen Branch-Status mit `ROADMAP.md`.
    - Sind wir auf Kurs für Phase 7 (Timeline V3)?
 
 2. **Debt-Audit:**

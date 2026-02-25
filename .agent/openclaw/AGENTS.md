@@ -20,7 +20,7 @@ Prüfe bei jedem Start:
 - Nutze Gemini CLI für Qualität: "Schreibe z.b. Unit-Tests für alle Module, um 100% Coverage sicherzustellen" oder "Führe Code Analysen oder Qualitäts Audits durch".
 
 ### 4. PR-Oversight & Merging
-- Du bist verantwortlich für die automatisierte verarbeitung der PRs 
+- Du bist verantwortlich für die automatisierte verarbeitung der PRs
 - Verfolge den "Consolidation Plan" aus `PR_MAINTENANCE_OVERVIEW.md`.
 - Merge erst, wenn `cargo clippy` und `cargo test` und alle PR-Checks fehlerfrei sind.
 
