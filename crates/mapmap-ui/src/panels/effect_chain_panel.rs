@@ -783,11 +783,13 @@ impl EffectChainPanel {
                 // Header row
                 ui.horizontal(|ui| {
                     // Drag Handle
-                    let handle_resp = ui.add(
-                        egui::Button::new("⋮⋮")
-                            .frame(false)
-                            .sense(egui::Sense::drag()),
-                    ).on_hover_text("Drag to reorder. Hold Alt+Up/Down to move.");
+                    let handle_resp = ui
+                        .add(
+                            egui::Button::new("⋮⋮")
+                                .frame(false)
+                                .sense(egui::Sense::drag()),
+                        )
+                        .on_hover_text("Drag to reorder. Hold Alt+Up/Down to move.");
 
                     if handle_resp.drag_started() {
                         dragged = true;
@@ -807,7 +809,8 @@ impl EffectChainPanel {
                     }
 
                     // Enable toggle
-                    ui.checkbox(&mut enabled, "").on_hover_text("Enable/Disable Effect");
+                    ui.checkbox(&mut enabled, "")
+                        .on_hover_text("Enable/Disable Effect");
 
                     // Effect name with icon
                     let header_text = effect_type.display_name(locale);
@@ -832,7 +835,11 @@ impl EffectChainPanel {
                         }
 
                         // Reset button (Hold to Confirm)
-                        if crate::widgets::custom::hold_to_action_button(ui, "↺", colors::WARN_COLOR) {
+                        if crate::widgets::custom::hold_to_action_button(
+                            ui,
+                            "↺",
+                            colors::WARN_COLOR,
+                        ) {
                             reset = true;
                         }
 
