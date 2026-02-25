@@ -972,6 +972,20 @@ graph TD
     * ✅ Rustdoc für alle `pub` Structs in `mapmap-core` (COMPLETED 2026-02-12).
     * Tutorial "Wie erstelle ich einen neuen Node-Typ?".
 
+## Aktuelle Jules-Aufträge
+
+_Stand: 2026-02-25 19:30 (Europe/Berlin)_
+
+| Session-ID | Task | Status | Link | Notizen |
+|------------|------|--------|------|---------|
+| 9472154532138526611 | Refactor Phase 1 – `module_canvas` God Object aufteilen | In Arbeit | [https://jules.google.com/session/9472154532138526611](https://jules.google.com/session/9472154532138526611) | Pre-Commit: `scripts\Slave-Local-PreCommit.ps1`; PR-Automatisierung aktiviert |
+| 4181450308749999114 | Modulare Trennung von Rendering- und State-Handling im Canvas | In Arbeit | [https://jules.google.com/session/4181450308749999114](https://jules.google.com/session/4181450308749999114) | Fokus auf Submodule + Roadmap/TechDebt-Abgleich |
+| 17134084665800646930 | Gezielte Unit-/Integrationstests für neue Canvas-Connectoren und Timing-Logik | In Arbeit | [https://jules.google.com/session/17134084665800646930](https://jules.google.com/session/17134084665800646930) | Tests decken neue Zustandsübergänge ab, Pre-Commit `cargo fmt/clippy/check` |
+| 1821521759967542536 | ROADMAP & Technical_Debt aktualisieren (Aktuelle Aufgaben, Telegram-Automation) | In Arbeit | [https://jules.google.com/session/1821521759967542536](https://jules.google.com/session/1821521759967542536) | Dokumentation bündelt Status, Links und offene Fragen |
+
+Alle Sessions erzeugen automatisch PRs auf `origin/main` und führen das vorgeschriebene Pre-Commit-Skript aus.
+
+
 ## Task-Gruppen (Adaptiert für Rust)
 
 * **T0:** Architektur & Datenmodell (`structs`, `enums`, `traits`)
