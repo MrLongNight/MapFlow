@@ -66,3 +66,8 @@
 **Vulnerability:** The project loading mechanism (`ProjectFile::load`) in `mapmap-io` read the entire file content into memory without checking its size first. A malicious actor could provide a massive file (e.g., 10GB of zeroes), causing the application to crash due to memory exhaustion (OOM).
 **Learning:** Reading entire files into memory (`read_to_string`) is dangerous without explicit limits. `File::metadata()` provides a quick check, but a race condition (TOCTOU) could allow the file to grow between check and read.
 **Prevention:** Always enforce a hard limit on file size (`MAX_PROJECT_FILE_SIZE`). Use `file.metadata()?.len()` for a fast check, and `file.take(LIMIT).read_to_string()` for a robust, race-condition-safe read.
+
+## 2026-02-23 - OSC Server Memory Exhaustion DoS
+**Vulnerability:** The OSC server used an unbounded `std::sync::mpsc::channel`, allowing an attacker to flood the server with packets faster than it could process them, leading to unbounded memory growth and eventual crash (OOM).
+**Learning:** Default channels in Rust are often unbounded. Network-facing components must always apply backpressure to the transport layer (e.g., blocking the receive loop) to prevent resource exhaustion.
+**Prevention:** Use `std::sync::mpsc::sync_channel(MAX_PENDING_PACKETS)` with a reasonable bound (e.g., 1024) to enforce backpressure.

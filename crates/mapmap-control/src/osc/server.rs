@@ -5,11 +5,17 @@ use rosc::{decoder, OscPacket};
 #[cfg(feature = "osc")]
 use std::net::UdpSocket;
 #[cfg(feature = "osc")]
-use std::sync::mpsc::{channel, Receiver, Sender};
+use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
 #[cfg(feature = "osc")]
 use std::thread;
 
 use crate::{error::ControlError, Result};
+
+/// Maximum number of pending OSC packets in the channel.
+/// This limit prevents memory exhaustion attacks (DoS) by applying backpressure
+/// to the UDP socket when the application cannot keep up with incoming packets.
+#[cfg(feature = "osc")]
+const MAX_PENDING_PACKETS: usize = 1024;
 
 /// OSC server for receiving control messages
 pub struct OscServer {
@@ -42,7 +48,8 @@ impl OscServer {
 
         tracing::info!("OSC server listening on {}", addr);
 
-        let (sender, receiver) = channel();
+        // Use a bounded channel to prevent memory exhaustion DoS
+        let (sender, receiver) = sync_channel(MAX_PENDING_PACKETS);
 
         // Spawn receiver thread
         let handle = thread::spawn(move || {
@@ -71,7 +78,7 @@ impl OscServer {
 
     /// Run the receiver loop (blocking)
     #[cfg(feature = "osc")]
-    fn run_receiver(socket: UdpSocket, sender: Sender<OscPacket>) {
+    fn run_receiver(socket: UdpSocket, sender: SyncSender<OscPacket>) {
         let mut buf = [0u8; 65536]; // Max UDP packet size
 
         loop {
@@ -150,5 +157,71 @@ mod tests {
         } else {
             panic!("Expected OSC packet");
         }
+    }
+
+    #[test]
+    fn test_osc_backpressure() {
+        use crate::osc::client::OscClient;
+        use rosc::OscType;
+
+        // Use a different port to avoid conflict
+        let port = 18002;
+        let server = OscServer::new(port).expect("Failed to bind server");
+
+        // Give server time to start
+        thread::sleep(Duration::from_millis(100));
+
+        let client = OscClient::new(&format!("127.0.0.1:{}", port)).expect("Failed to create client");
+
+        // Send more packets than the buffer size (MAX_PENDING_PACKETS = 1024)
+        // We send 2000 packets quickly to trigger backpressure.
+        for i in 0..2000 {
+            // Errors here (packet drop) are expected if kernel buffer fills up
+            let _ = client.send_message("/test", vec![OscType::Int(i)]);
+        }
+
+        // Wait for processing
+        thread::sleep(Duration::from_millis(500));
+
+        // Drain the channel
+        let mut count = 0;
+        let mut empty_streak = 0;
+        loop {
+            if server.poll_packet().is_some() {
+                count += 1;
+                empty_streak = 0;
+            } else {
+                empty_streak += 1;
+                thread::sleep(Duration::from_millis(10));
+            }
+
+            if empty_streak > 10 { // 100ms of silence
+                break;
+            }
+            if count > 5000 {
+                break;
+            }
+        }
+
+        // We expect to have received some packets (at least buffer size + kernel buffer)
+        assert!(count > 0, "Should have received packets");
+
+        // Verify server is still responsive
+        client.send_message("/test/alive", vec![]).unwrap();
+        thread::sleep(Duration::from_millis(100));
+
+        let mut found_alive = false;
+        // Check next few packets for alive message
+        for _ in 0..100 {
+             if let Some(rosc::OscPacket::Message(msg)) = server.poll_packet() {
+                 if msg.addr == "/test/alive" {
+                     found_alive = true;
+                     break;
+                 }
+             } else {
+                 break;
+             }
+        }
+        assert!(found_alive, "Server should be responsive after flood");
     }
 }
