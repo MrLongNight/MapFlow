@@ -1,7 +1,57 @@
 use crate::theme::colors;
+use egui::Pos2;
 use egui_node_editor::*;
-use mapmap_core::module::{ModulePartId, ModulePartType};
+use mapmap_core::module::{ModulePartId, ModulePartType, ModuleSocketType};
 use std::borrow::Cow;
+
+/// Information about a socket position for hit detection
+#[derive(Clone)]
+pub struct SocketInfo {
+    pub part_id: ModulePartId,
+    pub socket_idx: usize,
+    pub is_output: bool,
+    pub socket_type: ModuleSocketType,
+    pub position: Pos2,
+}
+
+pub type PresetPart = (
+    mapmap_core::module::ModulePartType,
+    (f32, f32),
+    Option<(f32, f32)>,
+);
+pub type PresetConnection = (usize, usize, usize, usize); // from_idx, from_socket, to_idx, to_socket
+
+/// A saved module preset/template
+#[derive(Debug, Clone)]
+pub struct ModulePreset {
+    pub name: String,
+    pub parts: Vec<PresetPart>,
+    pub connections: Vec<PresetConnection>,
+}
+
+/// Actions that can be undone/redone
+#[derive(Debug, Clone)]
+pub enum CanvasAction {
+    AddPart {
+        part_id: ModulePartId,
+        part_data: mapmap_core::module::ModulePart,
+    },
+    DeletePart {
+        part_data: mapmap_core::module::ModulePart,
+    },
+    MovePart {
+        part_id: ModulePartId,
+        old_pos: (f32, f32),
+        new_pos: (f32, f32),
+    },
+    AddConnection {
+        connection: mapmap_core::module::ModuleConnection,
+    },
+    DeleteConnection {
+        connection: mapmap_core::module::ModuleConnection,
+    },
+    Batch(Vec<CanvasAction>),
+}
 
 /// Playback commands for media players
 #[derive(Debug, Clone, PartialEq)]
