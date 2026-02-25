@@ -1,5 +1,8 @@
 //! Egui-based transform controls panel (Phase 6)
 use crate::i18n::LocaleManager;
+use crate::theme::colors;
+use crate::widgets::custom::{styled_button, styled_drag_value, styled_slider};
+use crate::widgets::panel::{cyber_panel_frame, render_panel_header};
 use egui::*;
 use mapmap_core::ResizeMode;
 
@@ -37,6 +40,15 @@ impl Default for TransformPanel {
     }
 }
 
+// Helper for labeled rows (moved outside to avoid impl Trait in closure issues)
+fn labeled_row(ui: &mut Ui, label: &str, content: impl FnOnce(&mut Ui)) {
+    ui.horizontal(|ui| {
+        ui.label(label);
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), content);
+    });
+    ui.add_space(4.0);
+}
+
 impl TransformPanel {
     /// Set the transform values to be displayed and edited.
     pub fn set_transform(&mut self, layer_name: &str, transform: &mapmap_core::Transform) {
@@ -71,119 +83,152 @@ impl TransformPanel {
         egui::Window::new(i18n.t("panel-transforms"))
             .open(&mut open)
             .default_size([360.0, 520.0])
+            .frame(cyber_panel_frame(&ctx.style()))
             .show(ctx, |ui| {
-                ui.heading(i18n.t("header-transform-sys"));
-                ui.separator();
+                render_panel_header(ui, &i18n.t("header-transform-sys"), |_| {});
+                ui.add_space(8.0);
 
                 if let Some(name) = &self.selected_layer_name {
-                    ui.label(format!("{}: {}", i18n.t("label-editing"), name));
-                    ui.separator();
+                    ui.label(
+                        egui::RichText::new(format!("{}: {}", i18n.t("label-editing"), name))
+                            .color(colors::CYAN_ACCENT),
+                    );
+                    ui.add_space(8.0);
 
                     let mut changed = false;
 
-                    // Position controls
-                    ui.label(i18n.t("transform-position"));
+                    // Position
+                    ui.label(egui::RichText::new(i18n.t("transform-position")).strong());
                     ui.horizontal(|ui| {
-                        changed |= ui
-                            .add(
-                                egui::DragValue::new(&mut self.current_transform.position.0)
-                                    .speed(1.0)
-                                    .prefix("X: "),
-                            )
-                            .changed();
-                        changed |= ui
-                            .add(
-                                egui::DragValue::new(&mut self.current_transform.position.1)
-                                    .speed(1.0)
-                                    .prefix("Y: "),
-                            )
-                            .changed();
-                    });
-                    changed |= ui
-                        .add(Slider::new(
+                        changed |= styled_drag_value(
+                            ui,
                             &mut self.current_transform.position.0,
-                            -1000.0..=1000.0,
-                        ))
+                            1.0,
+                            -10000.0..=10000.0,
+                            0.0,
+                            "X: ",
+                            "px",
+                        )
                         .changed();
-                    changed |= ui
-                        .add(Slider::new(
+                        changed |= styled_drag_value(
+                            ui,
                             &mut self.current_transform.position.1,
-                            -1000.0..=1000.0,
-                        ))
-                        .changed();
-
-                    ui.separator();
-
-                    // Rotation control
-                    ui.label(i18n.t("transform-rotation"));
-                    changed |= ui
-                        .add(
-                            egui::Slider::new(&mut self.current_transform.rotation, 0.0..=360.0)
-                                .text("Z"),
+                            1.0,
+                            -10000.0..=10000.0,
+                            0.0,
+                            "Y: ",
+                            "px",
                         )
                         .changed();
-                    if ui.button(i18n.t("btn-reset-rotation")).clicked() {
-                        self.current_transform.rotation = 0.0;
-                        changed = true;
-                    }
-                    ui.separator();
-
-                    // Scale controls
-                    ui.label(i18n.t("transform-scale"));
-                    ui.horizontal(|ui| {
-                        changed |= ui
-                            .add(
-                                egui::DragValue::new(&mut self.current_transform.scale.0)
-                                    .speed(0.01)
-                                    .range(0.01..=5.0)
-                                    .prefix("W: "),
-                            )
-                            .changed();
-                        changed |= ui
-                            .add(
-                                egui::DragValue::new(&mut self.current_transform.scale.1)
-                                    .speed(0.01)
-                                    .range(0.01..=5.0)
-                                    .prefix("H: "),
-                            )
-                            .changed();
                     });
-                    changed |= ui
-                        .add(Slider::new(&mut self.current_transform.scale.0, 0.1..=5.0))
-                        .changed();
-                    changed |= ui
-                        .add(Slider::new(&mut self.current_transform.scale.1, 0.1..=5.0))
-                        .changed();
+                    changed |= styled_slider(
+                        ui,
+                        &mut self.current_transform.position.0,
+                        -1000.0..=1000.0,
+                        0.0,
+                    )
+                    .changed();
+                    changed |= styled_slider(
+                        ui,
+                        &mut self.current_transform.position.1,
+                        -1000.0..=1000.0,
+                        0.0,
+                    )
+                    .changed();
 
-                    if ui.button(i18n.t("btn-reset-scale")).clicked() {
-                        self.current_transform.scale = (1.0, 1.0);
-                        changed = true;
-                    }
-                    ui.separator();
+                    ui.add_space(8.0);
 
-                    // Anchor point controls
-                    ui.label(i18n.t("label-anchor"));
-                    changed |= ui
-                        .add(
-                            egui::Slider::new(&mut self.current_transform.anchor.0, 0.0..=1.0)
-                                .text("X"),
+                    // Rotation
+                    labeled_row(ui, &i18n.t("transform-rotation"), |ui| {
+                        if styled_button(ui, &i18n.t("btn-reset-rotation"), false).clicked() {
+                            self.current_transform.rotation = 0.0;
+                            changed = true;
+                        }
+                    });
+                    changed |= styled_slider(
+                        ui,
+                        &mut self.current_transform.rotation,
+                        0.0..=360.0,
+                        0.0,
+                    )
+                    .changed();
+
+                    ui.add_space(8.0);
+
+                    // Scale
+                    labeled_row(ui, &i18n.t("transform-scale"), |ui| {
+                        if styled_button(ui, &i18n.t("btn-reset-scale"), false).clicked() {
+                            self.current_transform.scale = (1.0, 1.0);
+                            changed = true;
+                        }
+                    });
+                    ui.horizontal(|ui| {
+                        changed |= styled_drag_value(
+                            ui,
+                            &mut self.current_transform.scale.0,
+                            0.01,
+                            0.01..=10.0,
+                            1.0,
+                            "W: ",
+                            "x",
                         )
                         .changed();
-                    changed |= ui
-                        .add(
-                            egui::Slider::new(&mut self.current_transform.anchor.1, 0.0..=1.0)
-                                .text("Y"),
+                        changed |= styled_drag_value(
+                            ui,
+                            &mut self.current_transform.scale.1,
+                            0.01,
+                            0.01..=10.0,
+                            1.0,
+                            "H: ",
+                            "x",
                         )
                         .changed();
+                    });
+                    changed |= styled_slider(
+                        ui,
+                        &mut self.current_transform.scale.0,
+                        0.1..=5.0,
+                        1.0,
+                    )
+                    .changed();
+                    changed |= styled_slider(
+                        ui,
+                        &mut self.current_transform.scale.1,
+                        0.1..=5.0,
+                        1.0,
+                    )
+                    .changed();
 
-                    if ui.button(i18n.t("btn-center-anchor")).clicked() {
-                        self.current_transform.anchor = (0.5, 0.5);
-                        changed = true;
-                    }
+                    ui.add_space(8.0);
+
+                    // Anchor
+                    labeled_row(ui, &i18n.t("label-anchor"), |ui| {
+                        if styled_button(ui, &i18n.t("btn-center-anchor"), false).clicked() {
+                            self.current_transform.anchor = (0.5, 0.5);
+                            changed = true;
+                        }
+                    });
+                    changed |= styled_slider(
+                        ui,
+                        &mut self.current_transform.anchor.0,
+                        0.0..=1.0,
+                        0.5,
+                    )
+                    .changed();
+                    changed |= styled_slider(
+                        ui,
+                        &mut self.current_transform.anchor.1,
+                        0.0..=1.0,
+                        0.5,
+                    )
+                    .changed();
+
+                    ui.add_space(16.0);
                     ui.separator();
+                    ui.add_space(8.0);
 
-                    // Resize mode presets
-                    ui.label(i18n.t("transform-presets"));
+                    // Resize Presets
+                    ui.label(egui::RichText::new(i18n.t("transform-presets")).strong());
 
                     // By default, any change updates the transform.
                     if changed {
@@ -192,37 +237,49 @@ impl TransformPanel {
                         ));
                     }
 
-                    // More specific actions below can overwrite the default action.
+                    // Preset buttons
                     ui.horizontal(|ui| {
-                        if ui.button(i18n.t("transform-fill")).clicked() {
+                        if styled_button(ui, &i18n.t("transform-fill"), false).clicked() {
                             self.last_action =
                                 Some(TransformAction::ApplyResizeMode(ResizeMode::Fill));
                         }
-                        if ui.button(i18n.t("btn-resize-fit")).clicked() {
+                        if styled_button(ui, &i18n.t("btn-resize-fit"), false).clicked() {
                             self.last_action =
                                 Some(TransformAction::ApplyResizeMode(ResizeMode::Fit));
                         }
                     });
                     ui.horizontal(|ui| {
-                        if ui.button(i18n.t("btn-resize-stretch")).clicked() {
+                        if styled_button(ui, &i18n.t("btn-resize-stretch"), false).clicked() {
                             self.last_action =
                                 Some(TransformAction::ApplyResizeMode(ResizeMode::Stretch));
                         }
-                        if ui.button(i18n.t("btn-resize-original")).clicked() {
+                        if styled_button(ui, &i18n.t("btn-resize-original"), false).clicked() {
                             self.last_action =
                                 Some(TransformAction::ApplyResizeMode(ResizeMode::Original));
                         }
                     });
 
-                    ui.separator();
+                    ui.add_space(16.0);
 
-                    // Reset button is the most specific, so it comes last.
-                    if ui.button(i18n.t("btn-reset-defaults")).clicked() {
+                    // Reset All
+                    if styled_button(ui, &i18n.t("btn-reset-defaults"), false).clicked() {
                         self.last_action = Some(TransformAction::ResetTransform);
                     }
                 } else {
-                    ui.label(i18n.t("transform-no-layer"));
-                    ui.label(i18n.t("transform-select-tip"));
+                    ui.vertical_centered(|ui| {
+                        ui.add_space(40.0);
+                        ui.label(
+                            egui::RichText::new("∅")
+                                .size(48.0)
+                                .color(colors::CYAN_ACCENT.linear_multiply(0.3)),
+                        );
+                        ui.add_space(16.0);
+                        ui.label(i18n.t("transform-no-layer"));
+                        ui.label(
+                            egui::RichText::new(i18n.t("transform-select-tip"))
+                                .color(Color32::GRAY),
+                        );
+                    });
                 }
             });
         self.visible = open;

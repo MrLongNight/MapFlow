@@ -1433,4 +1433,3 @@ mod additional_tests {
         assert!(!manager.move_layer_to(999, 0));
     }
     }
-}

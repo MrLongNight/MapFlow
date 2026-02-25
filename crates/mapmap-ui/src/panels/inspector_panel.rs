@@ -352,7 +352,7 @@ fn inspector_section(
             egui::Frame::NONE
                 .fill(colors::LIGHTER_GREY)
                 .inner_margin(8.0)
-                .corner_radius(4.0)
+                .corner_radius(egui::CornerRadius::ZERO)
                 .show(ui, |ui| {
                     ui.set_min_width(ui.available_width());
                     add_contents(ui);
