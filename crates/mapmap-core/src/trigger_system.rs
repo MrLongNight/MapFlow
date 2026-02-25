@@ -285,11 +285,6 @@ mod tests {
         // Timer should be reset (low value) and target should be new
         let new_state = system.states.get(&part_id).unwrap();
         assert!(new_state.timer < 0.1);
-        // Note: timer is reset to 0.0 upon firing, but  adds  *before* check?
-        // Wait, looking at code:
-        // state.timer += dt;
-        // if state.timer >= state.target { state.timer = 0.0; ... }
-        // So timer is 0.0 at the end of the frame it fired.
         assert_eq!(new_state.timer, 0.0);
         assert!(new_state.target >= 0.1 && new_state.target <= 0.2);
     }
