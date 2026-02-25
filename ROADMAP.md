@@ -974,16 +974,16 @@ graph TD
 
 ## Aktuelle Jules-Aufträge
 
-_Stand: 2026-02-25 23:40 (Europe/Berlin)_
+_Stand: 2026-02-25 23:55 (Europe/Berlin)_
 
 | Session-ID | Task | Status | Link | Notizen |
 |------------|------|--------|------|---------|
-| 2148619995599527479 | Next v1.0-Ticket: FramePipeline-Integration (Spectrum/Map) | Abgeschlossen | [https://jules.google.com/session/2148619995599527479](https://jules.google.com/session/2148619995599527479) | PR erstellt; Pre-Commit `scripts\Slave-Local-PreCommit.ps1`; Merge wartet auf automatisierte Checks. |
-| 1499173718553143537 | Fix GPU Upload Thread blocking the mapmap-media pipeline | Abgeschlossen | [https://jules.google.com/session/1499173718553143537](https://jules.google.com/session/1499173718553143537) | PR merged; Pre-Commit + CI grün; Release-Notes aktualisiert. |
-| 9472154532138526611 | Refactor Phase 1 – `module_canvas` God Object aufteilen | Abgeschlossen | [https://jules.google.com/session/9472154532138526611](https://jules.google.com/session/9472154532138526611) | PR/Pre-Commit automatisiert, Branch im Review, Roadmap-Punkt dokumentiert. |
-| 4181450308749999114 | Modulare Trennung von Rendering- und State-Handling im Canvas | Abgeschlossen | [https://jules.google.com/session/4181450308749999114](https://jules.google.com/session/4181450308749999114) | Roadmap/TechDebt-Abgleich, Pre-Commit `scripts\Slave-Local-PreCommit.ps1`. |
-| 17134084665800646930 | Gezielte Unit-/Integrationstests für neue Canvas-Connectoren und Timing-Logik | Abgeschlossen | [https://jules.google.com/session/17134084665800646930](https://jules.google.com/session/17134084665800646930) | Tests (`cargo fmt/clippy/check` + Python Hooks) erfolgreich, PR wartet auf Merge. |
-| 1821521759967542536 | ROADMAP & Technical_Debt aktualisieren (Aktuelle Aufgaben, Telegram-Automation) | Abgeschlossen | [https://jules.google.com/session/1821521759967542536](https://jules.google.com/session/1821521759967542536) | Dokumentation abgeschlossen; Tabelle & Telegram-How-To eingebracht. |
+| 2148619995599527479 | Next v1.0-Ticket: FramePipeline-Integration (Spectrum/Map) | Offen (PR #827) | [https://jules.google.com/session/2148619995599527479](https://jules.google.com/session/2148619995599527479) | pre-commit.ci mergeable check reports a merge conflict with `main` (https://results.pre-commit.ci/run/github/1109428232/1772059572.0W4S5c0iQjG5ti2BcZGytQ); rebase/resolution needed before the hook can finish. |
+| 1499173718553143537 | Fix GPU Upload Thread blocking the mapmap-media pipeline | Abgeschlossen (PR #826 merged) | [https://jules.google.com/session/1499173718553143537](https://jules.google.com/session/1499173718553143537) | PR merged; Pre-Commit + CI grün; Release-Notes aktualisiert. |
+| 9472154532138526611 | Refactor Phase 1 – `module_canvas` God Object aufteilen | Abgeschlossen (PR #822 merged) | [https://jules.google.com/session/9472154532138526611](https://jules.google.com/session/9472154532138526611) | PR/Pre-Commit automatisiert, Branch im Review, Roadmap-Punkt dokumentiert. |
+| 4181450308749999114 | Modulare Trennung von Rendering- und State-Handling im Canvas | Offen (PR #825) | [https://jules.google.com/session/4181450308749999114](https://jules.google.com/session/4181450308749999114) | Quality Gate, Security Scan, Linux Build & Test und CodeQL sind erfolgreich; Auto-Merge Workflow lief durch. MergeStateStatus bleibt `UNKNOWN`, ergo manuelle Freigabe oder erneuter Merge-Versuch nötig. |
+| 17134084665800646930 | Gezielte Unit-/Integrationstests für neue Canvas-Connectoren und Timing-Logik | Offen (PR #824) | [https://jules.google.com/session/17134084665800646930](https://jules.google.com/session/17134084665800646930) | Tests (`cargo fmt/clippy/check` + Python Hooks) grün, aber GitHub meldet `mergeStateStatus=DIRTY` (main hat sich verändert). Rebase + Konfliktauflösung erforderlich. |
+| 1821521759967542536 | ROADMAP & Technical_Debt aktualisieren (Aktuelle Aufgaben, Telegram-Automation) | Abgeschlossen (PR #823 merged) | [https://jules.google.com/session/1821521759967542536](https://jules.google.com/session/1821521759967542536) | Dokumentation abgeschlossen; Tabelle & Telegram-How-To eingebracht. |
 
 Alle Sessions erzeugen automatisch PRs auf `origin/main` und führen das vorgeschriebene Pre-Commit-Skript aus.
 
