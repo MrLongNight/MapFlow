@@ -365,8 +365,8 @@ pub fn icon_button(
     response
 }
 
-/// Simple Icon Button that uses an AppIcon and IconManager
-pub fn icon_button_simple(
+/// Simple Icon Button that uses an AppIcon and IconManager (Small)
+pub fn icon_button_small(
     ui: &mut Ui,
     icon_manager: Option<&IconManager>,
     icon: AppIcon,
