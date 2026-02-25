@@ -821,7 +821,7 @@ impl ModuleEvaluator {
 
         // Optimization: Use the part index cache that was already built in evaluate()
         // This avoids an O(N) allocation and iteration for every layer being rendered.
-        let part_index = &self.part_index_cache;
+        let _part_index = &self.part_index_cache;
 
         tracing::debug!(
             "trace_chain: Starting from node {} in module {}",
