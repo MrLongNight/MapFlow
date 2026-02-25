@@ -91,7 +91,7 @@ jobs:
           echo "FFMPEG_DIR=$InstalledDir" >> $env:GITHUB_ENV
           echo "FFMPEG_INCLUDE_DIR=$IncludePath" >> $env:GITHUB_ENV
           echo "FFMPEG_LIB_DIR=$LibPath" >> $env:GITHUB_ENV
-          
+
           # CRITICAL: Bindgen (libclang) needs to know where system headers are on Windows.
           # We append the INCLUDE env var (set by msvc-dev-cmd) to BINDGEN_EXTRA_CLANG_ARGS.
           $ClangArgs = "-isystem $IncludePath"
@@ -103,7 +103,7 @@ jobs:
             }
           }
           echo "BINDGEN_EXTRA_CLANG_ARGS=$ClangArgs" >> $env:GITHUB_ENV
-          
+
           echo "$BinPath" >> $env:GITHUB_PATH
 
       - name: Verify FFmpeg environment
