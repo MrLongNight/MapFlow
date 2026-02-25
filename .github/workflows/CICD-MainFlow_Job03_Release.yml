@@ -3,7 +3,7 @@ name: "Stable Release"
 # ═══════════════════════════════════════════════════════════════
 # WICHTIG: Dieser Workflow erstellt produktionsreife Releases.
 # Er generiert MSI-Installer und ZIP-Archive für Windows sowie
-# Tarballs für Linux. 
+# Tarballs für Linux.
 #
 # FIX 2026-02-21:
 # - Windows: pkg-config & FFmpeg Pfade für ffmpeg-sys-next stabilisiert.
