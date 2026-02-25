@@ -17,6 +17,8 @@ impl ModuleSidebar {
         locale: &LocaleManager,
     ) -> Option<ModuleSidebarAction> {
         let mut action = None;
+        let mut duplicate_req = None;
+        let mut rename_req = None;
 
         ui.vertical(|ui| {
             ui.heading(locale.t("panel-modules"));
@@ -28,15 +30,15 @@ impl ModuleSidebar {
             }
             ui.separator();
 
-            // Collect data to decouple from manager borrow
-            let modules: Vec<(mapmap_core::module::ModuleId, String, [f32; 4])> = manager
-                .list_modules()
-                .iter()
-                .map(|m| (m.id, m.name.clone(), m.color))
-                .collect();
-
             // List of modules
-            for (id, name, color_arr) in modules {
+            // Optimization: Iterate directly over modules to avoid cloning name strings every frame.
+            // We use deferred actions (duplicate_req, rename_req) to handle mutations after the loop,
+            // satisfying the borrow checker without deep cloning.
+            for module in manager.list_modules() {
+                let id = module.id;
+                let name = &module.name;
+                let color_arr = module.color;
+
                 if self.renaming_id == Some(id) {
                     // Inline renaming
                     ui.horizontal(|ui| {
@@ -48,7 +50,7 @@ impl ModuleSidebar {
 
                         if response.lost_focus() || ui.input(|i| i.key_pressed(egui::Key::Enter)) {
                             if !self.rename_buffer.trim().is_empty() {
-                                manager.rename_module(id, self.rename_buffer.clone());
+                                rename_req = Some((id, self.rename_buffer.clone()));
                             }
                             self.renaming_id = None;
                         } else if ui.input(|i| i.key_pressed(egui::Key::Escape)) {
@@ -56,7 +58,7 @@ impl ModuleSidebar {
                         }
                     });
                 } else {
-                    let response = self.module_list_item(ui, &name, color_arr);
+                    let response = self.module_list_item(ui, name, color_arr);
                     response.context_menu(|ui| {
                         if ui.button(locale.t("menu-rename")).clicked() {
                             self.renaming_id = Some(id);
@@ -65,7 +67,7 @@ impl ModuleSidebar {
                             ui.close();
                         }
                         if ui.button(locale.t("menu-duplicate")).clicked() {
-                            manager.duplicate_module(id);
+                            duplicate_req = Some(id);
                             ui.close();
                         }
                         if ui.button(locale.t("menu-delete")).clicked() {
@@ -111,6 +113,13 @@ impl ModuleSidebar {
                 }
             }
         });
+
+        if let Some(id) = duplicate_req {
+            manager.duplicate_module(id);
+        }
+        if let Some((id, name)) = rename_req {
+            manager.rename_module(id, name);
+        }
 
         action
     }
