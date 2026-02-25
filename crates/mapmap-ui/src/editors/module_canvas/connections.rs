@@ -1,6 +1,6 @@
 use super::state::ModuleCanvas;
-use egui::{Color32, Pos2, Rect, Stroke, Ui, Vec2};
 use egui::epaint::CubicBezierShape;
+use egui::{Color32, Pos2, Rect, Stroke, Ui, Vec2};
 use mapmap_core::module::{MapFlowModule, ModulePartType, ModuleSocket, ModuleSocketType};
 
 impl ModuleCanvas {

@@ -1,12 +1,12 @@
-use crate::editors::mesh_editor::MeshEditor;
 use super::types::{CanvasAction, MediaPlaybackCommand, MediaPlayerInfo, ModulePreset};
+use crate::editors::mesh_editor::MeshEditor;
 use egui::{Pos2, TextureHandle, Vec2};
 use mapmap_core::{
     audio_reactive::AudioTriggerData,
     diagnostics::ModuleIssue,
     module::{
         AudioBand, AudioTriggerOutputConfig, EffectType, LayerType, MaskShape, MaskType,
-        ModulizerType, ModulePartId, ModulePartType, ModuleSocketType, OutputType, SourceType,
+        ModulePartId, ModulePartType, ModuleSocketType, ModulizerType, OutputType, SourceType,
         TriggerType,
     },
 };
@@ -283,10 +283,7 @@ impl ModuleCanvas {
                         None,
                     ),
                 ],
-                connections: vec![
-                    (0, 0, 1, 0),
-                    (1, 0, 2, 0),
-                ],
+                connections: vec![(0, 0, 1, 0), (1, 0, 2, 0)],
             },
             ModulePreset {
                 name: "Effect Chain".to_string(),
@@ -327,11 +324,7 @@ impl ModuleCanvas {
                         None,
                     ),
                 ],
-                connections: vec![
-                    (0, 0, 1, 0),
-                    (1, 0, 2, 0),
-                    (2, 0, 3, 0),
-                ],
+                connections: vec![(0, 0, 1, 0), (1, 0, 2, 0), (2, 0, 3, 0)],
             },
             ModulePreset {
                 name: "Audio Reactive".to_string(),
@@ -384,12 +377,7 @@ impl ModuleCanvas {
                         None,
                     ),
                 ],
-                connections: vec![
-                    (0, 0, 1, 0),
-                    (1, 0, 2, 0),
-                    (2, 0, 3, 0),
-                    (3, 0, 4, 0),
-                ],
+                connections: vec![(0, 0, 1, 0), (1, 0, 2, 0), (2, 0, 3, 0), (3, 0, 4, 0)],
             },
             ModulePreset {
                 name: "Masked Media".to_string(),
@@ -427,11 +415,7 @@ impl ModuleCanvas {
                         None,
                     ),
                 ],
-                connections: vec![
-                    (0, 0, 1, 0),
-                    (1, 0, 2, 0),
-                    (2, 0, 3, 0),
-                ],
+                connections: vec![(0, 0, 1, 0), (1, 0, 2, 0), (2, 0, 3, 0)],
             },
             ModulePreset {
                 name: "NDI Source".to_string(),
@@ -464,10 +448,7 @@ impl ModuleCanvas {
                         None,
                     ),
                 ],
-                connections: vec![
-                    (0, 0, 1, 0),
-                    (1, 0, 2, 0),
-                ],
+                connections: vec![(0, 0, 1, 0), (1, 0, 2, 0)],
             },
             ModulePreset {
                 name: "NDI Output".to_string(),
@@ -490,10 +471,7 @@ impl ModuleCanvas {
                         None,
                     ),
                 ],
-                connections: vec![
-                    (0, 0, 1, 0),
-                    (1, 0, 2, 0),
-                ],
+                connections: vec![(0, 0, 1, 0), (1, 0, 2, 0)],
             },
             #[cfg(target_os = "windows")]
             ModulePreset {
@@ -529,10 +507,7 @@ impl ModuleCanvas {
                         None,
                     ),
                 ],
-                connections: vec![
-                    (0, 0, 1, 0),
-                    (1, 0, 2, 0),
-                ],
+                connections: vec![(0, 0, 1, 0), (1, 0, 2, 0)],
             },
             #[cfg(target_os = "windows")]
             ModulePreset {
@@ -556,10 +531,7 @@ impl ModuleCanvas {
                         None,
                     ),
                 ],
-                connections: vec![
-                    (0, 0, 1, 0),
-                    (1, 0, 2, 0),
-                ],
+                connections: vec![(0, 0, 1, 0), (1, 0, 2, 0)],
             },
         ]
     }

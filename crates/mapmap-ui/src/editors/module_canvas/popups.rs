@@ -1,14 +1,19 @@
 use super::state::ModuleCanvas;
 use egui::{Color32, Pos2, Rect, Stroke, Ui, Vec2};
-use mapmap_core::module::{
-    BlendModeType, HueNodeType, LayerType, MapFlowModule, MaskType, ModulizerType, ModuleManager,
-    ModulePartType, OutputType, SourceType, TriggerType, AudioBand, AudioTriggerOutputConfig,
-    MaskShape, MeshType, NodeLinkData,
-};
 use mapmap_core::diagnostics::IssueSeverity;
+use mapmap_core::module::{
+    AudioBand, AudioTriggerOutputConfig, BlendModeType, HueNodeType, LayerType, MapFlowModule,
+    MaskShape, MaskType, MeshType, ModuleManager, ModulePartType, ModulizerType, NodeLinkData,
+    OutputType, SourceType, TriggerType,
+};
 
 impl ModuleCanvas {
-    pub fn draw_search_popup(&mut self, ui: &mut Ui, canvas_rect: Rect, module: &mut MapFlowModule) {
+    pub fn draw_search_popup(
+        &mut self,
+        ui: &mut Ui,
+        canvas_rect: Rect,
+        module: &mut MapFlowModule,
+    ) {
         // Search popup in top-center
         let popup_width = 300.0;
         let popup_height = 200.0;
@@ -89,7 +94,12 @@ impl ModuleCanvas {
         });
     }
 
-    pub fn draw_presets_popup(&mut self, ui: &mut Ui, canvas_rect: Rect, module: &mut MapFlowModule) {
+    pub fn draw_presets_popup(
+        &mut self,
+        ui: &mut Ui,
+        canvas_rect: Rect,
+        module: &mut MapFlowModule,
+    ) {
         // Presets popup in top-center
         let popup_width = 280.0;
         let popup_height = 220.0;
@@ -233,15 +243,9 @@ impl ModuleCanvas {
                         .show(ui, |ui| {
                             for issue in &self.diagnostic_issues {
                                 let (icon, color) = match issue.severity {
-                                    IssueSeverity::Error => {
-                                        ("â Œ", Color32::RED)
-                                    }
-                                    IssueSeverity::Warning => {
-                                        ("\u{26A0}", Color32::YELLOW)
-                                    }
-                                    IssueSeverity::Info => {
-                                        ("\u{2139}", Color32::LIGHT_BLUE)
-                                    }
+                                    IssueSeverity::Error => ("â Œ", Color32::RED),
+                                    IssueSeverity::Warning => ("\u{26A0}", Color32::YELLOW),
+                                    IssueSeverity::Info => ("\u{2139}", Color32::LIGHT_BLUE),
                                 };
                                 ui.horizontal(|ui| {
                                     ui.colored_label(color, icon);
@@ -270,10 +274,7 @@ impl ModuleCanvas {
             if let Some(module) = manager.get_module_mut(id) {
                 let preferred_pos = pos_override.unwrap_or((100.0, 100.0));
                 let pos = Self::find_free_position(&module.parts, preferred_pos);
-                module.add_part_with_type(
-                    ModulePartType::Trigger(trigger_type),
-                    pos,
-                );
+                module.add_part_with_type(ModulePartType::Trigger(trigger_type), pos);
             }
         }
     }
@@ -289,10 +290,7 @@ impl ModuleCanvas {
             if let Some(module) = manager.get_module_mut(id) {
                 let preferred_pos = pos_override.unwrap_or((200.0, 100.0));
                 let pos = Self::find_free_position(&module.parts, preferred_pos);
-                module.add_part_with_type(
-                    ModulePartType::Source(source_type),
-                    pos,
-                );
+                module.add_part_with_type(ModulePartType::Source(source_type), pos);
             }
         }
     }
@@ -308,8 +306,7 @@ impl ModuleCanvas {
             if let Some(module) = manager.get_module_mut(id) {
                 let preferred_pos = pos_override.unwrap_or((300.0, 100.0));
                 let pos = Self::find_free_position(&module.parts, preferred_pos);
-                module
-                    .add_part_with_type(ModulePartType::Mask(mask_type), pos);
+                module.add_part_with_type(ModulePartType::Mask(mask_type), pos);
             }
         }
     }
@@ -325,10 +322,7 @@ impl ModuleCanvas {
             if let Some(module) = manager.get_module_mut(id) {
                 let preferred_pos = pos_override.unwrap_or((400.0, 100.0));
                 let pos = Self::find_free_position(&module.parts, preferred_pos);
-                module.add_part_with_type(
-                    ModulePartType::Modulizer(mod_type),
-                    pos,
-                );
+                module.add_part_with_type(ModulePartType::Modulizer(mod_type), pos);
             }
         }
     }
@@ -359,10 +353,7 @@ impl ModuleCanvas {
             if let Some(module) = manager.get_module_mut(id) {
                 let preferred_pos = pos_override.unwrap_or((400.0, 200.0));
                 let pos = Self::find_free_position(&module.parts, preferred_pos);
-                module.add_part_with_type(
-                    ModulePartType::Layer(layer_type),
-                    pos,
-                );
+                module.add_part_with_type(ModulePartType::Layer(layer_type), pos);
             }
         }
     }
@@ -603,11 +594,7 @@ impl ModuleCanvas {
 
         ui.menu_button("\u{1F3AD} Masks", |ui| {
             if ui.button("\u{2B55} Shape").clicked() {
-                self.add_mask_node(
-                    manager,
-                    MaskType::Shape(MaskShape::Circle),
-                    pos_override,
-                );
+                self.add_mask_node(manager, MaskType::Shape(MaskShape::Circle), pos_override);
                 ui.close();
             }
             if ui.button("\u{1F308} Gradient").clicked() {
@@ -703,21 +690,19 @@ impl ModuleCanvas {
                     let preferred_pos = pos_override.unwrap_or((600.0, 100.0));
                     let pos = Self::find_free_position(&module.parts, preferred_pos);
                     module.add_part_with_type(
-                        ModulePartType::Output(
-                            OutputType::Projector {
-                                id: 1,
-                                name: "Projector 1".to_string(),
-                                hide_cursor: false,
-                                target_screen: 0,
-                                show_in_preview_panel: true,
-                                extra_preview_window: false,
-                                output_width: 0,
-                                output_height: 0,
-                                output_fps: 60.0,
-                                ndi_enabled: false,
-                                ndi_stream_name: String::new(),
-                            },
-                        ),
+                        ModulePartType::Output(OutputType::Projector {
+                            id: 1,
+                            name: "Projector 1".to_string(),
+                            hide_cursor: false,
+                            target_screen: 0,
+                            show_in_preview_panel: true,
+                            extra_preview_window: false,
+                            output_width: 0,
+                            output_height: 0,
+                            output_fps: 60.0,
+                            ndi_enabled: false,
+                            ndi_stream_name: String::new(),
+                        }),
                         pos,
                     );
                 }

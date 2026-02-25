@@ -3,7 +3,12 @@ use egui::{Color32, Pos2, Rect, Stroke, Vec2};
 use mapmap_core::module::MapFlowModule;
 
 impl ModuleCanvas {
-    pub fn draw_mini_map(&self, painter: &egui::Painter, canvas_rect: Rect, module: &MapFlowModule) {
+    pub fn draw_mini_map(
+        &self,
+        painter: &egui::Painter,
+        canvas_rect: Rect,
+        module: &MapFlowModule,
+    ) {
         if module.parts.is_empty() {
             return;
         }

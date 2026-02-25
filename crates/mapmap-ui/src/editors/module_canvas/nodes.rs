@@ -4,8 +4,8 @@ use crate::theme::colors;
 use crate::UIAction;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, Ui, Vec2};
 use mapmap_core::module::{
-    AudioBand, BlendModeType, EffectType, HueNodeType, LayerType, MaskShape, MaskType,
-    ModulizerType, ModuleId, ModulePart, ModulePartType, OutputType, SourceType, TriggerType,
+    AudioBand, BlendModeType, EffectType, HueNodeType, LayerType, MaskShape, MaskType, ModuleId,
+    ModulePart, ModulePartType, ModulizerType, OutputType, SourceType, TriggerType,
 };
 
 impl ModuleCanvas {
@@ -117,10 +117,7 @@ impl ModuleCanvas {
         painter.rect_filled(rect, 0.0, neutral_bg);
 
         // Handle drag and drop for Media Files
-        if let ModulePartType::Source(
-            SourceType::MediaFile { .. },
-        ) = &part.part_type
-        {
+        if let ModulePartType::Source(SourceType::MediaFile { .. }) = &part.part_type {
             if ui.rect_contains_pointer(rect) {
                 if let Some(dropped_path) = ui
                     .ctx()
@@ -265,10 +262,7 @@ impl ModuleCanvas {
         }
 
         // Draw Media Playback Progress Bar
-        if let ModulePartType::Source(
-            SourceType::MediaFile { .. },
-        ) = &part.part_type
-        {
+        if let ModulePartType::Source(SourceType::MediaFile { .. }) = &part.part_type {
             if let Some(info) = self.player_info.get(&part.id) {
                 let duration = info.duration.max(0.001);
                 let progress = (info.current_time / duration).clamp(0.0, 1.0) as f32;
@@ -697,9 +691,7 @@ impl ModuleCanvas {
                 let name = match hue {
                     HueNodeType::SingleLamp { .. } => "Single Lamp",
                     HueNodeType::MultiLamp { .. } => "Multi Lamp",
-                    HueNodeType::EntertainmentGroup { .. } => {
-                        "Entertainment Group"
-                    }
+                    HueNodeType::EntertainmentGroup { .. } => "Entertainment Group",
                 };
                 (
                     Color32::from_rgb(60, 60, 40),
@@ -786,9 +778,13 @@ impl ModuleCanvas {
                     format!("T: {}", text.chars().take(10).collect::<String>())
                 }
                 SourceType::BevyCamera { mode, .. } => match mode {
-                    mapmap_core::module::BevyCameraMode::Orbit { .. } => "\u{1F3A5} Orbit".to_string(),
+                    mapmap_core::module::BevyCameraMode::Orbit { .. } => {
+                        "\u{1F3A5} Orbit".to_string()
+                    }
                     mapmap_core::module::BevyCameraMode::Fly { .. } => "\u{1F3A5} Fly".to_string(),
-                    mapmap_core::module::BevyCameraMode::Static { .. } => "\u{1F3A5} Static".to_string(),
+                    mapmap_core::module::BevyCameraMode::Static { .. } => {
+                        "\u{1F3A5} Static".to_string()
+                    }
                 },
                 SourceType::Bevy3DShape { shape_type, .. } => format!("\u{1F9CA} {:?}", shape_type),
                 SourceType::Bevy3DModel { path, .. } => format!("\u{1F3AE} Model: {}", path),
@@ -815,13 +811,11 @@ impl ModuleCanvas {
                 ModulizerType::AudioReactive { source } => format!("\u{1F50A} {}", source),
             },
             ModulePartType::Mesh(_) => "🕸️ï¸  Mesh".to_string(),
-            ModulePartType::Layer(layer_type) => {
-                match layer_type {
-                    LayerType::Single { name, .. } => format!("\u{1F4D1} {}", name),
-                    LayerType::Group { name, .. } => format!("📁 {}", name),
-                    LayerType::All { .. } => "\u{1F4D1} All Layers".to_string(),
-                }
-            }
+            ModulePartType::Layer(layer_type) => match layer_type {
+                LayerType::Single { name, .. } => format!("\u{1F4D1} {}", name),
+                LayerType::Group { name, .. } => format!("📁 {}", name),
+                LayerType::All { .. } => "\u{1F4D1} All Layers".to_string(),
+            },
             ModulePartType::Output(output_type) => match output_type {
                 OutputType::Projector { name, .. } => format!("\u{1F4FA} {}", name),
                 OutputType::NdiOutput { name } => format!("\u{1F4E1} {}", name),
@@ -879,24 +873,66 @@ impl ModuleCanvas {
     }
 
     /// Get audio trigger state for a part type
-    fn get_audio_trigger_state(
-        &self,
-        part_type: &ModulePartType,
-    ) -> (bool, f32, f32, bool) {
+    fn get_audio_trigger_state(&self, part_type: &ModulePartType) -> (bool, f32, f32, bool) {
         match part_type {
             ModulePartType::Trigger(TriggerType::AudioFFT {
                 band, threshold, ..
             }) => {
                 let value = match band {
-                    AudioBand::SubBass => self.audio_trigger_data.band_energies.first().copied().unwrap_or(0.0),
-                    AudioBand::Bass => self.audio_trigger_data.band_energies.get(1).copied().unwrap_or(0.0),
-                    AudioBand::LowMid => self.audio_trigger_data.band_energies.get(2).copied().unwrap_or(0.0),
-                    AudioBand::Mid => self.audio_trigger_data.band_energies.get(3).copied().unwrap_or(0.0),
-                    AudioBand::HighMid => self.audio_trigger_data.band_energies.get(4).copied().unwrap_or(0.0),
-                    AudioBand::UpperMid => self.audio_trigger_data.band_energies.get(5).copied().unwrap_or(0.0),
-                    AudioBand::Presence => self.audio_trigger_data.band_energies.get(6).copied().unwrap_or(0.0),
-                    AudioBand::Brilliance => self.audio_trigger_data.band_energies.get(7).copied().unwrap_or(0.0),
-                    AudioBand::Air => self.audio_trigger_data.band_energies.get(8).copied().unwrap_or(0.0),
+                    AudioBand::SubBass => self
+                        .audio_trigger_data
+                        .band_energies
+                        .first()
+                        .copied()
+                        .unwrap_or(0.0),
+                    AudioBand::Bass => self
+                        .audio_trigger_data
+                        .band_energies
+                        .get(1)
+                        .copied()
+                        .unwrap_or(0.0),
+                    AudioBand::LowMid => self
+                        .audio_trigger_data
+                        .band_energies
+                        .get(2)
+                        .copied()
+                        .unwrap_or(0.0),
+                    AudioBand::Mid => self
+                        .audio_trigger_data
+                        .band_energies
+                        .get(3)
+                        .copied()
+                        .unwrap_or(0.0),
+                    AudioBand::HighMid => self
+                        .audio_trigger_data
+                        .band_energies
+                        .get(4)
+                        .copied()
+                        .unwrap_or(0.0),
+                    AudioBand::UpperMid => self
+                        .audio_trigger_data
+                        .band_energies
+                        .get(5)
+                        .copied()
+                        .unwrap_or(0.0),
+                    AudioBand::Presence => self
+                        .audio_trigger_data
+                        .band_energies
+                        .get(6)
+                        .copied()
+                        .unwrap_or(0.0),
+                    AudioBand::Brilliance => self
+                        .audio_trigger_data
+                        .band_energies
+                        .get(7)
+                        .copied()
+                        .unwrap_or(0.0),
+                    AudioBand::Air => self
+                        .audio_trigger_data
+                        .band_energies
+                        .get(8)
+                        .copied()
+                        .unwrap_or(0.0),
                     AudioBand::Peak => self.audio_trigger_data.peak_volume,
                     AudioBand::BPM => self.audio_trigger_data.bpm.unwrap_or(0.0) / 200.0,
                 };
@@ -961,10 +997,7 @@ impl ModuleCanvas {
     }
 
     /// Find a free position for a new node
-    pub fn find_free_position(
-        parts: &[ModulePart],
-        preferred: (f32, f32),
-    ) -> (f32, f32) {
+    pub fn find_free_position(parts: &[ModulePart], preferred: (f32, f32)) -> (f32, f32) {
         let node_width = 200.0;
         let node_height = 130.0;
         let grid_step = 30.0;

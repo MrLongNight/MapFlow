@@ -5,10 +5,10 @@ use crate::widgets::{styled_drag_value, styled_slider};
 use crate::UIAction;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, Ui, Vec2};
 use mapmap_core::module::{
-    BevyCameraMode, BlendModeType, EffectType as ModuleEffectType, HueNodeType, LayerType,
-    MaskShape, MaskType, ModulizerType, ModuleId, ModulePart, ModulePartId, ModulePartType,
-    OutputType, SourceType, TriggerType, TriggerTarget, TriggerMappingMode, BevyShapeType,
-    EffectType, MeshType,
+    BevyCameraMode, BevyShapeType, BlendModeType, EffectType as ModuleEffectType, EffectType,
+    HueNodeType, LayerType, MaskShape, MaskType, MeshType, ModuleId, ModulePart, ModulePartId,
+    ModulePartType, ModulizerType, OutputType, SourceType, TriggerMappingMode, TriggerTarget,
+    TriggerType,
 };
 
 impl ModuleCanvas {
@@ -1443,11 +1443,11 @@ impl ModuleCanvas {
                             }
                             OutputType::Hue {
                                 bridge_ip,
-                                username,
+                                username: _,
                                 client_key: _client_key,
-                                entertainment_area,
-                                lamp_positions,
-                                mapping_mode,
+                                entertainment_area: _,
+                                lamp_positions: _,
+                                mapping_mode: _,
                             } => {
                                 ui.label("\u{1F4A1} Philips Hue Entertainment");
                                 ui.separator();
@@ -1496,11 +1496,7 @@ impl ModuleCanvas {
             });
     }
 
-    fn render_trigger_config_ui(
-        &mut self,
-        ui: &mut egui::Ui,
-        part: &mut ModulePart,
-    ) {
+    fn render_trigger_config_ui(&mut self, ui: &mut egui::Ui, part: &mut ModulePart) {
         // Only show for parts with input sockets
         if part.inputs.is_empty() {
             return;
@@ -1599,12 +1595,8 @@ impl ModuleCanvas {
                                 let mode_name = match config.mode {
                                     TriggerMappingMode::Direct => "Direct",
                                     TriggerMappingMode::Fixed => "Fixed",
-                                    TriggerMappingMode::RandomInRange => {
-                                        "Random"
-                                    }
-                                    TriggerMappingMode::Smoothed {
-                                        ..
-                                    } => "Smoothed",
+                                    TriggerMappingMode::RandomInRange => "Random",
+                                    TriggerMappingMode::Smoothed { .. } => "Smoothed",
                                 };
 
                                 egui::ComboBox::from_id_salt("mode")
@@ -1661,10 +1653,7 @@ impl ModuleCanvas {
                                         styled_slider(ui, &mut config.max_value, -5.0..=5.0, 1.0);
                                     });
                                 }
-                                TriggerMappingMode::Smoothed {
-                                    attack,
-                                    release,
-                                } => {
+                                TriggerMappingMode::Smoothed { attack, release } => {
                                     ui.horizontal(|ui| {
                                         ui.label("Range:");
                                         ui.label("Min:");

@@ -1,13 +1,10 @@
 use super::state::ModuleCanvas;
-use egui::{Ui, Pos2};
-use mapmap_core::module::{LayerType, MeshType, ModulePartType, ModulePartId, ModulePart};
+use egui::{Pos2, Ui};
+use mapmap_core::module::{LayerType, MeshType, ModulePart, ModulePartId, ModulePartType};
 
 impl ModuleCanvas {
     /// Sync the mesh editor with the current selection's mesh
-    pub fn sync_mesh_editor_to_current_selection(
-        &mut self,
-        part: &ModulePart,
-    ) {
+    pub fn sync_mesh_editor_to_current_selection(&mut self, part: &ModulePart) {
         // Extract MeshType from part
         let mesh = match &part.part_type {
             ModulePartType::Layer(LayerType::Single { mesh, .. }) => mesh,
@@ -46,8 +43,7 @@ impl ModuleCanvas {
             }
             // Fallback for unsupported types - reset to default quad for now
             _ => {
-                self.mesh_editor
-                    .create_quad(Pos2::new(100.0, 100.0), 200.0);
+                self.mesh_editor.create_quad(Pos2::new(100.0, 100.0), 200.0);
             }
         }
     }
@@ -165,8 +161,7 @@ impl ModuleCanvas {
                     }
                     _ => {
                         // Fallback
-                        self.mesh_editor
-                            .create_quad(Pos2::new(100.0, 100.0), 200.0);
+                        self.mesh_editor.create_quad(Pos2::new(100.0, 100.0), 200.0);
                         self.last_mesh_edit_id = Some(part_id);
                     }
                 }

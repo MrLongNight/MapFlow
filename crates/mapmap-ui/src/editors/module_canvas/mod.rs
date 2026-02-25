@@ -1,24 +1,20 @@
 use crate::i18n::LocaleManager;
 use crate::theme::colors;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, Ui, Vec2};
-use mapmap_core::{
-    module::{
-        MapFlowModule, ModuleId, ModuleManager, ModulePartId, ModulePartType, TriggerType,
-    },
-};
+use mapmap_core::module::{MapFlowModule, ModuleId, ModuleManager, ModulePartId, TriggerType};
 
-pub mod types;
-pub mod state;
-pub mod drawing;
-pub mod nodes;
 pub mod connections;
-pub mod inspector;
-pub mod popups;
-pub mod mesh;
+pub mod drawing;
 pub mod hue;
+pub mod inspector;
+pub mod mesh;
+pub mod nodes;
+pub mod popups;
+pub mod state;
+pub mod types;
 
-pub use self::types::*;
 pub use self::state::ModuleCanvas;
+pub use self::types::*;
 
 use egui_node_editor::*;
 use std::borrow::Cow;
@@ -116,6 +112,7 @@ impl ModuleCanvas {
         });
     }
 
+    #[allow(dead_code)]
     fn apply_undo_action(module: &mut MapFlowModule, action: &CanvasAction) {
         match action {
             CanvasAction::AddPart { part_id, .. } => {
@@ -155,6 +152,7 @@ impl ModuleCanvas {
         }
     }
 
+    #[allow(dead_code)]
     fn apply_redo_action(module: &mut MapFlowModule, action: &CanvasAction) {
         match action {
             CanvasAction::AddPart { part_data, .. } => {
@@ -194,6 +192,92 @@ impl ModuleCanvas {
         }
     }
 
+    pub fn undo(&mut self, module: &mut MapFlowModule) {
+        if let Some(action) = self.undo_stack.pop() {
+            Self::apply_undo_action(module, &action);
+            self.redo_stack.push(action);
+        }
+    }
+
+    pub fn redo(&mut self, module: &mut MapFlowModule) {
+        if let Some(action) = self.redo_stack.pop() {
+            Self::apply_redo_action(module, &action);
+            self.undo_stack.push(action);
+        }
+    }
+
+    pub fn copy_selection(&mut self, module: &MapFlowModule) {
+        self.clipboard.clear();
+        if self.selected_parts.is_empty() {
+            return;
+        }
+
+        // Calculate center of selection to copy relative positions
+        let mut min_x = f32::MAX;
+        let mut min_y = f32::MAX;
+        let mut count = 0;
+
+        for part in &module.parts {
+            if self.selected_parts.contains(&part.id) {
+                min_x = min_x.min(part.position.0);
+                min_y = min_y.min(part.position.1);
+                count += 1;
+            }
+        }
+
+        if count == 0 {
+            return;
+        }
+
+        for part in &module.parts {
+            if self.selected_parts.contains(&part.id) {
+                self.clipboard.push((
+                    part.part_type.clone(),
+                    (part.position.0 - min_x, part.position.1 - min_y),
+                ));
+            }
+        }
+    }
+
+    pub fn paste_selection(&mut self, module: &mut MapFlowModule) {
+        if self.clipboard.is_empty() {
+            return;
+        }
+
+        // Paste at center of view
+        let base_x = -self.pan_offset.x / self.zoom + 100.0;
+        let base_y = -self.pan_offset.y / self.zoom + 100.0;
+
+        self.selected_parts.clear();
+
+        // Need to collect actions for undo? For now, direct modification.
+        // Ideally we should create an AddPart action for each.
+
+        let mut added_parts = Vec::new();
+
+        for (part_type, (rel_x, rel_y)) in &self.clipboard {
+            let pos = (base_x + rel_x, base_y + rel_y);
+            let final_pos = Self::find_free_position(&module.parts, pos);
+
+            let new_id = module.add_part_with_type(part_type.clone(), final_pos);
+            self.selected_parts.push(new_id);
+
+            // TODO: Record action for Undo
+            if let Some(part) = module.parts.iter().find(|p| p.id == new_id) {
+                added_parts.push(CanvasAction::AddPart {
+                    part_id: new_id,
+                    part_data: part.clone(),
+                });
+            }
+        }
+
+        if !added_parts.is_empty() {
+            self.undo_stack.push(CanvasAction::Batch(added_parts));
+            self.redo_stack.clear();
+        }
+    }
+
+    #[allow(dead_code)]
     fn safe_delete_selection(&mut self, module: &mut MapFlowModule) {
         if self.selected_parts.is_empty() {
             return;
@@ -255,31 +339,110 @@ impl ModuleCanvas {
         actions: &mut Vec<crate::UIAction>,
     ) {
         // === KEYBOARD SHORTCUTS ===
-        if !self.selected_parts.is_empty()
-            && !ui.memory(|m| m.focused().is_some())
-            && ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Space))
-        {
+        // Handle global shortcuts that don't depend on selection
+        if ui.input_mut(|i| i.consume_key(egui::Modifiers::CTRL, egui::Key::Z)) {
             if let Some(module_id) = self.active_module_id {
                 if let Some(module) = manager.get_module_mut(module_id) {
-                    for part_id in &self.selected_parts {
-                        if let Some(part) = module.parts.iter().find(|p| p.id == *part_id) {
-                            if let mapmap_core::module::ModulePartType::Source(
-                                mapmap_core::module::SourceType::MediaFile { .. },
-                            ) = &part.part_type
-                            {
-                                // Toggle playback
-                                let is_playing = self
-                                    .player_info
-                                    .get(part_id)
-                                    .map(|info| info.is_playing)
-                                    .unwrap_or(false);
+                    self.undo(module);
+                }
+            }
+        }
+        if ui.input_mut(|i| i.consume_key(egui::Modifiers::CTRL, egui::Key::Y)) {
+            if let Some(module_id) = self.active_module_id {
+                if let Some(module) = manager.get_module_mut(module_id) {
+                    self.redo(module);
+                }
+            }
+        }
 
-                                let command = if is_playing {
-                                    MediaPlaybackCommand::Pause
-                                } else {
-                                    MediaPlaybackCommand::Play
-                                };
-                                self.pending_playback_commands.push((*part_id, command));
+        // Helper to check if we are editing a text field
+        let is_editing_text = ui.memory(|m| m.focused().is_some());
+
+        if !is_editing_text {
+            if let Some(module_id) = self.active_module_id {
+                if let Some(module) = manager.get_module_mut(module_id) {
+                    // Copy
+                    if ui.input_mut(|i| i.consume_key(egui::Modifiers::CTRL, egui::Key::C)) {
+                        self.copy_selection(module);
+                    }
+                    // Paste
+                    if ui.input_mut(|i| i.consume_key(egui::Modifiers::CTRL, egui::Key::V)) {
+                        self.paste_selection(module);
+                    }
+                    // Select All
+                    if ui.input_mut(|i| i.consume_key(egui::Modifiers::CTRL, egui::Key::A)) {
+                        self.selected_parts.clear();
+                        for part in &module.parts {
+                            self.selected_parts.push(part.id);
+                        }
+                    }
+                    // Delete
+                    if ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Delete)) {
+                        self.safe_delete_selection(module);
+                    }
+                    // Search
+                    if ui.input_mut(|i| i.consume_key(egui::Modifiers::CTRL, egui::Key::F)) {
+                        self.show_search = !self.show_search;
+                    }
+
+                    // Nudge Selection (Arrows)
+                    let nudge = if ui.input(|i| i.modifiers.shift) {
+                        10.0
+                    } else {
+                        1.0
+                    };
+                    let mut move_vec = Vec2::ZERO;
+                    if ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::ArrowUp)) {
+                        move_vec.y -= nudge;
+                    }
+                    if ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::ArrowDown))
+                    {
+                        move_vec.y += nudge;
+                    }
+                    if ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::ArrowLeft))
+                    {
+                        move_vec.x -= nudge;
+                    }
+                    if ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::ArrowRight))
+                    {
+                        move_vec.x += nudge;
+                    }
+
+                    if move_vec != Vec2::ZERO {
+                        for part_id in &self.selected_parts {
+                            if let Some(part) = module.parts.iter_mut().find(|p| p.id == *part_id) {
+                                part.position.0 += move_vec.x;
+                                part.position.1 += move_vec.y;
+                            }
+                        }
+                        // TODO: Record move action for Undo?
+                        // For nudge, recording every step fills stack. Maybe debounce or ignore?
+                    }
+
+                    // Space (Playback Toggle)
+                    if !self.selected_parts.is_empty()
+                        && ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Space))
+                    {
+                        for part_id in &self.selected_parts {
+                            if let Some(part) = module.parts.iter().find(|p| p.id == *part_id) {
+                                if let mapmap_core::module::ModulePartType::Source(
+                                    mapmap_core::module::SourceType::MediaFile { .. },
+                                ) = &part.part_type
+                                {
+                                    // Toggle playback
+                                    let is_playing = self
+                                        .player_info
+                                        .get(part_id)
+                                        .map(|info| info.is_playing)
+                                        .unwrap_or(false);
+
+                                    let command = if is_playing {
+                                        MediaPlaybackCommand::Pause
+                                    } else {
+                                        MediaPlaybackCommand::Play
+                                    };
+                                    self.pending_playback_commands.push((*part_id, command));
+                                }
                             }
                         }
                     }
@@ -522,8 +685,7 @@ impl ModuleCanvas {
 
         // Handle panning (Middle click or Alt+Drag)
         if response.dragged_by(egui::PointerButton::Middle)
-            || (response.dragged_by(egui::PointerButton::Primary)
-                && ui.input(|i| i.modifiers.alt))
+            || (response.dragged_by(egui::PointerButton::Primary) && ui.input(|i| i.modifiers.alt))
         {
             let pan_delta = response.drag_delta();
             self.pan_offset += pan_delta;
@@ -553,9 +715,8 @@ impl ModuleCanvas {
         // Coordinate conversion helpers
         let pan_offset = self.pan_offset;
         let zoom = self.zoom;
-        let to_screen = move |pos: Pos2| -> Pos2 {
-            canvas_rect.min + pan_offset + (pos.to_vec2()) * zoom
-        };
+        let to_screen =
+            move |pos: Pos2| -> Pos2 { canvas_rect.min + pan_offset + (pos.to_vec2()) * zoom };
 
         let from_screen = move |pos: Pos2| -> Pos2 {
             let v = (pos - canvas_rect.min - pan_offset) / zoom;
@@ -610,10 +771,10 @@ impl ModuleCanvas {
                             Pos2::new(part.position.0, part.position.1),
                             Vec2::new(200.0, 100.0), // Approx size
                         );
-                        if selection_in_canvas.intersects(part_rect) {
-                            if !self.selected_parts.contains(&part.id) {
-                                self.selected_parts.push(part.id);
-                            }
+                        if selection_in_canvas.intersects(part_rect)
+                            && !self.selected_parts.contains(&part.id)
+                        {
+                            self.selected_parts.push(part.id);
                         }
                     }
                 }
@@ -623,8 +784,7 @@ impl ModuleCanvas {
         }
 
         // Draw connections (and handle their interaction)
-        let connection_removed_idx =
-            self.draw_connections(ui, &painter, module, &to_screen);
+        let connection_removed_idx = self.draw_connections(ui, &painter, module, &to_screen);
 
         if let Some(idx) = connection_removed_idx {
             if idx < module.connections.len() {
@@ -669,36 +829,33 @@ impl ModuleCanvas {
                 let h = 80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
                 (200.0, h)
             });
-            let rect = Rect::from_min_size(pos_screen, Vec2::new(part_width, part_height) * self.zoom);
+            let rect =
+                Rect::from_min_size(pos_screen, Vec2::new(part_width, part_height) * self.zoom);
 
             // Collect sockets for hit testing
             // Inputs
             let title_height = 28.0 * self.zoom;
             let socket_start_y = rect.min.y + title_height + 10.0 * self.zoom;
             for (i, input) in part.inputs.iter().enumerate() {
-                let socket_pos = Pos2::new(
-                    rect.min.x,
-                    socket_start_y + i as f32 * 22.0 * self.zoom,
-                );
+                let socket_pos =
+                    Pos2::new(rect.min.x, socket_start_y + i as f32 * 22.0 * self.zoom);
                 all_sockets.push(SocketInfo {
                     part_id: part.id,
                     socket_idx: i,
                     is_output: false,
-                    socket_type: input.socket_type.clone(),
+                    socket_type: input.socket_type,
                     position: socket_pos,
                 });
             }
             // Outputs
             for (i, output) in part.outputs.iter().enumerate() {
-                let socket_pos = Pos2::new(
-                    rect.max.x,
-                    socket_start_y + i as f32 * 22.0 * self.zoom,
-                );
+                let socket_pos =
+                    Pos2::new(rect.max.x, socket_start_y + i as f32 * 22.0 * self.zoom);
                 all_sockets.push(SocketInfo {
                     part_id: part.id,
                     socket_idx: i,
                     is_output: true,
-                    socket_type: output.socket_type.clone(),
+                    socket_type: output.socket_type,
                     position: socket_pos,
                 });
             }
@@ -742,7 +899,8 @@ impl ModuleCanvas {
                         if !alt_held {
                             let grid_size = 20.0;
                             // Check if accumulated movement crosses grid threshold
-                            if accumulator.x.abs() >= grid_size || accumulator.y.abs() >= grid_size {
+                            if accumulator.x.abs() >= grid_size || accumulator.y.abs() >= grid_size
+                            {
                                 let snap_x = (accumulator.x / grid_size).round() * grid_size;
                                 let snap_y = (accumulator.y / grid_size).round() * grid_size;
                                 effective_move = Vec2::new(snap_x, snap_y);
@@ -765,16 +923,16 @@ impl ModuleCanvas {
                                 }
                             }
                         } else {
-                             // Apply move immediately if Alt is held
-                             let moving_parts = if self.selected_parts.contains(part_id) {
-                                    self.selected_parts.clone()
-                                } else {
-                                    vec![*part_id]
-                                };
+                            // Apply move immediately if Alt is held
+                            let moving_parts = if self.selected_parts.contains(part_id) {
+                                self.selected_parts.clone()
+                            } else {
+                                vec![*part_id]
+                            };
 
-                                for moving_id in &moving_parts {
-                                    move_ops.push((*moving_id, effective_move));
-                                }
+                            for moving_id in &moving_parts {
+                                move_ops.push((*moving_id, effective_move));
+                            }
                         }
                     }
                 }
