@@ -39,6 +39,11 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Set up MSVC Developer Command Prompt
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
       - name: vcpkg installieren
         shell: pwsh
         run: |
@@ -86,10 +91,12 @@ jobs:
           echo "FFMPEG_DIR=$InstalledDir" >> $env:GITHUB_ENV
           echo "FFMPEG_INCLUDE_DIR=$IncludePath" >> $env:GITHUB_ENV
           echo "FFMPEG_LIB_DIR=$LibPath" >> $env:GITHUB_ENV
-          # Use -isystem to include vcpkg headers without breaking standard headers
+          
+          # CRITICAL: Do NOT override BINDGEN_EXTRA_CLANG_ARGS with just -I, 
+          # as it can confuse bindgen about system headers.
+          # The msvc-dev-cmd action handles the base paths.
           echo "BINDGEN_EXTRA_CLANG_ARGS=-isystem $IncludePath" >> $env:GITHUB_ENV
-          echo "INCLUDE=$IncludePath;$env:INCLUDE" >> $env:GITHUB_ENV
-          echo "LIB=$LibPath;$env:LIB" >> $env:GITHUB_ENV
+          
           echo "$BinPath" >> $env:GITHUB_PATH
 
       - name: Verify FFmpeg environment
