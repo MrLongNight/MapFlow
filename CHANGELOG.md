@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- 2026-02-25: fix(ci): Resolve 'errno.h' missing in Windows release build by activating MSVC environment (ClawMaster)
+- 2026-02-25: fix(ci): Resolve 'errno.h' missing in Windows release build by activating MSVC environment and explicitly passing include paths to bindgen (ClawMaster)
+- 2026-02-25: fix(core): Final syntax cleanup and removal of merge markers in layer.rs and trigger_system.rs (ClawMaster)
 - 2026-02-25: perf(core): Optimize module evaluation graph traversal with cached part indexing (Bolt)
 - 2026-02-25: test(core): Substantially expand unit test coverage for layers, sockets, and effects (Guardian)
 - 2026-02-25: feat(ui): Polish effect chain panel with improved layout and safety buttons (Lina)

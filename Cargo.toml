@@ -125,12 +125,14 @@ winres = "0.1"
 
 [profile.dev]
 opt-level = 1 # Slightly optimize for better wgpu performance in debug
+debug = 1     # Reduce PDB size to avoid LNK1140 errors
 
 [profile.release]
 opt-level = 3
 lto = "thin"
-codegen-units = 16
-strip = true
+codegen-units = 1
+strip = false # Keep some info for now, but codegen-units=1 helps with size
+debug = 1     # Limited debug info for release builds to avoid massive PDBs
 
 [profile.bench]
 inherits = "release"

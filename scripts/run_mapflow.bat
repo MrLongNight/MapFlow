@@ -1,10 +1,8 @@
 @echo off
-REM MapFlow Startup Script - Sets up FFmpeg environment and runs the application
+REM MapFlow Local Startup Script (ClawMaster Optimized)
+REM Bypasses ffmpeg-sys-next build failures and LNK1140 PDB errors
 
-REM Set FFmpeg paths
-set FFMPEG_DIR=C:\ffmpeg
-set LIBCLANG_PATH=C:\Program Files\LLVM\bin
-set PATH=C:\ffmpeg\bin;%PATH%
+echo 🦀 Starting MapFlow in Local Release Mode...
 
-REM Run MapFlow
-cargo run -p mapmap --release
+REM Run MapFlow with stable features in release mode for best performance
+cargo run --release -p mapmap --bin MapFlow --no-default-features --features "audio"
