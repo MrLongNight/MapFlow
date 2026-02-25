@@ -130,7 +130,13 @@ impl McpServer {
                         version: "0.1.0".to_string(),
                     },
                 };
-                Some(success_response(id, serde_json::to_value(result).unwrap()))
+                match serde_json::to_value(result) {
+                    Ok(val) => Some(success_response(id, val)),
+                    Err(e) => {
+                        error!("Failed to serialize initialize result: {}", e);
+                        Some(error_response(id, -32603, "Internal error"))
+                    }
+                }
             }
             "notifications/initialized" => None,
             "tools/list" => {
@@ -817,8 +823,19 @@ impl McpServer {
                                     ) {
                                         Ok(path) => {
                                             if let Some(sender) = &self.action_sender {
-                                                let _ = sender
-                                                    .send(crate::McpAction::SaveProject(path));
+                                                if let Err(e) =
+                                                    sender.send(crate::McpAction::SaveProject(path))
+                                                {
+                                                    error!(
+                                                        "Failed to send SaveProject action: {}",
+                                                        e
+                                                    );
+                                                    return Some(error_response(
+                                                        id,
+                                                        -32603,
+                                                        "Internal error: Failed to send action",
+                                                    ));
+                                                }
                                             }
                                             return Some(success_response(
                                                 id,
@@ -848,8 +865,19 @@ impl McpServer {
                                     ) {
                                         Ok(path) => {
                                             if let Some(sender) = &self.action_sender {
-                                                let _ = sender
-                                                    .send(crate::McpAction::LoadProject(path));
+                                                if let Err(e) =
+                                                    sender.send(crate::McpAction::LoadProject(path))
+                                                {
+                                                    error!(
+                                                        "Failed to send LoadProject action: {}",
+                                                        e
+                                                    );
+                                                    return Some(error_response(
+                                                        id,
+                                                        -32603,
+                                                        "Internal error: Failed to send action",
+                                                    ));
+                                                }
                                             }
                                             return Some(success_response(
                                                 id,
@@ -874,8 +902,16 @@ impl McpServer {
                             if let Some(name_val) = args.get("name") {
                                 if let Some(name_str) = name_val.as_str() {
                                     if let Some(sender) = &self.action_sender {
-                                        let _ = sender
-                                            .send(crate::McpAction::AddLayer(name_str.to_string()));
+                                        if let Err(e) = sender
+                                            .send(crate::McpAction::AddLayer(name_str.to_string()))
+                                        {
+                                            error!("Failed to send AddLayer action: {}", e);
+                                            return Some(error_response(
+                                                id,
+                                                -32603,
+                                                "Internal error: Failed to send action",
+                                            ));
+                                        }
                                     }
                                     return Some(success_response(
                                         id,
@@ -891,8 +927,16 @@ impl McpServer {
                             if let Some(layer_id_val) = args.get("layer_id") {
                                 if let Some(layer_id) = layer_id_val.as_u64() {
                                     if let Some(sender) = &self.action_sender {
-                                        let _ =
-                                            sender.send(crate::McpAction::RemoveLayer(layer_id));
+                                        if let Err(e) =
+                                            sender.send(crate::McpAction::RemoveLayer(layer_id))
+                                        {
+                                            error!("Failed to send RemoveLayer action: {}", e);
+                                            return Some(error_response(
+                                                id,
+                                                -32603,
+                                                "Internal error: Failed to send action",
+                                            ));
+                                        }
                                     }
                                     return Some(success_response(
                                         id,
@@ -912,10 +956,19 @@ impl McpServer {
                                     (layer_id_val.as_u64(), opacity_val.as_f64())
                                 {
                                     if let Some(sender) = &self.action_sender {
-                                        let _ = sender.send(crate::McpAction::SetLayerOpacity(
-                                            layer_id,
-                                            opacity as f32,
-                                        ));
+                                        if let Err(e) =
+                                            sender.send(crate::McpAction::SetLayerOpacity(
+                                                layer_id,
+                                                opacity as f32,
+                                            ))
+                                        {
+                                            error!("Failed to send SetLayerOpacity action: {}", e);
+                                            return Some(error_response(
+                                                id,
+                                                -32603,
+                                                "Internal error: Failed to send action",
+                                            ));
+                                        }
                                     }
                                     return Some(success_response(
                                         id,
@@ -935,9 +988,19 @@ impl McpServer {
                                     (layer_id_val.as_u64(), visible_val.as_bool())
                                 {
                                     if let Some(sender) = &self.action_sender {
-                                        let _ = sender.send(crate::McpAction::SetLayerVisibility(
-                                            layer_id, visible,
-                                        ));
+                                        if let Err(e) = sender.send(
+                                            crate::McpAction::SetLayerVisibility(layer_id, visible),
+                                        ) {
+                                            error!(
+                                                "Failed to send SetLayerVisibility action: {}",
+                                                e
+                                            );
+                                            return Some(error_response(
+                                                id,
+                                                -32603,
+                                                "Internal error: Failed to send action",
+                                            ));
+                                        }
                                     }
                                     return Some(success_response(
                                         id,
@@ -953,7 +1016,16 @@ impl McpServer {
                             if let Some(cue_id_val) = args.get("cue_id") {
                                 if let Some(cue_id) = cue_id_val.as_u64() {
                                     if let Some(sender) = &self.action_sender {
-                                        let _ = sender.send(crate::McpAction::TriggerCue(cue_id));
+                                        if let Err(e) =
+                                            sender.send(crate::McpAction::TriggerCue(cue_id))
+                                        {
+                                            error!("Failed to send TriggerCue action: {}", e);
+                                            return Some(error_response(
+                                                id,
+                                                -32603,
+                                                "Internal error: Failed to send action",
+                                            ));
+                                        }
                                     }
                                     return Some(success_response(
                                         id,
@@ -966,31 +1038,66 @@ impl McpServer {
                     }
                     "cue_next" => {
                         if let Some(sender) = &self.action_sender {
-                            let _ = sender.send(crate::McpAction::NextCue);
+                            if let Err(e) = sender.send(crate::McpAction::NextCue) {
+                                error!("Failed to send NextCue action: {}", e);
+                                return Some(error_response(
+                                    id,
+                                    -32603,
+                                    "Internal error: Failed to send action",
+                                ));
+                            }
                         }
                         Some(success_response(id, serde_json::json!({"status":"queued"})))
                     }
                     "cue_previous" => {
                         if let Some(sender) = &self.action_sender {
-                            let _ = sender.send(crate::McpAction::PrevCue);
+                            if let Err(e) = sender.send(crate::McpAction::PrevCue) {
+                                error!("Failed to send PrevCue action: {}", e);
+                                return Some(error_response(
+                                    id,
+                                    -32603,
+                                    "Internal error: Failed to send action",
+                                ));
+                            }
                         }
                         Some(success_response(id, serde_json::json!({"status":"queued"})))
                     }
                     "media_play" => {
                         if let Some(sender) = &self.action_sender {
-                            let _ = sender.send(crate::McpAction::MediaPlay);
+                            if let Err(e) = sender.send(crate::McpAction::MediaPlay) {
+                                error!("Failed to send MediaPlay action: {}", e);
+                                return Some(error_response(
+                                    id,
+                                    -32603,
+                                    "Internal error: Failed to send action",
+                                ));
+                            }
                         }
                         Some(success_response(id, serde_json::json!({"status":"queued"})))
                     }
                     "media_pause" => {
                         if let Some(sender) = &self.action_sender {
-                            let _ = sender.send(crate::McpAction::MediaPause);
+                            if let Err(e) = sender.send(crate::McpAction::MediaPause) {
+                                error!("Failed to send MediaPause action: {}", e);
+                                return Some(error_response(
+                                    id,
+                                    -32603,
+                                    "Internal error: Failed to send action",
+                                ));
+                            }
                         }
                         Some(success_response(id, serde_json::json!({"status":"queued"})))
                     }
                     "media_stop" => {
                         if let Some(sender) = &self.action_sender {
-                            let _ = sender.send(crate::McpAction::MediaStop);
+                            if let Err(e) = sender.send(crate::McpAction::MediaStop) {
+                                error!("Failed to send MediaStop action: {}", e);
+                                return Some(error_response(
+                                    id,
+                                    -32603,
+                                    "Internal error: Failed to send action",
+                                ));
+                            }
                         }
                         Some(success_response(id, serde_json::json!({"status":"queued"})))
                     }
@@ -1001,7 +1108,13 @@ impl McpServer {
                     }
                     "send_osc" => {
                         if let Some(args) = params.arguments {
-                            self.handle_send_osc(id, &serde_json::to_value(args).unwrap())
+                            match serde_json::to_value(args) {
+                                Ok(val) => self.handle_send_osc(id, &val),
+                                Err(e) => {
+                                    error!("Failed to serialize arguments for send_osc: {}", e);
+                                    Some(error_response(id, -32603, "Internal error"))
+                                }
+                            }
                         } else {
                             Some(error_response(id, -32602, "Missing arguments for send_osc"))
                         }
