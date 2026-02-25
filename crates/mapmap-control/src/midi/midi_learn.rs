@@ -331,24 +331,34 @@ mod tests {
 
     #[test]
     fn test_midi_learn_timeout() {
-        // Set timeout to 1 second (minimum possible with current API)
         let mut manager = MidiLearnManager::new().with_timeout(1);
-        manager.start_learning("test_timeout");
 
+        // Start learning
+        manager.start_learning("test_timeout_element");
         assert!(manager.is_learning());
+        assert!(!manager.has_detection());
 
-        // Wait for timeout
+        // Initial update (should not time out yet)
+        let timed_out_early = manager.update();
+        assert!(!timed_out_early);
+
+        // Wait for timeout (1.1s > 1.0s)
         std::thread::sleep(Duration::from_millis(1100));
 
-        // Check timeout
+        // Update to trigger check
         let timed_out = manager.update();
-        assert!(timed_out, "Should have timed out");
-        assert!(!manager.is_learning());
+        assert!(timed_out, "Should return true when timeout occurs");
 
+        // Verify state transition
+        assert!(!manager.is_learning());
         if let MidiLearnState::TimedOut { target_element } = manager.state() {
-            assert_eq!(target_element, "test_timeout");
+            assert_eq!(target_element, "test_timeout_element");
         } else {
-            panic!("State should be TimedOut, was {:?}", manager.state());
+            panic!("State should be TimedOut, got {:?}", manager.state());
         }
+
+        // Subsequent update should not re-trigger (as state is now TimedOut)
+        let timed_out_again = manager.update();
+        assert!(!timed_out_again);
     }
 }

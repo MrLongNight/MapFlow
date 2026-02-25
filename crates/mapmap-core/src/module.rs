@@ -3886,3 +3886,30 @@ mod tests_guardian {
         assert_eq!(config.apply(0.0), 10.0);
     }
 }
+
+#[cfg(test)]
+mod mesh_conversion_tests {
+    use super::*;
+
+    #[test]
+    fn test_custom_mesh_fallback() {
+        let custom = MeshType::Custom {
+            path: "ignored".to_string(),
+        };
+        let mesh = custom.to_mesh();
+
+        // Should fallback to Quad (4 vertices)
+        assert_eq!(mesh.vertex_count(), 4);
+        // The resulting runtime mesh should have type Quad
+        use crate::mesh::MeshType as CoreMeshType;
+        assert_eq!(mesh.mesh_type, CoreMeshType::Quad);
+
+        // Verify it is a valid quad (corners 0,0 to 1,1)
+        let tl = mesh.vertices[0].position;
+        let br = mesh.vertices[2].position;
+        assert!((tl.x - 0.0).abs() < 0.001);
+        assert!((tl.y - 0.0).abs() < 0.001);
+        assert!((br.x - 1.0).abs() < 0.001);
+        assert!((br.y - 1.0).abs() < 0.001);
+    }
+}
