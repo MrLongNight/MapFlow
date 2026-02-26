@@ -1,7 +1,7 @@
 use crate::theme::colors;
 use egui::Pos2;
 use egui_node_editor::*;
-use mapmap_core::module::{ModulePartId, ModulePartType, ModuleSocketType};
+use mapmap_core::module::{ModulePartId, ModulePartType, ModuleSocketType, TriggerType};
 use std::borrow::Cow;
 
 /// Information about a socket position for hit detection
@@ -172,5 +172,39 @@ impl NodeDataTrait for MyNodeData {
     {
         ui.label(format!("Type: {:?}", self.part_type));
         Vec::new()
+    }
+}
+
+// Implement NodeTemplateTrait for MyNodeTemplate
+impl NodeTemplateTrait for MyNodeTemplate {
+    type NodeData = MyNodeData;
+    type DataType = MyDataType;
+    type ValueType = MyValueType;
+    type UserState = MyUserState;
+    type CategoryType = &'static str;
+
+    fn node_finder_label(&self, _user_state: &mut Self::UserState) -> Cow<'_, str> {
+        Cow::Borrowed(&self.label)
+    }
+
+    fn node_graph_label(&self, _user_state: &mut Self::UserState) -> String {
+        self.label.clone()
+    }
+
+    fn user_data(&self, _user_state: &mut Self::UserState) -> Self::NodeData {
+        MyNodeData {
+            title: self.label.clone(),
+            part_type: mapmap_core::module::ModulePartType::Trigger(TriggerType::Beat), // Mock
+            original_part_id: 0,
+        }
+    }
+
+    fn build_node(
+        &self,
+        _graph: &mut Graph<Self::NodeData, Self::DataType, Self::ValueType>,
+        _user_state: &mut Self::UserState,
+        _node_id: NodeId,
+    ) {
+        // Mock
     }
 }
