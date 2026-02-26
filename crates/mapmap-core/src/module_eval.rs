@@ -329,6 +329,41 @@ mod tests_evaluator {
         assert!(m_values.len() >= 2);
         assert_eq!(m_values[1], 1.0); // Link Out should be active
     }
+
+    #[test]
+    fn test_render_op_pooling() {
+        let mut evaluator = ModuleEvaluator::new();
+        let mut module = create_test_module();
+
+        // 1. Layer -> Output
+        let l_id = module.add_part(crate::module::PartType::Layer, (0.0, 0.0));
+        let o_id = module.add_part(crate::module::PartType::Output, (100.0, 0.0));
+        module.add_connection(l_id, 0, o_id, 0);
+
+        let shared = crate::module::SharedMediaState::default();
+
+        // Pass 1: Should create one RenderOp
+        evaluator.evaluate(&module, &shared);
+        assert_eq!(evaluator.cached_result.render_ops.len(), 1);
+        assert_eq!(evaluator.cached_result.spare_render_ops.len(), 0);
+
+        // Pass 2: Should recycle the RenderOp
+        // Note: evaluate() calls clear() at the start, moving render_ops to spare.
+        // Then it pops one.
+        evaluator.evaluate(&module, &shared);
+        assert_eq!(evaluator.cached_result.render_ops.len(), 1);
+        // Spare should be 0 because we popped the one that was recycled
+        assert_eq!(evaluator.cached_result.spare_render_ops.len(), 0);
+
+        // Pass 3: Reduce workload (no output connection)
+        module.remove_connection(l_id, 0, o_id, 0);
+        evaluator.evaluate(&module, &shared);
+
+        // render_ops should be empty
+        assert_eq!(evaluator.cached_result.render_ops.len(), 0);
+        // spare_render_ops should contain the recycled one
+        assert_eq!(evaluator.cached_result.spare_render_ops.len(), 1);
+    }
 }
 
 /// Render operation containing all info needed to render a layer to an output
@@ -369,6 +404,8 @@ pub struct ModuleEvalResult {
     pub source_commands: HashMap<ModulePartId, SourceCommand>,
     /// Render operations to specific outputs
     pub render_ops: Vec<RenderOp>,
+    /// Spare render operations for reuse (object pooling)
+    pub spare_render_ops: Vec<RenderOp>,
 }
 
 impl ModuleEvalResult {
@@ -386,8 +423,9 @@ impl ModuleEvalResult {
 
         // Source commands are typically small (one per source), but we can clear the map
         self.source_commands.clear();
-        // Render ops is a Vec, simply clear
-        self.render_ops.clear();
+
+        // Recycle render ops instead of clearing (which drops/frees internal vectors)
+        self.spare_render_ops.append(&mut self.render_ops);
     }
 }
 
@@ -474,15 +512,6 @@ pub enum SourceCommand {
     },
 }
 
-/// Helper struct for chain tracing results
-struct ProcessingChain {
-    source_id: Option<ModulePartId>,
-    source_props: SourceProperties,
-    effects: Vec<ModulizerType>,
-    masks: Vec<MaskType>,
-    override_mesh: Option<MeshType>,
-}
-
 /// Module graph evaluator
 pub struct ModuleEvaluator {
     /// Current trigger data from audio analysis
@@ -537,6 +566,35 @@ impl ModuleEvaluator {
     /// Update active keyboard keys for Shortcut triggers
     pub fn update_keys(&mut self, keys: &std::collections::HashSet<String>) {
         self.active_keys = keys.clone();
+    }
+
+    /// Get a spare RenderOp from the cache or create a new one (Object Pooling)
+    fn get_spare_render_op(&mut self) -> RenderOp {
+        self.cached_result.spare_render_ops.pop().unwrap_or_else(|| RenderOp {
+            output_part_id: 0,
+            output_type: OutputType::Projector {
+                id: 0,
+                name: String::new(),
+                hide_cursor: false,
+                target_screen: 0,
+                show_in_preview_panel: true,
+                extra_preview_window: false,
+                output_width: 1920,
+                output_height: 1080,
+                output_fps: 60.0,
+                ndi_enabled: false,
+                ndi_stream_name: String::new(),
+            },
+            layer_part_id: 0,
+            mesh: MeshType::default(),
+            opacity: 1.0,
+            blend_mode: None,
+            mapping_mode: false,
+            source_part_id: None,
+            source_props: SourceProperties::default_identity(),
+            effects: Vec::new(),
+            masks: Vec::new(),
+        })
     }
 
     /// Evaluate a module for one frame
@@ -808,22 +866,20 @@ impl ModuleEvaluator {
                                     mapping_mode,
                                     ..
                                 } => {
-                                    let chain = self.trace_chain(layer_part.id, module);
-                                    let final_mesh = chain.override_mesh.unwrap_or(mesh.clone());
+                                    let mut op = self.get_spare_render_op();
 
-                                    self.cached_result.render_ops.push(RenderOp {
-                                        output_part_id: part.id,
-                                        output_type: output_type.clone(),
-                                        layer_part_id: layer_part.id,
-                                        mesh: final_mesh,
-                                        opacity: *opacity * link_opacity,
-                                        blend_mode: *blend_mode,
-                                        mapping_mode: *mapping_mode,
-                                        source_part_id: chain.source_id,
-                                        source_props: chain.source_props,
-                                        effects: chain.effects,
-                                        masks: chain.masks,
-                                    });
+                                    // Initialize Op fields
+                                    op.output_part_id = part.id;
+                                    op.output_type = output_type.clone();
+                                    op.layer_part_id = layer_part.id;
+                                    op.opacity = *opacity * link_opacity;
+                                    op.blend_mode = *blend_mode;
+                                    op.mapping_mode = *mapping_mode;
+
+                                    // Trace chain to populate source, effects, masks and mesh override
+                                    self.trace_chain_into(layer_part.id, module, &mut op, mesh);
+
+                                    self.cached_result.render_ops.push(op);
                                 }
                                 LayerType::Group {
                                     opacity,
@@ -832,22 +888,20 @@ impl ModuleEvaluator {
                                     mapping_mode,
                                     ..
                                 } => {
-                                    let chain = self.trace_chain(layer_part.id, module);
-                                    let final_mesh = chain.override_mesh.unwrap_or(mesh.clone());
+                                    let mut op = self.get_spare_render_op();
 
-                                    self.cached_result.render_ops.push(RenderOp {
-                                        output_part_id: part.id,
-                                        output_type: output_type.clone(),
-                                        layer_part_id: layer_part.id,
-                                        mesh: final_mesh,
-                                        opacity: *opacity * link_opacity,
-                                        blend_mode: *blend_mode,
-                                        mapping_mode: *mapping_mode,
-                                        source_part_id: chain.source_id,
-                                        source_props: chain.source_props.clone(),
-                                        effects: chain.effects,
-                                        masks: chain.masks,
-                                    });
+                                    // Initialize Op fields
+                                    op.output_part_id = part.id;
+                                    op.output_type = output_type.clone();
+                                    op.layer_part_id = layer_part.id;
+                                    op.opacity = *opacity * link_opacity;
+                                    op.blend_mode = *blend_mode;
+                                    op.mapping_mode = *mapping_mode;
+
+                                    // Trace chain to populate source, effects, masks and mesh override
+                                    self.trace_chain_into(layer_part.id, module, &mut op, mesh);
+
+                                    self.cached_result.render_ops.push(op);
                                 }
                                 LayerType::All { .. } => {
                                     // Global layers not yet fully implemented, but if we do render them:
@@ -884,12 +938,20 @@ impl ModuleEvaluator {
     }
 
     /// Trace the processing input chain backwards from a start node (e.g. Layer input)
-    fn trace_chain(&self, start_node_id: ModulePartId, module: &MapFlowModule) -> ProcessingChain {
-        let mut effects = Vec::new();
-        let mut masks = Vec::new();
+    /// Populates the provided RenderOp with source and effect data, avoiding allocations.
+    fn trace_chain_into(
+        &self,
+        start_node_id: ModulePartId,
+        module: &MapFlowModule,
+        op: &mut RenderOp,
+        default_mesh: &MeshType,
+    ) {
+        op.effects.clear();
+        op.masks.clear();
+        op.source_part_id = None;
+        op.source_props = SourceProperties::default_identity();
+
         let mut override_mesh = None;
-        let mut source_id = None;
-        let mut source_props = SourceProperties::default_identity();
         let mut current_id = start_node_id;
 
         // Optimization: Use the part index cache that was already built in evaluate()
@@ -910,17 +972,6 @@ impl ModuleEvaluator {
             // We need to find if any input sockets have triggers active and targets mapped
             if let Some(&part_idx) = self.part_index_cache.get(&current_id) {
                 let part = &module.parts[part_idx];
-
-                // Check if any *incoming* connection determines the value?
-                // Wait, trigger targets are on this part's inputs.
-                // We need the input values for this part trigger sockets.
-                // But inputs are pull-based or pushed?
-                // We have `trigger_inputs` map computed in `evaluate` but it's not passed here.
-                // `compute_trigger_inputs` returns a map part_id -> float.
-                // But that's a single value per part (consolidated).
-                // We need per-socket values if we want specific mapping.
-                // Or we re-compute or access cached values.
-                // Let's assume we can access per-socket inputs or just iterate connections to this part.
 
                 if !part.trigger_targets.is_empty() {
                     tracing::debug!(
@@ -959,30 +1010,30 @@ impl ModuleEvaluator {
                     );
 
                     match &config.target {
-                        crate::module::TriggerTarget::Opacity => source_props.opacity = final_val, // Override
+                        crate::module::TriggerTarget::Opacity => op.source_props.opacity = final_val, // Override
                         crate::module::TriggerTarget::Brightness => {
-                            source_props.brightness = final_val
+                            op.source_props.brightness = final_val
                         }
-                        crate::module::TriggerTarget::Contrast => source_props.contrast = final_val,
+                        crate::module::TriggerTarget::Contrast => op.source_props.contrast = final_val,
                         crate::module::TriggerTarget::Saturation => {
-                            source_props.saturation = final_val
+                            op.source_props.saturation = final_val
                         }
                         crate::module::TriggerTarget::HueShift => {
-                            source_props.hue_shift = final_val
+                            op.source_props.hue_shift = final_val
                         }
-                        crate::module::TriggerTarget::ScaleX => source_props.scale_x = final_val,
-                        crate::module::TriggerTarget::ScaleY => source_props.scale_y = final_val,
-                        crate::module::TriggerTarget::Rotation => source_props.rotation = final_val,
-                        crate::module::TriggerTarget::OffsetX => source_props.offset_x = final_val,
-                        crate::module::TriggerTarget::OffsetY => source_props.offset_y = final_val,
+                        crate::module::TriggerTarget::ScaleX => op.source_props.scale_x = final_val,
+                        crate::module::TriggerTarget::ScaleY => op.source_props.scale_y = final_val,
+                        crate::module::TriggerTarget::Rotation => op.source_props.rotation = final_val,
+                        crate::module::TriggerTarget::OffsetX => op.source_props.offset_x = final_val,
+                        crate::module::TriggerTarget::OffsetY => op.source_props.offset_y = final_val,
                         crate::module::TriggerTarget::FlipH => {
-                            source_props.flip_horizontal = final_val > 0.5
+                            op.source_props.flip_horizontal = final_val > 0.5
                         }
                         crate::module::TriggerTarget::FlipV => {
-                            source_props.flip_vertical = final_val > 0.5
+                            op.source_props.flip_vertical = final_val > 0.5
                         }
                         crate::module::TriggerTarget::Param(name) => {
-                            if let Some(ModulizerType::Effect { params, .. }) = effects.last_mut() {
+                            if let Some(ModulizerType::Effect { params, .. }) = op.effects.last_mut() {
                                 params.insert(name.clone(), final_val);
                             }
                         }
@@ -992,7 +1043,6 @@ impl ModuleEvaluator {
             }
 
             // Find main input connection (to ANY socket - usually socket 0)
-            // L522 replacement
             if let Some(conn_idx) = self
                 .conn_index_cache
                 .get(&current_id)
@@ -1004,7 +1054,7 @@ impl ModuleEvaluator {
                     let part = &module.parts[part_idx];
                     match &part.part_type {
                         ModulePartType::Source(source_type) => {
-                            source_id = Some(part.id);
+                            op.source_part_id = Some(part.id);
 
                             // Helper to extract props from any source variant that has them
                             let mut extracted_props = None;
@@ -1165,17 +1215,6 @@ impl ModuleEvaluator {
                                                     props.opacity = final_val;
                                                 }
                                                 crate::module::TriggerTarget::Brightness => {
-                                                    // Map 0..1 to -1..1 for brightness if direct, or use configured range
-                                                    // With TriggerConfig, the user sets min/max.
-                                                    // If user wants -1..1, they set min=-1, max=1.
-                                                    // So we just assign the final_val directly if it's calibrated.
-                                                    // BUT: Historical behavior was 0..1 -> -1..1.
-                                                    // If we just use final_val which defaults to 0..1, brightness will be positive only.
-                                                    // Let's assume the user configures the range in the UI.
-                                                    // However, legacy projects might rely on the hardcoded mapping.
-                                                    // To support legacy, we could check if config is default?
-                                                    // But we want to empower the user.
-                                                    // For now, let's trust the configured min/max.
                                                     props.brightness = final_val;
                                                 }
                                                 crate::module::TriggerTarget::Contrast => {
@@ -1202,16 +1241,16 @@ impl ModuleEvaluator {
                                     }
                                 }
 
-                                source_props = props;
+                                op.source_props = props;
                             }
                             break;
                         }
                         ModulePartType::Modulizer(mod_type) => {
-                            effects.push(mod_type.clone());
+                            op.effects.push(mod_type.clone());
                             current_id = part.id;
                         }
                         ModulePartType::Mask(mask_type) => {
-                            masks.push(mask_type.clone());
+                            op.masks.push(mask_type.clone());
                             current_id = part.id;
                         }
                         ModulePartType::Mesh(mesh_type) => {
@@ -1237,9 +1276,7 @@ impl ModuleEvaluator {
         }
 
         // Warn if we hit the iteration limit (possible cycle in graph)
-        // Note: We can't easily detect this inside the loop, but if source_id is still None
-        // after 50 iterations, something may be wrong.
-        if source_id.is_none() && !effects.is_empty() {
+        if op.source_part_id.is_none() && !op.effects.is_empty() {
             tracing::warn!(
                 "trace_chain: Completed 50 iterations starting from {} but found no source. Possible cycle or broken chain.",
                 start_node_id
@@ -1247,16 +1284,10 @@ impl ModuleEvaluator {
         }
 
         // Fix order (we pushed back-to-front, so reverse to get execution order)
-        effects.reverse();
-        masks.reverse();
+        op.effects.reverse();
+        op.masks.reverse();
 
-        ProcessingChain {
-            source_id,
-            source_props,
-            effects,
-            masks,
-            override_mesh,
-        }
+        op.mesh = override_mesh.unwrap_or_else(|| default_mesh.clone());
     }
 
     /// Evaluate a trigger node and write output values to the provided buffer
@@ -1748,12 +1779,13 @@ mod tests_logic {
         evaluator.evaluate(&module, &crate::module::SharedMediaState::default());
 
         // Start trace from 1 using cached indices
-        let chain = evaluator.trace_chain(1, &module);
+        let mut op = evaluator.get_spare_render_op();
+        evaluator.trace_chain_into(1, &module, &mut op, &MeshType::default());
 
         // Should not panic or hang, but finish with limited effects
         // The limit is 50.
         // It should just return safely.
-        assert!(chain.effects.len() <= 50);
+        assert!(op.effects.len() <= 50);
     }
 
     #[test]
@@ -1804,6 +1836,7 @@ mod tests_logic {
         // Layer(0) -> Output(0)
         module.add_connection(layer_id, 0, output_id, 0);
 
+        // evaluate() uses trace_chain_into internally now, so checking result.render_ops is sufficient
         let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default());
 
         assert_eq!(result.render_ops.len(), 1);
