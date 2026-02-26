@@ -570,31 +570,34 @@ impl ModuleEvaluator {
 
     /// Get a spare RenderOp from the cache or create a new one (Object Pooling)
     fn get_spare_render_op(&mut self) -> RenderOp {
-        self.cached_result.spare_render_ops.pop().unwrap_or_else(|| RenderOp {
-            output_part_id: 0,
-            output_type: OutputType::Projector {
-                id: 0,
-                name: String::new(),
-                hide_cursor: false,
-                target_screen: 0,
-                show_in_preview_panel: true,
-                extra_preview_window: false,
-                output_width: 1920,
-                output_height: 1080,
-                output_fps: 60.0,
-                ndi_enabled: false,
-                ndi_stream_name: String::new(),
-            },
-            layer_part_id: 0,
-            mesh: MeshType::default(),
-            opacity: 1.0,
-            blend_mode: None,
-            mapping_mode: false,
-            source_part_id: None,
-            source_props: SourceProperties::default_identity(),
-            effects: Vec::new(),
-            masks: Vec::new(),
-        })
+        self.cached_result
+            .spare_render_ops
+            .pop()
+            .unwrap_or_else(|| RenderOp {
+                output_part_id: 0,
+                output_type: OutputType::Projector {
+                    id: 0,
+                    name: String::new(),
+                    hide_cursor: false,
+                    target_screen: 0,
+                    show_in_preview_panel: true,
+                    extra_preview_window: false,
+                    output_width: 1920,
+                    output_height: 1080,
+                    output_fps: 60.0,
+                    ndi_enabled: false,
+                    ndi_stream_name: String::new(),
+                },
+                layer_part_id: 0,
+                mesh: MeshType::default(),
+                opacity: 1.0,
+                blend_mode: None,
+                mapping_mode: false,
+                source_part_id: None,
+                source_props: SourceProperties::default_identity(),
+                effects: Vec::new(),
+                masks: Vec::new(),
+            })
     }
 
     /// Evaluate a module for one frame
@@ -1010,11 +1013,15 @@ impl ModuleEvaluator {
                     );
 
                     match &config.target {
-                        crate::module::TriggerTarget::Opacity => op.source_props.opacity = final_val, // Override
+                        crate::module::TriggerTarget::Opacity => {
+                            op.source_props.opacity = final_val
+                        } // Override
                         crate::module::TriggerTarget::Brightness => {
                             op.source_props.brightness = final_val
                         }
-                        crate::module::TriggerTarget::Contrast => op.source_props.contrast = final_val,
+                        crate::module::TriggerTarget::Contrast => {
+                            op.source_props.contrast = final_val
+                        }
                         crate::module::TriggerTarget::Saturation => {
                             op.source_props.saturation = final_val
                         }
@@ -1023,9 +1030,15 @@ impl ModuleEvaluator {
                         }
                         crate::module::TriggerTarget::ScaleX => op.source_props.scale_x = final_val,
                         crate::module::TriggerTarget::ScaleY => op.source_props.scale_y = final_val,
-                        crate::module::TriggerTarget::Rotation => op.source_props.rotation = final_val,
-                        crate::module::TriggerTarget::OffsetX => op.source_props.offset_x = final_val,
-                        crate::module::TriggerTarget::OffsetY => op.source_props.offset_y = final_val,
+                        crate::module::TriggerTarget::Rotation => {
+                            op.source_props.rotation = final_val
+                        }
+                        crate::module::TriggerTarget::OffsetX => {
+                            op.source_props.offset_x = final_val
+                        }
+                        crate::module::TriggerTarget::OffsetY => {
+                            op.source_props.offset_y = final_val
+                        }
                         crate::module::TriggerTarget::FlipH => {
                             op.source_props.flip_horizontal = final_val > 0.5
                         }
@@ -1033,7 +1046,9 @@ impl ModuleEvaluator {
                             op.source_props.flip_vertical = final_val > 0.5
                         }
                         crate::module::TriggerTarget::Param(name) => {
-                            if let Some(ModulizerType::Effect { params, .. }) = op.effects.last_mut() {
+                            if let Some(ModulizerType::Effect { params, .. }) =
+                                op.effects.last_mut()
+                            {
                                 params.insert(name.clone(), final_val);
                             }
                         }
