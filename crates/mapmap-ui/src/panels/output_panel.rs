@@ -2,9 +2,9 @@ use crate::{
     core::responsive::ResponsiveLayout,
     i18n::LocaleManager,
     theme::colors,
+    widgets::custom::{styled_button, styled_drag_value},
     widgets::icons::IconManager,
     widgets::panel::{cyber_panel_frame, render_panel_header},
-    widgets::custom::{styled_button, styled_drag_value},
     UIAction,
 };
 use egui::CornerRadius;
@@ -100,7 +100,15 @@ impl OutputPanel {
                                         ui.visuals().text_color()
                                     };
 
-                                    if ui.add(egui::Button::new(egui::RichText::new(&output.name).color(text_color)).selected(is_selected)).clicked() {
+                                    if ui
+                                        .add(
+                                            egui::Button::new(
+                                                egui::RichText::new(&output.name).color(text_color),
+                                            )
+                                            .selected(is_selected),
+                                        )
+                                        .clicked()
+                                    {
                                         self.selected_output_id = Some(output.id);
                                     }
                                 }
@@ -167,7 +175,7 @@ impl OutputPanel {
                                 0.0..=1.0,
                                 0.0,
                                 "X: ",
-                                ""
+                                "",
                             );
                             styled_drag_value(
                                 ui,
@@ -176,7 +184,7 @@ impl OutputPanel {
                                 0.0..=1.0,
                                 0.0,
                                 "Y: ",
-                                ""
+                                "",
                             );
                         });
                         ui.horizontal(|ui| {
@@ -187,7 +195,7 @@ impl OutputPanel {
                                 0.0..=1.0,
                                 1.0,
                                 "W: ",
-                                ""
+                                "",
                             );
                             styled_drag_value(
                                 ui,
@@ -196,37 +204,50 @@ impl OutputPanel {
                                 0.0..=1.0,
                                 1.0,
                                 "H: ",
-                                ""
+                                "",
                             );
                         });
 
-                        crate::widgets::custom::collapsing_header_with_reset(ui, "Edge Blend", false, |ui| {
-                             ui.label(format!("Left: {}", updated_config.edge_blend.left.enabled));
-                            ui.label(format!(
-                                "Right: {}",
-                                updated_config.edge_blend.right.enabled
-                            ));
-                            ui.label(format!("Top: {}", updated_config.edge_blend.top.enabled));
-                            ui.label(format!(
-                                "Bottom: {}",
-                                updated_config.edge_blend.bottom.enabled
-                            ));
-                        });
+                        crate::widgets::custom::collapsing_header_with_reset(
+                            ui,
+                            "Edge Blend",
+                            false,
+                            |ui| {
+                                ui.label(format!(
+                                    "Left: {}",
+                                    updated_config.edge_blend.left.enabled
+                                ));
+                                ui.label(format!(
+                                    "Right: {}",
+                                    updated_config.edge_blend.right.enabled
+                                ));
+                                ui.label(format!("Top: {}", updated_config.edge_blend.top.enabled));
+                                ui.label(format!(
+                                    "Bottom: {}",
+                                    updated_config.edge_blend.bottom.enabled
+                                ));
+                            },
+                        );
 
-                        crate::widgets::custom::collapsing_header_with_reset(ui, "Color Calibration", false, |ui| {
-                             ui.label(format!(
-                                "Brightness: {}",
-                                updated_config.color_calibration.brightness
-                            ));
-                            ui.label(format!(
-                                "Contrast: {}",
-                                updated_config.color_calibration.contrast
-                            ));
-                            ui.label(format!(
-                                "Saturation: {}",
-                                updated_config.color_calibration.saturation
-                            ));
-                        });
+                        crate::widgets::custom::collapsing_header_with_reset(
+                            ui,
+                            "Color Calibration",
+                            false,
+                            |ui| {
+                                ui.label(format!(
+                                    "Brightness: {}",
+                                    updated_config.color_calibration.brightness
+                                ));
+                                ui.label(format!(
+                                    "Contrast: {}",
+                                    updated_config.color_calibration.contrast
+                                ));
+                                ui.label(format!(
+                                    "Saturation: {}",
+                                    updated_config.color_calibration.saturation
+                                ));
+                            },
+                        );
 
                         if updated_config != *output {
                             *output = updated_config;
