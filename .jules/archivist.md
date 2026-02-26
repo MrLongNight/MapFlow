@@ -97,3 +97,12 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 **Aktion:**
 - Dateien erneut verschoben bzw. archiviert.
 - Verifikation der Dateipfade erfolgreich durchgeführt.
+
+## 2026-02-19 - Script & Template Relocation
+
+**Erkenntnis:** Das Root-Verzeichnis enthielt das Hilfsskript `run-gh.ps1`, das in das `scripts/`-Verzeichnis gehört. Zudem befand sich die Jules-Vorlage `scripts/JULES_SESSION_TEMPLATE.md` im Skript-Ordner statt im Jules-Konfigurationsordner `.jules/`.
+
+**Aktion:**
+- `run-gh.ps1` nach `scripts/run-gh.ps1` verschoben.
+- `scripts/JULES_SESSION_TEMPLATE.md` nach `.jules/JULES_SESSION_TEMPLATE.md` verschoben.
+- Verifikation der Dateipfade erfolgreich durchgeführt.
