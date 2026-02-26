@@ -152,16 +152,38 @@ pub fn styled_slider(
         info
     });
 
-    response.on_hover_text("Double-click to reset, Drag to adjust, Arrows to fine tune")
+    response.context_menu(|ui| {
+        if ui.button("Reset to Default").clicked() {
+            *value = default_value;
+            ui.close();
+        }
+    });
+
+    response.on_hover_text(
+        "Double-click to reset, Drag to adjust, Arrows to fine tune, Right-click for options",
+    )
 }
 
 pub fn styled_slider_log(
     ui: &mut Ui,
     value: &mut f32,
     range: std::ops::RangeInclusive<f32>,
-    _default_value: f32,
+    default_value: f32,
 ) -> Response {
-    ui.add(egui::Slider::new(value, range).logarithmic(true))
+    let response = ui.add(egui::Slider::new(value, range).logarithmic(true));
+
+    if response.double_clicked() {
+        *value = default_value;
+    }
+
+    response.context_menu(|ui| {
+        if ui.button("Reset to Default").clicked() {
+            *value = default_value;
+            ui.close();
+        }
+    });
+
+    response.on_hover_text("Double-click to reset, Drag to adjust, Right-click for options")
 }
 
 pub fn styled_drag_value(
@@ -198,7 +220,14 @@ pub fn styled_drag_value(
         );
     }
 
-    response.on_hover_text("Double-click to reset")
+    response.context_menu(|ui| {
+        if ui.button("Reset to Default").clicked() {
+            *value = default_value;
+            ui.close();
+        }
+    });
+
+    response.on_hover_text("Double-click to reset, Right-click for options")
 }
 
 pub fn styled_button(ui: &mut Ui, text: &str, _active: bool) -> Response {
