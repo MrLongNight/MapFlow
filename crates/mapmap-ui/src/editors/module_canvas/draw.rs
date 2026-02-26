@@ -552,6 +552,26 @@ pub fn draw_part_with_delete(
         Stroke::new(1.0, colors::STROKE_GREY),
     );
 
+    // --- NODE PREVIEW (Video/Effect Output) ---
+    // Calculate preview area (body of the node)
+    let preview_rect = Rect::from_min_max(
+        Pos2::new(rect.min.x + 2.0 * canvas.zoom, rect.min.y + title_height + 2.0 * canvas.zoom),
+        Pos2::new(rect.max.x - 2.0 * canvas.zoom, rect.max.y - 2.0 * canvas.zoom)
+    );
+
+    if let Some(&texture_id) = canvas.node_previews.get(&(module_id, part.id)) {
+        // Draw the registered texture
+        painter.image(
+            texture_id,
+            preview_rect,
+            Rect::from_min_max(Pos2::new(0.0, 0.0), Pos2::new(1.0, 1.0)),
+            Color32::WHITE,
+        );
+    } else {
+        // Fallback: subtle pattern or dark background if no preview is available
+        painter.rect_filled(preview_rect, 0.0, Color32::from_gray(15));
+    }
+
     // Enhanced Title Rendering
     let mut cursor_x = rect.min.x + 8.0 * canvas.zoom;
     let center_y = title_rect.center().y;

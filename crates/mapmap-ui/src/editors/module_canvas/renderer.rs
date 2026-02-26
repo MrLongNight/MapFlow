@@ -130,6 +130,21 @@ pub fn show(
     ui.separator();
 
     if let Some(module_id) = canvas.active_module_id {
+        egui::SidePanel::left("node_tools")
+            .resizable(true)
+            .default_width(180.0)
+            .show_inside(ui, |ui| {
+                ui.vertical(|ui| {
+                    ui.add_space(4.0);
+                    ui.heading("🛠 Werkzeuge");
+                    ui.separator();
+                    
+                    egui::ScrollArea::vertical().show(ui, |ui| {
+                        draw::render_add_node_menu_content(ui, manager, None, Some(module_id));
+                    });
+                });
+            });
+
         render_canvas(canvas, ui, manager, module_id, locale, actions);
     } else {
         ui.centered_and_justified(|ui| {
