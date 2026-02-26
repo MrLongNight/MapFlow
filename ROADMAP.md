@@ -1048,7 +1048,7 @@ Alle Sessions erzeugen automatisch PRs auf `origin/main` und führen das vorgesc
 ### Task: [CORE-01] Node Parameter & Trigger Target Expansion
 * **Session ID:** `14318715518596799691`
 * **Objective:** Extend TriggerTarget enum and implement evaluation logic for missing node parameters.
-* **Details:** 
+* **Details:**
   1. Add OffsetX, OffsetY, FlipH, FlipV to TriggerTarget.
   2. Add Bevy-specific targets: ParticleRate, ParticleSpeed, 3DPosition, 3DRotation, 3DScale.
   3. Implement handling in crates/mapmap-core/src/module_eval.rs.

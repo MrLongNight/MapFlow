@@ -647,11 +647,87 @@ impl ModuleEvaluator {
         }
 
         // Step 6: Generate source commands
+        // We need per-socket inputs for precise parameter targeting
+        let socket_inputs = self.compute_socket_inputs(module, &self.cached_result.trigger_values);
+
         for part in &module.parts {
             if let ModulePartType::Source(source_type) = &part.part_type {
                 let trigger_value = trigger_inputs.get(&part.id).copied().unwrap_or(0.0);
+
+                // Clone and modify source based on triggers
+                let mut modified_source = source_type.clone();
+
+                if let Some(inputs) = socket_inputs.get(&part.id) {
+                    for (socket_idx, config) in &part.trigger_targets {
+                        if let Some(&val) = inputs.get(socket_idx) {
+                            let final_val = config.apply(val);
+                            match config.target {
+                                crate::module::TriggerTarget::ParticleRate => {
+                                    if let SourceType::BevyParticles { rate, .. } =
+                                        &mut modified_source
+                                    {
+                                        *rate = final_val;
+                                    }
+                                }
+                                crate::module::TriggerTarget::ParticleSpeed => {
+                                    if let SourceType::BevyParticles { speed, .. } =
+                                        &mut modified_source
+                                    {
+                                        *speed = final_val;
+                                    }
+                                }
+                                crate::module::TriggerTarget::ParticleLifetime => {
+                                    if let SourceType::BevyParticles { lifetime, .. } =
+                                        &mut modified_source
+                                    {
+                                        *lifetime = final_val;
+                                    }
+                                }
+                                crate::module::TriggerTarget::Position3D => {
+                                    match &mut modified_source {
+                                        SourceType::Bevy3DModel { position, .. }
+                                        | SourceType::Bevy3DShape { position, .. }
+                                        | SourceType::BevyParticles { position, .. }
+                                        | SourceType::BevyHexGrid { position, .. }
+                                        | SourceType::Bevy3DText { position, .. } => {
+                                            position[1] += final_val;
+                                        }
+                                        _ => {}
+                                    }
+                                }
+                                crate::module::TriggerTarget::Rotation3D => {
+                                    match &mut modified_source {
+                                        SourceType::Bevy3DModel { rotation, .. }
+                                        | SourceType::Bevy3DShape { rotation, .. }
+                                        | SourceType::BevyParticles { rotation, .. }
+                                        | SourceType::BevyHexGrid { rotation, .. }
+                                        | SourceType::Bevy3DText { rotation, .. } => {
+                                            rotation[1] += final_val;
+                                        }
+                                        _ => {}
+                                    }
+                                }
+                                crate::module::TriggerTarget::Scale3D => match &mut modified_source
+                                {
+                                    SourceType::Bevy3DModel { scale, .. }
+                                    | SourceType::Bevy3DShape { scale, .. } => {
+                                        scale[0] *= final_val;
+                                        scale[1] *= final_val;
+                                        scale[2] *= final_val;
+                                    }
+                                    SourceType::BevyHexGrid { scale, .. } => {
+                                        *scale *= final_val;
+                                    }
+                                    _ => {}
+                                },
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+
                 if let Some(cmd) =
-                    self.create_source_command(source_type, trigger_value, shared_state)
+                    self.create_source_command(&modified_source, trigger_value, shared_state)
                 {
                     self.cached_result.source_commands.insert(part.id, cmd);
                 }
@@ -673,10 +749,6 @@ impl ModuleEvaluator {
 
             // Generate output commands for New Hue Nodes
             if let ModulePartType::Hue(hue_node) = &part.part_type {
-                // We need per-socket inputs here
-                let socket_inputs =
-                    self.compute_socket_inputs(module, &self.cached_result.trigger_values);
-
                 let brightness = socket_inputs
                     .get(&part.id)
                     .and_then(|m| m.get(&0))
@@ -901,8 +973,18 @@ impl ModuleEvaluator {
                         crate::module::TriggerTarget::ScaleX => source_props.scale_x = final_val,
                         crate::module::TriggerTarget::ScaleY => source_props.scale_y = final_val,
                         crate::module::TriggerTarget::Rotation => source_props.rotation = final_val,
-                        crate::module::TriggerTarget::Param(_name) => {
-                            // Handle effect params?
+                        crate::module::TriggerTarget::OffsetX => source_props.offset_x = final_val,
+                        crate::module::TriggerTarget::OffsetY => source_props.offset_y = final_val,
+                        crate::module::TriggerTarget::FlipH => {
+                            source_props.flip_horizontal = final_val > 0.5
+                        }
+                        crate::module::TriggerTarget::FlipV => {
+                            source_props.flip_vertical = final_val > 0.5
+                        }
+                        crate::module::TriggerTarget::Param(name) => {
+                            if let Some(ModulizerType::Effect { params, .. }) = effects.last_mut() {
+                                params.insert(name.clone(), final_val);
+                            }
                         }
                         _ => {}
                     }

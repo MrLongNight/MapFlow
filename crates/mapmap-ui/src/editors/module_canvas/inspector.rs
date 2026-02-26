@@ -1632,10 +1632,77 @@ fn render_trigger_config_ui(canvas: &mut ModuleCanvas, ui: &mut Ui, part: &mut M
                                 TriggerTarget::Rotation,
                                 "Rotation",
                             );
+                            ui.selectable_value(
+                                &mut config.target,
+                                TriggerTarget::OffsetX,
+                                "Offset X",
+                            );
+                            ui.selectable_value(
+                                &mut config.target,
+                                TriggerTarget::OffsetY,
+                                "Offset Y",
+                            );
+                            ui.selectable_value(
+                                &mut config.target,
+                                TriggerTarget::FlipH,
+                                "Flip Horizontal",
+                            );
+                            ui.selectable_value(
+                                &mut config.target,
+                                TriggerTarget::FlipV,
+                                "Flip Vertical",
+                            );
+                            ui.separator();
+                            ui.label("Bevy:");
+                            ui.selectable_value(
+                                &mut config.target,
+                                TriggerTarget::ParticleRate,
+                                "Particle Rate",
+                            );
+                            ui.selectable_value(
+                                &mut config.target,
+                                TriggerTarget::ParticleSpeed,
+                                "Particle Speed",
+                            );
+                            ui.selectable_value(
+                                &mut config.target,
+                                TriggerTarget::ParticleLifetime,
+                                "Particle Lifetime",
+                            );
+                            ui.selectable_value(
+                                &mut config.target,
+                                TriggerTarget::Position3D,
+                                "Position 3D (Y)",
+                            );
+                            ui.selectable_value(
+                                &mut config.target,
+                                TriggerTarget::Rotation3D,
+                                "Rotation 3D (Y)",
+                            );
+                            ui.selectable_value(
+                                &mut config.target,
+                                TriggerTarget::Scale3D,
+                                "Scale 3D",
+                            );
+
+                            // Custom Parameter Logic
+                            let is_param = matches!(config.target, TriggerTarget::Param(_));
+                            if ui.selectable_label(is_param, "Custom Parameter").clicked()
+                                && !is_param
+                            {
+                                config.target = TriggerTarget::Param(String::new());
+                            }
                         });
 
                     // Only show options if target is not None
                     if config.target != TriggerTarget::None {
+                        // Special UI for Param
+                        if let TriggerTarget::Param(name) = &mut config.target {
+                            ui.horizontal(|ui| {
+                                ui.label("Param Name:");
+                                ui.text_edit_singleline(name);
+                            });
+                        }
                         // Mode Selector
                         ui.horizontal(|ui| {
                             ui.label("Mode:");

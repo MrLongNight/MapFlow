@@ -367,6 +367,26 @@ pub enum TriggerTarget {
     ScaleY,
     /// Rotation
     Rotation,
+    /// Offset X
+    OffsetX,
+    /// Offset Y
+    OffsetY,
+    /// Flip Horizontal (Threshold > 0.5)
+    FlipH,
+    /// Flip Vertical (Threshold > 0.5)
+    FlipV,
+    /// Particle Rate (Bevy)
+    ParticleRate,
+    /// Particle Speed (Bevy)
+    ParticleSpeed,
+    /// Particle Lifetime (Bevy)
+    ParticleLifetime,
+    /// 3D Position Offset (Bevy - Y Axis)
+    Position3D,
+    /// 3D Rotation Offset (Bevy - Y Axis)
+    Rotation3D,
+    /// 3D Uniform Scale (Bevy)
+    Scale3D,
     /// Specific Effect Parameter (by name)
     Param(String),
 }
