@@ -17,13 +17,7 @@ pub fn calculate_control_points(start: Pos2, end: Pos2, zoom: f32) -> (Pos2, Pos
 /// Calculates a point on a cubic Bezier curve at parameter `t`.
 ///
 /// `t` should be in the range [0.0, 1.0].
-pub fn calculate_cubic_bezier_point(
-    t: f32,
-    p0: Pos2,
-    p1: Pos2,
-    p2: Pos2,
-    p3: Pos2,
-) -> Pos2 {
+pub fn calculate_cubic_bezier_point(t: f32, p0: Pos2, p1: Pos2, p2: Pos2, p3: Pos2) -> Pos2 {
     let l1 = p0.lerp(p1, t);
     let l2 = p1.lerp(p2, t);
     let l3 = p2.lerp(p3, t);
@@ -140,22 +134,32 @@ mod tests {
         let steps = 20;
 
         // Point exactly on start
-        assert!(is_point_near_cubic_bezier(p0, p0, p1, p2, p3, threshold, steps));
+        assert!(is_point_near_cubic_bezier(
+            p0, p0, p1, p2, p3, threshold, steps
+        ));
 
         // Point exactly on end
-        assert!(is_point_near_cubic_bezier(p3, p0, p1, p2, p3, threshold, steps));
+        assert!(is_point_near_cubic_bezier(
+            p3, p0, p1, p2, p3, threshold, steps
+        ));
 
         // Point near the middle (approximate)
         // t=0.5 -> p ~ (50, 50)
         let mid = Pos2::new(50.0, 50.0);
-        assert!(is_point_near_cubic_bezier(mid, p0, p1, p2, p3, threshold, steps));
+        assert!(is_point_near_cubic_bezier(
+            mid, p0, p1, p2, p3, threshold, steps
+        ));
 
         // Point far away
         let far = Pos2::new(200.0, 200.0);
-        assert!(!is_point_near_cubic_bezier(far, p0, p1, p2, p3, threshold, steps));
+        assert!(!is_point_near_cubic_bezier(
+            far, p0, p1, p2, p3, threshold, steps
+        ));
 
         // Point slightly off but within threshold
         let near_mid = Pos2::new(52.0, 52.0); // dist to (50,50) is sqrt(8) ~ 2.8 < 5.0
-        assert!(is_point_near_cubic_bezier(near_mid, p0, p1, p2, p3, threshold, steps));
+        assert!(is_point_near_cubic_bezier(
+            near_mid, p0, p1, p2, p3, threshold, steps
+        ));
     }
 }
