@@ -2,7 +2,7 @@ use crate::{
     core::responsive::ResponsiveLayout,
     i18n::LocaleManager,
     theme::colors,
-    widgets::custom::{styled_button, styled_drag_value},
+    widgets::custom::{cyber_list_item, styled_button, styled_drag_value},
     widgets::icons::IconManager,
     widgets::panel::{cyber_panel_frame, render_panel_header},
     UIAction,
@@ -90,27 +90,23 @@ impl OutputPanel {
                             .max_height(150.0)
                             .show(ui, |ui| {
                                 let outputs = output_manager.outputs().to_vec();
-                                for output in outputs {
+                                for (i, output) in outputs.iter().enumerate() {
                                     let is_selected = self.selected_output_id == Some(output.id);
 
-                                    // Custom selectable label styling
-                                    let text_color = if is_selected {
-                                        colors::MINT_ACCENT
-                                    } else {
-                                        ui.visuals().text_color()
-                                    };
-
-                                    if ui
-                                        .add(
-                                            egui::Button::new(
-                                                egui::RichText::new(&output.name).color(text_color),
-                                            )
-                                            .selected(is_selected),
-                                        )
-                                        .clicked()
-                                    {
-                                        self.selected_output_id = Some(output.id);
-                                    }
+                                    cyber_list_item(
+                                        ui,
+                                        egui::Id::new(output.id),
+                                        is_selected,
+                                        i % 2 == 1,
+                                        |ui| {
+                                            if ui
+                                                .selectable_label(is_selected, &output.name)
+                                                .clicked()
+                                            {
+                                                self.selected_output_id = Some(output.id);
+                                            }
+                                        },
+                                    );
                                 }
                             });
                     });

@@ -1,6 +1,6 @@
 use crate::i18n::LocaleManager;
-use crate::theme::colors;
 use crate::widgets;
+use crate::widgets::custom::cyber_list_item;
 use crate::widgets::icons::IconManager;
 use crate::widgets::panel::{cyber_panel_frame, render_panel_header};
 use crate::UIAction;
@@ -126,28 +126,12 @@ impl LayerPanel {
                         let is_group = layer.is_group;
                         let collapsed = layer.collapsed;
 
-                        // Zebra striping for better list readability
-                        let bg_color = if is_selected {
-                            colors::CYAN_ACCENT.linear_multiply(0.2)
-                        } else if idx % 2 == 1 {
-                            colors::DARKER_GREY // Subtle alternating background
-                        } else {
-                            Color32::TRANSPARENT
-                        };
-
-                        // Selection stroke or subtle border
-                        let stroke = if is_selected {
-                            Stroke::new(1.0, colors::CYAN_ACCENT)
-                        } else {
-                            Stroke::new(1.0, colors::STROKE_GREY)
-                        };
-
-                        egui::Frame::default()
-                            .fill(bg_color)
-                            .stroke(stroke)
-                            .corner_radius(0.0) // Sharp corners for Cyber/Resolume style
-                            .inner_margin(4.0)
-                            .show(ui, |ui| {
+                        cyber_list_item(
+                            ui,
+                            egui::Id::new(layer.id),
+                            is_selected,
+                            idx % 2 == 1,
+                            |ui| {
                                 ui.horizontal(|ui| {
                                     // Reorder Buttons (Move Up/Down)
                                     ui.vertical(|ui| {
@@ -305,7 +289,8 @@ impl LayerPanel {
                                         }
                                     });
                                 }
-                            });
+                            },
+                        );
 
                         // Children
                         if is_group && !collapsed {
