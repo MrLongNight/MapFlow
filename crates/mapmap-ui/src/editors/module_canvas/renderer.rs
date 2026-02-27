@@ -138,7 +138,7 @@ pub fn show(
                     ui.add_space(4.0);
                     ui.heading("🛠 Werkzeuge");
                     ui.separator();
-                    
+
                     egui::ScrollArea::vertical().show(ui, |ui| {
                         draw::render_add_node_menu_content(ui, manager, None, Some(module_id));
                     });
