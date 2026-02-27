@@ -1235,7 +1235,8 @@ impl ModuleEvaluator {
                                     // Find connection to this socket
                                     let mut trigger_val = 0.0;
                                     // L556 replacement
-                                    if let Some(conn_indices) = indices.conn_index_cache.get(&part.id)
+                                    if let Some(conn_indices) =
+                                        indices.conn_index_cache.get(&part.id)
                                     {
                                         for &conn_idx in conn_indices {
                                             let conn = &module.connections[conn_idx];
