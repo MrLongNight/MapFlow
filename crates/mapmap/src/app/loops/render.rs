@@ -659,7 +659,12 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
 
                     // Register or update egui texture
                     use std::collections::hash_map::Entry;
-                    let tex_id = match app.ui_state.module_canvas.node_previews.entry((active_id, part.id)) {
+                    let tex_id = match app
+                        .ui_state
+                        .module_canvas
+                        .node_previews
+                        .entry((active_id, part.id))
+                    {
                         Entry::Occupied(e) => {
                             let id = *e.get();
                             app.egui_renderer.update_egui_texture_from_wgpu_texture(
@@ -681,7 +686,10 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
                         }
                     };
                     // Ensure it stays in the map (redundant but safe)
-                    app.ui_state.module_canvas.node_previews.insert((active_id, part.id), tex_id);
+                    app.ui_state
+                        .module_canvas
+                        .node_previews
+                        .insert((active_id, part.id), tex_id);
                 }
             }
         }

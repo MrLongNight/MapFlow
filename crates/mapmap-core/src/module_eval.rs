@@ -10,8 +10,10 @@ use crate::module::{
     ModulePartId, ModulePartType, ModulizerType, OutputType, SharedMediaState, SourceType,
     TriggerType,
 };
+use once_cell::sync::Lazy;
+use parking_lot::Mutex;
 use rand::RngExt;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -1253,10 +1255,16 @@ impl ModuleEvaluator {
                     break;
                 }
             } else {
-                tracing::warn!(
-                    "trace_chain: Node {} not found in part_index, stopping traversal",
-                    current_id
-                );
+                static REPORTED_MISSING_NODES: Lazy<Mutex<HashSet<u32>>> =
+                    Lazy::new(|| Mutex::new(HashSet::new()));
+
+                let mut reported = REPORTED_MISSING_NODES.lock();
+                if reported.insert(current_id) {
+                    tracing::warn!(
+                        "trace_chain: Node {} not found in part_index, stopping traversal (this warning will only be shown once for this ID)",
+                        current_id
+                    );
+                }
                 break;
             }
         }

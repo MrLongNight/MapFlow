@@ -147,7 +147,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                                 ui,
                                 std::sync::Arc::make_mut(&mut app.state.module_manager),
                                 None,
-                                Some(module_id)
+                                Some(module_id),
                             );
                         });
                         ui.separator();
@@ -157,7 +157,8 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                         app.ui_state.module_canvas.show_presets = true;
                     }
                     if ui.button("🔍 Suchen").clicked() {
-                        app.ui_state.module_canvas.show_search = !app.ui_state.module_canvas.show_search;
+                        app.ui_state.module_canvas.show_search =
+                            !app.ui_state.module_canvas.show_search;
                     }
 
                     if ui
