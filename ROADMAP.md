@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 2.1
-> **Stand:** 2026-02-26 13:30
+> **Stand:** 2026-02-26 14:00
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
 > **Projekt-Version:** 0.2.1
 
@@ -29,7 +29,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
 
 * **Priorität:** 🔥 **CRITICAL**
 * **Ziel:** Eine fehlerfreie Render-Pipeline, in der alle Modul-Nodes und die zugehörige Logik stabil funktionieren.
-* **Status:** In Stabilisierung. Main Application Entry Point implementiert (2026-01-31). Laufende Bugfixes und Node-Stabilisierung.
+* **Status:** In Stabilisierung. Main Application Entry Point implementiert (2026-01-31). Laufende Bugfixes und Node-Stabilisierung. Module System refactored (2026-02-26).
 * **Maßnahme:** "Broken Nodes" reparieren. Experimentelle Features (wie NDI/Multi-PC) ggf. ausklammern oder verstecken, falls sie die Stabilität gefährden.
 
 ### B) Timeline Integration (V3)
@@ -70,6 +70,11 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
   * ✅ Rename WiX Installer Config (2025-12-22)
 
 ### Core / Layer / Mapping System
+
+* ✅ **Module System Refactoring** (`mapmap-core/src/module/`) – **COMPLETED (2026-02-26)**
+  * ✅ Split `module.rs` into submodules (`types.rs`, `trigger.rs`, `source.rs`, `output.rs`, etc.)
+  * ✅ Improved maintainability and structure
+  * ✅ Removed deprecated fields
 
 * ✅ **Layer-System** (`mapmap-core/src/layer.rs`)
   * ✅ Transform-System (Position, Rotation, Scale)
@@ -988,7 +993,7 @@ graph TD
 
 ## Aktuelle Jules-Aufträge
 
-_Stand: 2026-02-26 01:50 (Europe/Berlin)_
+_Stand: 2026-02-26 14:00 (Europe/Berlin)_
 
 | Session-ID | Task | Status | Link | Notizen |
 |------------|------|--------|------|---------|
@@ -1001,6 +1006,8 @@ _Stand: 2026-02-26 01:50 (Europe/Berlin)_
 | 12744118335336060991 | Rebuild: FramePipeline threaded uploads (Issue #828) | Abgeschlossen (PR #831 merged) | [https://jules.google.com/session/12744118335336060991](https://jules.google.com/session/12744118335336060991) | Jules hat die GPU-Upload-Optimierung erneut geliefert; PR #831 ist auf `origin/main` gemerged (Pre-Commit grün). |
 | 11538622621812368551 | Rebuild: module_canvas in Submodule aufteilen (Issue #829) | Abgeschlossen (PR #832 merged) | [https://jules.google.com/session/11538622621812368551](https://jules.google.com/session/11538622621812368551) | Submodule-Refactor erneut umgesetzt; PR #832 gemerged nach erfolgreichem Pre-Commit. |
 | 9304563805510538471 | Rebuild: module_canvas Geometry + Tests (Issue #830) | Abgeschlossen (PR #833 merged) | [https://jules.google.com/session/9304563805510538471](https://jules.google.com/session/9304563805510538471) | Geometrie-Refactor + Tests wurden neu gebaut; PR #833 gemerged, alle Checks grün. |
+| 14318715518596799691 | [CORE-01] Node Parameter & Trigger Target Expansion | Abgeschlossen (PR #835 merged) | [https://jules.google.com/session/14318715518596799691](https://jules.google.com/session/14318715518596799691) | Added OffsetX/Y, FlipH/V and Bevy targets. |
+| 8208b0a | Module System Refactor (#846) | Abgeschlossen (PR #846 merged) | - | Split module.rs into submodules for better maintainability. |
 
 Alle Sessions erzeugen automatisch PRs auf `origin/main` und führen das vorgeschriebene Pre-Commit-Skript aus.
 
@@ -1054,18 +1061,3 @@ Alle Sessions erzeugen automatisch PRs auf `origin/main` und führen das vorgesc
 * **CI:** GitHub Actions (Build, Test, Lint).
 * **Linter:** `clippy` (Strikt).
 * **Formatter:** `rustfmt`.
-\
----
-
-## ?? Jules Commissions & Active Sessions
-
-### Task: [CORE-01] Node Parameter & Trigger Target Expansion
-* **Session ID:** `14318715518596799691`
-* **Objective:** Extend TriggerTarget enum and implement evaluation logic for missing node parameters.
-* **Details:**
-  1. Add OffsetX, OffsetY, FlipH, FlipV to TriggerTarget.
-  2. Add Bevy-specific targets: ParticleRate, ParticleSpeed, 3DPosition, 3DRotation, 3DScale.
-  3. Implement handling in crates/mapmap-core/src/module_eval.rs.
-  4. Fix TriggerTarget::Param(String) to correctly map to effect parameters.
-* **Status:** ✅ Abgeschlossen (PR #835 merged via 6a30f1a).
-* **Pre-Commit Requirement:** Run ./scripts/Final-Prepare-PreCommit.sh before finalizing changes.\
