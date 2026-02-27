@@ -132,6 +132,58 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
         .frame(egui::Frame::default().fill(ctx.style().visuals.panel_fill))
         .show(ctx, |ui| {
             if app.ui_state.show_module_canvas {
+                // Ensure we have an active module selected if any exist
+                if app.ui_state.module_canvas.active_module_id.is_none() {
+                    if let Some(first_mod) = app.state.module_manager.modules().first() {
+                        app.ui_state.module_canvas.active_module_id = Some(first_mod.id);
+                    }
+                }
+
+                // --- Canvas Top Toolbar (Grouped for better layout) ---
+                egui::MenuBar::new().ui(ui, |ui| {
+                    if let Some(module_id) = app.ui_state.module_canvas.active_module_id {        
+                        ui.menu_button(egui::RichText::new("➕ Hinzufügen").strong(), |ui| {      
+                            mapmap_ui::editors::module_canvas::draw::render_add_node_menu_content(
+                                ui, 
+                                std::sync::Arc::make_mut(&mut app.state.module_manager), 
+                                None, 
+                                Some(module_id)
+                            );
+                        });
+                        ui.separator();
+                    }
+
+                    if ui.button("💾 Speichern").clicked() {
+                        app.ui_state.module_canvas.show_presets = true;
+                    }
+                    if ui.button("🔍 Suchen").clicked() {
+                        app.ui_state.module_canvas.show_search = !app.ui_state.module_canvas.show_search;
+                    }
+
+                    if ui
+                        .button("✔️ Check")
+                        .on_hover_text("Check Module")
+                        .clicked()
+                    {
+                        if let Some(module_id) = app.ui_state.module_canvas.active_module_id {
+                            if let Some(module) = app.state.module_manager.get_module(module_id) {
+                                app.ui_state.module_canvas.diagnostic_issues =
+                                    mapmap_core::diagnostics::check_module_integrity(module);
+                                app.ui_state.module_canvas.show_diagnostics = true;
+                            }
+                        }
+                    }
+
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {       
+                        if ui.button("Zentrieren").clicked() {
+                            app.ui_state.module_canvas.pan_offset = egui::Vec2::ZERO;
+                            app.ui_state.module_canvas.zoom = 1.0;
+                        }
+                        ui.label(format!("Zoom: {:.1}x", app.ui_state.module_canvas.zoom));       
+                    });
+                });
+                ui.separator();
+
                 ui::editors::module_canvas::show(
                     ui,
                     ui::editors::module_canvas::ModuleCanvasContext {
