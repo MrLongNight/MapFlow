@@ -1,10 +1,13 @@
 use crate::{
     core::responsive::ResponsiveLayout,
     i18n::LocaleManager,
+    theme::colors,
+    widgets::custom::{styled_button, styled_drag_value},
     widgets::icons::IconManager,
     widgets::panel::{cyber_panel_frame, render_panel_header},
     UIAction,
 };
+use egui::CornerRadius;
 
 /// Represents the UI panel for configuring render outputs.
 pub struct OutputPanel {
@@ -58,8 +61,8 @@ impl OutputPanel {
 
                 ui.add_space(8.0);
 
-                ui.heading(i18n.t("header-multi-output"));
-                ui.separator();
+                render_panel_header(ui, &i18n.t("header-multi-output"), |_| {});
+                ui.add_space(4.0);
 
                 let canvas_size = output_manager.canvas_size();
                 ui.label(format!(
@@ -76,29 +79,53 @@ impl OutputPanel {
                     output_manager.outputs().len()
                 ));
 
-                egui::ScrollArea::vertical()
-                    .auto_shrink([false; 2])
+                egui::Frame::default()
+                    .fill(colors::DARKER_GREY)
+                    .stroke(egui::Stroke::new(1.0, colors::STROKE_GREY))
+                    .corner_radius(CornerRadius::ZERO)
+                    .inner_margin(4.0)
                     .show(ui, |ui| {
-                        let outputs = output_manager.outputs().to_vec();
-                        for output in outputs {
-                            let is_selected = self.selected_output_id == Some(output.id);
-                            if ui.selectable_label(is_selected, &output.name).clicked() {
-                                self.selected_output_id = Some(output.id);
-                            }
-                        }
+                        egui::ScrollArea::vertical()
+                            .auto_shrink([false; 2])
+                            .max_height(150.0)
+                            .show(ui, |ui| {
+                                let outputs = output_manager.outputs().to_vec();
+                                for output in outputs {
+                                    let is_selected = self.selected_output_id == Some(output.id);
+
+                                    // Custom selectable label styling
+                                    let text_color = if is_selected {
+                                        colors::MINT_ACCENT
+                                    } else {
+                                        ui.visuals().text_color()
+                                    };
+
+                                    if ui
+                                        .add(
+                                            egui::Button::new(
+                                                egui::RichText::new(&output.name).color(text_color),
+                                            )
+                                            .selected(is_selected),
+                                        )
+                                        .clicked()
+                                    {
+                                        self.selected_output_id = Some(output.id);
+                                    }
+                                }
+                            });
                     });
 
-                ui.separator();
+                ui.add_space(8.0);
 
                 ui.horizontal(|ui| {
-                    if ui.button(i18n.t("btn-projector-array")).clicked() {
+                    if styled_button(ui, &i18n.t("btn-projector-array"), false).clicked() {
                         self.actions.push(UIAction::CreateProjectorArray2x2(
                             (1920, 1080),
                             0.1, // 10% overlap
                         ));
                     }
 
-                    if ui.button(i18n.t("btn-add-output")).clicked() {
+                    if styled_button(ui, &i18n.t("btn-add-output"), false).clicked() {
                         self.actions.push(UIAction::AddOutput(
                             "New Output".to_string(),
                             mapmap_core::CanvasRegion::new(0.0, 0.0, 1.0, 1.0),
@@ -111,8 +138,8 @@ impl OutputPanel {
 
                 if let Some(output_id) = self.selected_output_id {
                     if let Some(output) = output_manager.get_output_mut(output_id) {
-                        ui.heading(i18n.t("header-selected-output"));
-                        ui.separator();
+                        render_panel_header(ui, &i18n.t("header-selected-output"), |_| {});
+                        ui.add_space(4.0);
 
                         let mut updated_config = output.clone();
 
@@ -121,72 +148,106 @@ impl OutputPanel {
                             ui.text_edit_singleline(&mut updated_config.name);
                         });
 
-                        // Note: enabled, fullscreen, and monitor_id fields are not available in OutputConfig
-                        // These would need to be added to the OutputConfig struct in mapmap-core
-
+                        // Resolution (u32, so keeping egui::DragValue for now but styled if possible)
                         ui.label(i18n.t("label-resolution"));
                         ui.horizontal(|ui| {
                             ui.add(
                                 egui::DragValue::new(&mut updated_config.resolution.0)
                                     .speed(1.0)
-                                    .range(1..=8192),
+                                    .range(1..=8192)
+                                    .prefix("W: "),
                             );
                             ui.add(
                                 egui::DragValue::new(&mut updated_config.resolution.1)
                                     .speed(1.0)
-                                    .range(1..=8192),
+                                    .range(1..=8192)
+                                    .prefix("H: "),
                             );
                         });
 
                         ui.label(i18n.t("label-canvas-region"));
+                        // Using styled_drag_value for f32 fields
                         ui.horizontal(|ui| {
-                            ui.add(
-                                egui::DragValue::new(&mut updated_config.canvas_region.x)
-                                    .speed(0.01),
+                            styled_drag_value(
+                                ui,
+                                &mut updated_config.canvas_region.x,
+                                0.01,
+                                0.0..=1.0,
+                                0.0,
+                                "X: ",
+                                "",
                             );
-                            ui.add(
-                                egui::DragValue::new(&mut updated_config.canvas_region.y)
-                                    .speed(0.01),
+                            styled_drag_value(
+                                ui,
+                                &mut updated_config.canvas_region.y,
+                                0.01,
+                                0.0..=1.0,
+                                0.0,
+                                "Y: ",
+                                "",
                             );
                         });
                         ui.horizontal(|ui| {
-                            ui.add(
-                                egui::DragValue::new(&mut updated_config.canvas_region.width)
-                                    .speed(0.01),
+                            styled_drag_value(
+                                ui,
+                                &mut updated_config.canvas_region.width,
+                                0.01,
+                                0.0..=1.0,
+                                1.0,
+                                "W: ",
+                                "",
                             );
-                            ui.add(
-                                egui::DragValue::new(&mut updated_config.canvas_region.height)
-                                    .speed(0.01),
+                            styled_drag_value(
+                                ui,
+                                &mut updated_config.canvas_region.height,
+                                0.01,
+                                0.0..=1.0,
+                                1.0,
+                                "H: ",
+                                "",
                             );
                         });
 
-                        ui.collapsing("Edge Blend", |ui| {
-                            ui.label(format!("Left: {}", updated_config.edge_blend.left.enabled));
-                            ui.label(format!(
-                                "Right: {}",
-                                updated_config.edge_blend.right.enabled
-                            ));
-                            ui.label(format!("Top: {}", updated_config.edge_blend.top.enabled));
-                            ui.label(format!(
-                                "Bottom: {}",
-                                updated_config.edge_blend.bottom.enabled
-                            ));
-                        });
+                        crate::widgets::custom::collapsing_header_with_reset(
+                            ui,
+                            "Edge Blend",
+                            false,
+                            |ui| {
+                                ui.label(format!(
+                                    "Left: {}",
+                                    updated_config.edge_blend.left.enabled
+                                ));
+                                ui.label(format!(
+                                    "Right: {}",
+                                    updated_config.edge_blend.right.enabled
+                                ));
+                                ui.label(format!("Top: {}", updated_config.edge_blend.top.enabled));
+                                ui.label(format!(
+                                    "Bottom: {}",
+                                    updated_config.edge_blend.bottom.enabled
+                                ));
+                            },
+                        );
 
-                        ui.collapsing("Color Calibration", |ui| {
-                            ui.label(format!(
-                                "Brightness: {}",
-                                updated_config.color_calibration.brightness
-                            ));
-                            ui.label(format!(
-                                "Contrast: {}",
-                                updated_config.color_calibration.contrast
-                            ));
-                            ui.label(format!(
-                                "Saturation: {}",
-                                updated_config.color_calibration.saturation
-                            ));
-                        });
+                        crate::widgets::custom::collapsing_header_with_reset(
+                            ui,
+                            "Color Calibration",
+                            false,
+                            |ui| {
+                                ui.label(format!(
+                                    "Brightness: {}",
+                                    updated_config.color_calibration.brightness
+                                ));
+                                ui.label(format!(
+                                    "Contrast: {}",
+                                    updated_config.color_calibration.contrast
+                                ));
+                                ui.label(format!(
+                                    "Saturation: {}",
+                                    updated_config.color_calibration.saturation
+                                ));
+                            },
+                        );
 
                         if updated_config != *output {
                             *output = updated_config;
@@ -194,9 +255,10 @@ impl OutputPanel {
                                 .push(UIAction::ConfigureOutput(output_id, output.clone()));
                         }
 
+                        ui.add_space(8.0);
                         ui.separator();
 
-                        if ui.button(i18n.t("btn-remove-output")).clicked() {
+                        if crate::widgets::custom::delete_button(ui) {
                             self.actions.push(UIAction::RemoveOutput(output_id));
                             self.selected_output_id = None;
                         }

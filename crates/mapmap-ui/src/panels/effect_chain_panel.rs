@@ -9,7 +9,7 @@ use crate::icons::{AppIcon, IconManager};
 use crate::theme::colors;
 use crate::widgets::custom::{delete_button, icon_button_simple, styled_slider};
 use crate::widgets::panel::{cyber_panel_frame, render_panel_header};
-use egui::{Color32, RichText, Ui};
+use egui::{CornerRadius, RichText, Ui};
 use serde::{Deserialize, Serialize};
 
 /// Available effect types (mirror of mapmap-render::EffectType)
@@ -477,59 +477,65 @@ impl EffectChainPanel {
 
         // Add effect menu
         if self.show_add_menu {
-            ui.group(|ui| {
-                ui.label(locale.t("effect-select-type"));
-                ui.horizontal_wrapped(|ui| {
-                    for effect_type in EffectType::all() {
-                        let label = effect_type.display_name(locale);
-                        if let Some(mgr) = icon_manager {
-                            if let Some(img) = mgr.image(effect_type.app_icon(), 16.0) {
-                                let btn = ui.add(egui::Button::image_and_text(img, label));
-                                if btn.clicked() {
-                                    self.chain.add_effect(*effect_type);
-                                    self.actions
-                                        .push(EffectChainAction::AddEffect(*effect_type));
-                                    self.show_add_menu = false;
-                                }
+            // Replaced ui.group with egui::Frame for Cyber Dark Theme
+            egui::Frame::default()
+                .fill(colors::DARK_GREY)
+                .stroke(egui::Stroke::new(1.0, colors::STROKE_GREY))
+                .corner_radius(CornerRadius::ZERO)
+                .inner_margin(8.0)
+                .show(ui, |ui| {
+                    ui.label(locale.t("effect-select-type"));
+                    ui.horizontal_wrapped(|ui| {
+                        for effect_type in EffectType::all() {
+                            let label = effect_type.display_name(locale);
+                            if let Some(mgr) = icon_manager {
+                                if let Some(img) = mgr.image(effect_type.app_icon(), 16.0) {
+                                    let btn = ui.add(egui::Button::image_and_text(img, label));
+                                    if btn.clicked() {
+                                        self.chain.add_effect(*effect_type);
+                                        self.actions
+                                            .push(EffectChainAction::AddEffect(*effect_type));
+                                        self.show_add_menu = false;
+                                    }
 
-                                // Show context menu for recent configs on right click
-                                btn.context_menu(|ui| {
-                                    ui.label("Recent Configurations:");
-                                    if let Some(recent) = recent_configs {
-                                        let type_name = format!("{:?}", effect_type);
-                                        let configs = recent.get_recent(&type_name);
+                                    // Show context menu for recent configs on right click
+                                    btn.context_menu(|ui| {
+                                        ui.label("Recent Configurations:");
+                                        if let Some(recent) = recent_configs {
+                                            let type_name = format!("{:?}", effect_type);
+                                            let configs = recent.get_recent(&type_name);
 
-                                        if configs.is_empty() {
-                                            ui.label("No recent configs");
-                                        } else {
-                                            for config in configs {
-                                                if ui.button(config.name.to_string()).clone().on_hover_text(format!("{:?}", config.params)).clicked() {
-                                                     self.chain.add_effect(*effect_type);
+                                            if configs.is_empty() {
+                                                ui.label("No recent configs");
+                                            } else {
+                                                for config in configs {
+                                                    if ui.button(config.name.to_string()).clone().on_hover_text(format!("{:?}", config.params)).clicked() {
+                                                         self.chain.add_effect(*effect_type);
 
-                                                     let id = self.chain.effects.last().unwrap().id;
-                                                     let effect = self.chain.get_effect_mut(id).unwrap();
+                                                         let id = self.chain.effects.last().unwrap().id;
+                                                         let effect = self.chain.get_effect_mut(id).unwrap();
 
-                                                     let mut f32_params = std::collections::HashMap::new();
-                                                     for (k, v) in &config.params {
-                                                         if let mapmap_core::recent_effect_configs::EffectParamValue::Float(f) = v {
-                                                             effect.set_param(k, *f);
-                                                             f32_params.insert(k.clone(), *f);
+                                                         let mut f32_params = std::collections::HashMap::new();
+                                                         for (k, v) in &config.params {
+                                                             if let mapmap_core::recent_effect_configs::EffectParamValue::Float(f) = v {
+                                                                 effect.set_param(k, *f);
+                                                                 f32_params.insert(k.clone(), *f);
+                                                             }
                                                          }
-                                                     }
 
-                                                     self.actions.push(EffectChainAction::AddEffectWithParams(*effect_type, f32_params));
-                                                     ui.close();
-                                                     self.show_add_menu = false;
+                                                         self.actions.push(EffectChainAction::AddEffectWithParams(*effect_type, f32_params));
+                                                         ui.close();
+                                                         self.show_add_menu = false;
+                                                    }
                                                 }
                                             }
                                         }
-                                    }
-                                });
+                                    });
+                                }
                             }
                         }
-                    }
+                    });
                 });
-            });
         }
     }
 
@@ -776,7 +782,7 @@ impl EffectChainPanel {
         let response = egui::Frame::default()
             .fill(frame_color)
             .stroke(stroke)
-            .corner_radius(egui::CornerRadius::ZERO)
+            .corner_radius(CornerRadius::ZERO)
             .inner_margin(4.0)
             .outer_margin(2.0)
             .show(ui, |ui| {
@@ -902,7 +908,7 @@ impl EffectChainPanel {
                         if let Some(err) = error {
                             ui.label(
                                 RichText::new(format!("Error: {}", err))
-                                    .color(Color32::RED)
+                                    .color(colors::ERROR_COLOR)
                                     .small(),
                             );
                         }
@@ -1399,7 +1405,13 @@ impl EffectChainPanel {
             .default_size([400.0, 300.0])
             .resizable(true)
             .open(&mut open)
+            // Apply cyber panel styling to the window
+            .frame(cyber_panel_frame(&ctx.style()))
             .show(ctx, |ui| {
+                // Render panel header
+                render_panel_header(ui, &locale.t("effect-presets-browser"), |_| {});
+                ui.add_space(8.0);
+
                 // Search bar
                 ui.horizontal(|ui| {
                     ui.label("🔍");
@@ -1412,34 +1424,41 @@ impl EffectChainPanel {
                 ui.separator();
 
                 // Preset list
-                egui::ScrollArea::vertical()
-                    .max_height(200.0)
+                egui::Frame::default()
+                    .fill(colors::DARKER_GREY)
+                    .stroke(egui::Stroke::new(1.0, colors::STROKE_GREY))
+                    .corner_radius(CornerRadius::ZERO)
+                    .inner_margin(4.0)
                     .show(ui, |ui| {
-                        let search_lower = self.preset_search.to_lowercase();
+                        egui::ScrollArea::vertical()
+                            .max_height(200.0)
+                            .show(ui, |ui| {
+                                let search_lower = self.preset_search.to_lowercase();
 
-                        for preset in &self.presets {
-                            if !self.preset_search.is_empty()
-                                && !preset.name.to_lowercase().contains(&search_lower)
-                            {
-                                continue;
-                            }
+                                for preset in &self.presets {
+                                    if !self.preset_search.is_empty()
+                                        && !preset.name.to_lowercase().contains(&search_lower)
+                                    {
+                                        continue;
+                                    }
 
-                            ui.horizontal(|ui| {
-                                let star = if preset.is_favorite { "⭐" } else { "☆" };
-                                ui.label(star);
+                                    ui.horizontal(|ui| {
+                                        let star = if preset.is_favorite { "⭐" } else { "☆" };
+                                        ui.label(star);
 
-                                if ui.button(&preset.name).clicked() {
-                                    load_preset_path = Some(preset.path.clone());
-                                    close_browser = true;
+                                        if ui.button(&preset.name).clicked() {
+                                            load_preset_path = Some(preset.path.clone());
+                                            close_browser = true;
+                                        }
+
+                                        ui.weak(&preset.category);
+                                    });
                                 }
 
-                                ui.weak(&preset.category);
+                                if self.presets.is_empty() {
+                                    ui.label(locale.t("effect-no-presets"));
+                                }
                             });
-                        }
-
-                        if self.presets.is_empty() {
-                            ui.label(locale.t("effect-no-presets"));
-                        }
                     });
 
                 ui.separator();
