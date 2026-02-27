@@ -42,7 +42,7 @@ fn test_trigger_inversion_logic() {
     let t_id = module.add_part_with_type(trigger_type, (0.0, 0.0));
 
     let shared = mapmap_core::module::SharedMediaState::default();
-    let result = evaluator.evaluate(&module, &shared);
+    let result = evaluator.evaluate(&module, &shared, 0);
 
     let values = &result.trigger_values[&t_id];
     assert_eq!(values[0], 0.0, "Beat output should be inverted to 0.0");
@@ -52,7 +52,7 @@ fn test_trigger_inversion_logic() {
         ..Default::default()
     };
     evaluator.update_audio(&analysis_no_beat);
-    let result_no_beat = evaluator.evaluate(&module, &shared);
+    let result_no_beat = evaluator.evaluate(&module, &shared, 0);
     let values_no_beat = &result_no_beat.trigger_values[&t_id];
     assert_eq!(values_no_beat[0], 1.0, "No beat should be inverted to 1.0");
 }
@@ -111,7 +111,7 @@ fn test_trigger_target_range_mapping() {
     }
 
     let shared = mapmap_core::module::SharedMediaState::default();
-    let result = evaluator.evaluate(&module, &shared);
+    let result = evaluator.evaluate(&module, &shared, 0);
 
     // Verify render op
     let mut found = false;

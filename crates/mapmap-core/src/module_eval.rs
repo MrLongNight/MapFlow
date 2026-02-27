@@ -12,6 +12,7 @@ use crate::module::{
 };
 use rand::RngExt;
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::Instant;
 
 /// State for individual trigger nodes, stored in the evaluator
@@ -76,6 +77,17 @@ impl SourceProperties {
     }
 }
 
+/// Cached indices for a specific module graph revision
+#[derive(Debug, Clone)]
+pub struct ModuleGraphIndices {
+    /// Cached map from Part ID to index in `module.parts`
+    pub part_index_cache: HashMap<ModulePartId, usize>,
+    /// Cached map from Part ID to list of indices in `module.connections` (incoming connections)
+    pub conn_index_cache: HashMap<ModulePartId, Vec<usize>>,
+    /// The graph revision this cache corresponds to
+    pub last_revision: u64,
+}
+
 #[cfg(test)]
 mod tests_evaluator {
     use super::*;
@@ -116,7 +128,7 @@ mod tests_evaluator {
         let part_id = module.add_part_with_type(trigger_part, (0.0, 0.0));
 
         // Initial eval - t=0, phase=0, duration=10, 0 < 10 -> 1.0
-        let result = evaluator.evaluate(&module, &shared);
+        let result = evaluator.evaluate(&module, &shared, 0);
         let values = &result.trigger_values[&part_id];
         assert_eq!(values[0], 1.0);
 
@@ -126,7 +138,7 @@ mod tests_evaluator {
         // Ideally we'd refactor to inject time.
         std::thread::sleep(Duration::from_millis(20));
 
-        let result = evaluator.evaluate(&module, &shared);
+        let result = evaluator.evaluate(&module, &shared, 0);
         let values = &result.trigger_values[&part_id];
         // 20ms > 10ms pulse duration -> 0.0
         assert_eq!(values[0], 0.0);
@@ -161,7 +173,7 @@ mod tests_evaluator {
 
         let part_id = module.add_part_with_type(trigger_part, (0.0, 0.0));
 
-        let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default());
+        let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default(), 0);
         let values = &result.trigger_values[&part_id];
 
         // Order in generate_outputs:
@@ -191,7 +203,7 @@ mod tests_evaluator {
         module.add_connection(t_id, 0, s_id, 0); // Trigger Out -> Source Trigger In
 
         let shared = crate::module::SharedMediaState::default();
-        let _result = evaluator.evaluate(&module, &shared);
+        let _result = evaluator.evaluate(&module, &shared, 0);
 
         // Should produce a SourceCommand because trigger > 0.1
         // (Source defaults to "MediaFile" with empty path, create_source_command checks empty path)
@@ -205,12 +217,12 @@ mod tests_evaluator {
             }
         }
 
-        let result = evaluator.evaluate(&module, &shared);
+        let result = evaluator.evaluate(&module, &shared, 0);
         assert!(result.source_commands.contains_key(&s_id));
 
         // Now remove connection
         module.remove_connection(t_id, 0, s_id, 0);
-        let result = evaluator.evaluate(&module, &shared);
+        let result = evaluator.evaluate(&module, &shared, 1);
         assert!(!result.source_commands.contains_key(&s_id));
     }
 
@@ -248,7 +260,7 @@ mod tests_evaluator {
         module.add_connection(s_id, 0, l_id, 0); // Source Media -> Layer Input
         module.add_connection(l_id, 0, o_id, 0); // Layer Output -> Output Layer In
 
-        let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default());
+        let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default(), 0);
 
         // Verify RenderOp
         assert_eq!(result.render_ops.len(), 1);
@@ -322,7 +334,7 @@ mod tests_evaluator {
         // Slave Link In index: 2 (0=Media, 1=Trigger)
         module.add_connection(m_id, 1, s_id, 2);
 
-        let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default());
+        let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default(), 0);
 
         // Master ID in trigger_values should have 2 values: Trigger Out (1.0) and Link Out (1.0)
         let m_values = &result.trigger_values[&m_id];
@@ -343,21 +355,21 @@ mod tests_evaluator {
         let shared = crate::module::SharedMediaState::default();
 
         // Pass 1: Should create one RenderOp
-        evaluator.evaluate(&module, &shared);
+        evaluator.evaluate(&module, &shared, 0);
         assert_eq!(evaluator.cached_result.render_ops.len(), 1);
         assert_eq!(evaluator.cached_result.spare_render_ops.len(), 0);
 
         // Pass 2: Should recycle the RenderOp
         // Note: evaluate() calls clear() at the start, moving render_ops to spare.
         // Then it pops one.
-        evaluator.evaluate(&module, &shared);
+        evaluator.evaluate(&module, &shared, 0);
         assert_eq!(evaluator.cached_result.render_ops.len(), 1);
         // Spare should be 0 because we popped the one that was recycled
         assert_eq!(evaluator.cached_result.spare_render_ops.len(), 0);
 
         // Pass 3: Reduce workload (no output connection)
         module.remove_connection(l_id, 0, o_id, 0);
-        evaluator.evaluate(&module, &shared);
+        evaluator.evaluate(&module, &shared, 1);
 
         // render_ops should be empty
         assert_eq!(evaluator.cached_result.render_ops.len(), 0);
@@ -524,11 +536,9 @@ pub struct ModuleEvaluator {
     /// Reusable result buffer to avoid allocations
     cached_result: ModuleEvalResult,
 
-    // Caching for indices to avoid re-allocation every frame
-    /// Cached map from Part ID to index in `module.parts`
-    part_index_cache: HashMap<ModulePartId, usize>,
-    /// Cached map from Part ID to list of indices in `module.connections` (incoming connections)
-    conn_index_cache: HashMap<ModulePartId, Vec<usize>>,
+    /// Cached indices per module ID to support multi-module switching
+    indices_cache: HashMap<crate::module::ModuleId, Arc<ModuleGraphIndices>>,
+
     /// Currently active keyboard keys (for Shortcut triggers)
     active_keys: std::collections::HashSet<String>,
 }
@@ -547,8 +557,7 @@ impl ModuleEvaluator {
             start_time: Instant::now(),
             trigger_states: HashMap::new(),
             cached_result: ModuleEvalResult::default(),
-            part_index_cache: HashMap::new(),
-            conn_index_cache: HashMap::new(),
+            indices_cache: HashMap::new(),
             active_keys: std::collections::HashSet::new(),
         }
     }
@@ -606,6 +615,7 @@ impl ModuleEvaluator {
         &mut self,
         module: &MapFlowModule,
         shared_state: &SharedMediaState,
+        graph_revision: u64,
     ) -> &ModuleEvalResult {
         // Initialize RNG once per frame outside the loop
         let mut rng = rand::rng();
@@ -615,22 +625,41 @@ impl ModuleEvaluator {
         // Since we cleared trigger_values via iteration (retaining keys),
         // we might have entries with empty vectors. This is fine as we will overwrite them.
 
-        // Build acceleration indices
-        self.part_index_cache.clear();
-        for (idx, part) in module.parts.iter().enumerate() {
-            self.part_index_cache.insert(part.id, idx);
+        // Manage indices cache
+        let indices_valid = if let Some(cache) = self.indices_cache.get(&module.id) {
+            cache.last_revision == graph_revision
+        } else {
+            false
+        };
+
+        if !indices_valid {
+            // Rebuild cache
+            let mut part_index_cache = HashMap::new();
+            let mut conn_index_cache = HashMap::new();
+
+            for (idx, part) in module.parts.iter().enumerate() {
+                part_index_cache.insert(part.id, idx);
+            }
+
+            for (idx, conn) in module.connections.iter().enumerate() {
+                conn_index_cache
+                    .entry(conn.to_part)
+                    .or_insert_with(Vec::new)
+                    .push(idx);
+            }
+
+            self.indices_cache.insert(
+                module.id,
+                Arc::new(ModuleGraphIndices {
+                    part_index_cache,
+                    conn_index_cache,
+                    last_revision: graph_revision,
+                }),
+            );
         }
 
-        // Clear vectors but keep capacity
-        for indices in self.conn_index_cache.values_mut() {
-            indices.clear();
-        }
-        for (idx, conn) in module.connections.iter().enumerate() {
-            self.conn_index_cache
-                .entry(conn.to_part)
-                .or_default()
-                .push(idx);
-        }
+        // Clone the Arc to avoid borrowing self.indices_cache while borrowing self mutably later
+        let indices = self.indices_cache[&module.id].clone();
 
         // === DIAGNOSTICS: Log module structure ===
         // (Diagnostic logging code removed for brevity/performance in hot path unless feature enabled?
@@ -845,7 +874,7 @@ impl ModuleEvaluator {
         for part in &module.parts {
             if let ModulePartType::Output(output_type) = &part.part_type {
                 // Look up first connection to this output
-                if let Some(conn_idx) = self
+                if let Some(conn_idx) = indices
                     .conn_index_cache
                     .get(&part.id)
                     .and_then(|v| v.first())
@@ -854,7 +883,7 @@ impl ModuleEvaluator {
                     let conn = &module.connections[conn_idx];
 
                     // Look up the layer part
-                    if let Some(&layer_idx) = self.part_index_cache.get(&conn.from_part) {
+                    if let Some(&layer_idx) = indices.part_index_cache.get(&conn.from_part) {
                         let layer_part = &module.parts[layer_idx];
 
                         let link_opacity =
@@ -880,7 +909,13 @@ impl ModuleEvaluator {
                                     op.mapping_mode = *mapping_mode;
 
                                     // Trace chain to populate source, effects, masks and mesh override
-                                    self.trace_chain_into(layer_part.id, module, &mut op, mesh);
+                                    self.trace_chain_into(
+                                        layer_part.id,
+                                        module,
+                                        &mut op,
+                                        mesh,
+                                        &indices,
+                                    );
 
                                     self.cached_result.render_ops.push(op);
                                 }
@@ -902,7 +937,13 @@ impl ModuleEvaluator {
                                     op.mapping_mode = *mapping_mode;
 
                                     // Trace chain to populate source, effects, masks and mesh override
-                                    self.trace_chain_into(layer_part.id, module, &mut op, mesh);
+                                    self.trace_chain_into(
+                                        layer_part.id,
+                                        module,
+                                        &mut op,
+                                        mesh,
+                                        &indices,
+                                    );
 
                                     self.cached_result.render_ops.push(op);
                                 }
@@ -948,6 +989,7 @@ impl ModuleEvaluator {
         module: &MapFlowModule,
         op: &mut RenderOp,
         default_mesh: &MeshType,
+        indices: &ModuleGraphIndices,
     ) {
         op.effects.clear();
         op.masks.clear();
@@ -959,7 +1001,7 @@ impl ModuleEvaluator {
 
         // Optimization: Use the part index cache that was already built in evaluate()
         // This avoids an O(N) allocation and iteration for every layer being rendered.
-        let _part_index = &self.part_index_cache;
+        let _part_index = &indices.part_index_cache;
 
         tracing::debug!(
             "trace_chain: Starting from node {} in module {}",
@@ -973,7 +1015,7 @@ impl ModuleEvaluator {
         for _iteration in 0..50 {
             // Apply Trigger Targets for the current node
             // We need to find if any input sockets have triggers active and targets mapped
-            if let Some(&part_idx) = self.part_index_cache.get(&current_id) {
+            if let Some(&part_idx) = indices.part_index_cache.get(&current_id) {
                 let part = &module.parts[part_idx];
 
                 if !part.trigger_targets.is_empty() {
@@ -986,7 +1028,7 @@ impl ModuleEvaluator {
                 for (socket_idx, config) in &part.trigger_targets {
                     // Find connection to this socket
                     let mut trigger_val = 0.0;
-                    if let Some(conn_indices) = self.conn_index_cache.get(&current_id) {
+                    if let Some(conn_indices) = indices.conn_index_cache.get(&current_id) {
                         for &conn_idx in conn_indices {
                             let conn = &module.connections[conn_idx];
                             if conn.to_socket == *socket_idx {
@@ -1058,14 +1100,14 @@ impl ModuleEvaluator {
             }
 
             // Find main input connection (to ANY socket - usually socket 0)
-            if let Some(conn_idx) = self
+            if let Some(conn_idx) = indices
                 .conn_index_cache
                 .get(&current_id)
                 .and_then(|v| v.first())
                 .copied()
             {
                 let conn = &module.connections[conn_idx];
-                if let Some(&part_idx) = self.part_index_cache.get(&conn.from_part) {
+                if let Some(&part_idx) = indices.part_index_cache.get(&conn.from_part) {
                     let part = &module.parts[part_idx];
                     match &part.part_type {
                         ModulePartType::Source(source_type) => {
@@ -1193,7 +1235,8 @@ impl ModuleEvaluator {
                                     // Find connection to this socket
                                     let mut trigger_val = 0.0;
                                     // L556 replacement
-                                    if let Some(conn_indices) = self.conn_index_cache.get(&part.id)
+                                    if let Some(conn_indices) =
+                                        indices.conn_index_cache.get(&part.id)
                                     {
                                         for &conn_idx in conn_indices {
                                             let conn = &module.connections[conn_idx];
@@ -1791,11 +1834,12 @@ mod tests_logic {
         });
 
         // Run evaluate to populate internal caches
-        evaluator.evaluate(&module, &crate::module::SharedMediaState::default());
+        evaluator.evaluate(&module, &crate::module::SharedMediaState::default(), 0);
 
         // Start trace from 1 using cached indices
         let mut op = evaluator.get_spare_render_op();
-        evaluator.trace_chain_into(1, &module, &mut op, &MeshType::default());
+        let indices = &evaluator.indices_cache[&module.id];
+        evaluator.trace_chain_into(1, &module, &mut op, &MeshType::default(), indices);
 
         // Should not panic or hang, but finish with limited effects
         // The limit is 50.
@@ -1852,7 +1896,7 @@ mod tests_logic {
         module.add_connection(layer_id, 0, output_id, 0);
 
         // evaluate() uses trace_chain_into internally now, so checking result.render_ops is sufficient
-        let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default());
+        let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default(), 0);
 
         assert_eq!(result.render_ops.len(), 1);
         let op = &result.render_ops[0];

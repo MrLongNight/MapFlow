@@ -46,9 +46,11 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
             }
 
             if let Some(module_ref) = app.state.module_manager.get_module(module_id) {
-                let eval_result = app
-                    .module_evaluator
-                    .evaluate(module_ref, &app.state.module_manager.shared_media);
+                let eval_result = app.module_evaluator.evaluate(
+                    module_ref,
+                    &app.state.module_manager.shared_media,
+                    app.state.module_manager.graph_revision,
+                );
 
                 for (part_id, values) in &eval_result.trigger_values {
                     if let Some(last_val) = values.last() {
@@ -82,9 +84,11 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
         for module in app.state.module_manager.list_modules() {
             let module_id = module.id;
             if let Some(module_ref) = app.state.module_manager.get_module(module_id) {
-                let eval_result = app
-                    .module_evaluator
-                    .evaluate(module_ref, &app.state.module_manager.shared_media);
+                let eval_result = app.module_evaluator.evaluate(
+                    module_ref,
+                    &app.state.module_manager.shared_media,
+                    app.state.module_manager.graph_revision,
+                );
                 app.render_ops.extend(
                     eval_result
                         .render_ops
