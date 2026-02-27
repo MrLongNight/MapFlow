@@ -25,6 +25,9 @@ use super::server::AppState;
 /// that consume excessive memory or CPU during parsing.
 const MAX_MESSAGE_SIZE: usize = 16 * 1024;
 
+/// Maximum number of targets in a single subscription/unsubscription message
+const MAX_BATCH_SIZE: usize = 100;
+
 /// WebSocket message from client to server
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -182,6 +185,13 @@ async fn handle_text_message(text: &str) -> Result<(), String> {
             // In a real implementation, this would update the project state
         }
         WsClientMessage::Subscribe { targets } => {
+            if targets.len() > MAX_BATCH_SIZE {
+                return Err(format!(
+                    "Too many targets (max {}). Split into multiple messages.",
+                    MAX_BATCH_SIZE
+                ));
+            }
+
             // Security check: validate targets
             for target in &targets {
                 target
@@ -193,6 +203,12 @@ async fn handle_text_message(text: &str) -> Result<(), String> {
             // In a real implementation, this would track subscriptions
         }
         WsClientMessage::Unsubscribe { targets } => {
+            if targets.len() > MAX_BATCH_SIZE {
+                return Err(format!(
+                    "Too many targets (max {}). Split into multiple messages.",
+                    MAX_BATCH_SIZE
+                ));
+            }
             tracing::debug!("WebSocket unsubscribe: {:?}", targets);
         }
         WsClientMessage::Ping => {
@@ -286,6 +302,24 @@ mod tests {
         let result = handle_text_message(&json).await;
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("Invalid subscription target"));
+    }
+
+    #[cfg(feature = "http-api")]
+    #[tokio::test]
+    async fn test_validation_rejects_large_batch() {
+        // Create more targets than allowed
+        let targets: Vec<ControlTarget> = (0..MAX_BATCH_SIZE + 1)
+            .map(|i| ControlTarget::LayerOpacity(i as u32))
+            .collect();
+
+        let msg = WsClientMessage::Subscribe { targets };
+        // We need to increase the recursion limit for serde if the struct is deeply nested,
+        // but here it's just a long vector which serde handles fine.
+        let json = serde_json::to_string(&msg).unwrap();
+
+        let result = handle_text_message(&json).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Too many targets"));
     }
 
     #[cfg(feature = "http-api")]
