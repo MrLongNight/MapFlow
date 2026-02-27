@@ -107,6 +107,16 @@ pub struct ModuleCanvas {
     pub mesh_editor: MeshEditor,
     /// ID of the part currently being edited in the mesh editor (to detect selection changes)
     pub last_mesh_edit_id: Option<ModulePartId>,
+
+    // Quick Create State
+    /// Whether the quick create popup is visible
+    pub show_quick_create: bool,
+    /// Filter text for quick create
+    pub quick_create_filter: String,
+    /// Screen position for the quick create popup
+    pub quick_create_pos: Pos2,
+    /// Index of the currently selected item in the quick create list
+    pub quick_create_selected_index: usize,
 }
 
 impl Default for ModuleCanvas {
@@ -156,6 +166,10 @@ impl Default for ModuleCanvas {
             last_trigger_values: std::collections::HashMap::new(),
             mesh_editor: MeshEditor::new(),
             last_mesh_edit_id: None,
+            show_quick_create: false,
+            quick_create_filter: String::new(),
+            quick_create_pos: Pos2::ZERO,
+            quick_create_selected_index: 0,
         }
     }
 }
