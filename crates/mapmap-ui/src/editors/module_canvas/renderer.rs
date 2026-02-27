@@ -528,6 +528,17 @@ pub fn render_canvas(
 
     diagnostics::render_diagnostics_popup(canvas, ui);
 
+    if !ui.memory(|m| m.focused().is_some()) && ui.input(|i| i.key_pressed(egui::Key::Tab)) {
+        canvas.show_quick_create = true;
+        canvas.quick_create_pos = ui
+            .input(|i| i.pointer.hover_pos())
+            .unwrap_or(canvas_rect.center());
+        canvas.quick_create_filter.clear();
+        canvas.quick_create_selected_index = 0;
+    }
+
+    draw::draw_quick_create_popup(canvas, ui, canvas_rect, manager, canvas.active_module_id);
+
     if canvas.context_menu_part.is_none() && canvas.context_menu_connection.is_none() {
         if let Some(pos) = canvas.context_menu_pos {
             let menu_rect = Rect::from_min_size(pos, Vec2::new(180.0, 250.0));
