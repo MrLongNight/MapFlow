@@ -8,7 +8,7 @@ use bytemuck::{Pod, Zeroable};
 use mapmap_core::BlendMode;
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
-use tracing::info;
+use tracing::debug;
 use wgpu::util::DeviceExt;
 
 /// Compositor parameters for blend modes
@@ -49,7 +49,7 @@ pub struct Compositor {
 impl Compositor {
     /// Create a new compositor
     pub fn new(device: Arc<wgpu::Device>, target_format: wgpu::TextureFormat) -> Result<Self> {
-        info!("Creating compositor");
+        debug!("Creating compositor");
 
         // Create sampler
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {

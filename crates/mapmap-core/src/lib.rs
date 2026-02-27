@@ -36,6 +36,9 @@ pub mod effect_animation;
 pub mod effects;
 pub mod logging;
 pub mod lut;
+/// Global macros
+#[macro_use]
+pub mod macros;
 /// Media asset management
 pub mod media_library;
 pub mod module;

@@ -10,10 +10,8 @@ use crate::module::{
     ModulePartId, ModulePartType, ModulizerType, OutputType, SharedMediaState, SourceType,
     TriggerType,
 };
-use once_cell::sync::Lazy;
-use parking_lot::Mutex;
 use rand::RngExt;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -1255,23 +1253,17 @@ impl ModuleEvaluator {
                     break;
                 }
             } else {
-                static REPORTED_MISSING_NODES: Lazy<Mutex<HashSet<ModulePartId>>> =
-                    Lazy::new(|| Mutex::new(HashSet::new()));
-
-                let mut reported = REPORTED_MISSING_NODES.lock();
-                if reported.insert(current_id) {
-                    tracing::warn!(
-                        "trace_chain: Node {} not found in part_index, stopping traversal (this warning will only be shown once for this ID)",
-                        current_id
-                    );
-                }
+                warn_once!(
+                    "trace_chain: Node {} not found in part_index, stopping traversal",
+                    current_id
+                );
                 break;
             }
         }
 
         // Warn if we hit the iteration limit (possible cycle in graph)
         if op.source_part_id.is_none() && !op.effects.is_empty() {
-            tracing::warn!(
+            warn_once!(
                 "trace_chain: Completed 50 iterations starting from {} but found no source. Possible cycle or broken chain.",
                 start_node_id
             );
