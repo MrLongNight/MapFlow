@@ -555,8 +555,14 @@ pub fn draw_part_with_delete(
     // --- NODE PREVIEW (Video/Effect Output) ---
     // Calculate preview area (body of the node)
     let preview_rect = Rect::from_min_max(
-        Pos2::new(rect.min.x + 2.0 * canvas.zoom, rect.min.y + title_height + 2.0 * canvas.zoom),
-        Pos2::new(rect.max.x - 2.0 * canvas.zoom, rect.max.y - 2.0 * canvas.zoom)
+        Pos2::new(
+            rect.min.x + 2.0 * canvas.zoom,
+            rect.min.y + title_height + 2.0 * canvas.zoom,
+        ),
+        Pos2::new(
+            rect.max.x - 2.0 * canvas.zoom,
+            rect.max.y - 2.0 * canvas.zoom,
+        ),
     );
 
     if let Some(&texture_id) = canvas.node_previews.get(&(module_id, part.id)) {
