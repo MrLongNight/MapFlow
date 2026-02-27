@@ -1,5 +1,5 @@
 use crate::i18n::LocaleManager;
-use crate::theme::colors;
+use crate::widgets::custom::cyber_list_item;
 use crate::widgets::icons::IconManager;
 use crate::widgets::panel::cyber_panel_frame;
 use crate::widgets::{custom, panel};
@@ -60,18 +60,12 @@ impl MappingPanel {
                         for (i, mapping_id) in mapping_ids.iter().enumerate() {
                             if let Some(mapping) = mapping_manager.get_mapping_mut(*mapping_id) {
                                 ui.push_id(mapping.id, |ui| {
-                                    // Zebra striping for Cyber Dark look
-                                    let bg_color = if i % 2 == 1 {
-                                        colors::DARKER_GREY.linear_multiply(0.5)
-                                    } else {
-                                        colors::DARK_GREY
-                                    };
-
-                                    egui::Frame::default()
-                                        .fill(bg_color)
-                                        .inner_margin(4.0)
-                                        .corner_radius(0.0) // Sharp corners
-                                        .show(ui, |ui| {
+                                    cyber_list_item(
+                                        ui,
+                                        egui::Id::new(mapping.id),
+                                        false, // Mapping panel currently doesn't track global selection state, so false for now
+                                        i % 2 == 1,
+                                        |ui| {
                                             ui.horizontal(|ui| {
                                                 // Visibility Checkbox
                                                 if ui.checkbox(&mut mapping.visible, "").changed() {
@@ -147,7 +141,8 @@ impl MappingPanel {
                                                     1.0,
                                                 );
                                             });
-                                        });
+                                        },
+                                    );
                                 });
                                 // Small spacing between items
                                 ui.add_space(1.0);

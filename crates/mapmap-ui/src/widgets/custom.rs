@@ -27,6 +27,49 @@ pub fn render_header(ui: &mut Ui, title: &str) {
     );
 }
 
+/// A standard list item container for the Cyber Dark theme.
+/// Handles selection, zebra striping, and layout consistency.
+pub fn cyber_list_item<R>(
+    ui: &mut Ui,
+    id: egui::Id,
+    selected: bool,
+    alternate: bool,
+    add_contents: impl FnOnce(&mut Ui) -> R,
+) -> R {
+    let bg_color = if selected {
+        colors::CYAN_ACCENT.linear_multiply(0.2)
+    } else if alternate {
+        colors::DARKER_GREY // Subtle alternating background
+    } else {
+        Color32::TRANSPARENT
+    };
+
+    let stroke = if selected {
+        Stroke::new(1.0, colors::CYAN_ACCENT)
+    } else {
+        Stroke::new(1.0, colors::STROKE_GREY)
+    };
+
+    let mut ret = None;
+
+    // Use push_id to scope the contents of the list item
+    ui.push_id(id, |ui| {
+        egui::Frame::default()
+            .fill(bg_color)
+            .stroke(stroke)
+            .corner_radius(0.0)
+            .inner_margin(4.0)
+            .show(ui, |ui| {
+                // Ensure full width
+                ui.set_width(ui.available_width());
+                ret = Some(add_contents(ui));
+            });
+    });
+
+    // The closure is guaranteed to run, so ret will be Some
+    ret.expect("Closure should have been executed")
+}
+
 pub fn colored_progress_bar(ui: &mut Ui, value: f32) -> Response {
     ui.add(egui::ProgressBar::new(value).show_percentage())
 }
@@ -666,7 +709,7 @@ pub fn hold_to_action_icon(
 
     // Accessibility info
     let enabled = ui.is_enabled();
-    let label = format!("{:?} Action", icon);
+    let label = format!("{:?}", icon);
     response.widget_info(move || WidgetInfo::labeled(WidgetType::Button, enabled, label.clone()));
 
     let state_id = response.id.with("hold_state");

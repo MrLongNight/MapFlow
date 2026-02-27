@@ -28,10 +28,7 @@ impl StyledPanel {
         frame
             .show(ui, |ui| {
                 ui.vertical(|ui| {
-                    ui.horizontal(|ui| {
-                        ui.strong(&self.title);
-                    });
-                    ui.separator();
+                    render_panel_header(ui, &self.title, |_| {});
                     add_contents(ui)
                 })
                 .inner
@@ -45,7 +42,7 @@ pub fn cyber_panel_frame(_style: &Style) -> egui::Frame {
     egui::Frame {
         fill: crate::theme::colors::DARK_GREY,
         corner_radius: egui::CornerRadius::ZERO, // Sharp corners
-        inner_margin: egui::Margin::same(4),
+        inner_margin: egui::Margin::same(0), // Removed inner margin to let header touch edges
         stroke: Stroke::new(1.0, crate::theme::colors::STROKE_GREY),
         ..Default::default()
     }
@@ -57,12 +54,24 @@ pub fn render_panel_header<R>(
     title: &str,
     add_contents: impl FnOnce(&mut Ui) -> R,
 ) -> R {
-    ui.horizontal(|ui| {
-        ui.strong(title);
-        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            add_contents(ui)
+    egui::Frame::default()
+        .fill(crate::theme::colors::LIGHTER_GREY)
+        .inner_margin(egui::Margin::symmetric(8, 4))
+        .corner_radius(egui::CornerRadius::ZERO)
+        .stroke(egui::Stroke {
+            width: 1.0,
+            color: crate::theme::colors::STROKE_GREY,
+        })
+        .show(ui, |ui| {
+            ui.set_width(ui.available_width());
+            ui.horizontal(|ui| {
+                ui.strong(title);
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    add_contents(ui)
+                })
+                .inner
+            })
+            .inner
         })
         .inner
-    })
-    .inner
 }
