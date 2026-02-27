@@ -1255,7 +1255,7 @@ impl ModuleEvaluator {
                     break;
                 }
             } else {
-                static REPORTED_MISSING_NODES: Lazy<Mutex<HashSet<u32>>> =
+                static REPORTED_MISSING_NODES: Lazy<Mutex<HashSet<ModulePartId>>> =
                     Lazy::new(|| Mutex::new(HashSet::new()));
 
                 let mut reported = REPORTED_MISSING_NODES.lock();

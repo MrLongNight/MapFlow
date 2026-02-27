@@ -8,7 +8,7 @@ use crate::i18n::LocaleManager;
 use crate::UIAction;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, Ui, Vec2};
 use mapmap_core::module::{ModuleId, ModuleManager, TriggerType};
-#.
+
 pub fn show(
     canvas: &mut ModuleCanvas,
     ui: &mut Ui,
