@@ -1,20 +1,30 @@
-//!
-//! Module types definition.
-//!
-
+/// connection module
 pub mod connection;
+/// hue module
 pub mod hue;
+/// layer module
 pub mod layer;
+/// mask module
 pub mod mask;
+/// mesh module
 pub mod mesh;
+/// module module
 pub mod module;
+/// modulizer module
 pub mod modulizer;
+/// node_link module
 pub mod node_link;
+/// output module
 pub mod output;
+/// part module
 pub mod part;
+/// shared_media module
 pub mod shared_media;
+/// socket module
 pub mod socket;
+/// source module
 pub mod source;
+/// trigger module
 pub mod trigger;
 
 pub use connection::*;

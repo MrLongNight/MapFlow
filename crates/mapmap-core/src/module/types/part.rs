@@ -1,7 +1,3 @@
-//!
-//! Module part types.
-//!
-
 use crate::module::types::hue::HueNodeType;
 use crate::module::types::layer::LayerType;
 use crate::module::types::mask::MaskType;

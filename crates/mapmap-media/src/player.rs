@@ -575,10 +575,10 @@ mod tests {
         assert!(player.seek(Duration::from_secs(10)).is_err());
     }
 
-
     #[test]
     fn test_player_timing_synchronization() {
-        let decoder = crate::decoder::TestPatternDecoder::new(1920, 1080, Duration::from_secs(1), 10.0);
+        let decoder =
+            crate::decoder::TestPatternDecoder::new(1920, 1080, Duration::from_secs(1), 10.0);
         let mut player = VideoPlayer::new(decoder);
 
         player.set_loop_mode(LoopMode::PlayOnce).unwrap();

@@ -1,7 +1,3 @@
-//!
-//! Transform definitions.
-//!
-
 use crate::layer::types::ResizeMode;
 use glam::{Mat4, Vec2, Vec3};
 use serde::{Deserialize, Serialize};

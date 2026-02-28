@@ -1,7 +1,3 @@
-//!
-//! Socket definitions.
-//!
-
 use serde::{Deserialize, Serialize};
 
 /// A connection point on a node

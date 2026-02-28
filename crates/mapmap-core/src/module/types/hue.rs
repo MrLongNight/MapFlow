@@ -1,7 +1,3 @@
-//!
-//! Hue settings and properties.
-//!
-
 use serde::{Deserialize, Serialize};
 
 /// Types of Philips Hue Nodes

@@ -1,7 +1,3 @@
-//!
-//! Shared media resources.
-//!
-
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
