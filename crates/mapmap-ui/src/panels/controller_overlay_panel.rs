@@ -43,15 +43,15 @@ pub enum MidiLearnTarget {
 
 /// Controller Overlay Panel for visualizing MIDI controller state
 pub struct ControllerOverlayPanel {
-    // Currently loaded controller elements
+    /// Currently loaded controller elements
     #[cfg(feature = "midi")]
     elements: Option<ControllerElements>,
 
-    // Runtime state for each element
+    /// Runtime state for each element
     #[cfg(feature = "midi")]
     state_manager: ElementStateManager,
 
-    // MIDI Learn manager
+    /// MIDI Learn manager
     #[cfg(feature = "midi")]
     learn_manager: MidiLearnManager,
 
