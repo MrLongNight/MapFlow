@@ -45,6 +45,7 @@ pub enum MidiLearnTarget {
 pub struct ControllerOverlayPanel {
     /// Currently loaded controller elements
     #[cfg(feature = "midi")]
+/// List of interactive components (knobs, faders, buttons).
     elements: Option<ControllerElements>,
 
     /// Runtime state for each element
@@ -134,6 +135,7 @@ impl ControllerOverlayPanel {
     pub fn new() -> Self {
         Self {
             #[cfg(feature = "midi")]
+/// List of interactive components (knobs, faders, buttons).
             elements: None,
             #[cfg(feature = "midi")]
             state_manager: ElementStateManager::new(),

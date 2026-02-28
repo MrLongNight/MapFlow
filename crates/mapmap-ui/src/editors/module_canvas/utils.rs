@@ -7,6 +7,7 @@ use mapmap_core::module::{
 };
 
 pub struct NodeCatalogItem {
+/// User-friendly name for identifying the element.
     pub label: &'static str,
     pub search_tags: &'static str,
     pub part_type: ModulePartType,

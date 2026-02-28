@@ -1101,51 +1101,51 @@ pub enum SourceType {
     Bevy,
     /// Simulates realistic sky and atmospheric scattering.
     BevyAtmosphere {
-        /// Atmospheric turbidity, affecting how clear or hazy the sky appears.
+        /// Atmospheric haze intensity. Higher values make the sky look more "dusty" or polluted.
         turbidity: f32,
-        /// Rayleigh scattering coefficient, determining the sky color (blue during day, red at sunset).
+        /// Determines the strength of Rayleigh scattering, which gives the sky its blue color and red sunsets.
         rayleigh: f32,
-        /// Mie scattering coefficient, affecting the size and intensity of the solar disk.
+        /// Determines the strength of Mie scattering, affecting the glow around the sun.
         mie_coeff: f32,
-        /// Mie scattering directionality (G-parameter), controlling how much light is scattered forward.
+        /// Controls the directionality of Mie scattering (how much light is scattered forward).
         mie_directional_g: f32,
-        /// Spherical coordinates (Azimuth, Elevation) of the sun in the sky.
+        /// Position of the sun in azimuth/elevation coordinates.
         sun_position: (f32, f32),
-        /// HDR exposure level for the atmospheric rendering.
+        /// Overall brightness/exposure of the atmospheric effect.
         exposure: f32,
     },
     /// Renders a grid of hexagons in 3D space.
     BevyHexGrid {
-        /// Radius of the hexagonal grid or shape.
+        /// Radius from the center to a corner of a single hexagon.
         radius: f32,
-        /// Number of rings in the hexagonal grid layout.
+        /// Number of concentric rings of hexagons around the center.
         rings: u32,
-        /// Orientation of the hexagons: true for pointy top, false for flat top.
+        /// If true, hexagons are oriented with a point at the top. If false, they have a flat top.
         pointy_top: bool,
-        /// Distance between individual elements in a grid or particle system.
+        /// Distance between the centers of adjacent hexagons.
         spacing: f32,
-        /// 3D position coordinates [x, y, z].
+        /// World-space position [x, y, z] of the grid origin.
         position: [f32; 3],
-        /// Rotation angles in degrees.
+        /// Rotation of the entire grid in degrees for each axis.
         rotation: [f32; 3],
-        /// Scale factors for the object's dimensions.
+        /// Uniform scale factor for the entire grid.
         scale: f32,
     },
     /// GPU-accelerated 3D particle system.
     BevyParticles {
-        /// Emission rate of particles per second.
+        /// Number of particles spawned per second.
         rate: f32,
-        /// Maximum time a particle remains active before being destroyed.
+        /// Maximum duration in seconds a particle exists before disappearing.
         lifetime: f32,
-        /// Playback speed multiplier.
+        /// Speed at which particles move away from the emitter.
         speed: f32,
-        /// Initial color of an element at the beginning of its lifecycle.
+        /// Color of particles at the moment they are spawned.
         color_start: [f32; 4],
-        /// Final color of an element at the end of its lifecycle.
+        /// Color of particles just before they disappear.
         color_end: [f32; 4],
-        /// 3D position coordinates [x, y, z].
+        /// Origin point [x, y, z] of the particle emitter.
         position: [f32; 3],
-        /// Rotation angles in degrees.
+        /// Directional orientation of the emitter.
         rotation: [f32; 3],
     },
     /// Standard 3D geometric primitive (Cube, Sphere, etc.).
@@ -1207,85 +1207,85 @@ pub enum SourceType {
     },
     /// Virtual camera defining the viewpoint of the Bevy engine.
     BevyCamera {
-        /// Component property or field.
+        /// Projection mode: Perspective (3D) or Orthographic (2D/Flat).
         mode: BevyCameraMode,
-        /// Field of view in degrees for the camera's perspective projection.
+        /// Field of view in degrees. Higher values show more of the scene but cause distortion at the edges.
         fov: f32,
-        /// Whether this component or feature is currently enabled and processing.
+        /// Toggle to enable or disable this camera view within the scene.
         active: bool,
     },
     #[cfg(target_os = "windows")]
     /// Inter-process video sharing via Spout (Windows).
     SpoutInput {
-        /// Display name.
+        /// The name of the Spout sender to connect to.
         sender_name: String,
     },
     /// Single-instance video source with full transform controls.
     VideoUni {
-        /// File path to asset.
+        /// File path to the video or image asset.
         path: String,
         #[serde(default = "crate::module::config::default_speed")]
-        /// Playback speed multiplier.
+        /// Playback speed multiplier (1.0 is normal speed).
         speed: f32,
         #[serde(default)]
-        /// Whether the media should automatically restart after reaching the end.
+        /// Automatically restart playback when the end of the file is reached.
         loop_enabled: bool,
         #[serde(default)]
-        /// Timestamp (in seconds) where playback should begin within the media file.
+        /// Start position in seconds within the media file.
         start_time: f32,
         #[serde(default)]
-        /// Timestamp (in seconds) where playback should stop within the media file. 0.0 means end of file.
+        /// End position in seconds within the media file (0.0 plays to the end).
         end_time: f32,
         #[serde(default = "crate::module::config::default_opacity")]
-        /// Opacity value (0.0 to 1.0).
+        /// Transparency level of the source (0.0 to 1.0).
         opacity: f32,
         #[serde(default)]
-        /// Blending mode used for rendering.
+        /// The algorithm used to blend this source with lower layers (e.g., Add, Multiply).
         blend_mode: Option<BlendModeType>,
         #[serde(default)]
-        /// Brightness factor.
+        /// Increases or decreases the overall light level of the video.
         brightness: f32,
         #[serde(default = "crate::module::config::default_contrast")]
-        /// Contrast factor.
+        /// Adjusts the range between light and dark areas.
         contrast: f32,
         #[serde(default = "crate::module::config::default_saturation")]
-        /// Saturation adjustment.
+        /// Intensifies or dulls the colors (0.0 is black and white).
         saturation: f32,
         #[serde(default)]
-        /// Hue shift in degrees.
+        /// Shifts all colors around the color wheel in degrees.
         hue_shift: f32,
         #[serde(default = "crate::module::config::default_scale")]
-        /// Scale factor along the horizontal axis.
+        /// Horizontal scaling factor.
         scale_x: f32,
         #[serde(default = "crate::module::config::default_scale")]
-        /// Scale factor along the vertical axis.
+        /// Vertical scaling factor.
         scale_y: f32,
         #[serde(default)]
-        /// Rotation angles in degrees.
+        /// Clockwise rotation in degrees.
         rotation: f32,
         #[serde(default)]
-        /// Horizontal translation offset.
+        /// Horizontal shift from the center point.
         offset_x: f32,
         #[serde(default)]
-        /// Vertical translation offset.
+        /// Vertical shift from the center point.
         offset_y: f32,
         #[serde(default)]
-        /// Optional width constraint for internal buffers or rendering targets.
+        /// Force the internal player to use this specific width.
         target_width: Option<u32>,
         #[serde(default)]
-        /// Optional height constraint for internal buffers or rendering targets.
+        /// Force the internal player to use this specific height.
         target_height: Option<u32>,
         #[serde(default)]
-        /// Desired frame rate for playback or updates.
+        /// Target frame rate for the media decoder.
         target_fps: Option<f32>,
         #[serde(default)]
-        /// Horizontal flip flag.
+        /// Mirror the image horizontally.
         flip_horizontal: bool,
         #[serde(default)]
-        /// Vertical flip flag.
+        /// Mirror the image vertically.
         flip_vertical: bool,
         #[serde(default)]
-        /// When enabled, plays the content from end to beginning.
+        /// Reverse the playback direction.
         reverse_playback: bool,
     },
     /// Media source sharing its state across multiple instances.
@@ -1332,21 +1332,21 @@ pub enum SourceType {
         /// Vertical flip flag.
         flip_vertical: bool,
     },
-    /// Enumeration variant.
+    /// Single-instance static image source.
     ImageUni {
-        /// File path to asset.
+        /// File path to the image file (PNG, JPG, etc.).
         path: String,
         #[serde(default = "crate::module::config::default_opacity")]
-        /// Opacity value (0.0 to 1.0).
+        /// Transparency level (0.0 to 1.0).
         opacity: f32,
         #[serde(default)]
-        /// Blending mode used for rendering.
+        /// Blending algorithm for compositing.
         blend_mode: Option<BlendModeType>,
         #[serde(default)]
-        /// Brightness factor.
+        /// Brightness adjustment.
         brightness: f32,
         #[serde(default = "crate::module::config::default_contrast")]
-        /// Contrast factor.
+        /// Contrast adjustment.
         contrast: f32,
         #[serde(default = "crate::module::config::default_saturation")]
         /// Saturation adjustment.
@@ -1355,48 +1355,48 @@ pub enum SourceType {
         /// Hue shift in degrees.
         hue_shift: f32,
         #[serde(default = "crate::module::config::default_scale")]
-        /// Scale factor along the horizontal axis.
+        /// Horizontal scale.
         scale_x: f32,
         #[serde(default = "crate::module::config::default_scale")]
-        /// Scale factor along the vertical axis.
+        /// Vertical scale.
         scale_y: f32,
         #[serde(default)]
-        /// Rotation angles in degrees.
+        /// Rotation in degrees.
         rotation: f32,
         #[serde(default)]
-        /// Horizontal translation offset.
+        /// X-axis offset.
         offset_x: f32,
         #[serde(default)]
-        /// Vertical translation offset.
+        /// Y-axis offset.
         offset_y: f32,
         #[serde(default)]
-        /// Optional width constraint for internal buffers or rendering targets.
+        /// Force a specific internal buffer width.
         target_width: Option<u32>,
         #[serde(default)]
-        /// Optional height constraint for internal buffers or rendering targets.
+        /// Force a specific internal buffer height.
         target_height: Option<u32>,
         #[serde(default)]
-        /// Horizontal flip flag.
+        /// Mirror horizontally.
         flip_horizontal: bool,
         #[serde(default)]
-        /// Vertical flip flag.
+        /// Mirror vertically.
         flip_vertical: bool,
     },
-    /// Enumeration variant.
+    /// Static image source that shares its resource ID with other instances.
     ImageMulti {
-        /// Unique key for accessing a shared resource or media pool.
+        /// Identifier for the shared image resource.
         shared_id: String,
         #[serde(default = "crate::module::config::default_opacity")]
-        /// Opacity value (0.0 to 1.0).
+        /// Transparency level (0.0 to 1.0).
         opacity: f32,
         #[serde(default)]
-        /// Blending mode used for rendering.
+        /// Blending algorithm for compositing.
         blend_mode: Option<BlendModeType>,
         #[serde(default)]
-        /// Brightness factor.
+        /// Brightness adjustment.
         brightness: f32,
         #[serde(default = "crate::module::config::default_contrast")]
-        /// Contrast factor.
+        /// Contrast adjustment.
         contrast: f32,
         #[serde(default = "crate::module::config::default_saturation")]
         /// Saturation adjustment.
@@ -1405,31 +1405,31 @@ pub enum SourceType {
         /// Hue shift in degrees.
         hue_shift: f32,
         #[serde(default = "crate::module::config::default_scale")]
-        /// Scale factor along the horizontal axis.
+        /// Horizontal scale.
         scale_x: f32,
         #[serde(default = "crate::module::config::default_scale")]
-        /// Scale factor along the vertical axis.
+        /// Vertical scale.
         scale_y: f32,
         #[serde(default)]
-        /// Rotation angles in degrees.
+        /// Rotation in degrees.
         rotation: f32,
         #[serde(default)]
-        /// Horizontal translation offset.
+        /// X-axis offset.
         offset_x: f32,
         #[serde(default)]
-        /// Vertical translation offset.
+        /// Y-axis offset.
         offset_y: f32,
         #[serde(default)]
-        /// Horizontal flip flag.
+        /// Mirror horizontally.
         flip_horizontal: bool,
         #[serde(default)]
-        /// Vertical flip flag.
+        /// Mirror vertically.
         flip_vertical: bool,
     },
 }
 
 impl SourceType {
-    /// Associated function.
+    /// Creates a new source configuration from a media file path.
     pub fn new_media_file(path: String) -> Self {
         SourceType::MediaFile {
             path,
@@ -1458,97 +1458,97 @@ impl SourceType {
     }
 }
 
-/// Types of masks
+/// Defines the geometry or texture used to mask a layer.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum MaskType {
-    /// Enumeration variant.
+    /// Mask using an external image file.
     File {
-        /// File path to asset.
+        /// File path to the mask asset.
         path: String,
     },
-    /// Enumeration variant.
+    /// Mask using a procedural geometric shape.
     Shape(MaskShape),
-    /// Enumeration variant.
+    /// Mask using a linear or radial gradient.
     Gradient {
-        /// Component property or field.
+        /// Orientation of the gradient in degrees.
         angle: f32,
-        /// Component property or field.
+        /// Edge smoothness of the gradient transition.
         softness: f32,
     },
 }
 
-/// Procedural mask shapes
+/// Available procedural shapes for masks.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum MaskShape {
-    /// Enumeration variant.
+    /// Circular mask.
     Circle,
-    /// Enumeration variant.
+    /// Rectangular mask.
     Rectangle,
-    /// Enumeration variant.
+    /// Triangular mask.
     Triangle,
-    /// Enumeration variant.
+    /// Star-shaped mask.
     Star,
-    /// Enumeration variant.
+    /// Elliptical mask.
     Ellipse,
 }
 
-/// Mesh types for projection mapping
+/// Mesh geometry definitions for projection mapping surfaces.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum MeshType {
-    /// Enumeration variant.
+    /// A simple four-cornered quadrilateral.
     Quad {
-        /// Component property or field.
+        /// Top-left corner coordinates.
         tl: (f32, f32),
-        /// Component property or field.
+        /// Top-right corner coordinates.
         tr: (f32, f32),
-        /// Component property or field.
+        /// Bottom-right corner coordinates.
         br: (f32, f32),
-        /// Component property or field.
+        /// Bottom-left corner coordinates.
         bl: (f32, f32),
     },
-    /// Enumeration variant.
+    /// A rectangular grid of vertices, useful for complex warping.
     Grid {
-        /// Component property or field.
+        /// Number of horizontal divisions.
         rows: u32,
-        /// Component property or field.
+        /// Number of vertical divisions.
         cols: u32,
     },
-    /// Enumeration variant.
+    /// A smooth surface defined by Bezier control points.
     BezierSurface {
-        /// Component property or field.
+        /// List of 2D control points influencing the surface curvature.
         control_points: Vec<(f32, f32)>,
     },
-    /// Enumeration variant.
+    /// An arbitrary flat shape defined by an ordered list of vertices.
     Polygon {
-        /// Component property or field.
+        /// List of corner points forming the polygon boundary.
         vertices: Vec<(f32, f32)>,
     },
-    /// Enumeration variant.
+    /// A generic triangle-based mesh.
     TriMesh,
-    /// Enumeration variant.
+    /// A procedural circular or arc-shaped mesh.
     Circle {
-        /// Component property or field.
+        /// Number of radial divisions (smoothness).
         segments: u32,
-        /// Component property or field.
+        /// Total angle covered by the arc (360.0 for a full circle).
         arc_angle: f32,
     },
-    /// Enumeration variant.
+    /// A procedural cylindrical surface.
     Cylinder {
-        /// Component property or field.
+        /// Number of vertical divisions.
         segments: u32,
-        /// Component property or field.
+        /// Total height of the cylinder.
         height: f32,
     },
-    /// Enumeration variant.
+    /// A procedural spherical surface.
     Sphere {
-        /// Component property or field.
+        /// Number of latitude (vertical) divisions.
         lat_segments: u32,
-        /// Component property or field.
+        /// Number of longitude (horizontal) divisions.
         lon_segments: u32,
     },
-    /// Enumeration variant.
+    /// A mesh loaded from an external 3D file format.
     Custom {
-        /// File path to asset.
+        /// Path to the mesh file.
         path: String,
     },
 }
@@ -1565,7 +1565,8 @@ impl Default for MeshType {
 }
 
 impl MeshType {
-    /// Method implementation.
+    /// Generates a hash representing the current geometric configuration. 
+    /// Used to detect when GPU buffers need to be updated.
     pub fn compute_revision_hash(&self) -> u64 {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
@@ -1635,7 +1636,7 @@ impl MeshType {
         hasher.finish()
     }
 
-    /// Method implementation.
+    /// Converts the procedural definition into a concrete Mesh object for rendering.
     pub fn to_mesh(&self) -> crate::mesh::Mesh {
         use crate::mesh::Mesh;
         use glam::Vec2;

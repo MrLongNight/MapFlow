@@ -16,20 +16,24 @@ use thiserror::Error;
 pub enum FfiError {
     #[error("NDI error: {0}")]
 /// Error: NDI error.
+/// Error: NDI error.
     /// Error: NDI error.
     NdiError(String),
 
     #[error("DeckLink error: {0}")]
+/// Error: DeckLink error.
 /// Error: DeckLink error.
     /// Error: DeckLink error.
     DeckLinkError(String),
 
     #[error("Spout error: {0}")]
 /// Error: Spout error.
+/// Error: Spout error.
     /// Error: Spout error.
     SpoutError(String),
 
     #[error("Syphon error: {0}")]
+/// Error: Syphon error.
 /// Error: Syphon error.
     /// Error: Syphon error.
     SyphonError(String),
