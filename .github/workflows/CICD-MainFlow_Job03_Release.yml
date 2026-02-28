@@ -41,44 +41,19 @@ jobs:
         with:
           arch: x64
 
-      - name: Cache vcpkg
-        id: cache-vcpkg
-        uses: actions/cache@v4
-        with:
-          path: vcpkg
-          key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json') }}
-          restore-keys: |
-            ${{ runner.os }}-vcpkg-
-
-      - name: vcpkg installieren
-        shell: pwsh
-        run: |
-          if (-not (Test-Path "vcpkg")) {
-            git clone --depth 1 https://github.com/microsoft/vcpkg.git
-            .\vcpkg\bootstrap-vcpkg.bat
-          }
-          .\vcpkg\vcpkg integrate install
-
       - name: Cache vcpkg installed libs
         id: cache-vcpkg-installed
         uses: actions/cache@v4
         with:
-          path: vcpkg/installed
+          path: vcpkg_installed
           key: ${{ runner.os }}-vcpkg-installed-${{ hashFiles('vcpkg.json') }}
           restore-keys: |
             ${{ runner.os }}-vcpkg-installed-
 
-      - name: VCPKG_ROOT-Variable setzen
-        shell: pwsh
-        run: |
-          $vcpkgRoot = "$(Get-Location)\vcpkg"
-          Add-Content -Path $env:GITHUB_ENV -Value "VCPKG_ROOT=$vcpkgRoot"
-          Add-Content -Path $env:GITHUB_ENV -Value "VCPKG_DEFAULT_TRIPLET=x64-windows"
-
-      - name: ffmpeg mit vcpkg installieren
+      - name: FFmpeg mit vcpkg installieren (Manifest-Modus)
         if: steps.cache-vcpkg-installed.outputs.cache-hit != 'true'
         shell: pwsh
-        run: .\vcpkg\vcpkg install ffmpeg:x64-windows
+        run: vcpkg install --triplet x64-windows
 
       - name: Set LIBCLANG_PATH
         shell: pwsh
@@ -93,8 +68,7 @@ jobs:
       - name: Set FFmpeg environment for ffmpeg-sys-next
         shell: pwsh
         run: |
-          $VcpkgRoot = "$(Get-Location)\vcpkg"
-          $InstalledDir = "$VcpkgRoot\installed\x64-windows"
+          $InstalledDir = "$(Get-Location)\vcpkg_installed\x64-windows"
           $IncludePath = "$InstalledDir\include"
           $LibPath = "$InstalledDir\lib"
           $BinPath = "$InstalledDir\bin"
@@ -103,6 +77,19 @@ jobs:
           Add-Content -Path $env:GITHUB_ENV -Value "FFMPEG_INCLUDE_DIR=$IncludePath"
           Add-Content -Path $env:GITHUB_ENV -Value "FFMPEG_LIB_DIR=$LibPath"
           Add-Content -Path $env:GITHUB_ENV -Value "FFMPEG_VERSION=7.1"
+          
+          # Add to MSVC INCLUDE and LIB paths for cc crate and other build scripts
+          if ($env:INCLUDE) {
+            Add-Content -Path $env:GITHUB_ENV -Value "INCLUDE=$IncludePath;${env:INCLUDE}"
+          } else {
+            Add-Content -Path $env:GITHUB_ENV -Value "INCLUDE=$IncludePath"
+          }
+          
+          if ($env:LIB) {
+            Add-Content -Path $env:GITHUB_ENV -Value "LIB=$LibPath;${env:LIB}"
+          } else {
+            Add-Content -Path $env:GITHUB_ENV -Value "LIB=$LibPath"
+          }
 
           # CRITICAL FIX for Clang/Bindgen on Windows:
           $ClangArgs = "-I`"$IncludePath`""
@@ -134,7 +121,7 @@ jobs:
         shell: pwsh
         run: |
           $ReleaseDir = "target/release"
-          $VcpkgBin = "vcpkg/installed/x64-windows/bin"
+          $VcpkgBin = "vcpkg_installed/x64-windows/bin"
           Copy-Item "$VcpkgBin/*.dll" "$ReleaseDir/" -Force
 
       - name: Create ZIP Artifact
@@ -175,9 +162,9 @@ jobs:
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-release-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-
+            ${{ runner.os }}-cargo-release-
 
       - name: Install System Dependencies
         run: |
@@ -190,14 +177,22 @@ jobs:
             libudev-dev libx11-dev libxcursor-dev libxi-dev libxrandr-dev \
             libxinerama-dev libwayland-dev libxkbcommon-dev libssl-dev \
             ffmpeg
+      
+      - name: Set FFmpeg environment for ffmpeg-sys-next (Linux)
+        run: |
+          echo "FFMPEG_INCLUDE_DIR=/usr/include" >> $GITHUB_ENV
+          echo "FFMPEG_LIB_DIR=/usr/lib/x86_64-linux-gnu" >> $GITHUB_ENV
+
       - name: Build (Release)
         run: cargo build --release -p mapmap --features "audio,ffmpeg"
+      
       - name: Create Tarball
         run: |
           VERSION="${{ inputs.version }}"
           TAR_NAME="MapFlow-$VERSION-Linux-x64.tar.gz"
           cd target/release
           tar -czf "../../$TAR_NAME" MapFlow
+      
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
