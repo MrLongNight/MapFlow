@@ -97,3 +97,10 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 **Aktion:**
 - Dateien erneut verschoben bzw. archiviert.
 - Verifikation der Dateipfade erfolgreich durchgeführt.
+
+## 2026-02-28 - Root Directory Cleanup
+
+**Erkenntnis:** Das Root-Verzeichnis enthielt eine `GEMINI.md` Datei, die gegen die Projektstruktur verstößt, da keine unnötigen `.md` Dateien im Root liegen sollen.
+
+**Aktion:**
+- `GEMINI.md` nach `.temp-archive/2026-02-28-GEMINI.md` archiviert.
