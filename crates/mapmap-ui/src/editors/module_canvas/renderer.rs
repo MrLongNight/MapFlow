@@ -384,6 +384,13 @@ pub fn render_canvas(
             }
         }
 
+        if part_response.secondary_clicked() {
+            clicked_on_part = true;
+            canvas.context_menu_part = Some(part_id);
+            canvas.context_menu_pos = ui.input(|i| i.pointer.hover_pos());
+            canvas.context_menu_connection = None;
+        }
+
         if part_response.clicked() {
             clicked_on_part = true;
             if ui.input(|i| i.modifiers.shift) {
@@ -552,45 +559,123 @@ pub fn render_canvas(
         canvas.quick_create_selected_index = 0;
     }
 
-    draw::draw_quick_create_popup(canvas, ui, canvas_rect, manager, canvas.active_module_id);
+    // We drop the borrow of module here so we can pass manager to other functions
+    let mut do_delete_part = None;
+    let mut do_delete_conn = None;
 
-    if canvas.context_menu_part.is_none() && canvas.context_menu_connection.is_none() {
-        if let Some(pos) = canvas.context_menu_pos {
-            let menu_rect = Rect::from_min_size(pos, Vec2::new(180.0, 250.0));
+    // We defer the quick create popup because it requires `manager`
+    // Wait, `module` is no longer used after this point except for deleting in context menu.
+    // Instead of dropping it, we handle the context menu delete actions via flags.
 
-            if ui.input(|i| i.pointer.any_click())
-                && !menu_rect.contains(ui.input(|i| i.pointer.hover_pos().unwrap_or_default()))
-            {
-                canvas.context_menu_pos = None;
+    if let Some(pos) = canvas.context_menu_pos {
+        let is_add_menu =
+            canvas.context_menu_part.is_none() && canvas.context_menu_connection.is_none();
+
+        let menu_height = if is_add_menu { 250.0 } else { 70.0 };
+        let menu_rect = Rect::from_min_size(pos, Vec2::new(180.0, menu_height));
+
+        if ui.input(|i| i.pointer.any_click())
+            && !menu_rect.contains(ui.input(|i| i.pointer.hover_pos().unwrap_or_default()))
+        {
+            canvas.context_menu_pos = None;
+            canvas.context_menu_part = None;
+            canvas.context_menu_connection = None;
+        } else {
+            let painter = ui.painter();
+            painter.rect_filled(
+                menu_rect,
+                4.0,
+                Color32::from_rgba_unmultiplied(30, 30, 40, 245),
+            );
+            painter.rect_stroke(
+                menu_rect,
+                4.0,
+                Stroke::new(1.0, Color32::from_rgb(80, 100, 150)),
+                egui::StrokeKind::Middle,
+            );
+
+            let inner = menu_rect.shrink(8.0);
+
+            // To avoid borrowing `module` inside the closure for `manager`, we separate the add menu logic
+            if is_add_menu {
+                // Drop module borrow before calling draw::render_add_node_menu_content which needs `manager`
             } else {
-                let painter = ui.painter();
-                painter.rect_filled(
-                    menu_rect,
-                    4.0,
-                    Color32::from_rgba_unmultiplied(30, 30, 40, 245),
-                );
-                painter.rect_stroke(
-                    menu_rect,
-                    4.0,
-                    Stroke::new(1.0, Color32::from_rgb(80, 100, 150)),
-                    egui::StrokeKind::Middle,
-                );
-
-                let inner = menu_rect.shrink(8.0);
                 ui.scope_builder(egui::UiBuilder::new().max_rect(inner), |ui| {
                     ui.vertical(|ui| {
-                        ui.heading("\u{2795} Add Node");
-                        ui.separator();
-                        let canvas_pos = from_screen(pos);
-                        draw::render_add_node_menu_content(
-                            ui,
-                            manager,
-                            Some((canvas_pos.x, canvas_pos.y)),
-                            canvas.active_module_id,
-                        );
+                        if let Some(part_id) = canvas.context_menu_part {
+                            ui.heading("\u{2699} Node Actions");
+                            ui.separator();
+
+                            // Delete Node Action (Hold-to-Confirm)
+                            if crate::widgets::custom::hold_to_action_button(
+                                ui,
+                                "🗑 Delete Node",
+                                crate::theme::colors::ERROR_COLOR,
+                            ) {
+                                do_delete_part = Some(part_id);
+                                canvas.context_menu_pos = None;
+                                canvas.context_menu_part = None;
+                            }
+                        } else if let Some(conn_idx) = canvas.context_menu_connection {
+                            ui.heading("\u{2699} Connection Actions");
+                            ui.separator();
+
+                            // Delete Connection Action (Hold-to-Confirm)
+                            if crate::widgets::custom::hold_to_action_button(
+                                ui,
+                                "🗑 Delete Connection",
+                                crate::theme::colors::ERROR_COLOR,
+                            ) {
+                                do_delete_conn = Some(conn_idx);
+                                canvas.context_menu_pos = None;
+                                canvas.context_menu_connection = None;
+                            }
+                        }
                     });
                 });
             }
+        }
+    }
+
+    if let Some(part_id) = do_delete_part {
+        module
+            .connections
+            .retain(|c| c.from_part != part_id && c.to_part != part_id);
+        module.parts.retain(|p| p.id != part_id);
+    }
+
+    if let Some(conn_idx) = do_delete_conn {
+        if conn_idx < module.connections.len() {
+            module.connections.remove(conn_idx);
+        }
+    }
+
+    // Drop the mutable borrow of module so we can use manager
+    let _ = module;
+
+    draw::draw_quick_create_popup(canvas, ui, canvas_rect, manager, canvas.active_module_id);
+
+    // Now render the add menu if it was open
+    if let Some(pos) = canvas.context_menu_pos {
+        let is_add_menu =
+            canvas.context_menu_part.is_none() && canvas.context_menu_connection.is_none();
+        if is_add_menu {
+            let menu_height = 250.0;
+            let menu_rect = Rect::from_min_size(pos, Vec2::new(180.0, menu_height));
+            let inner = menu_rect.shrink(8.0);
+            ui.scope_builder(egui::UiBuilder::new().max_rect(inner), |ui| {
+                ui.vertical(|ui| {
+                    ui.heading("\u{2795} Add Node");
+                    ui.separator();
+                    let canvas_pos = from_screen(pos);
+                    draw::render_add_node_menu_content(
+                        ui,
+                        manager,
+                        Some((canvas_pos.x, canvas_pos.y)),
+                        canvas.active_module_id,
+                    );
+                });
+            });
         }
     }
 }
