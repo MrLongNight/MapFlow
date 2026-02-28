@@ -93,17 +93,22 @@ impl MpvDecoder {
         // Note: This property returns data in a format depending on MPV's config
         // Default is usually RGB or RGBA.
         // For production, we might want to use the Render API with a C wrapper for Send/Sync
-        
+
         // Command: screenshot-raw
         // Returns a byte array of the current frame
-        let frame_data = self.mpv.get_property::<Vec<u8>>("screenshot-raw").map_err(|e| {
-            error!("MPV frame capture failed: {}", e);
-            MediaError::DecoderError(format!("MPV screenshot-raw failed: {}", e))
-        })?;
+        let frame_data = self
+            .mpv
+            .get_property::<Vec<u8>>("screenshot-raw")
+            .map_err(|e| {
+                error!("MPV frame capture failed: {}", e);
+                MediaError::DecoderError(format!("MPV screenshot-raw failed: {}", e))
+            })?;
 
         // Validate data size (RGBA expected)
         if frame_data.len() < (self.width * self.height * 3) as usize {
-             return Err(MediaError::DecoderError("Captured frame data too small".to_string()));
+            return Err(MediaError::DecoderError(
+                "Captured frame data too small".to_string(),
+            ));
         }
 
         // If MPV returns RGB, we might need to convert to RGBA

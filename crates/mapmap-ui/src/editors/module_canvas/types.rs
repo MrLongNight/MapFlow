@@ -106,7 +106,7 @@ pub struct MyValueType;
 
 #[derive(Clone, Debug)]
 pub struct MyNodeTemplate {
-/// User-friendly name for identifying the element.
+    /// User-friendly name for identifying the element.
     pub label: String,
     pub part_type_variant: String,
 }

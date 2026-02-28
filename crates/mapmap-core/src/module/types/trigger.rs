@@ -1,7 +1,11 @@
-use serde::{Deserialize, Serialize};
+//!
+//! Trigger variants.
+//!
+
 use crate::module::types::socket::ModuleSocket;
 use crate::module::types::socket::ModuleSocketType;
 use rand::RngExt;
+use serde::{Deserialize, Serialize};
 
 /// Target parameter for a trigger input
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]

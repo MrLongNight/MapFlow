@@ -1,6 +1,10 @@
-use serde::{Deserialize, Serialize};
-use crate::layer::layer_struct::Layer;
+//!
+//! Layer manager handling collections.
+//!
+
 use crate::layer::composition::Composition;
+use crate::layer::layer_struct::Layer;
+use serde::{Deserialize, Serialize};
 
 /// Layer manager for organizing and rendering layers
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

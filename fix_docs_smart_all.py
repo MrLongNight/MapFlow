@@ -94,7 +94,7 @@ def fix_docs(content):
     new_lines = []
     for i in range(len(lines)):
         line = lines[i]
-        
+
         # Replace garbage property comments
         if "/// Component property or field." in line:
             if i + 1 < len(lines):
@@ -104,7 +104,7 @@ def fix_docs(content):
                     field_name = match.group(1)
                     if field_name in field_descriptions:
                         line = line.replace("/// Component property or field.", "/// " + field_descriptions[field_name])
-        
+
         # Replace garbage variant comments
         if "/// Enumeration variant." in line:
             if i + 1 < len(lines):
@@ -139,7 +139,7 @@ for path in paths:
                 file_path = os.path.join(root, file)
                 with open(file_path, 'r', encoding='utf-8') as f:
                     content = f.read()
-                
+
                 if "/// Component property or field." in content or "/// Enumeration variant." in content or "/// Unique identifier." in content:
                     fixed_content = fix_docs(content)
                     with open(file_path, 'w', encoding='utf-8') as f:

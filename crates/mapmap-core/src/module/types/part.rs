@@ -1,15 +1,19 @@
+//!
+//! Module part types.
+//!
+
+use crate::module::types::hue::HueNodeType;
+use crate::module::types::layer::LayerType;
+use crate::module::types::mask::MaskType;
+use crate::module::types::module::ModulePartId;
+use crate::module::types::modulizer::ModulizerType;
+use crate::module::types::node_link::{LinkMode, NodeLinkData};
+use crate::module::types::output::OutputType;
+use crate::module::types::socket::{ModuleSocket, ModuleSocketType};
+use crate::module::types::source::SourceType;
+use crate::module::types::trigger::{TriggerConfig, TriggerType};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::module::types::module::ModulePartId;
-use crate::module::types::socket::{ModuleSocket, ModuleSocketType};
-use crate::module::types::trigger::{TriggerConfig, TriggerType};
-use crate::module::types::source::SourceType;
-use crate::module::types::mask::MaskType;
-use crate::module::types::modulizer::ModulizerType;
-use crate::module::types::layer::LayerType;
-use crate::module::types::output::OutputType;
-use crate::module::types::hue::HueNodeType;
-use crate::module::types::node_link::{NodeLinkData, LinkMode};
 
 /// A node in the visual graph
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

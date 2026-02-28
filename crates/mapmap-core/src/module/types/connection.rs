@@ -1,5 +1,9 @@
-use serde::{Deserialize, Serialize};
+//!
+//! Connection handling and definition.
+//!
+
 use crate::module::types::module::ModulePartId;
+use serde::{Deserialize, Serialize};
 
 /// Represents a connection between two modules/parts
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

@@ -58,7 +58,7 @@ pub struct LayerInfo {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UpdateParameterRequest {
     pub target: ControlTarget,
-/// The data value associated with the control or message.
+    /// The data value associated with the control or message.
     pub value: ControlValue,
 }
 

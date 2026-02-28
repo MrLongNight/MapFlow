@@ -1,14 +1,18 @@
-use serde::{Deserialize, Serialize};
-use crate::module::types::part::{ModulePart, ModulePartType, PartType};
+//!
+//! Global module data.
+//!
+
 use crate::module::types::connection::ModuleConnection;
-use crate::module::types::source::{SourceType, BevyShapeType};
-use crate::module::types::trigger::TriggerType;
-use crate::module::types::mask::{MaskType, MaskShape};
-use crate::module::types::modulizer::ModulizerType;
-use crate::module::types::layer::LayerType;
-use crate::module::types::output::OutputType;
 use crate::module::types::hue::HueNodeType;
+use crate::module::types::layer::LayerType;
+use crate::module::types::mask::{MaskShape, MaskType};
+use crate::module::types::modulizer::ModulizerType;
 use crate::module::types::node_link::NodeLinkData;
+use crate::module::types::output::OutputType;
+use crate::module::types::part::{ModulePart, ModulePartType, PartType};
+use crate::module::types::source::{BevyShapeType, SourceType};
+use crate::module::types::trigger::TriggerType;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// Unique identifier for a Module
@@ -92,7 +96,10 @@ impl MapFlowModule {
                 effect_type: crate::module::types::modulizer::EffectType::Blur,
                 params: std::collections::HashMap::new(),
             }),
-            PartType::Mesh => ModulePartType::Mesh(crate::module::types::mesh::MeshType::Grid { cols: 10, rows: 10 }),
+            PartType::Mesh => ModulePartType::Mesh(crate::module::types::mesh::MeshType::Grid {
+                cols: 10,
+                rows: 10,
+            }),
             PartType::Layer => ModulePartType::Layer(LayerType::Single {
                 id: 0,
                 name: "Layer 1".to_string(),

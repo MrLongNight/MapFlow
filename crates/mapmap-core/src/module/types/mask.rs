@@ -1,3 +1,7 @@
+//!
+//! Mask types.
+//!
+
 use serde::{Deserialize, Serialize};
 
 /// Defines the geometry or texture used to mask a layer.
