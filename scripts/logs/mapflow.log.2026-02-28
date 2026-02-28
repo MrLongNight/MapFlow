@@ -809,3 +809,33 @@
 2026-02-28T08:02:09.540178Z  INFO MapFlow::app::loops::logic: [PERF] FPS: 22.5, Frame: 44.44ms, RAM: 222.0MB, Modules: 3
 2026-02-28T08:02:36.207211Z  INFO MapFlow::app::loops::logic: [PERF] FPS: 22.5, Frame: 44.46ms, RAM: 222.0MB, Modules: 3
 2026-02-28T08:03:02.946466Z  INFO MapFlow::app::loops::logic: [PERF] FPS: 22.3, Frame: 44.94ms, RAM: 222.0MB, Modules: 3
+2026-02-28T08:03:29.817535Z  INFO MapFlow::app::loops::logic: [PERF] FPS: 22.5, Frame: 44.53ms, RAM: 222.0MB, Modules: 3
+2026-02-28T08:03:56.655827Z  INFO MapFlow::app::loops::logic: [PERF] FPS: 22.5, Frame: 44.51ms, RAM: 222.0MB, Modules: 3
+2026-02-28T08:04:23.412938Z  INFO MapFlow::app::loops::logic: [PERF] FPS: 22.4, Frame: 44.61ms, RAM: 222.0MB, Modules: 3
+2026-02-28T08:04:50.106876Z  INFO MapFlow::app::loops::logic: [PERF] FPS: 22.5, Frame: 44.52ms, RAM: 222.0MB, Modules: 3
+2026-02-28T08:05:16.948043Z  INFO MapFlow::app::loops::logic: [PERF] FPS: 22.2, Frame: 44.95ms, RAM: 222.0MB, Modules: 3
+2026-02-28T08:05:43.841056Z  INFO MapFlow::app::loops::logic: [PERF] FPS: 22.3, Frame: 44.92ms, RAM: 222.0MB, Modules: 3
+2026-02-28T08:06:10.602185Z  INFO MapFlow::app::loops::logic: [PERF] FPS: 22.5, Frame: 44.44ms, RAM: 222.0MB, Modules: 3
+2026-02-28T08:06:37.437834Z  INFO MapFlow::app::loops::logic: [PERF] FPS: 22.4, Frame: 44.59ms, RAM: 222.0MB, Modules: 3
+2026-02-28T08:07:04.246940Z  INFO MapFlow::app::loops::logic: [PERF] FPS: 22.4, Frame: 44.57ms, RAM: 222.0MB, Modules: 3
+2026-02-28T08:07:31.080051Z  INFO MapFlow::app::loops::logic: [PERF] FPS: 22.5, Frame: 44.53ms, RAM: 222.0MB, Modules: 3
+2026-02-28T08:07:57.801679Z  INFO MapFlow::app::loops::logic: [PERF] FPS: 22.4, Frame: 44.62ms, RAM: 222.0MB, Modules: 3
+2026-02-28T08:08:24.581263Z  INFO MapFlow::app::loops::logic: [PERF] FPS: 22.3, Frame: 44.94ms, RAM: 222.0MB, Modules: 3
+2026-02-28T08:08:51.357825Z  INFO MapFlow::app::loops::logic: [PERF] FPS: 22.4, Frame: 44.57ms, RAM: 222.0MB, Modules: 3
+2026-02-28T08:09:18.292159Z  INFO MapFlow::app::loops::logic: [PERF] FPS: 22.2, Frame: 45.06ms, RAM: 222.0MB, Modules: 3
+2026-02-28T08:09:45.414490Z  INFO MapFlow::app::loops::logic: [PERF] FPS: 22.2, Frame: 45.11ms, RAM: 222.0MB, Modules: 3
+2026-02-28T08:10:12.648631Z  INFO MapFlow::app::loops::logic: [PERF] FPS: 22.2, Frame: 45.04ms, RAM: 222.0MB, Modules: 3
+2026-02-28T08:10:39.591115Z  INFO MapFlow::app::loops::logic: [PERF] FPS: 22.4, Frame: 44.55ms, RAM: 222.0MB, Modules: 3
+2026-02-28T08:11:06.528741Z  INFO MapFlow::app::loops::logic: [PERF] FPS: 22.4, Frame: 44.64ms, RAM: 222.0MB, Modules: 3
+2026-02-28T08:11:33.474039Z  INFO MapFlow::app::loops::logic: [PERF] FPS: 22.4, Frame: 44.67ms, RAM: 222.0MB, Modules: 3
+2026-02-28T08:12:00.278730Z  INFO MapFlow::app::loops::logic: [PERF] FPS: 22.5, Frame: 44.53ms, RAM: 222.0MB, Modules: 3
+2026-02-28T08:12:27.057216Z  INFO MapFlow::app::loops::logic: [PERF] FPS: 22.3, Frame: 44.88ms, RAM: 222.0MB, Modules: 3
+2026-02-28T08:12:53.901627Z  INFO MapFlow::app::loops::logic: [PERF] FPS: 22.2, Frame: 45.01ms, RAM: 222.0MB, Modules: 3
+2026-02-28T08:13:07.994050Z  INFO mapmap_media::pipeline: Stopping pipeline
+2026-02-28T08:13:08.001786Z  INFO mapmap_media::pipeline: Decode thread stopped
+2026-02-28T08:13:08.013188Z  INFO mapmap_media::pipeline: Decode channel disconnected
+2026-02-28T08:13:08.014550Z  INFO mapmap_media::pipeline: Stopping pipeline
+2026-02-28T08:13:08.014670Z  INFO mapmap_media::pipeline: Upload thread stopped
+2026-02-28T08:13:08.036522Z  INFO mapmap_media::pipeline: Decode thread stopped
+2026-02-28T08:13:08.045988Z  INFO mapmap_media::pipeline: Decode channel disconnected
+2026-02-28T08:13:08.046338Z  INFO mapmap_media::pipeline: Upload thread stopped

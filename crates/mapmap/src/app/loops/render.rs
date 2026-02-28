@@ -46,10 +46,63 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
         }
     }
 
-    // Create raw pointer for UI loop hack BEFORE borrowing window_context
-    let app_ptr = app as *mut App;
+    // --- UI PASS (Output 0 only) ---
+    let mut egui_render_data = None;
 
-    // SCOPE for Window Context Borrow
+    if output_id == 0 {
+        // 1. Get Input and Window Info (Short-lived borrow)
+        let (raw_input, screen_descriptor) = {
+            let window_context = match app.window_manager.get(0) {
+                Some(ctx) => ctx,
+                None => return Ok(()),
+            };
+
+            let input = app.egui_state.take_egui_input(&window_context.window);
+            let desc = egui_wgpu::ScreenDescriptor {
+                size_in_pixels: [
+                    window_context.surface_config.width,
+                    window_context.surface_config.height,
+                ],
+                pixels_per_point: app.egui_context.pixels_per_point(),
+            };
+            (input, desc)
+        };
+
+        // 2. Run UI Pass (SAFE: app is now available mutably)
+        let egui_ctx = app.egui_context.clone();
+        let full_output = egui_ctx.run(raw_input, |ctx| {
+            ui_layout::show(app, ctx);
+        });
+
+        // 3. Handle Output (Requires another short-lived borrow of window)
+        {
+            let window_context = app.window_manager.get(0).unwrap();
+            app.egui_state
+                .handle_platform_output(&window_context.window, full_output.platform_output);
+        }
+
+        // 4. Update Textures and Buffers
+        let tris = app
+            .egui_context
+            .tessellate(full_output.shapes, app.egui_context.pixels_per_point());
+
+        for (id, delta) in full_output.textures_delta.set {
+            app.egui_renderer
+                .update_texture(&device, &app.backend.queue, id, &delta);
+        }
+
+        app.egui_renderer.update_buffers(
+            &device,
+            &app.backend.queue,
+            &mut encoder,
+            &tris,
+            &screen_descriptor,
+        );
+
+        egui_render_data = Some((tris, screen_descriptor, full_output.textures_delta.free));
+    }
+
+    // --- RENDER PASS ---
     {
         let window_context = match app.window_manager.get(output_id) {
             Some(ctx) => ctx,
@@ -61,54 +114,7 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
-        let mut egui_render_data = None;
-
-        if output_id == 0 {
-            // UI Pass
-            let raw_input = app.egui_state.take_egui_input(&window_context.window);
-
-            let full_output = app.egui_context.run(raw_input, |ctx| {
-                // SAFETY: We ensure window_context doesn't overlap with fields used in show.
-                unsafe {
-                    ui_layout::show(&mut *app_ptr, ctx);
-                }
-            });
-
-            app.egui_state
-                .handle_platform_output(&window_context.window, full_output.platform_output);
-
-            let tris = app
-                .egui_context
-                .tessellate(full_output.shapes, app.egui_context.pixels_per_point());
-
-            for (id, delta) in full_output.textures_delta.set {
-                app.egui_renderer
-                    .update_texture(&device, &app.backend.queue, id, &delta);
-            }
-
-            let screen_descriptor = egui_wgpu::ScreenDescriptor {
-                size_in_pixels: [
-                    window_context.surface_config.width,
-                    window_context.surface_config.height,
-                ],
-                pixels_per_point: app.egui_context.pixels_per_point(),
-            };
-
-            // CRITICAL: Update GPU buffers before rendering - this prepares vertex/index buffers
-            // and ensures all texture references are valid. Without this, egui-wgpu may panic
-            // when looking up textures that haven't been properly registered yet.
-            app.egui_renderer.update_buffers(
-                &device,
-                &app.backend.queue,
-                &mut encoder,
-                &tris,
-                &screen_descriptor,
-            );
-
-            egui_render_data = Some((tris, screen_descriptor, full_output.textures_delta.free));
-        }
-
-        // --- Render Content ---
+        // Render Content
         render_content(
             RenderContext {
                 device: &app.backend.device,
