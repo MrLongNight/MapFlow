@@ -2,8 +2,7 @@
 
 use crate::module::config::default_color_palette;
 use crate::module::types::{
-    MapFlowModule, ModuleId, ModulePartId, ModulePlaybackMode,
-    PartType, SharedMediaState,
+    MapFlowModule, ModuleId, ModulePartId, ModulePlaybackMode, PartType, SharedMediaState,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
