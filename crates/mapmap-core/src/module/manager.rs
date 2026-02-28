@@ -1,18 +1,26 @@
 //! Module Manager - Manages multiple scenes (modules)
 
+use crate::module::config::default_color_palette;
+use crate::module::types::{
+    MapFlowModule, ModuleId, ModulePartId, ModulePlaybackMode,
+    PartType, SharedMediaState,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::module::types::{ModuleId, MapFlowModule, ModulePartId, PartType, ModulePlaybackMode, SharedMediaState, ModulePartType, OutputType};
-use crate::module::config::default_color_palette;
 
 /// Manages multiple modules (Scenes)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModuleManager {
+    /// The collection of all modules, indexed by ID.
     pub modules: HashMap<ModuleId, MapFlowModule>,
+    /// The next available module ID.
     pub next_module_id: ModuleId,
+    /// The next available part ID across all modules.
     pub next_part_id: ModulePartId,
+    /// Predefined colors for new modules.
     #[serde(skip, default = "default_color_palette")]
     pub color_palette: Vec<[f32; 4]>,
+    /// Index to cycle through the color palette.
     pub next_color_index: usize,
     /// Shared media registry
     #[serde(default)]

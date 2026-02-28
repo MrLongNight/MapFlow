@@ -160,6 +160,7 @@ impl MapFlowModule {
         id
     }
 
+    /// Method implementation.
     pub fn add_part_with_type(
         &mut self,
         part_type: ModulePartType,
@@ -187,12 +188,14 @@ impl MapFlowModule {
         id
     }
 
+    /// Method implementation.
     pub fn update_part_position(&mut self, part_id: ModulePartId, new_position: (f32, f32)) {
         if let Some(part) = self.parts.iter_mut().find(|p| p.id == part_id) {
             part.position = new_position;
         }
     }
 
+    /// Method implementation.
     pub fn add_connection(
         &mut self,
         from_part: ModulePartId,
@@ -208,6 +211,7 @@ impl MapFlowModule {
         });
     }
 
+    /// Method implementation.
     pub fn remove_connection(
         &mut self,
         from_part: ModulePartId,
@@ -223,6 +227,7 @@ impl MapFlowModule {
         });
     }
 
+    /// Method implementation.
     pub fn update_part_sockets(&mut self, part_id: ModulePartId) {
         let mut in_count = 0;
         let mut out_count = 0;
@@ -248,6 +253,7 @@ impl MapFlowModule {
         }
     }
 
+    /// Method implementation.
     pub fn update_part_outputs(&mut self, part_id: ModulePartId) {
         self.update_part_sockets(part_id);
     }
@@ -325,17 +331,29 @@ pub enum TriggerTarget {
     /// No target (default)
     #[default]
     None,
+    /// Opacity value (0.0 to 1.0).
     Opacity,
+    /// Brightness factor.
     Brightness,
+    /// Contrast factor.
     Contrast,
+    /// Saturation adjustment.
     Saturation,
+    /// Hue shift in degrees.
     HueShift,
+    /// Enumeration variant.
     ScaleX,
+    /// Enumeration variant.
     ScaleY,
+    /// Rotation angle.
     Rotation,
+    /// Enumeration variant.
     OffsetX,
+    /// Enumeration variant.
     OffsetY,
+    /// Enumeration variant.
     FlipH,
+    /// Enumeration variant.
     FlipV,
     /// Specific Effect Parameter (by name)
     Param(String),
@@ -391,6 +409,7 @@ impl Default for TriggerConfig {
 }
 
 impl TriggerConfig {
+    /// Associated function.
     pub fn for_target(target: TriggerTarget) -> Self {
         Self {
             target,
@@ -398,6 +417,7 @@ impl TriggerConfig {
         }
     }
 
+    /// Method implementation.
     pub fn apply(&self, raw_value: f32) -> f32 {
         let value = if self.invert {
             1.0 - raw_value
@@ -456,8 +476,11 @@ impl Default for NodeLinkData {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum LinkMode {
     #[default]
+    /// Enumeration variant.
     Off,
+    /// Enumeration variant.
     Master,
+    /// Enumeration variant.
     Slave,
 }
 
@@ -465,7 +488,9 @@ pub enum LinkMode {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum LinkBehavior {
     #[default]
+    /// Enumeration variant.
     SameAsMaster,
+    /// Enumeration variant.
     Inverted,
 }
 
@@ -481,28 +506,43 @@ pub struct ModuleSocket {
 /// Type of data carried by a connection
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ModuleSocketType {
+    /// Enumeration variant.
     Trigger,
+    /// Enumeration variant.
     Media,
+    /// Enumeration variant.
     Effect,
+    /// Enumeration variant.
     Layer,
+    /// Enumeration variant.
     Output,
+    /// Enumeration variant.
     Link,
 }
 
 /// Comprehensive enum of all node types
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ModulePartType {
+    /// Enumeration variant.
     Trigger(TriggerType),
+    /// Enumeration variant.
     Source(SourceType),
+    /// Enumeration variant.
     Mask(MaskType),
+    /// Enumeration variant.
     Modulizer(ModulizerType),
+    /// Enumeration variant.
     Layer(LayerType),
+    /// Enumeration variant.
     Mesh(MeshType),
+    /// Hue shift in degrees.
     Hue(HueNodeType),
+    /// Enumeration variant.
     Output(OutputType),
 }
 
 impl ModulePartType {
+    /// Method implementation.
     pub fn get_default_sockets(&self) -> (Vec<ModuleSocket>, Vec<ModuleSocket>) {
         match self {
             ModulePartType::Trigger(trigger_type) => {
@@ -658,54 +698,84 @@ impl ModulePartType {
 /// Simplified part type for UI creation
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PartType {
+    /// Enumeration variant.
     Trigger,
+    /// Enumeration variant.
     Source,
+    /// Enumeration variant.
     BevyParticles,
+    /// Enumeration variant.
     Bevy3DShape,
+    /// Enumeration variant.
     Mask,
+    /// Enumeration variant.
     Modulator,
+    /// Enumeration variant.
     Mesh,
+    /// Enumeration variant.
     Layer,
+    /// Hue shift in degrees.
     Hue,
+    /// Enumeration variant.
     Output,
 }
 
 /// Types of Philips Hue Nodes
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum HueNodeType {
+    /// Enumeration variant.
     SingleLamp {
+        /// Unique identifier.
         id: String,
+        /// Display name.
         name: String,
         #[serde(default = "crate::module::config::default_opacity")]
+        /// Brightness factor.
         brightness: f32,
         #[serde(default = "crate::module::config::default_hue_color")]
+        /// Component property or field.
         color: [f32; 3],
         #[serde(default)]
+        /// Component property or field.
         effect: Option<String>,
         #[serde(default)]
+        /// Component property or field.
         effect_active: bool,
     },
+    /// Enumeration variant.
     MultiLamp {
+        /// Component property or field.
         ids: Vec<String>,
+        /// Display name.
         name: String,
         #[serde(default = "crate::module::config::default_opacity")]
+        /// Brightness factor.
         brightness: f32,
         #[serde(default = "crate::module::config::default_hue_color")]
+        /// Component property or field.
         color: [f32; 3],
         #[serde(default)]
+        /// Component property or field.
         effect: Option<String>,
         #[serde(default)]
+        /// Component property or field.
         effect_active: bool,
     },
+    /// Enumeration variant.
     EntertainmentGroup {
+        /// Display name.
         name: String,
         #[serde(default = "crate::module::config::default_opacity")]
+        /// Brightness factor.
         brightness: f32,
         #[serde(default = "crate::module::config::default_hue_color")]
+        /// Component property or field.
         color: [f32; 3],
         #[serde(default)]
+        /// Component property or field.
         effect: Option<String>,
         #[serde(default)]
+        /// Component property or field.
         effect_active: bool,
     },
 }
@@ -713,59 +783,96 @@ pub enum HueNodeType {
 /// Types of logic triggers
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum TriggerType {
+    /// Enumeration variant.
     AudioFFT {
+        /// Component property or field.
         band: AudioBand,
+        /// Component property or field.
         threshold: f32,
+        /// Component property or field.
         output_config: AudioTriggerOutputConfig,
     },
+    /// Enumeration variant.
     Random {
+        /// Component property or field.
         min_interval_ms: u32,
+        /// Component property or field.
         max_interval_ms: u32,
+        /// Component property or field.
         probability: f32,
     },
+    /// Enumeration variant.
     Fixed {
+        /// Component property or field.
         interval_ms: u32,
+        /// Component property or field.
         offset_ms: u32,
     },
+    /// Enumeration variant.
     Midi {
+        /// Component property or field.
         device: String,
+        /// Component property or field.
         channel: u8,
+        /// Component property or field.
         note: u8,
     },
+    /// Enumeration variant.
     Osc {
+        /// Component property or field.
         address: String,
     },
+    /// Enumeration variant.
     Shortcut {
+        /// Component property or field.
         key_code: String,
+        /// Component property or field.
         modifiers: u8,
     },
+    /// Enumeration variant.
     Beat,
 }
 
 /// Audio frequency bands for FFT trigger
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum AudioBand {
+    /// Enumeration variant.
     SubBass,
+    /// Enumeration variant.
     Bass,
+    /// Enumeration variant.
     LowMid,
+    /// Enumeration variant.
     Mid,
+    /// Enumeration variant.
     HighMid,
+    /// Enumeration variant.
     UpperMid,
+    /// Enumeration variant.
     Presence,
+    /// Enumeration variant.
     Brilliance,
+    /// Enumeration variant.
     Air,
+    /// Enumeration variant.
     Peak,
+    /// Enumeration variant.
     BPM,
 }
 
 /// Configuration for AudioFFT trigger outputs
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AudioTriggerOutputConfig {
+    /// Component property or field.
     pub frequency_bands: bool,
+    /// Component property or field.
     pub volume_outputs: bool,
+    /// Component property or field.
     pub beat_output: bool,
+    /// Component property or field.
     pub bpm_output: bool,
     #[serde(default)]
+    /// Component property or field.
     pub inverted_outputs: std::collections::HashSet<String>,
 }
 
@@ -782,14 +889,21 @@ impl Default for AudioTriggerOutputConfig {
 }
 
 impl AudioTriggerOutputConfig {
+    /// Method implementation.
     pub fn generate_outputs(&self) -> Vec<ModuleSocket> {
         let mut outputs = Vec::new();
 
         if self.frequency_bands {
             let bands = [
-                "SubBass Out", "Bass Out", "LowMid Out", "Mid Out", 
-                "HighMid Out", "UpperMid Out", "Presence Out", 
-                "Brilliance Out", "Air Out"
+                "SubBass Out",
+                "Bass Out",
+                "LowMid Out",
+                "Mid Out",
+                "HighMid Out",
+                "UpperMid Out",
+                "Presence Out",
+                "Brilliance Out",
+                "Air Out",
             ];
             for b in bands {
                 outputs.push(ModuleSocket {
@@ -839,29 +953,46 @@ impl AudioTriggerOutputConfig {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Default)]
 pub enum BevyShapeType {
     #[default]
+    /// Enumeration variant.
     Cube,
+    /// Enumeration variant.
     Sphere,
+    /// Enumeration variant.
     Capsule,
+    /// Enumeration variant.
     Torus,
+    /// Enumeration variant.
     Cylinder,
+    /// Enumeration variant.
     Plane,
 }
 
 /// Modes for Bevy Camera
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum BevyCameraMode {
+    /// Enumeration variant.
     Orbit {
+        /// Component property or field.
         radius: f32,
+        /// Playback speed multiplier.
         speed: f32,
+        /// Component property or field.
         target: [f32; 3],
+        /// Component property or field.
         height: f32,
     },
+    /// Enumeration variant.
     Fly {
+        /// Playback speed multiplier.
         speed: f32,
+        /// Component property or field.
         sensitivity: f32,
     },
+    /// Enumeration variant.
     Static {
+        /// Component property or field.
         position: [f32; 3],
+        /// Component property or field.
         look_at: [f32; 3],
     },
 }
@@ -880,268 +1011,424 @@ impl Default for BevyCameraMode {
 /// Types of media sources
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum SourceType {
+    /// Enumeration variant.
     MediaFile {
+        /// File path to asset.
         path: String,
         #[serde(default = "crate::module::config::default_speed")]
+        /// Playback speed multiplier.
         speed: f32,
         #[serde(default)]
+        /// Component property or field.
         loop_enabled: bool,
         #[serde(default)]
+        /// Component property or field.
         start_time: f32,
         #[serde(default)]
+        /// Component property or field.
         end_time: f32,
         #[serde(default = "crate::module::config::default_opacity")]
+        /// Opacity value (0.0 to 1.0).
         opacity: f32,
         #[serde(default)]
+        /// Blending mode used for rendering.
         blend_mode: Option<BlendModeType>,
         #[serde(default)]
+        /// Brightness factor.
         brightness: f32,
         #[serde(default = "crate::module::config::default_contrast")]
+        /// Contrast factor.
         contrast: f32,
         #[serde(default = "crate::module::config::default_saturation")]
+        /// Saturation adjustment.
         saturation: f32,
         #[serde(default)]
+        /// Hue shift in degrees.
         hue_shift: f32,
         #[serde(default = "crate::module::config::default_scale")]
+        /// Scale factor on X axis.
         scale_x: f32,
         #[serde(default = "crate::module::config::default_scale")]
+        /// Scale factor on Y axis.
         scale_y: f32,
         #[serde(default)]
+        /// Rotation angle.
         rotation: f32,
         #[serde(default)]
+        /// X axis offset.
         offset_x: f32,
         #[serde(default)]
+        /// Y axis offset.
         offset_y: f32,
         #[serde(default)]
+        /// Component property or field.
         target_width: Option<u32>,
         #[serde(default)]
+        /// Component property or field.
         target_height: Option<u32>,
         #[serde(default)]
+        /// Component property or field.
         target_fps: Option<f32>,
         #[serde(default)]
+        /// Horizontal flip flag.
         flip_horizontal: bool,
         #[serde(default)]
+        /// Vertical flip flag.
         flip_vertical: bool,
         #[serde(default)]
+        /// Component property or field.
         reverse_playback: bool,
     },
+    /// Enumeration variant.
     Shader {
+        /// Display name.
         name: String,
+        /// Component property or field.
         params: Vec<(String, f32)>,
     },
+    /// Enumeration variant.
     LiveInput {
+        /// Unique identifier.
         device_id: u32,
     },
+    /// Enumeration variant.
     NdiInput {
+        /// Display name.
         source_name: Option<String>,
     },
+    /// Enumeration variant.
     Bevy,
+    /// Enumeration variant.
     BevyAtmosphere {
+        /// Component property or field.
         turbidity: f32,
+        /// Component property or field.
         rayleigh: f32,
+        /// Component property or field.
         mie_coeff: f32,
+        /// Component property or field.
         mie_directional_g: f32,
+        /// Component property or field.
         sun_position: (f32, f32),
+        /// Component property or field.
         exposure: f32,
     },
+    /// Enumeration variant.
     BevyHexGrid {
+        /// Component property or field.
         radius: f32,
+        /// Component property or field.
         rings: u32,
+        /// Component property or field.
         pointy_top: bool,
+        /// Component property or field.
         spacing: f32,
+        /// Component property or field.
         position: [f32; 3],
+        /// Rotation angle.
         rotation: [f32; 3],
+        /// Component property or field.
         scale: f32,
     },
+    /// Enumeration variant.
     BevyParticles {
+        /// Component property or field.
         rate: f32,
+        /// Component property or field.
         lifetime: f32,
+        /// Playback speed multiplier.
         speed: f32,
+        /// Component property or field.
         color_start: [f32; 4],
+        /// Component property or field.
         color_end: [f32; 4],
+        /// Component property or field.
         position: [f32; 3],
+        /// Rotation angle.
         rotation: [f32; 3],
     },
+    /// Enumeration variant.
     Bevy3DShape {
+        /// Component property or field.
         shape_type: BevyShapeType,
+        /// Component property or field.
         position: [f32; 3],
+        /// Rotation angle.
         rotation: [f32; 3],
+        /// Component property or field.
         scale: [f32; 3],
+        /// Component property or field.
         color: [f32; 4],
+        /// Component property or field.
         unlit: bool,
         #[serde(default)]
+        /// Component property or field.
         outline_width: f32,
         #[serde(default = "crate::module::config::default_white_rgba")]
+        /// Component property or field.
         outline_color: [f32; 4],
     },
+    /// Enumeration variant.
     Bevy3DModel {
+        /// File path to asset.
         path: String,
+        /// Component property or field.
         position: [f32; 3],
+        /// Rotation angle.
         rotation: [f32; 3],
+        /// Component property or field.
         scale: [f32; 3],
+        /// Component property or field.
         color: [f32; 4],
+        /// Component property or field.
         unlit: bool,
         #[serde(default)]
+        /// Component property or field.
         outline_width: f32,
         #[serde(default = "crate::module::config::default_white_rgba")]
+        /// Component property or field.
         outline_color: [f32; 4],
     },
+    /// Enumeration variant.
     Bevy3DText {
+        /// Component property or field.
         text: String,
+        /// Component property or field.
         font_size: f32,
+        /// Component property or field.
         color: [f32; 4],
+        /// Component property or field.
         position: [f32; 3],
+        /// Rotation angle.
         rotation: [f32; 3],
+        /// Component property or field.
         alignment: String,
     },
+    /// Enumeration variant.
     BevyCamera {
+        /// Component property or field.
         mode: BevyCameraMode,
+        /// Component property or field.
         fov: f32,
+        /// Component property or field.
         active: bool,
     },
     #[cfg(target_os = "windows")]
+    /// Enumeration variant.
     SpoutInput {
+        /// Display name.
         sender_name: String,
     },
+    /// Enumeration variant.
     VideoUni {
+        /// File path to asset.
         path: String,
         #[serde(default = "crate::module::config::default_speed")]
+        /// Playback speed multiplier.
         speed: f32,
         #[serde(default)]
+        /// Component property or field.
         loop_enabled: bool,
         #[serde(default)]
+        /// Component property or field.
         start_time: f32,
         #[serde(default)]
+        /// Component property or field.
         end_time: f32,
         #[serde(default = "crate::module::config::default_opacity")]
+        /// Opacity value (0.0 to 1.0).
         opacity: f32,
         #[serde(default)]
+        /// Blending mode used for rendering.
         blend_mode: Option<BlendModeType>,
         #[serde(default)]
+        /// Brightness factor.
         brightness: f32,
         #[serde(default = "crate::module::config::default_contrast")]
+        /// Contrast factor.
         contrast: f32,
         #[serde(default = "crate::module::config::default_saturation")]
+        /// Saturation adjustment.
         saturation: f32,
         #[serde(default)]
+        /// Hue shift in degrees.
         hue_shift: f32,
         #[serde(default = "crate::module::config::default_scale")]
+        /// Scale factor on X axis.
         scale_x: f32,
         #[serde(default = "crate::module::config::default_scale")]
+        /// Scale factor on Y axis.
         scale_y: f32,
         #[serde(default)]
+        /// Rotation angle.
         rotation: f32,
         #[serde(default)]
+        /// X axis offset.
         offset_x: f32,
         #[serde(default)]
+        /// Y axis offset.
         offset_y: f32,
         #[serde(default)]
+        /// Component property or field.
         target_width: Option<u32>,
         #[serde(default)]
+        /// Component property or field.
         target_height: Option<u32>,
         #[serde(default)]
+        /// Component property or field.
         target_fps: Option<f32>,
         #[serde(default)]
+        /// Horizontal flip flag.
         flip_horizontal: bool,
         #[serde(default)]
+        /// Vertical flip flag.
         flip_vertical: bool,
         #[serde(default)]
+        /// Component property or field.
         reverse_playback: bool,
     },
+    /// Enumeration variant.
     VideoMulti {
+        /// Unique identifier.
         shared_id: String,
         #[serde(default = "crate::module::config::default_opacity")]
+        /// Opacity value (0.0 to 1.0).
         opacity: f32,
         #[serde(default)]
+        /// Blending mode used for rendering.
         blend_mode: Option<BlendModeType>,
         #[serde(default)]
+        /// Brightness factor.
         brightness: f32,
         #[serde(default = "crate::module::config::default_contrast")]
+        /// Contrast factor.
         contrast: f32,
         #[serde(default = "crate::module::config::default_saturation")]
+        /// Saturation adjustment.
         saturation: f32,
         #[serde(default)]
+        /// Hue shift in degrees.
         hue_shift: f32,
         #[serde(default = "crate::module::config::default_scale")]
+        /// Scale factor on X axis.
         scale_x: f32,
         #[serde(default = "crate::module::config::default_scale")]
+        /// Scale factor on Y axis.
         scale_y: f32,
         #[serde(default)]
+        /// Rotation angle.
         rotation: f32,
         #[serde(default)]
+        /// X axis offset.
         offset_x: f32,
         #[serde(default)]
+        /// Y axis offset.
         offset_y: f32,
         #[serde(default)]
+        /// Horizontal flip flag.
         flip_horizontal: bool,
         #[serde(default)]
+        /// Vertical flip flag.
         flip_vertical: bool,
     },
+    /// Enumeration variant.
     ImageUni {
+        /// File path to asset.
         path: String,
         #[serde(default = "crate::module::config::default_opacity")]
+        /// Opacity value (0.0 to 1.0).
         opacity: f32,
         #[serde(default)]
+        /// Blending mode used for rendering.
         blend_mode: Option<BlendModeType>,
         #[serde(default)]
+        /// Brightness factor.
         brightness: f32,
         #[serde(default = "crate::module::config::default_contrast")]
+        /// Contrast factor.
         contrast: f32,
         #[serde(default = "crate::module::config::default_saturation")]
+        /// Saturation adjustment.
         saturation: f32,
         #[serde(default)]
+        /// Hue shift in degrees.
         hue_shift: f32,
         #[serde(default = "crate::module::config::default_scale")]
+        /// Scale factor on X axis.
         scale_x: f32,
         #[serde(default = "crate::module::config::default_scale")]
+        /// Scale factor on Y axis.
         scale_y: f32,
         #[serde(default)]
+        /// Rotation angle.
         rotation: f32,
         #[serde(default)]
+        /// X axis offset.
         offset_x: f32,
         #[serde(default)]
+        /// Y axis offset.
         offset_y: f32,
         #[serde(default)]
+        /// Component property or field.
         target_width: Option<u32>,
         #[serde(default)]
+        /// Component property or field.
         target_height: Option<u32>,
         #[serde(default)]
+        /// Horizontal flip flag.
         flip_horizontal: bool,
         #[serde(default)]
+        /// Vertical flip flag.
         flip_vertical: bool,
     },
+    /// Enumeration variant.
     ImageMulti {
+        /// Unique identifier.
         shared_id: String,
         #[serde(default = "crate::module::config::default_opacity")]
+        /// Opacity value (0.0 to 1.0).
         opacity: f32,
         #[serde(default)]
+        /// Blending mode used for rendering.
         blend_mode: Option<BlendModeType>,
         #[serde(default)]
+        /// Brightness factor.
         brightness: f32,
         #[serde(default = "crate::module::config::default_contrast")]
+        /// Contrast factor.
         contrast: f32,
         #[serde(default = "crate::module::config::default_saturation")]
+        /// Saturation adjustment.
         saturation: f32,
         #[serde(default)]
+        /// Hue shift in degrees.
         hue_shift: f32,
         #[serde(default = "crate::module::config::default_scale")]
+        /// Scale factor on X axis.
         scale_x: f32,
         #[serde(default = "crate::module::config::default_scale")]
+        /// Scale factor on Y axis.
         scale_y: f32,
         #[serde(default)]
+        /// Rotation angle.
         rotation: f32,
         #[serde(default)]
+        /// X axis offset.
         offset_x: f32,
         #[serde(default)]
+        /// Y axis offset.
         offset_y: f32,
         #[serde(default)]
+        /// Horizontal flip flag.
         flip_horizontal: bool,
         #[serde(default)]
+        /// Vertical flip flag.
         flip_vertical: bool,
     },
 }
 
 impl SourceType {
+    /// Associated function.
     pub fn new_media_file(path: String) -> Self {
         SourceType::MediaFile {
             path,
@@ -1173,12 +1460,18 @@ impl SourceType {
 /// Types of masks
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum MaskType {
+    /// Enumeration variant.
     File {
+        /// File path to asset.
         path: String,
     },
+    /// Enumeration variant.
     Shape(MaskShape),
+    /// Enumeration variant.
     Gradient {
+        /// Component property or field.
         angle: f32,
+        /// Component property or field.
         softness: f32,
     },
 }
@@ -1186,46 +1479,75 @@ pub enum MaskType {
 /// Procedural mask shapes
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum MaskShape {
+    /// Enumeration variant.
     Circle,
+    /// Enumeration variant.
     Rectangle,
+    /// Enumeration variant.
     Triangle,
+    /// Enumeration variant.
     Star,
+    /// Enumeration variant.
     Ellipse,
 }
 
 /// Mesh types for projection mapping
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum MeshType {
+    /// Enumeration variant.
     Quad {
+        /// Component property or field.
         tl: (f32, f32),
+        /// Component property or field.
         tr: (f32, f32),
+        /// Component property or field.
         br: (f32, f32),
+        /// Component property or field.
         bl: (f32, f32),
     },
+    /// Enumeration variant.
     Grid {
+        /// Component property or field.
         rows: u32,
+        /// Component property or field.
         cols: u32,
     },
+    /// Enumeration variant.
     BezierSurface {
+        /// Component property or field.
         control_points: Vec<(f32, f32)>,
     },
+    /// Enumeration variant.
     Polygon {
+        /// Component property or field.
         vertices: Vec<(f32, f32)>,
     },
+    /// Enumeration variant.
     TriMesh,
+    /// Enumeration variant.
     Circle {
+        /// Component property or field.
         segments: u32,
+        /// Component property or field.
         arc_angle: f32,
     },
+    /// Enumeration variant.
     Cylinder {
+        /// Component property or field.
         segments: u32,
+        /// Component property or field.
         height: f32,
     },
+    /// Enumeration variant.
     Sphere {
+        /// Component property or field.
         lat_segments: u32,
+        /// Component property or field.
         lon_segments: u32,
     },
+    /// Enumeration variant.
     Custom {
+        /// File path to asset.
         path: String,
     },
 }
@@ -1242,6 +1564,7 @@ impl Default for MeshType {
 }
 
 impl MeshType {
+    /// Method implementation.
     pub fn compute_revision_hash(&self) -> u64 {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
@@ -1311,6 +1634,7 @@ impl MeshType {
         hasher.finish()
     }
 
+    /// Method implementation.
     pub fn to_mesh(&self) -> crate::mesh::Mesh {
         use crate::mesh::Mesh;
         use glam::Vec2;
@@ -1445,9 +1769,7 @@ impl MeshType {
                     revision: 0,
                 }
             }
-            MeshType::Custom { path: _ } => {
-                Mesh::quad()
-            }
+            MeshType::Custom { path: _ } => Mesh::quad(),
         };
 
         mesh.revision = self.compute_revision_hash();
@@ -1458,13 +1780,19 @@ impl MeshType {
 /// Types of modulizers
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ModulizerType {
+    /// Enumeration variant.
     Effect {
+        /// Component property or field.
         effect_type: EffectType,
         #[serde(default)]
+        /// Component property or field.
         params: HashMap<String, f32>,
     },
+    /// Enumeration variant.
     BlendMode(BlendModeType),
+    /// Enumeration variant.
     AudioReactive {
+        /// Component property or field.
         source: String,
     },
 }
@@ -1472,34 +1800,60 @@ pub enum ModulizerType {
 /// Available visual effects
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum EffectType {
+    /// Enumeration variant.
     ShaderGraph(crate::shader_graph::GraphId),
+    /// Enumeration variant.
     Blur,
+    /// Enumeration variant.
     Sharpen,
+    /// Enumeration variant.
     Invert,
+    /// Enumeration variant.
     Threshold,
+    /// Brightness factor.
     Brightness,
+    /// Contrast factor.
     Contrast,
+    /// Saturation adjustment.
     Saturation,
+    /// Hue shift in degrees.
     HueShift,
+    /// Enumeration variant.
     Colorize,
+    /// Enumeration variant.
     Wave,
+    /// Enumeration variant.
     Spiral,
+    /// Enumeration variant.
     Pinch,
+    /// Enumeration variant.
     Mirror,
+    /// Enumeration variant.
     Kaleidoscope,
+    /// Enumeration variant.
     Pixelate,
+    /// Enumeration variant.
     Halftone,
+    /// Enumeration variant.
     EdgeDetect,
+    /// Enumeration variant.
     Posterize,
+    /// Enumeration variant.
     Glitch,
+    /// Enumeration variant.
     RgbSplit,
+    /// Enumeration variant.
     ChromaticAberration,
+    /// Enumeration variant.
     VHS,
+    /// Enumeration variant.
     FilmGrain,
+    /// Enumeration variant.
     Vignette,
 }
 
 impl EffectType {
+    /// Associated function.
     pub fn all() -> &'static [EffectType] {
         &[
             EffectType::Blur,
@@ -1529,6 +1883,7 @@ impl EffectType {
         ]
     }
 
+    /// Display name.
     pub fn name(&self) -> &'static str {
         match self {
             EffectType::Blur => "Blur",
@@ -1563,16 +1918,24 @@ impl EffectType {
 /// Blend mode types
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum BlendModeType {
+    /// Enumeration variant.
     Normal,
+    /// Enumeration variant.
     Add,
+    /// Enumeration variant.
     Multiply,
+    /// Enumeration variant.
     Screen,
+    /// Enumeration variant.
     Overlay,
+    /// Enumeration variant.
     Difference,
+    /// Enumeration variant.
     Exclusion,
 }
 
 impl BlendModeType {
+    /// Associated function.
     pub fn all() -> &'static [BlendModeType] {
         &[
             BlendModeType::Normal,
@@ -1585,6 +1948,7 @@ impl BlendModeType {
         ]
     }
 
+    /// Display name.
     pub fn name(&self) -> &'static str {
         match self {
             BlendModeType::Normal => "Normal",
@@ -1601,27 +1965,43 @@ impl BlendModeType {
 /// Types of compositing layers
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum LayerType {
+    /// Enumeration variant.
     Single {
+        /// Unique identifier.
         id: u64,
+        /// Display name.
         name: String,
+        /// Opacity value (0.0 to 1.0).
         opacity: f32,
+        /// Blending mode used for rendering.
         blend_mode: Option<BlendModeType>,
         #[serde(default = "crate::module::config::default_mesh_quad")]
+        /// Component property or field.
         mesh: MeshType,
         #[serde(default)]
+        /// Component property or field.
         mapping_mode: bool,
     },
+    /// Enumeration variant.
     Group {
+        /// Display name.
         name: String,
+        /// Opacity value (0.0 to 1.0).
         opacity: f32,
+        /// Blending mode used for rendering.
         blend_mode: Option<BlendModeType>,
         #[serde(default = "crate::module::config::default_mesh_quad")]
+        /// Component property or field.
         mesh: MeshType,
         #[serde(default)]
+        /// Component property or field.
         mapping_mode: bool,
     },
+    /// Enumeration variant.
     All {
+        /// Opacity value (0.0 to 1.0).
         opacity: f32,
+        /// Blending mode used for rendering.
         blend_mode: Option<BlendModeType>,
     },
 }
@@ -1629,41 +2009,64 @@ pub enum LayerType {
 /// Types of final outputs
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum OutputType {
+    /// Enumeration variant.
     Projector {
+        /// Unique identifier.
         id: u64,
+        /// Display name.
         name: String,
         #[serde(default)]
+        /// Component property or field.
         hide_cursor: bool,
         #[serde(default)]
+        /// Component property or field.
         target_screen: u8,
         #[serde(default = "crate::module::config::default_true")]
+        /// Component property or field.
         show_in_preview_panel: bool,
         #[serde(default)]
+        /// Component property or field.
         extra_preview_window: bool,
         #[serde(default)]
+        /// Component property or field.
         output_width: u32,
         #[serde(default)]
+        /// Component property or field.
         output_height: u32,
         #[serde(default = "crate::module::config::default_output_fps")]
+        /// Component property or field.
         output_fps: f32,
         #[serde(default)]
+        /// Component property or field.
         ndi_enabled: bool,
         #[serde(default)]
+        /// Display name.
         ndi_stream_name: String,
     },
+    /// Enumeration variant.
     NdiOutput {
+        /// Display name.
         name: String,
     },
     #[cfg(target_os = "windows")]
+    /// Enumeration variant.
     Spout {
+        /// Display name.
         name: String,
     },
+    /// Hue shift in degrees.
     Hue {
+        /// Component property or field.
         bridge_ip: String,
+        /// Display name.
         username: String,
+        /// Component property or field.
         client_key: String,
+        /// Component property or field.
         entertainment_area: String,
+        /// Component property or field.
         lamp_positions: HashMap<String, (f32, f32)>,
+        /// Component property or field.
         mapping_mode: HueMappingMode,
     },
 }
@@ -1671,48 +2074,63 @@ pub enum OutputType {
 /// Mapping mode for Hue Entertainment
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum HueMappingMode {
+    /// Enumeration variant.
     Ambient,
+    /// Enumeration variant.
     Spatial,
+    /// Enumeration variant.
     Trigger,
 }
 
 /// Represents a connection between two modules/parts
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ModuleConnection {
+    /// Component property or field.
     pub from_part: ModulePartId,
+    /// Component property or field.
     pub from_socket: usize,
+    /// Component property or field.
     pub to_part: ModulePartId,
+    /// Component property or field.
     pub to_socket: usize,
 }
 
 /// Type of shared media
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum SharedMediaType {
+    /// Enumeration variant.
     Video,
+    /// Enumeration variant.
     Image,
 }
 
 /// A shared media resource entry
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct SharedMediaItem {
+    /// Unique identifier.
     pub id: String,
+    /// File path to asset.
     pub path: String,
+    /// Component property or field.
     pub media_type: SharedMediaType,
 }
 
 /// Registry for shared media resources
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct SharedMediaState {
+    /// Component property or field.
     pub items: HashMap<String, SharedMediaItem>,
 }
 
 impl SharedMediaState {
+    /// Associated function.
     pub fn new() -> Self {
         Self {
             items: HashMap::new(),
         }
     }
 
+    /// Method implementation.
     pub fn register(&mut self, id: String, path: String, media_type: SharedMediaType) {
         self.items.insert(
             id.clone(),
@@ -1724,10 +2142,12 @@ impl SharedMediaState {
         );
     }
 
+    /// Method implementation.
     pub fn get(&self, id: &str) -> Option<&SharedMediaItem> {
         self.items.get(id)
     }
 
+    /// Method implementation.
     pub fn unregister(&mut self, id: &str) {
         self.items.remove(id);
     }

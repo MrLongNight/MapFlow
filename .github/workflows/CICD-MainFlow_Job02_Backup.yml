@@ -1,8 +1,6 @@
 name: "CICD-MainFlow: Job02 Backup (GFS-Schema)"
 
 on:
-  push:
-    branches: [ "main" ]
   schedule:
     - cron: '0 2 * * *' # Täglich um 02:00 Uhr
   workflow_dispatch:

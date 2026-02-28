@@ -18,7 +18,7 @@ use mapmap_core::OutputId;
 use mapmap_media::PlaybackCommand;
 use mapmap_ui::types::MediaPlaybackCommand;
 
-use tracing::{error, info, warn};
+use tracing::{error, info};
 use tracing_subscriber::prelude::*;
 
 use winit::application::ApplicationHandler;
