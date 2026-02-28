@@ -48,7 +48,7 @@ mapmap-control = { path = "../mapmap-control" }
 mapmap-core = { path = "../mapmap-core" }
 mapmap-io = { path = "../mapmap-io" }
 mapmap-mcp = { path = "../mapmap-mcp" }
-mapmap-media = { path = "../mapmap-media" }
+mapmap-media = { path = "../mapmap-media", default-features = false }
 mapmap-render = { path = "../mapmap-render" }
 mapmap-ui = { path = "../mapmap-ui" }
 midir = { workspace = true }
