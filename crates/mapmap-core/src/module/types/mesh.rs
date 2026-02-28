@@ -73,7 +73,7 @@ impl Default for MeshType {
 }
 
 impl MeshType {
-    /// Generates a hash representing the current geometric configuration. 
+    /// Generates a hash representing the current geometric configuration.
     /// Used to detect when GPU buffers need to be updated.
     pub fn compute_revision_hash(&self) -> u64 {
         use std::collections::hash_map::DefaultHasher;

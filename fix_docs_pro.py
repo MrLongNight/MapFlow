@@ -11,7 +11,7 @@ def fix_docs(content, file_path):
         "VERSION": "The current architectural version of the API or plugin.",
         "path": "File system path to the asset or resource.",
         "active": "Whether this component or feature is currently enabled and processing.",
-        
+
         # UI & Graphics
         "color": "RGBA color value.",
         "position": "3D position coordinates [x, y, z].",
@@ -23,7 +23,7 @@ def fix_docs(content, file_path):
         "contrast": "Difference between darkest and brightest areas.",
         "saturation": "Intensity of colors.",
         "hue_shift": "Color rotation in degrees.",
-        
+
         # Media & Playback
         "speed": "Playback speed multiplier.",
         "loop_enabled": "Whether the media should automatically restart.",
@@ -31,7 +31,7 @@ def fix_docs(content, file_path):
         "end_time": "Timestamp where playback stops.",
         "target_fps": "Desired frame rate for playback or updates.",
         "reverse_playback": "When enabled, plays content backwards.",
-        
+
         # MIDI & Control
         "channel": "The MIDI channel (0-15) associated with this message.",
         "note": "The MIDI note number (0-127).",
@@ -47,7 +47,7 @@ def fix_docs(content, file_path):
         "mappings": "Set of links between control inputs and application targets.",
         "midi_input": "Handler for processing incoming MIDI messages.",
         "osc_server": "Server for receiving network control messages.",
-        
+
         # Functions
         "new": "Creates a new, uninitialized instance with default settings.",
         "default": "Provides a default instance with standard configuration.",
@@ -76,16 +76,16 @@ def fix_docs(content, file_path):
 
     lines = content.splitlines()
     new_lines = []
-    
+
     for i in range(len(lines)):
         line = lines[i]
         stripped = line.strip()
-        
+
         garbage_phrases = ["Component property or field.", "Enumeration variant.", "Unique identifier.", "Display name.", "Unique ID"]
         is_garbage = any(f"/// {p}" in line for p in garbage_phrases)
-        
+
         needs_doc = (stripped.startswith("pub ") or (i > 0 and lines[i-1].strip().startswith("#["))) and not stripped.startswith("pub use") and not stripped.startswith("pub mod")
-        
+
         if not needs_doc and i > 0:
              prev_line = lines[i-1].strip()
              if (prev_line.startswith("///") or prev_line.startswith("#[")) and ":" in stripped and not stripped.startswith("impl"):
@@ -96,7 +96,7 @@ def fix_docs(content, file_path):
 
         if needs_doc or is_garbage:
             target_line = line if needs_doc else (lines[i+1] if i+1 < len(lines) else "")
-            
+
             if i > 0 and "#[error(" in lines[i-1]:
                 match = re.search(r'#\[error\("([^"]+)"', lines[i-1])
                 if match:
@@ -114,7 +114,7 @@ def fix_docs(content, file_path):
                     else:
                         match = re.search(r'^\s*([A-Z][a-zA-Z0-9]+)', target_line.strip())
                         if match: name = match.group(1)
-                
+
                 if name and name in descriptions:
                     doc = "/// " + descriptions[name]
                     if is_garbage: line = line.replace(line.strip(), doc)

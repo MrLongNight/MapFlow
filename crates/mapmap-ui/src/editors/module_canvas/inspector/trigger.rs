@@ -7,14 +7,14 @@ use crate::widgets::{styled_slider, styled_drag_value};
 pub fn render_trigger_config_ui(canvas: &mut ModuleCanvas, ui: &mut Ui, part: &mut ModulePart) {
     ui.collapsing("⚡ Trigger Inputs", |ui| {
         ui.label("Map incoming triggers to parameters.");
-        
+
         let inputs = part.inputs.clone();
         for (i, socket) in inputs.iter().enumerate() {
             ui.horizontal(|ui| {
                 ui.label(format!("{}:", socket.name));
-                
+
                 let config = part.trigger_targets.entry(i).or_default();
-                
+
                 egui::ComboBox::from_id_salt(format!("trigger_target_{}_{}", part.id, i))
                     .selected_text(format!("{:?}", config.target))
                     .show_ui(ui, |ui| {
@@ -27,7 +27,7 @@ pub fn render_trigger_config_ui(canvas: &mut ModuleCanvas, ui: &mut Ui, part: &m
                         ui.selectable_value(&mut config.target, TriggerTarget::Rotation, "Rotation");
                     });
             });
-            
+
             if let Some(config) = part.trigger_targets.get_mut(&i) {
                 if config.target != TriggerTarget::None {
                     ui.indent(format!("trigger_details_{}", i), |ui| {
@@ -41,13 +41,13 @@ pub fn render_trigger_config_ui(canvas: &mut ModuleCanvas, ui: &mut Ui, part: &m
                                     ui.selectable_value(&mut config.mode, TriggerMappingMode::RandomInRange, "Random");
                                 });
                         });
-                        
+
                         ui.horizontal(|ui| {
                             ui.label("Range:");
                             ui.add(egui::DragValue::new(&mut config.min_value).speed(0.01).prefix("Min:"));
                             ui.add(egui::DragValue::new(&mut config.max_value).speed(0.01).prefix("Max:"));
                         });
-                        
+
                         ui.checkbox(&mut config.invert, "Invert Signal");
                     });
                 }
@@ -67,7 +67,7 @@ pub fn render_trigger_ui(canvas: &mut ModuleCanvas, ui: &mut Ui, part_id: u64, t
         TriggerType::AudioFFT { threshold, output_config, .. } => {
             ui.label("🔊 Audio FFT");
             ui.add(egui::Slider::new(threshold, 0.0..=1.0).text("Threshold"));
-            
+
             ui.separator();
             ui.label("📤 Output Configuration:");
             ui.checkbox(&mut output_config.beat_output, "🥁 Beat Detection");
@@ -90,7 +90,7 @@ pub fn render_trigger_ui(canvas: &mut ModuleCanvas, ui: &mut Ui, part_id: u64, t
             ui.label("🎹 MIDI Trigger");
             ui.add(egui::Slider::new(channel, 1..=16).text("Channel"));
             ui.add(egui::Slider::new(note, 0..=127).text("Note"));
-            
+
             let is_learning = canvas.midi_learn_part_id == Some(part_id);
             let learn_text = if is_learning { "⌛ Waiting..." } else { "🎯 MIDI Learn" };
             if ui.button(learn_text).clicked() {

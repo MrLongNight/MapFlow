@@ -93,7 +93,7 @@ impl MpvDecoder {
         // Note: This property returns data in a format depending on MPV's config
         // Default is usually RGB or RGBA.
         // For production, we might want to use the Render API with a C wrapper for Send/Sync
-        
+
         // Command: screenshot-raw
         // Returns a byte array of the current frame
         let frame_data = self.mpv.get_property::<Vec<u8>>("screenshot-raw").map_err(|e| {
