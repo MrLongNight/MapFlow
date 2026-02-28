@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- 2026-02-28: fix(ci): Fix FFmpeg header detection on Linux by explicitly setting include/lib paths and resolve vcpkg manifest error on Windows in Release workflow.
+- 2026-02-28: fix(ci): Fix FFmpeg header detection on Linux by explicitly setting include/lib paths and resolve vcpkg manifest error on Windows (including git baseline issues) in Release workflow.
 - 2026-02-26: refactor(core): Module system split into submodules for improved maintainability (supersedes #829) (#846)
 - 2026-02-26: docs: Improve Bevy integration documentation and component references (Scribe)
 - 2026-02-26: feat(core): Expand TriggerTarget with 3D transforms, particle controls, and layout modifiers (supersedes #834) (#835)
