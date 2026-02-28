@@ -15,7 +15,7 @@ pub type ModulePartId = u64;
 /// Represents a complete visual programming graph (Scene/Module)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct MapFlowModule {
-    /// Unique ID
+    /// Unique identifier for this entity.
     pub id: ModuleId,
     /// Display name
     pub name: String,
@@ -29,6 +29,7 @@ pub struct MapFlowModule {
     pub playback_mode: ModulePlaybackMode,
     /// Counter for generating part IDs (persistent)
     #[serde(default = "crate::module::config::default_next_part_id")]
+    /// The ID to be assigned to the next created part within a module.
     pub next_part_id: ModulePartId,
 }
 
@@ -274,7 +275,7 @@ pub enum ModulePlaybackMode {
 /// A node in the visual graph
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ModulePart {
-    /// Unique ID
+    /// Unique identifier for this entity.
     pub id: ModulePartId,
     /// Type and configuration data
     pub part_type: ModulePartType,
@@ -506,13 +507,13 @@ pub struct ModuleSocket {
 /// Type of data carried by a connection
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ModuleSocketType {
-    /// Enumeration variant.
+    /// Event-based trigger node.
     Trigger,
     /// Enumeration variant.
     Media,
     /// Enumeration variant.
     Effect,
-    /// Enumeration variant.
+    /// A compositing layer within a scene.
     Layer,
     /// Enumeration variant.
     Output,
@@ -523,17 +524,17 @@ pub enum ModuleSocketType {
 /// Comprehensive enum of all node types
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ModulePartType {
-    /// Enumeration variant.
+    /// Event-based trigger node.
     Trigger(TriggerType),
-    /// Enumeration variant.
+    /// A node that provides visual or audio content.
     Source(SourceType),
-    /// Enumeration variant.
+    /// A node used for cropping or shaping content.
     Mask(MaskType),
-    /// Enumeration variant.
+    /// A node that processes or modifies content (e.g., Effects).
     Modulizer(ModulizerType),
-    /// Enumeration variant.
+    /// A compositing layer within a scene.
     Layer(LayerType),
-    /// Enumeration variant.
+    /// Geometry definition for mapping.
     Mesh(MeshType),
     /// Hue shift in degrees.
     Hue(HueNodeType),
@@ -698,21 +699,21 @@ impl ModulePartType {
 /// Simplified part type for UI creation
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PartType {
-    /// Enumeration variant.
+    /// Event-based trigger node.
     Trigger,
-    /// Enumeration variant.
+    /// A node that provides visual or audio content.
     Source,
-    /// Enumeration variant.
+    /// GPU-accelerated 3D particle system.
     BevyParticles,
-    /// Enumeration variant.
+    /// Standard 3D geometric primitive (Cube, Sphere, etc.).
     Bevy3DShape,
-    /// Enumeration variant.
+    /// A node used for cropping or shaping content.
     Mask,
     /// Enumeration variant.
     Modulator,
-    /// Enumeration variant.
+    /// Geometry definition for mapping.
     Mesh,
-    /// Enumeration variant.
+    /// A compositing layer within a scene.
     Layer,
     /// Hue shift in degrees.
     Hue,
@@ -725,15 +726,15 @@ pub enum PartType {
 pub enum HueNodeType {
     /// Enumeration variant.
     SingleLamp {
-        /// Unique identifier.
+        /// Unique identifier for this entity.
         id: String,
-        /// Display name.
+        /// Human-readable display name.
         name: String,
         #[serde(default = "crate::module::config::default_opacity")]
         /// Brightness factor.
         brightness: f32,
         #[serde(default = "crate::module::config::default_hue_color")]
-        /// Component property or field.
+        /// RGBA color value.
         color: [f32; 3],
         #[serde(default)]
         /// Component property or field.
@@ -746,13 +747,13 @@ pub enum HueNodeType {
     MultiLamp {
         /// Component property or field.
         ids: Vec<String>,
-        /// Display name.
+        /// Human-readable display name.
         name: String,
         #[serde(default = "crate::module::config::default_opacity")]
         /// Brightness factor.
         brightness: f32,
         #[serde(default = "crate::module::config::default_hue_color")]
-        /// Component property or field.
+        /// RGBA color value.
         color: [f32; 3],
         #[serde(default)]
         /// Component property or field.
@@ -763,13 +764,13 @@ pub enum HueNodeType {
     },
     /// Enumeration variant.
     EntertainmentGroup {
-        /// Display name.
+        /// Human-readable display name.
         name: String,
         #[serde(default = "crate::module::config::default_opacity")]
         /// Brightness factor.
         brightness: f32,
         #[serde(default = "crate::module::config::default_hue_color")]
-        /// Component property or field.
+        /// RGBA color value.
         color: [f32; 3],
         #[serde(default)]
         /// Component property or field.
@@ -812,9 +813,9 @@ pub enum TriggerType {
     Midi {
         /// Component property or field.
         device: String,
-        /// Component property or field.
+        /// The MIDI channel (0-15) associated with this message.
         channel: u8,
-        /// Component property or field.
+        /// The MIDI note number (0-127).
         note: u8,
     },
     /// Enumeration variant.
@@ -972,7 +973,7 @@ pub enum BevyShapeType {
 pub enum BevyCameraMode {
     /// Enumeration variant.
     Orbit {
-        /// Component property or field.
+        /// Radius of the hexagonal grid or shape.
         radius: f32,
         /// Playback speed multiplier.
         speed: f32,
@@ -990,7 +991,7 @@ pub enum BevyCameraMode {
     },
     /// Enumeration variant.
     Static {
-        /// Component property or field.
+        /// 3D position coordinates [x, y, z].
         position: [f32; 3],
         /// Component property or field.
         look_at: [f32; 3],
@@ -1019,13 +1020,13 @@ pub enum SourceType {
         /// Playback speed multiplier.
         speed: f32,
         #[serde(default)]
-        /// Component property or field.
+        /// Whether the media should automatically restart after reaching the end.
         loop_enabled: bool,
         #[serde(default)]
-        /// Component property or field.
+        /// Timestamp (in seconds) where playback should begin within the media file.
         start_time: f32,
         #[serde(default)]
-        /// Component property or field.
+        /// Timestamp (in seconds) where playback should stop within the media file. 0.0 means end of file.
         end_time: f32,
         #[serde(default = "crate::module::config::default_opacity")]
         /// Opacity value (0.0 to 1.0).
@@ -1046,180 +1047,180 @@ pub enum SourceType {
         /// Hue shift in degrees.
         hue_shift: f32,
         #[serde(default = "crate::module::config::default_scale")]
-        /// Scale factor on X axis.
+        /// Scale factor along the horizontal axis.
         scale_x: f32,
         #[serde(default = "crate::module::config::default_scale")]
-        /// Scale factor on Y axis.
+        /// Scaling factor applied to the Y axis of the source content.
         scale_y: f32,
         #[serde(default)]
-        /// Rotation angle.
+        /// Rotation in degrees around the center point of the source.
         rotation: f32,
         #[serde(default)]
-        /// X axis offset.
+        /// Horizontal translation offset in normalized coordinates.
         offset_x: f32,
         #[serde(default)]
-        /// Y axis offset.
+        /// Vertical translation offset in normalized coordinates.
         offset_y: f32,
         #[serde(default)]
-        /// Component property or field.
+        /// Optional width constraint for the media player's internal buffer.
         target_width: Option<u32>,
         #[serde(default)]
-        /// Component property or field.
+        /// Optional height constraint for the media player's internal buffer.
         target_height: Option<u32>,
         #[serde(default)]
-        /// Component property or field.
+        /// Desired playback frame rate. If None, the source's native FPS is used.
         target_fps: Option<f32>,
         #[serde(default)]
-        /// Horizontal flip flag.
+        /// Flips the texture horizontally. Essential for mirror-based projections or back-projection screens.
         flip_horizontal: bool,
         #[serde(default)]
-        /// Vertical flip flag.
+        /// Flips the texture vertically. Useful for correcting inverted camera feeds or projector mounts.
         flip_vertical: bool,
         #[serde(default)]
-        /// Component property or field.
+        /// When enabled, the media file is played from end to beginning.
         reverse_playback: bool,
     },
-    /// Enumeration variant.
+    /// A source that renders content using a custom WGSL shader.
     Shader {
-        /// Display name.
+        /// Human-readable label for identifying this shader instance in the UI.
         name: String,
-        /// Component property or field.
+        /// Dynamic parameters exposed by the shader, represented as (Name, Value) pairs.
         params: Vec<(String, f32)>,
     },
-    /// Enumeration variant.
+    /// Raw video feed from a locally connected capture device (e.g., Webcam, Capture Card).
     LiveInput {
-        /// Unique identifier.
+        /// System-specific index of the capture device.
         device_id: u32,
     },
-    /// Enumeration variant.
+    /// Network video stream received via the NewTek NDI protocol.
     NdiInput {
-        /// Display name.
+        /// The name of the NDI source as broadcast on the network (e.g., "STUDIO-PC (Output)").
         source_name: Option<String>,
     },
     /// Enumeration variant.
     Bevy,
-    /// Enumeration variant.
+    /// Simulates realistic sky and atmospheric scattering.
     BevyAtmosphere {
-        /// Component property or field.
+        /// Atmospheric turbidity, affecting how clear or hazy the sky appears.
         turbidity: f32,
-        /// Component property or field.
+        /// Rayleigh scattering coefficient, determining the sky color (blue during day, red at sunset).
         rayleigh: f32,
-        /// Component property or field.
+        /// Mie scattering coefficient, affecting the size and intensity of the solar disk.
         mie_coeff: f32,
-        /// Component property or field.
+        /// Mie scattering directionality (G-parameter), controlling how much light is scattered forward.
         mie_directional_g: f32,
-        /// Component property or field.
+        /// Spherical coordinates (Azimuth, Elevation) of the sun in the sky.
         sun_position: (f32, f32),
-        /// Component property or field.
+        /// HDR exposure level for the atmospheric rendering.
         exposure: f32,
     },
-    /// Enumeration variant.
+    /// Renders a grid of hexagons in 3D space.
     BevyHexGrid {
-        /// Component property or field.
+        /// Radius of the hexagonal grid or shape.
         radius: f32,
-        /// Component property or field.
+        /// Number of rings in the hexagonal grid layout.
         rings: u32,
-        /// Component property or field.
+        /// Orientation of the hexagons: true for pointy top, false for flat top.
         pointy_top: bool,
-        /// Component property or field.
+        /// Distance between individual elements in a grid or particle system.
         spacing: f32,
-        /// Component property or field.
+        /// 3D position coordinates [x, y, z].
         position: [f32; 3],
-        /// Rotation angle.
+        /// Rotation angles in degrees.
         rotation: [f32; 3],
-        /// Component property or field.
+        /// Scale factors for the object's dimensions.
         scale: f32,
     },
-    /// Enumeration variant.
+    /// GPU-accelerated 3D particle system.
     BevyParticles {
-        /// Component property or field.
+        /// Emission rate of particles per second.
         rate: f32,
-        /// Component property or field.
+        /// Maximum time a particle remains active before being destroyed.
         lifetime: f32,
         /// Playback speed multiplier.
         speed: f32,
-        /// Component property or field.
+        /// Initial color of an element at the beginning of its lifecycle.
         color_start: [f32; 4],
-        /// Component property or field.
+        /// Final color of an element at the end of its lifecycle.
         color_end: [f32; 4],
-        /// Component property or field.
+        /// 3D position coordinates [x, y, z].
         position: [f32; 3],
-        /// Rotation angle.
+        /// Rotation angles in degrees.
         rotation: [f32; 3],
     },
-    /// Enumeration variant.
+    /// Standard 3D geometric primitive (Cube, Sphere, etc.).
     Bevy3DShape {
-        /// Component property or field.
+        /// The geometric form of the 3D object (e.g., Cube, Sphere, Plane).
         shape_type: BevyShapeType,
-        /// Component property or field.
+        /// 3D position coordinates [x, y, z].
         position: [f32; 3],
-        /// Rotation angle.
+        /// Rotation angles in degrees.
         rotation: [f32; 3],
-        /// Component property or field.
+        /// Scale factors for the object's dimensions.
         scale: [f32; 3],
-        /// Component property or field.
+        /// RGBA color value.
         color: [f32; 4],
-        /// Component property or field.
+        /// Disables lighting calculations, making the object appear with its full emission/color regardless of light sources.
         unlit: bool,
         #[serde(default)]
-        /// Component property or field.
+        /// Thickness of the selection or decorative outline.
         outline_width: f32,
         #[serde(default = "crate::module::config::default_white_rgba")]
-        /// Component property or field.
+        /// The color used for the object's outline.
         outline_color: [f32; 4],
     },
-    /// Enumeration variant.
+    /// External 3D asset loaded from a file (GLTF, OBJ).
     Bevy3DModel {
         /// File path to asset.
         path: String,
-        /// Component property or field.
+        /// 3D position coordinates [x, y, z].
         position: [f32; 3],
-        /// Rotation angle.
+        /// Rotation angles in degrees.
         rotation: [f32; 3],
-        /// Component property or field.
+        /// Scale factors for the object's dimensions.
         scale: [f32; 3],
-        /// Component property or field.
+        /// RGBA color value.
         color: [f32; 4],
-        /// Component property or field.
+        /// Disables lighting calculations, making the object appear with its full emission/color regardless of light sources.
         unlit: bool,
         #[serde(default)]
-        /// Component property or field.
+        /// Thickness of the selection or decorative outline.
         outline_width: f32,
         #[serde(default = "crate::module::config::default_white_rgba")]
-        /// Component property or field.
+        /// The color used for the object's outline.
         outline_color: [f32; 4],
     },
-    /// Enumeration variant.
+    /// Three-dimensional text rendered in the scene.
     Bevy3DText {
-        /// Component property or field.
+        /// The literal string content to be rendered.
         text: String,
-        /// Component property or field.
+        /// The size of the characters in pixels or points.
         font_size: f32,
-        /// Component property or field.
+        /// RGBA color value.
         color: [f32; 4],
-        /// Component property or field.
+        /// 3D position coordinates [x, y, z].
         position: [f32; 3],
-        /// Rotation angle.
+        /// Rotation angles in degrees.
         rotation: [f32; 3],
-        /// Component property or field.
+        /// Alignment of the content (e.g., 'Center', 'Left', 'Right').
         alignment: String,
     },
-    /// Enumeration variant.
+    /// Virtual camera defining the viewpoint of the Bevy engine.
     BevyCamera {
         /// Component property or field.
         mode: BevyCameraMode,
-        /// Component property or field.
+        /// Field of view in degrees for the camera's perspective projection.
         fov: f32,
-        /// Component property or field.
+        /// Whether this component or feature is currently enabled and processing.
         active: bool,
     },
     #[cfg(target_os = "windows")]
-    /// Enumeration variant.
+    /// Inter-process video sharing via Spout (Windows).
     SpoutInput {
         /// Display name.
         sender_name: String,
     },
-    /// Enumeration variant.
+    /// Single-instance video source with full transform controls.
     VideoUni {
         /// File path to asset.
         path: String,
@@ -1227,13 +1228,13 @@ pub enum SourceType {
         /// Playback speed multiplier.
         speed: f32,
         #[serde(default)]
-        /// Component property or field.
+        /// Whether the media should automatically restart after reaching the end.
         loop_enabled: bool,
         #[serde(default)]
-        /// Component property or field.
+        /// Timestamp (in seconds) where playback should begin within the media file.
         start_time: f32,
         #[serde(default)]
-        /// Component property or field.
+        /// Timestamp (in seconds) where playback should stop within the media file. 0.0 means end of file.
         end_time: f32,
         #[serde(default = "crate::module::config::default_opacity")]
         /// Opacity value (0.0 to 1.0).
@@ -1254,28 +1255,28 @@ pub enum SourceType {
         /// Hue shift in degrees.
         hue_shift: f32,
         #[serde(default = "crate::module::config::default_scale")]
-        /// Scale factor on X axis.
+        /// Scale factor along the horizontal axis.
         scale_x: f32,
         #[serde(default = "crate::module::config::default_scale")]
-        /// Scale factor on Y axis.
+        /// Scale factor along the vertical axis.
         scale_y: f32,
         #[serde(default)]
-        /// Rotation angle.
+        /// Rotation angles in degrees.
         rotation: f32,
         #[serde(default)]
-        /// X axis offset.
+        /// Horizontal translation offset.
         offset_x: f32,
         #[serde(default)]
-        /// Y axis offset.
+        /// Vertical translation offset.
         offset_y: f32,
         #[serde(default)]
-        /// Component property or field.
+        /// Optional width constraint for internal buffers or rendering targets.
         target_width: Option<u32>,
         #[serde(default)]
-        /// Component property or field.
+        /// Optional height constraint for internal buffers or rendering targets.
         target_height: Option<u32>,
         #[serde(default)]
-        /// Component property or field.
+        /// Desired frame rate for playback or updates.
         target_fps: Option<f32>,
         #[serde(default)]
         /// Horizontal flip flag.
@@ -1284,12 +1285,12 @@ pub enum SourceType {
         /// Vertical flip flag.
         flip_vertical: bool,
         #[serde(default)]
-        /// Component property or field.
+        /// When enabled, plays the content from end to beginning.
         reverse_playback: bool,
     },
-    /// Enumeration variant.
+    /// Media source sharing its state across multiple instances.
     VideoMulti {
-        /// Unique identifier.
+        /// Unique key for accessing a shared resource or media pool.
         shared_id: String,
         #[serde(default = "crate::module::config::default_opacity")]
         /// Opacity value (0.0 to 1.0).
@@ -1310,19 +1311,19 @@ pub enum SourceType {
         /// Hue shift in degrees.
         hue_shift: f32,
         #[serde(default = "crate::module::config::default_scale")]
-        /// Scale factor on X axis.
+        /// Scale factor along the horizontal axis.
         scale_x: f32,
         #[serde(default = "crate::module::config::default_scale")]
-        /// Scale factor on Y axis.
+        /// Scale factor along the vertical axis.
         scale_y: f32,
         #[serde(default)]
-        /// Rotation angle.
+        /// Rotation angles in degrees.
         rotation: f32,
         #[serde(default)]
-        /// X axis offset.
+        /// Horizontal translation offset.
         offset_x: f32,
         #[serde(default)]
-        /// Y axis offset.
+        /// Vertical translation offset.
         offset_y: f32,
         #[serde(default)]
         /// Horizontal flip flag.
@@ -1354,25 +1355,25 @@ pub enum SourceType {
         /// Hue shift in degrees.
         hue_shift: f32,
         #[serde(default = "crate::module::config::default_scale")]
-        /// Scale factor on X axis.
+        /// Scale factor along the horizontal axis.
         scale_x: f32,
         #[serde(default = "crate::module::config::default_scale")]
-        /// Scale factor on Y axis.
+        /// Scale factor along the vertical axis.
         scale_y: f32,
         #[serde(default)]
-        /// Rotation angle.
+        /// Rotation angles in degrees.
         rotation: f32,
         #[serde(default)]
-        /// X axis offset.
+        /// Horizontal translation offset.
         offset_x: f32,
         #[serde(default)]
-        /// Y axis offset.
+        /// Vertical translation offset.
         offset_y: f32,
         #[serde(default)]
-        /// Component property or field.
+        /// Optional width constraint for internal buffers or rendering targets.
         target_width: Option<u32>,
         #[serde(default)]
-        /// Component property or field.
+        /// Optional height constraint for internal buffers or rendering targets.
         target_height: Option<u32>,
         #[serde(default)]
         /// Horizontal flip flag.
@@ -1383,7 +1384,7 @@ pub enum SourceType {
     },
     /// Enumeration variant.
     ImageMulti {
-        /// Unique identifier.
+        /// Unique key for accessing a shared resource or media pool.
         shared_id: String,
         #[serde(default = "crate::module::config::default_opacity")]
         /// Opacity value (0.0 to 1.0).
@@ -1404,19 +1405,19 @@ pub enum SourceType {
         /// Hue shift in degrees.
         hue_shift: f32,
         #[serde(default = "crate::module::config::default_scale")]
-        /// Scale factor on X axis.
+        /// Scale factor along the horizontal axis.
         scale_x: f32,
         #[serde(default = "crate::module::config::default_scale")]
-        /// Scale factor on Y axis.
+        /// Scale factor along the vertical axis.
         scale_y: f32,
         #[serde(default)]
-        /// Rotation angle.
+        /// Rotation angles in degrees.
         rotation: f32,
         #[serde(default)]
-        /// X axis offset.
+        /// Horizontal translation offset.
         offset_x: f32,
         #[serde(default)]
-        /// Y axis offset.
+        /// Vertical translation offset.
         offset_y: f32,
         #[serde(default)]
         /// Horizontal flip flag.
@@ -1785,7 +1786,7 @@ pub enum ModulizerType {
         /// Component property or field.
         effect_type: EffectType,
         #[serde(default)]
-        /// Component property or field.
+        /// Dynamic parameters for the component, usually as (Name, Value) pairs.
         params: HashMap<String, f32>,
     },
     /// Enumeration variant.
@@ -1883,7 +1884,7 @@ impl EffectType {
         ]
     }
 
-    /// Display name.
+    /// Human-readable display name.
     pub fn name(&self) -> &'static str {
         match self {
             EffectType::Blur => "Blur",
@@ -1948,7 +1949,7 @@ impl BlendModeType {
         ]
     }
 
-    /// Display name.
+    /// Human-readable display name.
     pub fn name(&self) -> &'static str {
         match self {
             BlendModeType::Normal => "Normal",
@@ -1967,9 +1968,9 @@ impl BlendModeType {
 pub enum LayerType {
     /// Enumeration variant.
     Single {
-        /// Unique identifier.
+        /// Unique identifier for this entity.
         id: u64,
-        /// Display name.
+        /// Human-readable display name.
         name: String,
         /// Opacity value (0.0 to 1.0).
         opacity: f32,
@@ -1984,7 +1985,7 @@ pub enum LayerType {
     },
     /// Enumeration variant.
     Group {
-        /// Display name.
+        /// Human-readable display name.
         name: String,
         /// Opacity value (0.0 to 1.0).
         opacity: f32,
@@ -2011,9 +2012,9 @@ pub enum LayerType {
 pub enum OutputType {
     /// Enumeration variant.
     Projector {
-        /// Unique identifier.
+        /// Unique identifier for this entity.
         id: u64,
-        /// Display name.
+        /// Human-readable display name.
         name: String,
         #[serde(default)]
         /// Component property or field.
@@ -2045,13 +2046,13 @@ pub enum OutputType {
     },
     /// Enumeration variant.
     NdiOutput {
-        /// Display name.
+        /// Human-readable display name.
         name: String,
     },
     #[cfg(target_os = "windows")]
     /// Enumeration variant.
     Spout {
-        /// Display name.
+        /// Human-readable display name.
         name: String,
     },
     /// Hue shift in degrees.
@@ -2078,7 +2079,7 @@ pub enum HueMappingMode {
     Ambient,
     /// Enumeration variant.
     Spatial,
-    /// Enumeration variant.
+    /// Event-based trigger node.
     Trigger,
 }
 
@@ -2107,7 +2108,7 @@ pub enum SharedMediaType {
 /// A shared media resource entry
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct SharedMediaItem {
-    /// Unique identifier.
+    /// Unique identifier for this entity.
     pub id: String,
     /// File path to asset.
     pub path: String,

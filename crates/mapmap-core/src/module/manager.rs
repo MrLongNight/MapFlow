@@ -2,8 +2,7 @@
 
 use crate::module::config::default_color_palette;
 use crate::module::types::{
-    MapFlowModule, ModuleId, ModulePartId, ModulePlaybackMode,
-    PartType, SharedMediaState,
+    MapFlowModule, ModuleId, ModulePartId, ModulePlaybackMode, PartType, SharedMediaState,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -19,14 +18,17 @@ pub struct ModuleManager {
     pub next_part_id: ModulePartId,
     /// Predefined colors for new modules.
     #[serde(skip, default = "default_color_palette")]
+    /// Predefined list of colors available for UI elements.
     pub color_palette: Vec<[f32; 4]>,
     /// Index to cycle through the color palette.
     pub next_color_index: usize,
     /// Shared media registry
     #[serde(default)]
+    /// Global registry of media assets shared across the project.
     pub shared_media: SharedMediaState,
     /// Incrementing counter tracking graph structural changes
     #[serde(skip)]
+    /// Incremental counter tracking changes to the graph structure.
     pub graph_revision: u64,
 }
 

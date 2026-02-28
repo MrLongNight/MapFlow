@@ -16,6 +16,7 @@ pub struct ShortcutsPanel {
 }
 
 impl ShortcutsPanel {
+    /// Map of keyboard shortcuts to application actions.
     pub fn detect_conflicts(&mut self, key_bindings: &KeyBindings) {
         self.conflicts.clear();
         let shortcuts = key_bindings.get_shortcuts();

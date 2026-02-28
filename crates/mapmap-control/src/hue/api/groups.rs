@@ -4,7 +4,9 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone)]
 pub struct GroupInfo {
+    /// Unique identifier for this entity.
     pub id: String, // v2 API UUID (for stream activation and DTLS streaming)
+    /// Human-readable display name.
     pub name: String,
     pub lights: Vec<LightNode>,
 }

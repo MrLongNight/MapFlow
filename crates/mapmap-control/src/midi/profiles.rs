@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 /// Predefined MIDI controller profile
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ControllerProfile {
+    /// Human-readable display name.
     pub name: String,
     pub manufacturer: String,
     pub description: String,

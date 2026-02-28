@@ -123,10 +123,14 @@ pub use state::{AppSettings, AppState};
 pub enum CoreError {
     /// Invalid geometry configuration
     #[error("Invalid geometry: {0}")]
+/// Error: Invalid geometry.
+    /// Error: Invalid geometry.
     InvalidGeometry(String),
 
     /// Transform operation failed
     #[error("Transform error: {0}")]
+/// Error: Transform error.
+    /// Error: Transform error.
     TransformError(String),
 }
 

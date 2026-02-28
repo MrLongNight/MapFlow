@@ -23,37 +23,51 @@ use crate::osc::{OscClient, OscMapping, OscServer};
 /// Unified control system manager
 pub struct ControlManager {
     #[cfg(feature = "midi")]
+    /// Handler for processing incoming MIDI messages.
     pub midi_input: Option<MidiInputHandler>,
 
     #[cfg(feature = "osc")]
+    /// Server for receiving OSC messages from external controllers.
     pub osc_server: Option<OscServer>,
     #[cfg(feature = "osc")]
+    /// List of connected OSC clients for sending feedback.
     pub osc_clients: Vec<OscClient>,
     #[cfg(feature = "osc")]
+    /// Configuration mapping OSC addresses to internal control targets.
     pub osc_mapping: OscMapping,
 
+    /// Service for transmitting DMX data over the network via Art-Net.
     pub artnet_sender: Option<ArtNetSender>,
+    /// Service for transmitting DMX data over the network via sACN.
     pub sacn_sender: Option<SacnSender>,
 
+    /// Managed list of automated show cues.
     pub cue_list: CueList,
+    /// Map of keyboard shortcuts to application actions.
     pub key_bindings: KeyBindings,
 
     /// Event callback for control changes
     #[allow(clippy::type_complexity)]
+    /// Optional callback function triggered on every control value change.
     control_callback: Option<Arc<Mutex<dyn FnMut(ControlTarget, ControlValue) + Send>>>,
 }
 
 impl ControlManager {
+    /// Creates a new, uninitialized instance with default settings.
     pub fn new() -> Self {
         Self {
             #[cfg(feature = "midi")]
+            // Handler for processing incoming MIDI messages.
             midi_input: None,
 
             #[cfg(feature = "osc")]
+            // Server for receiving OSC messages from external controllers.
             osc_server: None,
             #[cfg(feature = "osc")]
+            // List of connected OSC clients for sending feedback.
             osc_clients: Vec::new(),
             #[cfg(feature = "osc")]
+            // Configuration mapping OSC addresses to internal control targets.
             osc_mapping: OscMapping::new(),
 
             artnet_sender: None,

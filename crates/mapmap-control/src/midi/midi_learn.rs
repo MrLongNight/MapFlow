@@ -172,6 +172,7 @@ pub struct MidiLearnManager {
 }
 
 impl MidiLearnManager {
+    /// Creates a new, uninitialized instance with default settings.
     pub fn new() -> Self {
         Self {
             state: MidiLearnState::Inactive,

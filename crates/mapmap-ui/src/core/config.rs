@@ -110,6 +110,7 @@ pub struct UserConfig {
     pub theme: ThemeConfig,
     /// Target frame rate (FPS)
     #[serde(default)]
+    /// Desired frame rate for playback or updates.
     pub target_fps: Option<f32>,
     /// Preferred GPU Adapter Name
     #[serde(default)]

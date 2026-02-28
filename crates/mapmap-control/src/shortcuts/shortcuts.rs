@@ -101,6 +101,7 @@ pub struct Modifiers {
 }
 
 impl Modifiers {
+    /// Creates a new, uninitialized instance with default settings.
     pub fn new() -> Self {
         Self::default()
     }
@@ -240,6 +241,7 @@ pub struct Shortcut {
 }
 
 impl Shortcut {
+    /// Creates a new, uninitialized instance with default settings.
     pub fn new(
         key: Key,
         modifiers: Modifiers,

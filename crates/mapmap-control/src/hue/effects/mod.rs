@@ -10,10 +10,12 @@ pub trait LightEffect: Send + Sync {
 }
 
 pub struct PulseEffect {
+    /// RGBA color value.
     pub color: (u8, u8, u8),
 }
 
 impl PulseEffect {
+    /// RGBA color value.
     pub fn new(color: (u8, u8, u8)) -> Self {
         Self { color }
     }
@@ -38,6 +40,7 @@ impl LightEffect for PulseEffect {
 pub struct MultiBandEffect;
 
 impl MultiBandEffect {
+    /// Creates a new, uninitialized instance with default settings.
     pub fn new() -> Self {
         Self
     }

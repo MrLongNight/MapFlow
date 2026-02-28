@@ -35,6 +35,7 @@ impl<T> ApiResponse<T> {
 /// System status response
 #[derive(Debug, Serialize, Deserialize)]
 pub struct StatusResponse {
+    /// Version number for API or plugin compatibility.
     pub version: String,
     pub uptime_seconds: u64,
     pub active_layers: usize,
@@ -44,8 +45,11 @@ pub struct StatusResponse {
 /// Layer info response
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LayerInfo {
+    /// Unique identifier for this entity.
     pub id: u32,
+    /// Human-readable display name.
     pub name: String,
+    /// Global opacity multiplier (0.0 to 1.0).
     pub opacity: f32,
     pub visible: bool,
 }
@@ -54,6 +58,7 @@ pub struct LayerInfo {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UpdateParameterRequest {
     pub target: ControlTarget,
+/// The data value associated with the control or message.
     pub value: ControlValue,
 }
 
@@ -61,14 +66,18 @@ pub struct UpdateParameterRequest {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UpdateLayerRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// Global opacity multiplier (0.0 to 1.0).
     pub opacity: Option<f32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub visible: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// 3D position coordinates [x, y, z].
     pub position: Option<(f32, f32)>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// Rotation angles in degrees.
     pub rotation: Option<f32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// Scale factors for the object's dimensions.
     pub scale: Option<f32>,
 }
 

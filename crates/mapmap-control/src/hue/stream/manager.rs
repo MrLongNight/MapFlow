@@ -7,6 +7,7 @@ use tokio::time::Instant;
 
 #[derive(Debug, Clone)]
 pub struct LightState {
+    /// Unique identifier for this entity.
     pub id: u8,
     pub r: u8,
     pub g: u8,

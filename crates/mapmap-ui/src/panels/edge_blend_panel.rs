@@ -42,11 +42,14 @@ impl From<&EdgeBlendConfig> for EdgeBlendValues {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ColorCalibrationValues {
+    /// Luminance offset applied to the final image.
     pub brightness: f32,
+    /// Difference between the darkest and brightest areas of the image.
     pub contrast: f32,
     pub gamma_r: f32,
     pub gamma_g: f32,
     pub gamma_b: f32,
+    /// Intensity of colors; 0.0 is grayscale, 1.0 is normal, >1.0 is vivid.
     pub saturation: f32,
     pub color_temp: f32,
 }

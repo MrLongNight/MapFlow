@@ -426,6 +426,7 @@ mod tests {
     }
 
     impl MockAudioBackend {
+        /// Creates a new, uninitialized instance with default settings.
         pub fn new() -> Self {
             Self {
                 samples_recorded: Mutex::new(Vec::new()),

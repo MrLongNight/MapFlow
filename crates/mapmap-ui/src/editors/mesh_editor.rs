@@ -46,6 +46,7 @@ enum DragElement {
 /// Mesh vertex with Bezier control points
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Vertex {
+    /// 3D position coordinates [x, y, z].
     pub position: Pos2,
     pub control_in: Option<Vec2>,
     pub control_out: Option<Vec2>,
@@ -87,6 +88,7 @@ impl Default for MeshEditor {
 }
 
 impl MeshEditor {
+    /// Creates a new, uninitialized instance with default settings.
     pub fn new() -> Self {
         Self {
             vertices: Vec::new(),

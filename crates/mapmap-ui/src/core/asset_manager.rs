@@ -22,6 +22,7 @@ pub struct AssetManager {
 /// Effect preset (saved effect configuration)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EffectPreset {
+    /// Human-readable display name.
     pub name: String,
     pub category: String,
     pub description: String,
@@ -34,10 +35,14 @@ pub struct EffectPreset {
 /// Transform preset (saved transform configuration)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransformPreset {
+    /// Human-readable display name.
     pub name: String,
     pub description: String,
+    /// 3D position coordinates [x, y, z].
     pub position: (f32, f32),
+    /// Scale factors for the object's dimensions.
     pub scale: (f32, f32),
+    /// Rotation angles in degrees.
     pub rotation: (f32, f32, f32),
     pub anchor: (f32, f32),
 }
@@ -45,6 +50,7 @@ pub struct TransformPreset {
 /// Project template
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProjectTemplate {
+    /// Human-readable display name.
     pub name: String,
     pub description: String,
     pub tags: Vec<String>,

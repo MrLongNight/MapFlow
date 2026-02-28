@@ -167,6 +167,7 @@ async fn handle_socket(socket: WebSocket, _state: AppState) {
 
 /// Handle a text message from the client
 #[cfg(feature = "http-api")]
+/// The literal string content to be rendered.
 async fn handle_text_message(text: &str) -> Result<(), String> {
     let message: WsClientMessage =
         serde_json::from_str(text).map_err(|e| format!("Invalid JSON: {}", e))?;

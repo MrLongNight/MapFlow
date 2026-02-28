@@ -12,6 +12,7 @@ pub struct EntertainmentEngine {
 }
 
 impl EntertainmentEngine {
+    /// Creates a new, uninitialized instance with default settings.
     pub fn new(
         audio_rx: tokio::sync::broadcast::Receiver<AudioSpectrum>,
         dtls_tx: mpsc::Sender<Vec<LightState>>,

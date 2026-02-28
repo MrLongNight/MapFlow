@@ -130,6 +130,7 @@ impl Default for ControllerOverlayPanel {
 }
 
 impl ControllerOverlayPanel {
+    /// Creates a new, uninitialized instance with default settings.
     pub fn new() -> Self {
         Self {
             #[cfg(feature = "midi")]

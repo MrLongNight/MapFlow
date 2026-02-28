@@ -64,6 +64,7 @@ pub enum MappingCurve {
 }
 
 impl MidiMapping {
+    /// Creates a new, uninitialized instance with default settings.
     pub fn new() -> Self {
         Self::default()
     }

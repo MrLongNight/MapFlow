@@ -15,6 +15,7 @@ pub struct ChannelAssignment {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct DmxChannel {
     pub universe: u16,
+/// The MIDI channel (0-15) associated with this message.
     pub channel: u16,            // 1-512
     pub range: Option<(u8, u8)>, // Optional value range remapping (min, max)
 }
