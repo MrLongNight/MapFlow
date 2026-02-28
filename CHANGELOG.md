@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- 2026-02-28: test(control/core): add integration tests for control system and effect chain (#847)
+- 2026-02-28: perf: Optimize ModuleEvaluator with cached graph indices (#853)
+- 2026-02-28: refactor: Refactor UI panels to use standardized Cyber Dark widgets (#854)
+- 2026-02-28: security: Limit WebSocket batch operations (#855)
+- 2026-02-28: ux: Add "Quick Create" node palette (Tab) (#856)
+- 2026-02-28: feat: restore canvas toolbar and diagnostics with modern egui API (56d67ed)
 - 2026-02-26: refactor(core): Module system split into submodules for improved maintainability (supersedes #829) (#846)
 - 2026-02-26: docs: Improve Bevy integration documentation and component references (Scribe)
 - 2026-02-26: feat(core): Expand TriggerTarget with 3D transforms, particle controls, and layout modifiers (supersedes #834) (#835)

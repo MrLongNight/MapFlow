@@ -65,3 +65,7 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 ## 2026-02-26 - Missing Documentation for PR #846
 **Erkenntnis:** PR #846 (Module System Refactor) was merged but missing from `CHANGELOG.md`.
 **Aktion:** Added entry to `CHANGELOG.md` and updated `ROADMAP.md` timestamp and feature status.
+
+## 2026-02-28 - Missing Documentation for Recent Commits
+**Erkenntnis:** Discovered multiple undocumented merged PRs and commits missing from `CHANGELOG.md` (#847, #853, #854, #855, #856, af0f27f, 56d67ed).
+**Aktion:** Added missing entries to `CHANGELOG.md` and updated `ROADMAP.md` timestamp.

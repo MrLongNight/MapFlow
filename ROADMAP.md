@@ -1,7 +1,7 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 2.1
-> **Stand:** 2026-02-27 23:59
+> **Stand:** 2026-02-28 01:50
 > **Zielgruppe:** @Projektleitung und Entwickler-Team
 > **Projekt-Version:** 0.2.1
 
@@ -103,21 +103,21 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
 
 ## Aktuelle Jules-Aufträge
 
-_Stand: 2026-02-27 23:59 (Europe/Berlin)_
+_Stand: 2026-02-28 01:50 (Europe/Berlin)_
 
 | Session-ID | Task | Status | Link | Notizen |
 |------------|------|--------|------|---------|
-| 14374730097834491321 | [ARCH-01] Complete core/module.rs Refactoring | Abgeschlossen | [https://jules.google.com/session/14374730097834491321](https://jules.google.com/session/14374730097834491321) | Monolithic module.rs split into submodules. |
-| 15034419910350922962 | [SAFE-01] Eliminate Unsafe Hacks in Render Loop | Abgeschlossen | [https://jules.google.com/session/15034419910350922962](https://jules.google.com/session/15034419910350922962) | Removed raw pointers and unsafe transmutes in render loop. |
-| 4749311560780055775 | [IO-01] Functional NDI Sender and MPV Decoder | Abgeschlossen | [https://jules.google.com/session/4749311560780055775](https://jules.google.com/session/4749311560780055775) | NDI Sender implemented; MPV Decoder fixed using libmpv2. |
-| 56d67ed3 | Restore canvas toolbar and diagnostics | Abgeschlossen | - | Modern egui API implementation. |
-| 73698441478363935 | link-system-ui | Abgeschlossen | - | Link system implementation. |
-| 3125037812423445221 | timeline-v3-integration | Abgeschlossen | - | Multi-track timeline V3 integrated. |
 
 ## Abgeschlossene Jules-Aufträge (Archiv)
 
 | Session-ID | Task | Status | Notizen |
 |------------|------|--------|---------|
+| 14374730097834491321 | [ARCH-01] Complete core/module.rs Refactoring | Abgeschlossen | Monolithic module.rs split into submodules. |
+| 15034419910350922962 | [SAFE-01] Eliminate Unsafe Hacks in Render Loop | Abgeschlossen | Removed raw pointers and unsafe transmutes in render loop. |
+| 4749311560780055775 | [IO-01] Functional NDI Sender and MPV Decoder | Abgeschlossen | NDI Sender implemented; MPV Decoder fixed using libmpv2. |
+| 56d67ed3 | Restore canvas toolbar and diagnostics | Abgeschlossen | Modern egui API implementation. |
+| 73698441478363935 | link-system-ui | Abgeschlossen | Link system implementation. |
+| 3125037812423445221 | timeline-v3-integration | Abgeschlossen | Multi-track timeline V3 integrated. |
 | 14318715518596799691 | [CORE-01] Node Parameter & Trigger Target Expansion | Abgeschlossen | Added OffsetX/Y, FlipH/V and Bevy targets. |
 | 12744118335336060991 | Rebuild: FramePipeline threaded uploads | Abgeschlossen | PR #831 merged. |
 | 11538622621812368551 | Rebuild: module_canvas in Submodule aufteilen | Abgeschlossen | PR #832 merged. |
