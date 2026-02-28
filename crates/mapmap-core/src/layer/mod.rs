@@ -1,3 +1,7 @@
+//!
+//! Layer types and utilities.
+//!
+
 pub mod composition;
 pub mod layer_struct;
 pub mod manager;

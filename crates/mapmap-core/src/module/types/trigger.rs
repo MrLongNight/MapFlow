@@ -1,3 +1,7 @@
+//!
+//! Trigger variants.
+//!
+
 use crate::module::types::socket::ModuleSocket;
 use crate::module::types::socket::ModuleSocketType;
 use rand::RngExt;

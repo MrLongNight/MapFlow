@@ -1,3 +1,7 @@
+//!
+//! Mesh data and definitions.
+//!
+
 use serde::{Deserialize, Serialize};
 
 /// Mesh geometry definitions for projection mapping surfaces.

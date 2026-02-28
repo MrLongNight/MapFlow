@@ -1,3 +1,7 @@
+//!
+//! Source related data.
+//!
+
 use crate::module::types::socket::BlendModeType;
 use serde::{Deserialize, Serialize};
 

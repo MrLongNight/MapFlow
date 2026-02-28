@@ -1,3 +1,7 @@
+//!
+//! Module types definition.
+//!
+
 pub mod connection;
 pub mod hue;
 pub mod layer;

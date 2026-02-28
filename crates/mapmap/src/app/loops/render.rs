@@ -115,23 +115,6 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
             .create_view(&wgpu::TextureViewDescriptor::default());
 
         // Render Content
-        let time = app.start_time.elapsed().as_secs_f32();
-
-        // We have to split app to pass mutable effect chain renderers
-        let (preview_ecr, ecr) = if output_id == 0 {
-            (
-                &mut app.preview_effect_chain_renderer,
-                &mut app.effect_chain_renderer,
-            )
-        } else {
-            (
-                &mut app.preview_effect_chain_renderer,
-                &mut app.effect_chain_renderer,
-            )
-        };
-
-        let effect_chain_renderer = if output_id == 0 { preview_ecr } else { ecr };
-
         render_content(
             RenderContext {
                 device: &app.backend.device,
@@ -145,9 +128,6 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
                 _dummy_view: &app.dummy_view,
                 mesh_buffer_cache: &mut app.mesh_buffer_cache,
                 egui_renderer: &mut app.egui_renderer,
-                effect_chain_renderer,
-                shader_graph_manager: &app.shader_graph_manager,
-                time,
             },
             output_id,
             &mut encoder,
@@ -304,9 +284,6 @@ struct RenderContext<'a> {
     _dummy_view: &'a Option<std::sync::Arc<wgpu::TextureView>>,
     mesh_buffer_cache: &'a mut mapmap_render::MeshBufferCache,
     egui_renderer: &'a mut egui_wgpu::Renderer,
-    effect_chain_renderer: &'a mut mapmap_render::EffectChainRenderer,
-    shader_graph_manager: &'a mapmap_render::ShaderGraphManager,
-    time: f32,
 }
 
 fn render_content(
@@ -444,113 +421,7 @@ fn render_content(
             Some(ctx.texture_pool.get_view(fallback_name))
         };
 
-        if let Some(mut src_ref) = source_view {
-            if !op.effects.is_empty() {
-                let mut effect_chain = mapmap_core::EffectChain::new();
-                for e in &op.effects {
-                    if let mapmap_core::module::ModulizerType::Effect {
-                        effect_type,
-                        params,
-                    } = e
-                    {
-                        let render_effect_type = match effect_type {
-                            mapmap_core::module::EffectType::ShaderGraph(id) => {
-                                mapmap_core::EffectType::ShaderGraph(*id)
-                            }
-                            mapmap_core::module::EffectType::Blur => mapmap_core::EffectType::Blur,
-                            mapmap_core::module::EffectType::Sharpen => continue,
-                            mapmap_core::module::EffectType::Invert => {
-                                mapmap_core::EffectType::Invert
-                            }
-                            mapmap_core::module::EffectType::Threshold => continue,
-                            mapmap_core::module::EffectType::Brightness => continue,
-                            mapmap_core::module::EffectType::Contrast => continue,
-                            mapmap_core::module::EffectType::Saturation => continue,
-                            mapmap_core::module::EffectType::HueShift => {
-                                mapmap_core::EffectType::HueShift
-                            }
-                            mapmap_core::module::EffectType::Colorize => continue,
-                            mapmap_core::module::EffectType::Wave => mapmap_core::EffectType::Wave,
-                            mapmap_core::module::EffectType::Spiral => continue,
-                            mapmap_core::module::EffectType::Pinch => continue,
-                            mapmap_core::module::EffectType::Mirror => {
-                                mapmap_core::EffectType::Mirror
-                            }
-                            mapmap_core::module::EffectType::Kaleidoscope => {
-                                mapmap_core::EffectType::Kaleidoscope
-                            }
-                            mapmap_core::module::EffectType::Pixelate => {
-                                mapmap_core::EffectType::Pixelate
-                            }
-                            mapmap_core::module::EffectType::Halftone => continue,
-                            mapmap_core::module::EffectType::EdgeDetect => {
-                                mapmap_core::EffectType::EdgeDetect
-                            }
-                            mapmap_core::module::EffectType::Posterize => continue,
-                            mapmap_core::module::EffectType::Glitch => {
-                                mapmap_core::EffectType::Glitch
-                            }
-                            mapmap_core::module::EffectType::RgbSplit => {
-                                mapmap_core::EffectType::RgbSplit
-                            }
-                            mapmap_core::module::EffectType::ChromaticAberration => {
-                                mapmap_core::EffectType::ChromaticAberration
-                            }
-                            mapmap_core::module::EffectType::VHS => continue,
-                            mapmap_core::module::EffectType::FilmGrain => {
-                                mapmap_core::EffectType::FilmGrain
-                            }
-                            mapmap_core::module::EffectType::Vignette => {
-                                mapmap_core::EffectType::Vignette
-                            }
-                        };
-                        let id = effect_chain.add_effect(render_effect_type);
-                        if let Some(effect) = effect_chain.effects.iter_mut().find(|e| e.id == id) {
-                            if let Some(intensity) = params.get("intensity") {
-                                effect.intensity = *intensity;
-                            }
-                            effect.parameters = params.clone();
-                        }
-                    }
-                }
-
-                let intermediate_tex_name = format!("effect_temp_{}", op.layer_part_id);
-
-                let (width, height) = if ctx.texture_pool.has_texture(&tex_name) {
-                    if let Some(tex) = ctx.texture_pool.get_texture(&tex_name) {
-                        (tex.width(), tex.height())
-                    } else {
-                        (1920, 1080)
-                    }
-                } else {
-                    (1920, 1080)
-                };
-
-                ctx.texture_pool.ensure_texture(
-                    &intermediate_tex_name,
-                    width,
-                    height,
-                    wgpu::TextureFormat::Bgra8UnormSrgb,
-                    wgpu::TextureUsages::TEXTURE_BINDING
-                        | wgpu::TextureUsages::COPY_DST
-                        | wgpu::TextureUsages::RENDER_ATTACHMENT,
-                );
-
-                let intermediate_view = ctx.texture_pool.get_view(&intermediate_tex_name);
-
-                ctx.effect_chain_renderer.apply_chain(
-                    encoder,
-                    &src_ref,
-                    &intermediate_view,
-                    &effect_chain,
-                    ctx.shader_graph_manager,
-                    ctx.time,
-                    width,
-                    height,
-                );
-                src_ref = intermediate_view;
-            }
-
+        if let Some(src_ref) = source_view {
             let transform = glam::Mat4::IDENTITY;
             let uniform_bind_group = mesh_renderer.get_uniform_bind_group_with_source_props(
                 queue,
