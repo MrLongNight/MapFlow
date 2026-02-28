@@ -1017,10 +1017,16 @@ impl ModuleEvaluator {
                         }
                         crate::module::TriggerTarget::Param(name) => {
                             if num_effects > 0 {
-                                if let Some(ModulizerType::Effect { params, .. }) = op.effects.get_mut(num_effects - 1) {
+                                if let Some(ModulizerType::Effect { params, .. }) =
+                                    op.effects.get_mut(num_effects - 1)
+                                {
                                     match params.get_mut(name) {
-                                        Some(val) => *val = final_val,
-                                        None => { params.insert(name.clone(), final_val); }
+                                        Some(val) => {
+                                            *val = final_val;
+                                        }
+                                        None => {
+                                            params.insert(name.clone(), final_val);
+                                        }
                                     }
                                 }
                             }
@@ -1235,11 +1241,21 @@ impl ModuleEvaluator {
                             break;
                         }
                         ModulePartType::Modulizer(mod_type) => {
-                            if num_effects < op.effects.len() { op.effects[num_effects].clone_from(mod_type); } else { op.effects.push(mod_type.clone()); } num_effects += 1;
+                            if num_effects < op.effects.len() {
+                                op.effects[num_effects].clone_from(mod_type);
+                            } else {
+                                op.effects.push(mod_type.clone());
+                            }
+                            num_effects += 1;
                             current_id = part.id;
                         }
                         ModulePartType::Mask(mask_type) => {
-                            if num_masks < op.masks.len() { op.masks[num_masks].clone_from(mask_type); } else { op.masks.push(mask_type.clone()); } num_masks += 1;
+                            if num_masks < op.masks.len() {
+                                op.masks[num_masks].clone_from(mask_type);
+                            } else {
+                                op.masks.push(mask_type.clone());
+                            }
+                            num_masks += 1;
                             current_id = part.id;
                         }
                         ModulePartType::Mesh(mesh_type) => {
@@ -1273,8 +1289,10 @@ impl ModuleEvaluator {
         }
 
         // Fix order (we pushed back-to-front, so reverse to get execution order)
-        op.effects.truncate(num_effects); op.effects.reverse();
-        op.masks.truncate(num_masks); op.masks.reverse();
+        op.effects.truncate(num_effects);
+        op.effects.reverse();
+        op.masks.truncate(num_masks);
+        op.masks.reverse();
 
         op.mesh = override_mesh.unwrap_or_else(|| default_mesh.clone());
     }

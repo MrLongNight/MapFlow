@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 /// DMX fixture profile defining channel layout
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FixtureProfile {
-    /// Human-readable display name..
+    /// Human-readable display name.
     pub name: String,
     pub manufacturer: String,
     pub channels: Vec<FixtureChannel>,
