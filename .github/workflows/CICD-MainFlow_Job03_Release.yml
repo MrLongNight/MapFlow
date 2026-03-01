@@ -77,14 +77,14 @@ jobs:
           Add-Content -Path $env:GITHUB_ENV -Value "FFMPEG_INCLUDE_DIR=$IncludePath"
           Add-Content -Path $env:GITHUB_ENV -Value "FFMPEG_LIB_DIR=$LibPath"
           Add-Content -Path $env:GITHUB_ENV -Value "FFMPEG_VERSION=7.1"
-          
+
           # Add to MSVC INCLUDE and LIB paths for cc crate and other build scripts
           if ($env:INCLUDE) {
             Add-Content -Path $env:GITHUB_ENV -Value "INCLUDE=$IncludePath;${env:INCLUDE}"
           } else {
             Add-Content -Path $env:GITHUB_ENV -Value "INCLUDE=$IncludePath"
           }
-          
+
           if ($env:LIB) {
             Add-Content -Path $env:GITHUB_ENV -Value "LIB=$LibPath;${env:LIB}"
           } else {
@@ -177,7 +177,7 @@ jobs:
             libudev-dev libx11-dev libxcursor-dev libxi-dev libxrandr-dev \
             libxinerama-dev libwayland-dev libxkbcommon-dev libssl-dev \
             ffmpeg
-      
+
       - name: Set FFmpeg environment for ffmpeg-sys-next (Linux)
         run: |
           echo "FFMPEG_INCLUDE_DIR=/usr/include" >> $GITHUB_ENV
@@ -185,14 +185,14 @@ jobs:
 
       - name: Build (Release)
         run: cargo build --release -p mapmap --features "audio,ffmpeg"
-      
+
       - name: Create Tarball
         run: |
           VERSION="${{ inputs.version }}"
           TAR_NAME="MapFlow-$VERSION-Linux-x64.tar.gz"
           cd target/release
           tar -czf "../../$TAR_NAME" MapFlow
-      
+
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:

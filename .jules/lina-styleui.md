@@ -65,3 +65,8 @@
     - **Geometry:** `CornerRadius::ZERO` (sharp corners) for all panels and overlays.
     - **Status Colors:** `colors::MINT_ACCENT` (Good/FPS), `colors::CYAN_ACCENT` (Info/Time), `colors::ERROR_COLOR` (Locked/Error).
 **Action:** Removed hardcoded colors and rounded corners from `AudioMeter`, `StyledPanel`, `lock_button`, and `render_stats_overlay`. Replaced with theme constants and sharp corners.
+
+## 2026-02-18 – [Strict Shape Geometry in Visualizers]
+**Learning:** Some custom drawn UI elements like the `AudioPanel` visualizer were still using hardcoded float values (e.g., `2.0` or `1.0`) for corner radii, breaking the Cyber Dark theme's sharp aesthetic.
+- **Insight:** Any `ui.painter().rect_filled` or `ui.painter().rect_stroke` must strictly use `egui::CornerRadius::ZERO` instead of literal float values to maintain consistency.
+- **Action:** Updated `AudioPanel` to replace float rounding with `egui::CornerRadius::ZERO`. Added to guiding principles.

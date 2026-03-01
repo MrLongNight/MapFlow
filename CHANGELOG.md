@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- 2026-03-01: feat: Füge ein Codex-Setup-Skript hinzu und implementiere die Haupt-Render-Schleife der Anwendung. (#888)
+- 2026-03-01: feat: Implement core module graph evaluation, comprehensive UI inspector, MPV video decoding, and initial environment setup script. (#887)
+- 2026-03-01: feat(ui): Enforce sharp corners in AudioPanel visualizer (#882)
+- 2026-03-01: docs: Import user-manual documentation (#885)
+- 2026-03-01: chore: Integrate Shader-Graph logic into Effect Chain Pipeline (#881)
+- 2026-03-01: feat: Implement timing sync logic for player loops
+- 2026-03-01: feat: Implement comprehensive core types for modules and layers, including their management, UI inspectors, and rendering integration.
+- 2026-03-01: refactor: Extrahierte die Hauptanwendungslogik in `logic.rs` und die UI-Layout-Definition in `ui_layout.rs` und aktualisierte die technische Schuldendokumentation.
+- 2026-03-01: feat: Implementierung des Controller-Overlay-Panels mit MIDI-Visualisierung, Lernfunktion und Bearbeitungsmodus.
+- 2026-03-01: fix: Fix CI failures after FramePipeline refactor
+- 2026-03-01: fix: Fix GPU upload thread blocking the media pipeline
+- 2026-03-01: refactor: Refactor render loop to remove unsafe pointer hack
+- 2026-03-01: feat: Improve Media I/O with async NDI sender and UI updates
+- 2026-03-01: feat: Restore canvas toolbar and diagnostics with modern egui API
+- 2026-03-01: refactor: Refactor module_canvas interaction logic
+- 2026-03-01: feat: Add Active In socket for module bypass
+- 2026-03-01: feat: Implement NDI Source/Output and Spout Stub
+- 2026-03-01: feat: Add UI controls for extended mesh types
+- 2026-03-01: feat: Implement Link System UI and Evaluator Logic
+- 2026-03-01: fix: Fix TriggerTarget::Param not working for Shader Sources
 - 2026-02-26: refactor(core): Module system split into submodules for improved maintainability (supersedes #829) (#846)
 - 2026-02-26: docs: Improve Bevy integration documentation and component references (Scribe)
 - 2026-02-26: feat(core): Expand TriggerTarget with 3D transforms, particle controls, and layout modifiers (supersedes #834) (#835)

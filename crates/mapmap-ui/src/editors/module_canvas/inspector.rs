@@ -909,10 +909,100 @@ pub fn render_inspector_for_part(
                                 }
                             }
                         }
-                        SourceType::BevyAtmosphere { .. }
-                        | SourceType::BevyHexGrid { .. }
-                        | SourceType::BevyParticles { .. } => {
-                            ui.label("Controls for this Bevy node are not yet implemented in UI.");
+                        SourceType::BevyAtmosphere {
+                            turbidity,
+                            rayleigh,
+                            mie_coeff,
+                            mie_directional_g,
+                            sun_position,
+                            exposure,
+                        } => {
+                            ui.label("\u{2601} Atmosphere Settings");
+                            ui.separator();
+
+                            ui.add(egui::Slider::new(turbidity, 0.0..=10.0).text("Turbidity"));
+                            ui.add(egui::Slider::new(rayleigh, 0.0..=10.0).text("Rayleigh"));
+                            ui.add(egui::Slider::new(mie_coeff, 0.0..=0.1).text("Mie Coeff"));
+                            ui.add(egui::Slider::new(mie_directional_g, 0.0..=1.0).text("Mie Dir G"));
+                            ui.add(egui::Slider::new(exposure, 0.0..=10.0).text("Exposure"));
+
+                            ui.label("Sun Position (Azimuth, Elevation):");
+                            ui.horizontal(|ui| {
+                                ui.add(egui::DragValue::new(&mut sun_position.0).prefix("Az:").speed(0.1));
+                                ui.add(egui::DragValue::new(&mut sun_position.1).prefix("El:").speed(0.1));
+                            });
+                        }
+                        SourceType::BevyHexGrid {
+                            radius,
+                            rings,
+                            pointy_top,
+                            spacing,
+                            position,
+                            rotation,
+                            scale,
+                        } => {
+                            ui.label("\u{2B22} Hex Grid Settings");
+                            ui.separator();
+
+                            ui.add(egui::DragValue::new(radius).prefix("Radius:").speed(0.1));
+                            ui.add(egui::DragValue::new(rings).prefix("Rings:"));
+                            ui.add(egui::DragValue::new(spacing).prefix("Spacing:").speed(0.1));
+                            ui.checkbox(pointy_top, "Pointy Top");
+
+                            ui.label("Position:");
+                            ui.horizontal(|ui| {
+                                ui.add(egui::DragValue::new(&mut position[0]).prefix("X:").speed(0.1));
+                                ui.add(egui::DragValue::new(&mut position[1]).prefix("Y:").speed(0.1));
+                                ui.add(egui::DragValue::new(&mut position[2]).prefix("Z:").speed(0.1));
+                            });
+
+                            ui.label("Rotation:");
+                            ui.horizontal(|ui| {
+                                ui.add(egui::DragValue::new(&mut rotation[0]).prefix("X:").speed(1.0));
+                                ui.add(egui::DragValue::new(&mut rotation[1]).prefix("Y:").speed(1.0));
+                                ui.add(egui::DragValue::new(&mut rotation[2]).prefix("Z:").speed(1.0));
+                            });
+
+                            ui.add(egui::DragValue::new(scale).prefix("Scale:").speed(0.1));
+                        }
+                        SourceType::BevyParticles {
+                            rate,
+                            lifetime,
+                            speed,
+                            color_start,
+                            color_end,
+                            position,
+                            rotation,
+                        } => {
+                            ui.label("\u{2728} Particle System Settings");
+                            ui.separator();
+
+                            ui.add(egui::DragValue::new(rate).prefix("Rate:").speed(1.0));
+                            ui.add(egui::DragValue::new(lifetime).prefix("Lifetime:").speed(0.1));
+                            ui.add(egui::DragValue::new(speed).prefix("Speed:").speed(0.1));
+
+                            ui.horizontal(|ui| {
+                                ui.label("Start Color:");
+                                ui.color_edit_button_rgba_unmultiplied(color_start);
+                            });
+                            ui.horizontal(|ui| {
+                                ui.label("End Color:");
+                                ui.color_edit_button_rgba_unmultiplied(color_end);
+                            });
+
+                            ui.label("Position:");
+                            ui.horizontal(|ui| {
+                                ui.add(egui::DragValue::new(&mut position[0]).prefix("X:").speed(0.1));
+                                ui.add(egui::DragValue::new(&mut position[1]).prefix("Y:").speed(0.1));
+                                ui.add(egui::DragValue::new(&mut position[2]).prefix("Z:").speed(0.1));
+                            });
+
+                            ui.label("Rotation:");
+                            ui.horizontal(|ui| {
+                                ui.add(egui::DragValue::new(&mut rotation[0]).prefix("X:").speed(1.0));
+                                ui.add(egui::DragValue::new(&mut rotation[1]).prefix("Y:").speed(1.0));
+                                ui.add(egui::DragValue::new(&mut rotation[2]).prefix("Z:").speed(1.0));
+                            });
                         }
                         SourceType::Bevy3DShape {
                             shape_type,

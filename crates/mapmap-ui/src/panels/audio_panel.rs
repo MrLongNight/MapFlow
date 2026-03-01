@@ -67,10 +67,10 @@ impl AudioPanel {
                         egui::vec2(ui.available_width(), height),
                         Sense::hover(),
                     );
-                    ui.painter().rect_filled(rect, 2.0, colors::DARKER_GREY);
+                    ui.painter().rect_filled(rect, egui::CornerRadius::ZERO, colors::DARKER_GREY);
                     ui.painter().rect_stroke(
                         rect,
-                        2.0,
+                        egui::CornerRadius::ZERO,
                         Stroke::new(1.0, colors::STROKE_GREY),
                         egui::StrokeKind::Middle,
                     );
@@ -142,10 +142,10 @@ impl AudioPanel {
         let painter = ui.painter();
 
         // Background
-        painter.rect_filled(rect, 2.0, colors::DARKER_GREY);
+        painter.rect_filled(rect, egui::CornerRadius::ZERO, colors::DARKER_GREY);
         painter.rect_stroke(
             rect,
-            2.0,
+            egui::CornerRadius::ZERO,
             Stroke::new(1.0, colors::STROKE_GREY),
             egui::StrokeKind::Middle,
         );
@@ -179,7 +179,7 @@ impl AudioPanel {
                 colors::CYAN_ACCENT.linear_multiply(0.6 + (energy * 0.4))
             };
 
-            painter.rect_filled(band_rect, 1.0, color);
+            painter.rect_filled(band_rect, egui::CornerRadius::ZERO, color);
         }
     }
 }

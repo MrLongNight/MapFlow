@@ -112,7 +112,7 @@ jobs:
             }
 
             // ═══════════════════════════════════════════════════════════════
-            // 4. CHECK STATUS CHECKS
+            // 4. CHECK STATUS CHECKS (mit Self-Exclusion & Neutral-Toleranz)
             // ═══════════════════════════════════════════════════════════════
 
             console.log(`📊 Fetching check suites for commit ${pr.data.head.sha}...`);
@@ -131,53 +131,102 @@ jobs:
               console.log("⚠️ No check suites found. This might be a documentation-only PR.");
               console.log("✅ Proceeding with merge (no checks to fail).");
             } else {
-              // Check for failures
-              const failed = suites.data.check_suites.filter(s =>
-                s.conclusion === 'failure' ||
-                s.conclusion === 'timed_out' ||
-                s.conclusion === 'cancelled'
-              );
+              // ── FIX: Eigene Check-Suite aus der Prüfung ausschließen ──
+              // Der Auto-Merge-Workflow erzeugt selbst eine Check-Suite.
+              // Diese muss ignoriert werden, sonst entsteht ein Deadlock
+              // (der Workflow wartet auf sich selbst).
+              const ownRunId = process.env.GITHUB_RUN_ID;
+              const ownAppSlug = 'github-actions';
 
-              if (failed.length > 0) {
-                console.log(`❌ ${failed.length} check suite(s) failed:`);
-                failed.forEach(s => console.log(`  - ${s.app.name}: ${s.conclusion}`));
-                return;
+              // Ermittle die Check-Suite-ID dieses Workflow-Runs
+              let ownSuiteId = null;
+              if (ownRunId) {
+                try {
+                  const ownRun = await github.rest.actions.getWorkflowRun({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    run_id: parseInt(ownRunId)
+                  });
+                  ownSuiteId = ownRun.data.check_suite_id;
+                  console.log(`🔄 Own check suite ID: ${ownSuiteId} (will be excluded from checks)`);
+                } catch (e) {
+                  console.log(`⚠️ Could not determine own suite ID: ${e.message}`);
+                }
               }
 
-              // Check for pending/in-progress
-              const pending = suites.data.check_suites.filter(s =>
-                s.status === 'in_progress' ||
-                s.status === 'queued' ||
-                s.status === 'waiting'
-              );
+              // Filtere die eigene Suite heraus
+              const externalSuites = suites.data.check_suites.filter(s => {
+                if (ownSuiteId && s.id === ownSuiteId) {
+                  console.log(`  ⏭️ Skipping own check suite (ID: ${s.id})`);
+                  return false;
+                }
+                return true;
+              });
 
-              if (pending.length > 0) {
-                console.log(`⏳ ${pending.length} check suite(s) still running:`);
-                pending.forEach(s => console.log(`  - ${s.app.name}: ${s.status}`));
-                return;
-              }
+              const totalExternal = externalSuites.length;
+              console.log(`📊 Evaluating ${totalExternal} external check suite(s) (excluded own)`);
 
-              // Check for successful completion
-              const successful = suites.data.check_suites.filter(s =>
-                s.conclusion === 'success'
-              );
+              if (totalExternal === 0) {
+                console.log("⚠️ No external check suites found. Proceeding with merge.");
+              } else {
+                // Check for failures
+                const failed = externalSuites.filter(s =>
+                  s.conclusion === 'failure' ||
+                  s.conclusion === 'timed_out' ||
+                  s.conclusion === 'cancelled'
+                );
 
-              console.log(`✅ ${successful.length}/${suites.data.total_count} check suite(s) passed`);
+                if (failed.length > 0) {
+                  console.log(`❌ ${failed.length} check suite(s) failed:`);
+                  failed.forEach(s => console.log(`  - ${s.app?.name || 'unknown'}: ${s.conclusion}`));
+                  return;
+                }
 
-              // Ensure ALL checks have completed successfully
-              const completed = suites.data.check_suites.filter(s =>
-                s.status === 'completed'
-              );
+                // Check for pending/in-progress
+                const pending = externalSuites.filter(s =>
+                  s.status === 'in_progress' ||
+                  s.status === 'queued' ||
+                  s.status === 'waiting'
+                );
 
-              if (completed.length !== suites.data.total_count) {
-                console.log(`⏳ Waiting for all checks to complete (${completed.length}/${suites.data.total_count})`);
-                return;
-              }
+                if (pending.length > 0) {
+                  console.log(`⏳ ${pending.length} check suite(s) still running:`);
+                  pending.forEach(s => console.log(`  - ${s.app?.name || 'unknown'}: ${s.status}`));
+                  return;
+                }
 
-              // Ensure all completed checks are successful
-              if (successful.length !== completed.length) {
-                console.log(`❌ Not all completed checks are successful`);
-                return;
+                // ── FIX: "neutral" und "skipped" als gültig akzeptieren ──
+                // Optionale Jobs (z.B. Windows-Build ohne Label) erzeugen
+                // conclusion "neutral" oder "skipped". Das ist kein Fehler.
+                const acceptable = externalSuites.filter(s =>
+                  s.conclusion === 'success' ||
+                  s.conclusion === 'neutral' ||
+                  s.conclusion === 'skipped'
+                );
+
+                const completed = externalSuites.filter(s =>
+                  s.status === 'completed'
+                );
+
+                console.log(`✅ ${acceptable.length}/${totalExternal} check suite(s) passed (success/neutral/skipped)`);
+
+                // Ensure ALL external checks have completed
+                if (completed.length !== totalExternal) {
+                  console.log(`⏳ Waiting for all checks to complete (${completed.length}/${totalExternal})`);
+                  return;
+                }
+
+                // Ensure all completed checks have acceptable conclusions
+                if (acceptable.length !== completed.length) {
+                  const unexpected = completed.filter(s =>
+                    s.conclusion !== 'success' &&
+                    s.conclusion !== 'neutral' &&
+                    s.conclusion !== 'skipped'
+                  );
+                  console.log(`❌ Not all completed checks have acceptable conclusions:`);
+                  unexpected.forEach(s => console.log(`  - ${s.app?.name || 'unknown'}: ${s.conclusion}`));
+                  return;
+                }
               }
             }
 
