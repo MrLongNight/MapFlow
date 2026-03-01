@@ -1643,7 +1643,7 @@ mod tests_logic {
         AudioBand, AudioTriggerOutputConfig, MapFlowModule, ModuleConnection, ModulePart,
         ModulePartType, ModulePlaybackMode, SourceType, TriggerType,
     };
-    
+
     use std::time::{Duration, Instant};
 
     fn create_audio_data(beat: bool) -> AudioTriggerData {
