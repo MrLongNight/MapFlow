@@ -45,6 +45,15 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
             });
     }
 
+    // Cue Panel
+    app.ui_state.cue_panel.show(
+        ctx,
+        &app.control_manager,
+        &app.ui_state.i18n,
+        &mut app.ui_state.actions,
+        app.ui_state.icon_manager.as_ref(),
+    );
+
     // 5. Central Panel: Module Canvas
     egui::CentralPanel::default()
         .frame(egui::Frame::default().fill(ctx.style().visuals.panel_fill))
