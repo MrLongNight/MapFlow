@@ -272,28 +272,19 @@ jobs:
       - name: Check Results
         id: check
         run: |
-          echo "quality=${{ needs.quality.result }}" >> $GITHUB_OUTPUT
-          echo "security=${{ needs.security.result }}" >> $GITHUB_OUTPUT
-          echo "build_linux=${{ needs.build-linux.result }}" >> $GITHUB_OUTPUT
-          echo "build_windows=${{ needs.build-windows.result }}" >> $GITHUB_OUTPUT
+          echo "quality=${{ needs.quality.result }}"
+          echo "security=${{ needs.security.result }}"
+          echo "build_linux=${{ needs.build-linux.result }}"
+          echo "build_windows=${{ needs.build-windows.result }}"
 
-          if [ "${{ needs.quality.result }}" != "success" ]; then
-            echo "failed_job=quality" >> $GITHUB_OUTPUT
+          if [ "${{ needs.quality.result }}" != "success" ] || \
+             [ "${{ needs.security.result }}" != "success" ] || \
+             [ "${{ needs.build-linux.result }}" != "success" ] || \
+             [ "${{ needs.build-windows.result }}" != "success" ]; then
+            echo "::error::One or more required jobs failed or were skipped."
             exit 1
           fi
-          if [ "${{ needs.security.result }}" != "success" ]; then
-            echo "failed_job=security" >> $GITHUB_OUTPUT
-            exit 1
-          fi
-          if [ "${{ needs.build-linux.result }}" != "success" ]; then
-            echo "failed_job=build-linux" >> $GITHUB_OUTPUT
-            exit 1
-          fi
-          if [ "${{ needs.build-windows.result }}" == "failure" ]; then
-            echo "failed_job=build-windows" >> $GITHUB_OUTPUT
-            exit 1
-          fi
-          echo "??? All Validation Checks Passed"
+          echo "✅ All Validation Checks Passed"
 
       - name: Notify Jules on Failure
         if: failure() && github.event_name == 'pull_request'
