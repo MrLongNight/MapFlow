@@ -298,6 +298,20 @@ impl CuePanel {
                             changed = true;
                         }
                     });
+
+                    // Optional OSC value payload to send
+                    ui.horizontal(|ui| {
+                        ui.label("Value (optional):");
+                        let mut val_str = osc_trigger.value.clone().unwrap_or_default();
+                        if ui.text_edit_singleline(&mut val_str).changed() {
+                            if val_str.is_empty() {
+                                osc_trigger.value = None;
+                            } else {
+                                osc_trigger.value = Some(val_str);
+                            }
+                            changed = true;
+                        }
+                    });
                 }
             }
             TriggerTypeUI::Midi => {
