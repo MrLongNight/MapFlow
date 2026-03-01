@@ -2,6 +2,7 @@
 
 pub mod actions;
 pub mod core;
+pub use core::app_struct::App;
 /// Event handling.
 pub mod events;
 /// Main application loops (Logic, Render).
