@@ -127,3 +127,182 @@ fn test_layer_integration_transform() {
     assert_eq!(matrix.w_axis.x, 100.0);
     assert_eq!(matrix.w_axis.y, 200.0);
 }
+
+#[test]
+fn test_layer_manager_crud() {
+    let mut manager = mapmap_core::LayerManager::new();
+    assert!(manager.is_empty());
+    assert_eq!(manager.len(), 0);
+
+    // Create
+    let id1 = manager.create_layer("Layer 1");
+    assert_eq!(manager.len(), 1);
+
+    let _id2 = manager.create_layer("Layer 2");
+    assert_eq!(manager.len(), 2);
+
+    // Read
+    let layer1 = manager.get_layer(id1).unwrap();
+    assert_eq!(layer1.name, "Layer 1");
+
+    // Update (Rename)
+    assert!(manager.rename_layer(id1, "Layer 1 Renamed"));
+    assert_eq!(manager.get_layer(id1).unwrap().name, "Layer 1 Renamed");
+
+    // Delete
+    let removed = manager.remove_layer(id1).unwrap();
+    assert_eq!(removed.id, id1);
+    assert_eq!(manager.len(), 1);
+    assert!(manager.get_layer(id1).is_none());
+
+    // Clear
+    manager.clear();
+    assert!(manager.is_empty());
+}
+
+#[test]
+fn test_layer_manager_group_and_reparent() {
+    let mut manager = mapmap_core::LayerManager::new();
+
+    let group_id = manager.create_group("Group 1");
+    assert!(manager.get_layer(group_id).unwrap().is_group);
+
+    let child_id = manager.create_layer("Child 1");
+    let grandchild_id = manager.create_layer("Grandchild 1");
+
+    // Reparent
+    manager.reparent_layer(child_id, Some(group_id));
+    manager.reparent_layer(grandchild_id, Some(child_id));
+
+    assert_eq!(
+        manager.get_layer(child_id).unwrap().parent_id,
+        Some(group_id)
+    );
+    assert_eq!(
+        manager.get_layer(grandchild_id).unwrap().parent_id,
+        Some(child_id)
+    );
+
+    // Descendant check
+    assert!(manager.is_descendant(grandchild_id, group_id));
+    assert!(manager.is_descendant(child_id, group_id));
+    assert!(!manager.is_descendant(group_id, grandchild_id));
+
+    // Prevent cycles
+    manager.reparent_layer(group_id, Some(grandchild_id));
+    // Should still be None
+    assert_eq!(manager.get_layer(group_id).unwrap().parent_id, None);
+
+    // Remove group should orphan children
+    manager.remove_layer(group_id);
+    assert_eq!(manager.get_layer(child_id).unwrap().parent_id, None);
+}
+
+#[test]
+fn test_layer_manager_z_order() {
+    let mut manager = mapmap_core::LayerManager::new();
+    let id1 = manager.create_layer("1");
+    let id2 = manager.create_layer("2");
+    let id3 = manager.create_layer("3");
+
+    // Initial order: 1, 2, 3
+
+    // Move up
+    assert!(manager.move_layer_up(id2));
+    // Order: 1, 3, 2
+    let layers = manager.layers();
+    assert_eq!(layers[1].id, id3);
+    assert_eq!(layers[2].id, id2);
+
+    // Move down
+    assert!(manager.move_layer_down(id2));
+    // Order: 1, 2, 3
+    let layers = manager.layers();
+    assert_eq!(layers[1].id, id2);
+
+    // Move to
+    assert!(manager.move_layer_to(id1, 2));
+    // Order: 2, 3, 1
+    let layers = manager.layers();
+    assert_eq!(layers[2].id, id1);
+
+    // Swap
+    assert!(manager.swap_layers(id1, id2));
+    // Order: 1, 3, 2
+    let layers = manager.layers();
+    assert_eq!(layers[0].id, id1);
+    assert_eq!(layers[2].id, id2);
+}
+
+#[test]
+fn test_layer_manager_effective_opacity() {
+    let mut manager = mapmap_core::LayerManager::new();
+    manager.composition.master_opacity = 0.5;
+
+    let group_id = manager.create_group("Group");
+    manager.get_layer_mut(group_id).unwrap().opacity = 0.8;
+
+    let child_id = manager.create_layer("Child");
+    manager.get_layer_mut(child_id).unwrap().opacity = 0.5;
+    manager.reparent_layer(child_id, Some(group_id));
+
+    let child = manager.get_layer(child_id).unwrap();
+    // 0.5 (child) * 0.8 (group) * 0.5 (master) = 0.2
+    assert!((manager.get_effective_opacity(child) - 0.2).abs() < f32::EPSILON);
+}
+
+#[test]
+fn test_layer_manager_visible_layers() {
+    let mut manager = mapmap_core::LayerManager::new();
+    let id1 = manager.create_layer("1");
+    let id2 = manager.create_layer("2");
+
+    // Set paints so they should render
+    manager.get_layer_mut(id1).unwrap().paint_id = Some(1);
+    manager.get_layer_mut(id2).unwrap().paint_id = Some(2);
+
+    assert_eq!(manager.visible_layers().count(), 2);
+
+    // Bypass id1
+    manager.get_layer_mut(id1).unwrap().toggle_bypass();
+    assert_eq!(manager.visible_layers().count(), 1);
+    assert_eq!(manager.visible_layers().next().unwrap().id, id2);
+
+    // Unbypass and Solo id1
+    manager.get_layer_mut(id1).unwrap().toggle_bypass();
+    manager.get_layer_mut(id1).unwrap().toggle_solo();
+
+    // Only id1 should be visible
+    let visible: Vec<_> = manager.visible_layers().collect();
+    assert_eq!(visible.len(), 1);
+    assert_eq!(visible[0].id, id1);
+}
+
+#[test]
+fn test_layer_manager_duplicate() {
+    let mut manager = mapmap_core::LayerManager::new();
+    let id1 = manager.create_layer("Original");
+    manager.get_layer_mut(id1).unwrap().opacity = 0.42;
+
+    let new_id = manager.duplicate_layer(id1).unwrap();
+    let new_layer = manager.get_layer(new_id).unwrap();
+
+    assert_eq!(new_layer.name, "Original (copy)");
+    assert_eq!(new_layer.opacity, 0.42);
+    assert_eq!(manager.len(), 2);
+}
+
+#[test]
+fn test_layer_manager_eject_all() {
+    let mut manager = mapmap_core::LayerManager::new();
+    let id1 = manager.create_layer("1");
+    let id2 = manager.create_layer("2");
+
+    manager.get_layer_mut(id1).unwrap().paint_id = Some(1);
+    manager.get_layer_mut(id2).unwrap().paint_id = Some(2);
+
+    manager.eject_all();
+
+    assert!(manager.get_layer(id1).unwrap().paint_id.is_none());
+    assert!(manager.get_layer(id2).unwrap().paint_id.is_none());
+}
