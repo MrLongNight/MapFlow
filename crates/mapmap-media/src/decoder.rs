@@ -148,6 +148,7 @@ mod ffmpeg_impl {
         fps: f64,
         width: u32,
         height: u32,
+        current_format: ffmpeg::format::Pixel,
         hw_accel: HwAccelType,
         path: PathBuf,
     }
@@ -267,6 +268,8 @@ mod ffmpeg_impl {
                 actual_hw_accel
             );
 
+            let current_format = decoder.format();
+
             Ok(Self {
                 input_ctx,
                 decoder,
@@ -277,6 +280,7 @@ mod ffmpeg_impl {
                 fps: fps_value,
                 width,
                 height,
+                current_format,
                 hw_accel: actual_hw_accel,
                 path: path.to_path_buf(),
             })
@@ -375,11 +379,52 @@ mod ffmpeg_impl {
                         &decoded
                     };
 
+                    let frame_width = frame_ptr.width();
+                    let frame_height = frame_ptr.height();
+                    let frame_format = frame_ptr.format();
+
+                    if frame_width != self.width
+                        || frame_height != self.height
+                        || frame_format != self.current_format
+                    {
+                        info!(
+                            "Input changed: {}x{} {:?} -> {}x{} {:?}",
+                            self.width,
+                            self.height,
+                            self.current_format,
+                            frame_width,
+                            frame_height,
+                            frame_format
+                        );
+
+                        let new_scaler = ffmpeg::software::scaling::Context::get(
+                            frame_format,
+                            frame_width,
+                            frame_height,
+                            ffmpeg::format::Pixel::RGBA,
+                            frame_width,
+                            frame_height,
+                            ffmpeg::software::scaling::Flags::BILINEAR,
+                        )
+                        .map_err(|e| {
+                            MediaError::DecoderError(format!("Failed to recreate scaler: {}", e))
+                        })
+                        .map(SendContext)?;
+
+                        self.scaler = new_scaler;
+                        self.width = frame_width;
+                        self.height = frame_height;
+                        self.current_format = frame_format;
+                    }
+
                     // Scale to RGBA
                     let mut rgb_frame = ffmpeg::util::frame::Video::empty();
-                    self.scaler
-                        .run(frame_ptr, &mut rgb_frame)
-                        .map_err(|e| MediaError::DecoderError(e.to_string()))?;
+                    self.scaler.run(frame_ptr, &mut rgb_frame).map_err(|e| {
+                        MediaError::DecoderError(format!(
+                            "Decoder error: Input changed? Scaler run failed: {}",
+                            e
+                        ))
+                    })?;
 
                     let pts = Duration::from_secs_f64(
                         decoded.timestamp().unwrap_or(0) as f64 * f64::from(self.time_base),

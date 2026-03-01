@@ -8,14 +8,14 @@ use mapmap_io::format::{PixelFormat, VideoFormat};
 use mapmap_io::VideoFrame;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 use libmpv2::Mpv;
 
 /// MPV-based video decoder
 ///
 /// Uses libmpv2 for video decoding.
-/// Uses screenshot-raw property for frame extraction to maintain thread safety and compatibility.
+/// Uses screenshot-raw command for frame extraction to maintain thread safety and compatibility.
 pub struct MpvDecoder {
     mpv: Mpv,
     path: PathBuf,
@@ -40,7 +40,9 @@ impl MpvDecoder {
         })?;
 
         // Configure MPV for offscreen operation
-        mpv.set_property("vo", "null").ok(); // No video output window
+        // `image` allows the screenshot-raw command to capture frames without creating a window.
+        // `null` suppresses video entirely and prevents `screenshot-raw` from returning frames.
+        mpv.set_property("vo", "image").ok();
         mpv.set_property("pause", true).ok(); // Start paused
         mpv.set_property("keep-open", true).ok(); // Don't close at end
         mpv.set_property("audio", "no").ok(); // Disable audio for now
@@ -86,44 +88,101 @@ impl MpvDecoder {
         let time = self.mpv.get_property::<f64>("playback-time").unwrap_or(0.0);
         self.current_time = Duration::from_secs_f64(time);
 
-        // Create video format
-        let format = VideoFormat::new(self.width, self.height, PixelFormat::RGBA8, self.fps as f32);
+        let mut extracted_data = Vec::new();
+        let mut actual_width = self.width;
+        let mut actual_height = self.height;
 
-        // Use screenshot-raw to get the current frame as a buffer
-        // Note: This property returns data in a format depending on MPV's config
-        // Default is usually RGB or RGBA.
-        // For production, we might want to use the Render API with a C wrapper for Send/Sync
+        unsafe {
+            use libmpv2_sys::*;
+            let handle = self.mpv.ctx;
 
-        // Command: screenshot-raw
-        // Returns a byte array of the current frame
-        let frame_data = self
-            .mpv
-            .get_property::<Vec<u8>>("screenshot-raw")
-            .map_err(|e| {
-                error!("MPV frame capture failed: {}", e);
-                MediaError::DecoderError(format!("MPV screenshot-raw failed: {}", e))
-            })?;
+            let cmd_sc = std::ffi::CString::new("screenshot-raw").unwrap();
+            let cmd_sc_arg = std::ffi::CString::new("video").unwrap();
 
-        // Validate data size (RGBA expected)
-        if frame_data.len() < (self.width * self.height * 3) as usize {
+            let mut cmd_screenshot = [cmd_sc.as_ptr(), cmd_sc_arg.as_ptr(), std::ptr::null()];
+
+            let mut node = mpv_node {
+                format: 0,
+                u: mpv_node__bindgen_ty_1 {
+                    string: std::ptr::null_mut(),
+                },
+            };
+            let res = mpv_command_ret(
+                handle.as_ptr(),
+                cmd_screenshot.as_mut_ptr(),
+                &mut node as *mut _,
+            );
+
+            if res >= 0 && node.format == mpv_format_MPV_FORMAT_NODE_MAP {
+                let map = node.u.list;
+                let keys = std::slice::from_raw_parts((*map).keys, (*map).num as usize);
+                let vals = std::slice::from_raw_parts((*map).values, (*map).num as usize);
+
+                for i in 0..(*map).num as usize {
+                    let key = std::ffi::CStr::from_ptr(keys[i]).to_str().unwrap_or("");
+                    if key == "data" && vals[i].format == mpv_format_MPV_FORMAT_BYTE_ARRAY {
+                        let ba = vals[i].u.ba;
+                        let data_slice = std::slice::from_raw_parts(
+                            (*ba).data as *const u8,
+                            (*ba).size as usize,
+                        );
+                        extracted_data.extend_from_slice(data_slice);
+                    } else if key == "w" && vals[i].format == mpv_format_MPV_FORMAT_INT64 {
+                        actual_width = vals[i].u.int64 as u32;
+                    } else if key == "h" && vals[i].format == mpv_format_MPV_FORMAT_INT64 {
+                        actual_height = vals[i].u.int64 as u32;
+                    }
+                }
+            } else {
+                error!(
+                    "MPV frame capture failed. Return code: {}, Node format: {}",
+                    res, node.format
+                );
+                return Err(MediaError::DecoderError(format!(
+                    "MPV screenshot-raw failed. Error: {}",
+                    res
+                )));
+            }
+
+            mpv_free_node_contents(&mut node);
+        }
+
+        if extracted_data.is_empty() {
+            return Err(MediaError::DecoderError(
+                "No data returned from screenshot-raw".to_string(),
+            ));
+        }
+
+        // Validate data size (BGRA or RGBA expected: width * height * 4)
+        if extracted_data.len() < (actual_width * actual_height * 4) as usize {
+            warn!(
+                "Captured frame data too small. Expected {} bytes, got {}",
+                actual_width * actual_height * 4,
+                extracted_data.len()
+            );
             return Err(MediaError::DecoderError(
                 "Captured frame data too small".to_string(),
             ));
         }
 
-        // If MPV returns RGB, we might need to convert to RGBA
-        // For now, assume we get usable data or handle conversion if needed
-        let final_data = if frame_data.len() == (self.width * self.height * 3) as usize {
-            // Convert RGB to RGBA
-            let mut rgba = Vec::with_capacity((self.width * self.height * 4) as usize);
-            for chunk in frame_data.chunks_exact(3) {
-                rgba.extend_from_slice(chunk);
-                rgba.push(255);
-            }
-            rgba
-        } else {
-            frame_data
-        };
+        // screenshot-raw typically returns BGRA or BGR0 format when no format is forced.
+        // We will swap R and B channels to output standard RGBA
+        // libmpv usually outputs BGRA layout on most platforms for `screenshot-raw`
+        let mut final_data = extracted_data;
+        for chunk in final_data.chunks_exact_mut(4) {
+            let b = chunk[0];
+            chunk[0] = chunk[2];
+            chunk[2] = b;
+            chunk[3] = 255; // Ensure alpha is fully opaque
+        }
+
+        // Create video format using the actual dimensions returned by the screenshot
+        let format = VideoFormat::new(
+            actual_width,
+            actual_height,
+            PixelFormat::RGBA8,
+            self.fps as f32,
+        );
 
         Ok(VideoFrame::new(final_data, format, self.current_time))
     }
