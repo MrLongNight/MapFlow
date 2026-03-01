@@ -30,7 +30,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
 * **Priorität:** 🔥 **CRITICAL**
 * **Ziel:** Eine fehlerfreie Render-Pipeline, in der alle Modul-Nodes und die zugehörige Logik stabil funktionieren.
 * **Status:** In Stabilisierung. Module System refactored (2026-02-27).
-* **Maßnahme:** 
+* **Maßnahme:**
     * **Trigger Smoothing** (Attack/Release) implementieren (Mapping existiert, Logik fehlt).
     * **Shader Codegen** (Scale/Rot/Trans Injection) vervollständigen.
     * **Graph Validation** (Cycle Detection) hinzufügen.
@@ -47,7 +47,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
 
 * **Priorität:** 🛡️ **HIGH**
 * **Ziel:** Fixen von Fehlern und Problemen.
-* **Maßnahme:** 
+* **Maßnahme:**
     * **wgpu Lifetime Hack** in `render.rs` final eliminieren (Unsafe Transmute L501).
     * **MPV Decoder** Performance optimieren (Umstieg von `screenshot-raw` auf native GPU sharing).
     * **Panic-Free Policy** (MCP Server Cleanup, .unwrap() Ersetzung).
