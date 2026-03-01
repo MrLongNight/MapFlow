@@ -277,22 +277,26 @@ impl TexturePool {
     ) {
         self.resize_if_needed(name, width, height);
 
-        let handle = {
+        let handle = match {
             let textures = self.textures.read();
             textures.get(name).cloned()
-        };
-
-        let handle = if let Some(h) = handle {
-            h
-        } else {
-            self.create(
-                name,
-                width,
-                height,
-                wgpu::TextureFormat::Rgba8UnormSrgb,
-                wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            );
-            return self.upload_data(queue, name, data, width, height);
+        } {
+            Some(handle) => handle,
+            None => {
+                self.create(
+                    name,
+                    width,
+                    height,
+                    wgpu::TextureFormat::Rgba8UnormSrgb,
+                    wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                );
+                let textures = self.textures.read();
+                // Safe fallback: texture was just created above.
+                textures
+                    .get(name)
+                    .cloned()
+                    .expect("texture must exist after creation")
+            }
         };
 
         handle.mark_used(self.start_time);

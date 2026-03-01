@@ -1,16 +1,20 @@
-# 🛠️ Developer Documentation
+# Developer Documentation
 
-Welcome to the MapFlow Developer Documentation. This section is for contributors and anyone interested in the technical details of MapFlow.
+Welcome to the MapFlow developer documentation.
 
-## 📚 Contents
+## Core Concepts
 
-*   [**Setup**](setup/DEVELOPMENT-SETUP.md)
-    *   How to set up your development environment.
-*   [**Architecture**](architecture/ARCHITECTURE.md)
-    *   System design, data flow, and core concepts.
-*   [**API Reference**](api/README.md)
-    *   Documentation for internal APIs and modules.
-*   [**Features**](features/)
-    *   Detailed specifications for implemented features.
-*   [**Technical Details**](technical/)
-    *   Deep dives into rendering, audio, and more.
+*   [**Architecture**](architecture/RENDER-QUEUE.md)
+*   [**Data Flow**](architecture/DATA-FLOW.md)
+*   [**Crate Structure**](architecture/CRATES.md)
+
+## Setup
+
+*   [**Development Setup**](setup/DEVELOPMENT-SETUP.md)
+*   [**Troubleshooting**](setup/TROUBLESHOOTING.md)
+*   [**Rust Basics**](setup/RUST-BASICS.md)
+
+## Features
+
+*   [**Media Player**](features/MEDIA_PLAYER.md)
+*   [**Modulizer Node System**](features/MODULIZER_NODES.md)
