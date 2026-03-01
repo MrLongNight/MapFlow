@@ -137,3 +137,32 @@ impl ResizeMode {
         }
     }
 }
+
+#[cfg(test)]
+mod tests_guardian {
+    use super::*;
+    use glam::Vec2;
+
+    #[test]
+    fn test_resize_mode_extreme_aspect_ratios() {
+        let source_wide = Vec2::new(1000.0, 10.0);
+        let target_tall = Vec2::new(10.0, 1000.0);
+        let (scale, _) = ResizeMode::Fill.calculate_transform(source_wide, target_tall);
+        assert_eq!(scale, Vec2::splat(100.0));
+        let (scale, _) = ResizeMode::Fit.calculate_transform(source_wide, target_tall);
+        assert_eq!(scale, Vec2::splat(0.01));
+    }
+
+    #[test]
+    fn test_resize_mode_zero_handling_edge_cases() {
+        let normal = Vec2::new(100.0, 100.0);
+        let zero = Vec2::ZERO;
+        let negative = Vec2::new(-100.0, 100.0);
+        let (scale, _) = ResizeMode::Fill.calculate_transform(zero, normal);
+        assert_eq!(scale, Vec2::ZERO);
+        let (scale, _) = ResizeMode::Fill.calculate_transform(normal, zero);
+        assert_eq!(scale, Vec2::ZERO);
+        let (scale, _) = ResizeMode::Fill.calculate_transform(negative, normal);
+        assert!(scale.is_finite());
+    }
+}

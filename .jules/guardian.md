@@ -110,3 +110,15 @@ Added regression tests `test_resilience_to_bad_input` and `test_resize_mode_zero
 ## 2025-03-01 - Testabdeckung im mapmap-core/layer verbessert
  **Erkenntnis:** Der mapmap-core layer manager (manager.rs) hatte keine Testabdeckung. Dieser Code ist entscheidend für das Handling von Layer-Sichtbarkeit, Grouping und Z-Ordering und muss verlässlich funktionieren.
  **Aktion:** Umfangreiche Tests für LayerManager in layer_tests.rs hinzugefügt, inklusive CRUD, Grouping, Z-Order, Visible-Filter und CoW-Klonverhalten. In Zukunft bei neuem Code immer den zugehörigen Test-File prüfen, insbesondere bei zentralen Managern in mapmap-core.
+
+## 2026-06-25 - [Trigger Logic Inconsistency]
+
+**Erkenntnis:** `TriggerSystem` und `ModuleEvaluator` implementierten unterschiedliche Logik für `Fixed` und `Random` Trigger.
+`ModuleEvaluator` implementierte `Random` Trigger als statenloses Rauschen (Ignorieren von Intervallen), während `TriggerSystem` Intervalle nutzte, aber `probability` ignorierte.
+Zudem ignorierte `TriggerSystem` den `offset_ms` Parameter für `Fixed` Trigger.
+**Aktion:** `TriggerSystem` wurde korrigiert, um `offset_ms` (als initiale Verzögerung) und `probability` (als Filter bei Intervall-Ende) zu respektieren.
+Die Inkonsistenz im `ModuleEvaluator` bleibt bestehen, da dieser statenlos ist und keine Intervalle korrekt abbilden kann. Dies sollte bei zukünftigen Refactorings adressiert werden.
+
+## 2024-05-24 - Split Logic in ModuleEvaluator
+**Erkenntnis:** The application of `TriggerTarget` logic is split between two separate methods in `ModuleEvaluator`. `evaluate()` handles `SourceCommand` modification (for Bevy/Media inputs), while `trace_chain_into()` handles `RenderOp` modification (for visual properties like Opacity/Scale). This separation increases the risk of regression if one path is updated without the other.
+**Aktion:** Ensure both paths are explicitly tested for `TriggerTarget` application. Future refactoring should consider unifying this logic.

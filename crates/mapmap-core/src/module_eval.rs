@@ -1289,6 +1289,18 @@ impl ModuleEvaluator {
                                                 crate::module::TriggerTarget::Rotation => {
                                                     props.rotation = final_val;
                                                 }
+                                                crate::module::TriggerTarget::OffsetX => {
+                                                    props.offset_x = final_val;
+                                                }
+                                                crate::module::TriggerTarget::OffsetY => {
+                                                    props.offset_y = final_val;
+                                                }
+                                                crate::module::TriggerTarget::FlipH => {
+                                                    props.flip_horizontal = final_val > 0.5;
+                                                }
+                                                crate::module::TriggerTarget::FlipV => {
+                                                    props.flip_vertical = final_val > 0.5;
+                                                }
                                                 _ => {}
                                             }
                                         }
@@ -1911,6 +1923,321 @@ mod tests_logic {
             assert_eq!(*effect_type, crate::module::EffectType::Invert);
         } else {
             panic!("Second effect should be Invert");
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests_coverage {
+    use super::*;
+    use crate::module::{
+        LinkMode, MapFlowModule, ModulePartType, SourceType, TriggerConfig, TriggerMappingMode,
+        TriggerTarget, TriggerType,
+    };
+    use std::collections::HashMap;
+
+    fn create_test_module() -> MapFlowModule {
+        MapFlowModule {
+            id: 1,
+            name: "Coverage Test".to_string(),
+            color: [1.0; 4],
+            parts: vec![],
+            connections: vec![],
+            playback_mode: crate::module::ModulePlaybackMode::LoopUntilManualSwitch,
+            next_part_id: 1,
+        }
+    }
+
+    #[test]
+    fn test_trigger_targets_render_op_application() {
+        let mut evaluator = ModuleEvaluator::new();
+        let mut module = create_test_module();
+
+        // 1. Trigger (Always 1.0)
+        let t_id = module.add_part_with_type(
+            ModulePartType::Trigger(TriggerType::Fixed {
+                interval_ms: 0,
+                offset_ms: 0,
+            }),
+            (0.0, 0.0),
+        );
+
+        // 2. Source (Target for triggers)
+        let s_id = module.add_part(crate::module::PartType::Source, (100.0, 0.0));
+
+        // Configure triggers on Source: Opacity, ScaleX, Rotation, FlipH
+        if let Some(part) = module.parts.iter_mut().find(|p| p.id == s_id) {
+            // Ensure it's a MediaFile source to have properties
+            if let ModulePartType::Source(SourceType::MediaFile { path, .. }) = &mut part.part_type
+            {
+                *path = "test.mp4".to_string();
+            }
+
+            // Socket 0 (Trigger In) -> Opacity
+            part.trigger_targets.insert(
+                0,
+                TriggerConfig {
+                    target: TriggerTarget::Opacity,
+                    mode: TriggerMappingMode::Direct,
+                    min_value: 0.0,
+                    max_value: 0.5, // Map 1.0 -> 0.5
+                    invert: false,
+                    threshold: 0.5,
+                },
+            );
+
+            part.inputs.push(crate::module::ModuleSocket {
+                name: "Test 1".to_string(),
+                socket_type: crate::module::ModuleSocketType::Trigger,
+            });
+            part.trigger_targets.insert(
+                1,
+                TriggerConfig {
+                    target: TriggerTarget::ScaleX,
+                    mode: TriggerMappingMode::Direct,
+                    min_value: 1.0,
+                    max_value: 2.0, // Map 1.0 -> 2.0
+                    invert: false,
+                    threshold: 0.5,
+                },
+            );
+
+            part.inputs.push(crate::module::ModuleSocket {
+                name: "Test 2".to_string(),
+                socket_type: crate::module::ModuleSocketType::Trigger,
+            });
+            part.trigger_targets.insert(
+                2,
+                TriggerConfig {
+                    target: TriggerTarget::Rotation,
+                    mode: TriggerMappingMode::Direct,
+                    min_value: 0.0,
+                    max_value: 90.0, // Map 1.0 -> 90.0
+                    invert: false,
+                    threshold: 0.5,
+                },
+            );
+
+            part.inputs.push(crate::module::ModuleSocket {
+                name: "Test 3".to_string(),
+                socket_type: crate::module::ModuleSocketType::Trigger,
+            });
+            part.trigger_targets.insert(
+                3,
+                TriggerConfig {
+                    target: TriggerTarget::FlipH,
+                    mode: TriggerMappingMode::Direct, // > 0.5 for boolean
+                    min_value: 0.0,
+                    max_value: 1.0,
+                    invert: false,
+                    threshold: 0.5,
+                },
+            );
+        }
+
+        // 3. Layer
+        let l_id = module.add_part(crate::module::PartType::Layer, (200.0, 0.0));
+
+        // 4. Output
+        let o_id = module.add_part(crate::module::PartType::Output, (300.0, 0.0));
+
+        // Connections
+        // Trigger(0) -> Source(0) [Opacity]
+        module.add_connection(t_id, 0, s_id, 0);
+        // Trigger(0) -> Source(1) [ScaleX]
+        module.add_connection(t_id, 0, s_id, 1);
+        // Trigger(0) -> Source(2) [Rotation]
+        module.add_connection(t_id, 0, s_id, 2);
+        // Trigger(0) -> Source(3) [FlipH]
+        module.add_connection(t_id, 0, s_id, 3);
+
+        // Rest of chain
+        module.add_connection(s_id, 0, l_id, 0);
+        module.add_connection(l_id, 0, o_id, 0);
+
+        // Evaluate
+        let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default());
+
+        // Verify RenderOp
+        assert_eq!(result.render_ops.len(), 1);
+        let op = &result.render_ops[0];
+
+        // Assertions
+        assert_eq!(
+            op.source_props.opacity, 0.5,
+            "Opacity should be mapped 1.0 -> 0.5"
+        );
+        assert_eq!(
+            op.source_props.scale_x, 2.0,
+            "ScaleX should be mapped 1.0 -> 2.0"
+        );
+        assert_eq!(
+            op.source_props.rotation, 90.0,
+            "Rotation should be mapped 1.0 -> 90.0"
+        );
+        assert_eq!(
+            op.source_props.flip_horizontal, true,
+            "FlipH should be true (1.0 > 0.5)"
+        );
+    }
+
+    #[test]
+    fn test_trigger_targets_bevy_command_application() {
+        let mut evaluator = ModuleEvaluator::new();
+        let mut module = create_test_module();
+
+        // 1. Trigger (Always 1.0)
+        let t_id = module.add_part_with_type(
+            ModulePartType::Trigger(TriggerType::Fixed {
+                interval_ms: 0,
+                offset_ms: 0,
+            }),
+            (0.0, 0.0),
+        );
+
+        // 2. Bevy Particles Source
+        let p_id = module.add_part_with_type(
+            ModulePartType::Source(SourceType::BevyParticles {
+                rate: 10.0,
+                lifetime: 1.0,
+                speed: 1.0,
+                color_start: [1.0; 4],
+                color_end: [1.0; 4],
+                position: [0.0; 3],
+                rotation: [0.0; 3],
+            }),
+            (100.0, 0.0),
+        );
+
+        // Configure triggers
+        if let Some(part) = module.parts.iter_mut().find(|p| p.id == p_id) {
+            // Socket 0 (Spawn Trigger) -> ParticleRate
+            part.trigger_targets.insert(
+                0,
+                TriggerConfig {
+                    target: TriggerTarget::ParticleRate,
+                    mode: TriggerMappingMode::Direct,
+                    min_value: 10.0,
+                    max_value: 100.0,
+                    invert: false,
+                    threshold: 0.5,
+                },
+            );
+
+            // Add dummy socket for Position3D
+            part.inputs.push(crate::module::ModuleSocket {
+                name: "Pos Y".to_string(),
+                socket_type: crate::module::ModuleSocketType::Trigger,
+            });
+            part.trigger_targets.insert(
+                1,
+                TriggerConfig {
+                    target: TriggerTarget::Position3D,
+                    mode: TriggerMappingMode::Direct,
+                    min_value: 0.0,
+                    max_value: 5.0, // Add 5.0 to Y
+                    invert: false,
+                    threshold: 0.5,
+                },
+            );
+        }
+
+        // Connections
+        module.add_connection(t_id, 0, p_id, 0); // Trigger -> Rate
+        module.add_connection(t_id, 0, p_id, 1); // Trigger -> Pos Y
+
+        // Evaluate
+        let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default());
+
+        // Verify SourceCommand
+        if let Some(SourceCommand::BevyInput { trigger_value }) = result.source_commands.get(&p_id)
+        {
+            // Success
+            assert_eq!(
+                *trigger_value, 1.0,
+                "Trigger value should propagate to BevyInput"
+            );
+        } else {
+            panic!("Expected BevyInput command to be generated");
+        }
+    }
+
+    #[test]
+    fn test_trigger_targets_bevy_model_propagation() {
+        let mut evaluator = ModuleEvaluator::new();
+        let mut module = create_test_module();
+
+        // 1. Trigger (Always 1.0)
+        let t_id = module.add_part_with_type(
+            ModulePartType::Trigger(TriggerType::Fixed {
+                interval_ms: 0,
+                offset_ms: 0,
+            }),
+            (0.0, 0.0),
+        );
+
+        // 2. Bevy Model Source
+        let m_id = module.add_part_with_type(
+            ModulePartType::Source(SourceType::Bevy3DModel {
+                path: "model.glb".to_string(),
+                position: [0.0, 0.0, 0.0],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0],
+                color: [1.0; 4],
+                unlit: false,
+                outline_width: 0.0,
+                outline_color: [1.0; 4],
+            }),
+            (100.0, 0.0),
+        );
+
+        if let Some(part) = module.parts.iter_mut().find(|p| p.id == m_id) {
+            // Socket 0 -> Position3D (Y axis)
+            part.trigger_targets.insert(
+                0,
+                TriggerConfig {
+                    target: TriggerTarget::Position3D,
+                    mode: TriggerMappingMode::Direct,
+                    min_value: 0.0,
+                    max_value: 10.0,
+                    invert: false,
+                    threshold: 0.5,
+                },
+            );
+
+            // Dummy socket 1 -> Scale3D
+            part.inputs.push(crate::module::ModuleSocket {
+                name: "Scale".to_string(),
+                socket_type: crate::module::ModuleSocketType::Trigger,
+            });
+            part.trigger_targets.insert(
+                1,
+                TriggerConfig {
+                    target: TriggerTarget::Scale3D,
+                    mode: TriggerMappingMode::Direct,
+                    min_value: 1.0,
+                    max_value: 2.0, // Multiply by 2
+                    invert: false,
+                    threshold: 0.5,
+                },
+            );
+        }
+
+        // Connections
+        module.add_connection(t_id, 0, m_id, 0); // Trigger -> Pos Y
+        module.add_connection(t_id, 0, m_id, 1); // Trigger -> Scale
+
+        // Evaluate
+        let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default());
+
+        if let Some(SourceCommand::Bevy3DModel {
+            position, scale, ..
+        }) = result.source_commands.get(&m_id)
+        {
+            assert_eq!(position[1], 10.0, "Position Y should be modified");
+            assert_eq!(scale[0], 2.0, "Scale X should be modified");
+        } else {
+            panic!("Expected Bevy3DModel command");
         }
     }
 }

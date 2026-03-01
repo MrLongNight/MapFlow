@@ -267,3 +267,87 @@ mod tests {
         assert_eq!(manager.get_mapping(id).unwrap().depth, -1.0);
     }
 }
+
+#[cfg(test)]
+mod tests_guardian {
+    use super::*;
+
+    #[test]
+    fn test_mapping_manager_depth_sorting_stability() {
+        let mut manager = MappingManager::new();
+
+        // Add mappings with mixed depths and insertion order
+        let m1 = Mapping {
+            id: 1,
+            depth: 2.0,
+            opacity: 1.0,
+            ..Mapping::quad(1, "Top", 0)
+        };
+        let m2 = Mapping {
+            id: 2,
+            depth: 0.0,
+            opacity: 1.0,
+            ..Mapping::quad(2, "Bottom", 0)
+        };
+        let m3 = Mapping {
+            id: 3,
+            depth: 1.0,
+            opacity: 1.0,
+            ..Mapping::quad(3, "Middle", 0)
+        };
+        // Same depth as m3
+        let m4 = Mapping {
+            id: 4,
+            depth: 1.0,
+            opacity: 1.0,
+            ..Mapping::quad(4, "Middle 2", 0)
+        };
+
+        manager.add_mapping(m3.clone()); // Middle first
+        manager.add_mapping(m1.clone()); // Top
+        manager.add_mapping(m2.clone()); // Bottom
+        manager.add_mapping(m4.clone()); // Middle 2
+
+        let visible = manager.visible_mappings();
+
+        assert_eq!(visible.len(), 4);
+
+        // Expected order: Bottom (0.0), Middle (1.0), Middle 2 (1.0), Top (2.0)
+        // Note: Sort is stable or unstable? `sort_by` in Rust std is stable.
+        // So m3 should come before m4 because it was inserted first?
+        // Wait, `sort_by` is STABLE.
+        // Insertion order: m3, m1, m2, m4.
+        // Sorted by depth:
+        // m2 (0.0)
+        // m3 (1.0)
+        // m4 (1.0)
+        // m1 (2.0)
+
+        assert_eq!(visible[0].id, 2);
+        assert_eq!(visible[1].id, 3);
+        assert_eq!(visible[2].id, 4);
+        assert_eq!(visible[3].id, 1);
+    }
+
+    #[test]
+    fn test_mapping_manager_move_z_limits() {
+        let mut manager = MappingManager::new();
+        let id = manager.add_mapping(Mapping::quad(1, "Test", 0));
+
+        // Initial depth 0.0
+
+        // Move up -> 1.0
+        manager.move_up(id);
+        assert_eq!(manager.get_mapping(id).unwrap().depth, 1.0);
+
+        // Move down -> 0.0
+        manager.move_down(id);
+        assert_eq!(manager.get_mapping(id).unwrap().depth, 0.0);
+
+        // Move down -> -1.0
+        manager.move_down(id);
+        assert_eq!(manager.get_mapping(id).unwrap().depth, -1.0);
+
+        // Is there a limit? Currently no explicit limit in code.
+    }
+}

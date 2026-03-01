@@ -117,3 +117,25 @@ impl Transform {
         self.position = position;
     }
 }
+
+#[cfg(test)]
+mod tests_guardian {
+    use super::*;
+    use glam::{Vec2, Vec3};
+
+    #[test]
+    fn test_transform_matrix_rounding_stability() {
+        let size = Vec2::new(100.0, 100.0);
+        let steps = 360;
+        for i in 0..=steps {
+            let angle = (i as f32).to_radians();
+            let transform = Transform::with_rotation_z(angle);
+            let matrix = transform.to_matrix(size);
+            if i == 0 || i == 360 {
+                let point = Vec3::new(100.0, 50.0, 0.0);
+                let transformed = matrix.transform_point3(point);
+                assert!((transformed - point).length() < 0.001);
+            }
+        }
+    }
+}
