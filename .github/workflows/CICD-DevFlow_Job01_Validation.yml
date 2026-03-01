@@ -4,8 +4,6 @@ on:
   push:
     branches: [ "main" ]
   pull_request:
-    branches: [ "main" ]
-    types: [opened, synchronize, reopened, ready_for_review, labeled]
   workflow_dispatch:
 
 permissions:
@@ -17,6 +15,7 @@ permissions:
   security-events: write
 
 jobs:
+  # 1. Quality Gate (Format & Lint)
   quality:
     name: "Quality Gate (Format & Lint)"
     runs-on: ubuntu-latest
@@ -35,6 +34,7 @@ jobs:
       - name: Check Clippy
         run: cargo clippy --workspace --all-targets --features "mapmap-io/ci-linux,ffmpeg" -- -D warnings
 
+  # 2. Security Scan
   security:
     name: "Security Scan"
     runs-on: ubuntu-latest
@@ -49,6 +49,7 @@ jobs:
       - name: Run Audit
         run: cargo audit --ignore RUSTSEC-2024-0370 --ignore RUSTSEC-2025-0141 --ignore RUSTSEC-2024-0436
 
+  # 3. Build & Test (Linux)
   build-linux:
     name: "Build & Test (Linux)"
     runs-on: ubuntu-latest
@@ -65,6 +66,7 @@ jobs:
       - name: Test
         run: cargo test --release --workspace --features "mapmap-io/ci-linux,ffmpeg"
 
+  # 4. Build & Test (Windows) - Optional for PRs, but must match name
   build-windows:
     name: "Build & Test (Windows)"
     runs-on: windows-latest
@@ -78,6 +80,7 @@ jobs:
       - name: Build
         run: cargo build --release --verbose --no-default-features --features "audio"
 
+  # 5. Validation Success (Der finale Check)
   validation-success:
     name: "Validation Success"
     runs-on: ubuntu-latest
@@ -90,7 +93,7 @@ jobs:
           echo "Security: ${{ needs.security.result }}"
           echo "Linux: ${{ needs.build-linux.result }}"
           echo "Windows: ${{ needs.build-windows.result }}"
-          
+
           if [ "${{ needs.quality.result }}" != "success" ]; then exit 1; fi
           if [ "${{ needs.security.result }}" != "success" ]; then exit 1; fi
           if [ "${{ needs.build-linux.result }}" != "success" ]; then exit 1; fi
