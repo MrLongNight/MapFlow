@@ -486,7 +486,7 @@ fn render_content(
                 egui_renderer.free_texture(id);
             }
 
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Egui Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     depth_slice: None,
