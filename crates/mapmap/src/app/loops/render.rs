@@ -504,10 +504,7 @@ fn render_content(
             });
 
             // Render egui UI
-            let mut render_pass_static: wgpu::RenderPass<'static> =
-                unsafe { std::mem::transmute(render_pass) };
-            egui_renderer.render(&mut render_pass_static, tris, screen_desc);
-            drop(render_pass_static);
+            egui_renderer.render(&mut render_pass.forget_lifetime(), tris, screen_desc);
         }
     }
     Ok(())
