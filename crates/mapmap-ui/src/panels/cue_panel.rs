@@ -298,6 +298,27 @@ impl CuePanel {
                             changed = true;
                         }
                     });
+                    ui.horizontal(|ui| {
+                        let mut has_value = osc_trigger.value.is_some();
+                        if ui
+                            .checkbox(&mut has_value, i18n.t("check-osc-value"))
+                            .changed()
+                        {
+                            changed = true;
+                            if has_value {
+                                osc_trigger.value = Some(String::new());
+                            } else {
+                                osc_trigger.value = None;
+                            }
+                        }
+
+                        if let Some(val) = &mut osc_trigger.value {
+                            ui.label(i18n.t("label-osc-value"));
+                            if ui.text_edit_singleline(val).changed() {
+                                changed = true;
+                            }
+                        }
+                    });
                 }
             }
             TriggerTypeUI::Midi => {

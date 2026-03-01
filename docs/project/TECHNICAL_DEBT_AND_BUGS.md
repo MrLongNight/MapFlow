@@ -26,7 +26,7 @@ This document tracks the current state of MapFlow's implementation, identifying 
 - **Shader Graph Nodes**: Core supports logic nodes, but UI lacks visual representation/wiring for complex operations.
 - **LUT Support**: No "LUT Effect" node in the effect chain UI despite core support.
 - **SRT Streaming**: Missing `libsrt` integration; connection/sending logic are just stubs.
-- **OSC Triggers**: UI lacks OSC input field for Cue triggers.
+- **OSC Triggers**: ✅ Fixed. OSC input fields (address and value) for Cue triggers have been added.
 - **Philips Hue**: Pairing logic and Area Selection fetching are missing.
 
 ---
