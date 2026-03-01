@@ -645,7 +645,7 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
     // 1. Background
     painter.rect(
         rect,
-        CornerRadius::same(4),
+        CornerRadius::ZERO,
         visuals.bg_fill,
         visuals.bg_stroke,
         egui::StrokeKind::Middle,
@@ -655,7 +655,7 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
     if response.has_focus() {
         painter.rect_stroke(
             rect.expand(2.0),
-            CornerRadius::same(6),
+            CornerRadius::ZERO,
             Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
             egui::StrokeKind::Middle,
         );
@@ -667,7 +667,7 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32) -> bool {
         fill_rect.max.x = rect.min.x + rect.width() * progress;
         painter.rect_filled(
             fill_rect,
-            CornerRadius::same(4),
+            CornerRadius::ZERO,
             color.linear_multiply(0.4), // Transparent version of action color
         );
     }
@@ -729,7 +729,7 @@ pub fn hold_to_action_icon(
     if response.has_focus() {
         painter.rect_stroke(
             rect.expand(2.0),
-            CornerRadius::same(6),
+            CornerRadius::ZERO,
             Stroke::new(1.0, ui.style().visuals.selection.stroke.color),
             egui::StrokeKind::Middle,
         );
