@@ -1,3 +1,7 @@
+//!
+//! Node linking types.
+//!
+
 use serde::{Deserialize, Serialize};
 
 /// Configuration for the Link System (Master/Slave nodes)

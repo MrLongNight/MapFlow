@@ -1,3 +1,7 @@
+//!
+//! Layer specific structs.
+//!
+
 use crate::layer::transform::Transform;
 use crate::layer::types::{BlendMode, ResizeMode};
 use glam::{Mat4, Vec2};

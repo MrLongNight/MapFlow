@@ -48,7 +48,6 @@ pub trait AudioBackend {
 
 /// CPAL implementation of the audio backend
 #[cfg(feature = "audio")]
-/// cpal_backend { module
 pub mod cpal_backend {
     use super::{AudioBackend, AudioError};
     use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
@@ -341,7 +340,6 @@ pub mod cpal_backend {
 
 /// A mock audio backend for testing without native audio dependencies
 #[cfg(any(test, feature = "mock-audio"))]
-/// mock_backend { module
 pub mod mock_backend {
     use super::{AudioBackend, AudioError};
 

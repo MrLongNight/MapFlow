@@ -1,3 +1,7 @@
+//!
+//! Mesh data and definitions.
+//!
+
 use serde::{Deserialize, Serialize};
 
 /// Mesh geometry definitions for projection mapping surfaces.
@@ -279,7 +283,200 @@ impl MeshType {
                     revision: 0,
                 }
             }
-            MeshType::Custom { path: _ } => Mesh::quad(),
+            MeshType::Custom { path } => {
+                if path.ends_with(".obj") {
+                    if let Ok((models, _)) = tobj::load_obj(
+                        path,
+                        &tobj::LoadOptions {
+                            single_index: true,
+                            triangulate: true,
+                            ignore_points: true,
+                            ignore_lines: true,
+                        },
+                    ) {
+                        if let Some(model) = models.first() {
+                            use crate::mesh::{MeshType as CoreMeshType, MeshVertex};
+                            let mesh = &model.mesh;
+                            let mut mesh_vertices = Vec::with_capacity(mesh.positions.len() / 3);
+
+                            // Normalize coordinates to 0..1 bounding box
+                            let mut min_x = f32::MAX;
+                            let mut min_y = f32::MAX;
+                            let mut max_x = f32::MIN;
+                            let mut max_y = f32::MIN;
+
+                            for i in (0..mesh.positions.len()).step_by(3) {
+                                let x = mesh.positions[i];
+                                let y = mesh.positions[i + 1];
+                                min_x = min_x.min(x);
+                                min_y = min_y.min(y);
+                                max_x = max_x.max(x);
+                                max_y = max_y.max(y);
+                            }
+
+                            let width = (max_x - min_x).max(0.0001);
+                            let height = (max_y - min_y).max(0.0001);
+
+                            for i in (0..mesh.positions.len()).step_by(3) {
+                                let x = mesh.positions[i];
+                                let y = mesh.positions[i + 1];
+                                let nx = (x - min_x) / width;
+                                let ny = (y - min_y) / height;
+
+                                let (u, v) = if !mesh.texcoords.is_empty() {
+                                    let uv_idx = (i / 3) * 2;
+                                    if uv_idx + 1 < mesh.texcoords.len() {
+                                        (mesh.texcoords[uv_idx], mesh.texcoords[uv_idx + 1])
+                                    } else {
+                                        (nx, ny)
+                                    }
+                                } else {
+                                    (nx, ny)
+                                };
+
+                                mesh_vertices
+                                    .push(MeshVertex::new(Vec2::new(nx, ny), Vec2::new(u, v)));
+                            }
+
+                            let mut indices = Vec::with_capacity(mesh.indices.len());
+                            for idx in &mesh.indices {
+                                indices.push(*idx as u16);
+                            }
+
+                            Mesh {
+                                mesh_type: CoreMeshType::Custom,
+                                vertices: mesh_vertices,
+                                indices,
+                                revision: 0,
+                            }
+                        } else {
+                            Mesh::quad()
+                        }
+                    } else {
+                        Mesh::quad()
+                    }
+                } else if path.ends_with(".svg") {
+                    if let Ok(svg_data) = std::fs::read(path) {
+                        let opt = usvg::Options::default();
+                        if let Ok(tree) = usvg::Tree::from_data(&svg_data, &opt) {
+                            use crate::mesh::{MeshType as CoreMeshType, MeshVertex};
+                            let mut vertices = Vec::new();
+
+                            // Extract path points
+                            fn extract_paths(group: &usvg::Group, vertices: &mut Vec<(f32, f32)>) {
+                                for node in group.children() {
+                                    match node {
+                                        usvg::Node::Group(g) => extract_paths(g, vertices),
+                                        usvg::Node::Path(path) => {
+                                            let path_data = path.data();
+                                            for seg in path_data.segments() {
+                                                match seg {
+                                                    usvg::tiny_skia_path::PathSegment::MoveTo(
+                                                        p,
+                                                    ) => {
+                                                        vertices.push((p.x, p.y));
+                                                    }
+                                                    usvg::tiny_skia_path::PathSegment::LineTo(
+                                                        p,
+                                                    ) => {
+                                                        vertices.push((p.x, p.y));
+                                                    }
+                                                    usvg::tiny_skia_path::PathSegment::QuadTo(
+                                                        _,
+                                                        p,
+                                                    ) => {
+                                                        vertices.push((p.x, p.y));
+                                                    }
+                                                    usvg::tiny_skia_path::PathSegment::CubicTo(
+                                                        _,
+                                                        _,
+                                                        p,
+                                                    ) => {
+                                                        vertices.push((p.x, p.y));
+                                                    }
+                                                    usvg::tiny_skia_path::PathSegment::Close => {}
+                                                }
+                                            }
+                                        }
+                                        _ => {}
+                                    }
+                                }
+                            }
+
+                            extract_paths(tree.root(), &mut vertices);
+
+                            if vertices.len() >= 3 {
+                                // Normalize
+                                let mut min_x = f32::MAX;
+                                let mut min_y = f32::MAX;
+                                let mut max_x = f32::MIN;
+                                let mut max_y = f32::MIN;
+
+                                for (x, y) in &vertices {
+                                    min_x = min_x.min(*x);
+                                    min_y = min_y.min(*y);
+                                    max_x = max_x.max(*x);
+                                    max_y = max_y.max(*y);
+                                }
+
+                                let width = (max_x - min_x).max(0.0001);
+                                let height = (max_y - min_y).max(0.0001);
+
+                                let mut norm_vertices = Vec::new();
+                                for (x, y) in vertices {
+                                    let nx = (x - min_x) / width;
+                                    let ny = (y - min_y) / height;
+                                    norm_vertices.push((nx, ny));
+                                }
+
+                                // Triangle fan construction (simple polygon fallback)
+                                let center = norm_vertices
+                                    .iter()
+                                    .fold((0.0, 0.0), |acc, v| (acc.0 + v.0, acc.1 + v.1));
+                                let center = (
+                                    center.0 / norm_vertices.len() as f32,
+                                    center.1 / norm_vertices.len() as f32,
+                                );
+
+                                let mut mesh_vertices = Vec::with_capacity(norm_vertices.len() + 1);
+                                mesh_vertices.push(MeshVertex::new(
+                                    Vec2::new(center.0, center.1),
+                                    Vec2::new(0.5, 0.5),
+                                ));
+
+                                for v in &norm_vertices {
+                                    mesh_vertices.push(MeshVertex::new(
+                                        Vec2::new(v.0, v.1),
+                                        Vec2::new(v.0, v.1),
+                                    ));
+                                }
+
+                                let mut indices = Vec::with_capacity(norm_vertices.len() * 3);
+                                for i in 0..norm_vertices.len() {
+                                    indices.push(0);
+                                    indices.push((i + 1) as u16);
+                                    indices.push(((i + 1) % norm_vertices.len() + 1) as u16);
+                                }
+
+                                Mesh {
+                                    mesh_type: CoreMeshType::Custom,
+                                    vertices: mesh_vertices,
+                                    indices,
+                                    revision: 0,
+                                }
+                            } else {
+                                Mesh::quad()
+                            }
+                        } else {
+                            Mesh::quad()
+                        }
+                    } else {
+                        Mesh::quad()
+                    }
+                } else {
+                    Mesh::quad()
+                }
+            }
         };
 
         mesh.revision = self.compute_revision_hash();

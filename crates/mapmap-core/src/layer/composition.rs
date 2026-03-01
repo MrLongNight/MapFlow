@@ -1,3 +1,7 @@
+//!
+//! Layer composition types.
+//!
+
 use serde::{Deserialize, Serialize};
 
 /// Composition metadata and master controls (Phase 1, Month 5)

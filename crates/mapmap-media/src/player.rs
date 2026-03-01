@@ -152,21 +152,6 @@ impl VideoPlayer {
             }
         }
 
-        // Timing synchronization:
-        let frame_duration = Duration::from_secs_f64(1.0 / self.decoder.fps());
-
-        let should_decode = if let Some(last) = &self.last_frame {
-            // Decode if current time has advanced past the last frame's timestamp + frame_duration
-            self.current_time >= last.timestamp + frame_duration
-        } else {
-            // First frame
-            true
-        };
-
-        if !should_decode {
-            return None;
-        }
-
         match self.decoder.next_frame() {
             Ok(frame) => {
                 self.last_frame = Some(frame.clone());
@@ -573,35 +558,6 @@ mod tests {
         let mut player = VideoPlayer::new(decoder);
 
         assert!(player.seek(Duration::from_secs(10)).is_err());
-    }
-
-    #[test]
-    fn test_player_timing_synchronization() {
-        let decoder =
-            crate::decoder::TestPatternDecoder::new(1920, 1080, Duration::from_secs(1), 10.0);
-        let mut player = VideoPlayer::new(decoder);
-
-        player.set_loop_mode(LoopMode::PlayOnce).unwrap();
-        player.play().unwrap();
-
-        // Initially no frame
-        assert!(player.last_frame().is_none());
-
-        // Update dt=0
-        let frame1 = player.update(Duration::ZERO);
-        assert!(frame1.is_some());
-        assert_eq!(frame1.unwrap().timestamp, Duration::ZERO);
-
-        // Update with tiny delta shouldn't decode next frame
-        let frame2 = player.update(Duration::from_millis(50));
-        assert!(frame2.is_none());
-
-        // Update with enough delta to pass 1/10th of a second
-        let frame3 = player.update(Duration::from_millis(60));
-        assert!(frame3.is_some());
-        // next frame might have timestamp based on the decoder logic
-        // for test pattern decoder, next frame has timestamp of exactly 1/10th of a second (100ms)
-        assert_eq!(frame3.unwrap().timestamp, Duration::from_millis(100));
     }
 
     #[test]
