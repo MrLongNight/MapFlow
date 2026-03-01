@@ -97,11 +97,3 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 **Aktion:**
 - Dateien erneut verschoben bzw. archiviert.
 - Verifikation der Dateipfade erfolgreich durchgeführt.
-
-## 2026-03-01 - Root & Utility Script Cleanup
-
-**Erkenntnis:** Das Root-Verzeichnis enthielt mehrere Python-Skripte (`fix_docs_pro.py`, `fix_docs_smart.py`, `fix_docs_smart_all.py`), die besser im `scripts/`-Ordner aufgehoben sind. Zusätzlich gab es die Dateien `GEMINI.md` und `ci_trigger.txt`, die scheinbar temporäre oder generierte Artefakte sind und im Root nichts zu suchen haben.
-
-**Aktion:**
-- Die Skripte `fix_docs_pro.py`, `fix_docs_smart.py` und `fix_docs_smart_all.py` in das Verzeichnis `scripts/` verschoben.
-- Die Dateien `GEMINI.md` und `ci_trigger.txt` nach `.temp-archive/2026-03-01-*` archiviert.

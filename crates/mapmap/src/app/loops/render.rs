@@ -71,7 +71,7 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
         // 2. Run UI Pass (SAFE: app is now available mutably)
         let egui_ctx = app.egui_context.clone();
         let full_output = egui_ctx.run(raw_input, |ctx| {
-            ui_layout::show(app, ctx);
+            ui_layout::show(ctx, app);
         });
 
         // 3. Handle Output (Requires another short-lived borrow of window)
