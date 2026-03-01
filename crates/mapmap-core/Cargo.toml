@@ -30,6 +30,7 @@ num-traits = "0.2"
 once_cell = { workspace = true }
 parking_lot = { workspace = true }
 rand = "0.10.0"
+resvg.workspace = true
 rustfft = { workspace = true }
 serde = { workspace = true, features = ["rc"] }
 serde_json = { workspace = true }
@@ -37,7 +38,9 @@ serde_json = { workspace = true }
 # Professional BPM/Key Detection
 stratum-dsp = "1.0"
 thiserror = { workspace = true }
+tobj = "4.0.3"
 tracing = { workspace = true }
+usvg.workspace = true
 uuid = { version = "1.8.0", features = ["v4", "serde"] }
 walkdir = "2.5.0"
 winit = { workspace = true, optional = true }

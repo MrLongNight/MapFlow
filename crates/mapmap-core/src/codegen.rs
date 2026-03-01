@@ -514,9 +514,65 @@ impl WGSLCodegen {
     /// Generate UV transform code
     fn generate_uv_transform(&self, code: &mut String, node: &ShaderNode) -> Result<()> {
         let uv = self.get_input_variable(&node.inputs[0])?;
-        // TODO: Add scale, rotation, translation parameters
 
-        writeln!(code, "    let node_{}_uv = {};", node.id, uv).unwrap();
+        let scale_val = node
+            .parameters
+            .get("scale")
+            .unwrap_or(&ParameterValue::Vec2([1.0, 1.0]));
+        let rotation_val = node
+            .parameters
+            .get("rotation")
+            .unwrap_or(&ParameterValue::Float(0.0));
+        let translation_val = node
+            .parameters
+            .get("translation")
+            .unwrap_or(&ParameterValue::Vec2([0.0, 0.0]));
+
+        writeln!(code, "    // UV Transform").unwrap();
+        writeln!(
+            code,
+            "    var node_{}_uv_temp = {} - vec2<f32>(0.5, 0.5);",
+            node.id, uv
+        )
+        .unwrap();
+        writeln!(code, "    let node_{}_scale = {};", node.id, scale_val).unwrap();
+        writeln!(code, "    let node_{}_rot = {};", node.id, rotation_val).unwrap();
+        writeln!(
+            code,
+            "    let node_{}_trans = {};",
+            node.id, translation_val
+        )
+        .unwrap();
+
+        writeln!(
+            code,
+            "    let node_{}_cos_r = cos(node_{}_rot);",
+            node.id, node.id
+        )
+        .unwrap();
+        writeln!(
+            code,
+            "    let node_{}_sin_r = sin(node_{}_rot);",
+            node.id, node.id
+        )
+        .unwrap();
+
+        writeln!(code, "    let node_{}_rot_uv = vec2<f32>(", node.id).unwrap();
+        writeln!(
+            code,
+            "        node_{}_uv_temp.x * node_{}_cos_r - node_{}_uv_temp.y * node_{}_sin_r,",
+            node.id, node.id, node.id, node.id
+        )
+        .unwrap();
+        writeln!(
+            code,
+            "        node_{}_uv_temp.x * node_{}_sin_r + node_{}_uv_temp.y * node_{}_cos_r",
+            node.id, node.id, node.id, node.id
+        )
+        .unwrap();
+        writeln!(code, "    );").unwrap();
+
+        writeln!(code, "    let node_{}_uv = (node_{}_rot_uv / node_{}_scale) + vec2<f32>(0.5, 0.5) + node_{}_trans;", node.id, node.id, node.id, node.id).unwrap();
 
         Ok(())
     }
