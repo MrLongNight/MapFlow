@@ -76,7 +76,7 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
 
         // Temporarily take the renderer out of App to avoid lifetime issues with App
         // This is safe because we're the only ones using it right now.
-        let mut egui_renderer = std::mem::replace(&mut app.egui_renderer, 
+        let mut egui_renderer = std::mem::replace(&mut app.egui_renderer,
             unsafe { std::mem::zeroed() } // DANGEROUS, but we'll put it back
         );
 
