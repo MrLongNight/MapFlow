@@ -25,11 +25,11 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
             // Transform and Edge Blend panels manage their own windows
             app.ui_state.transform_panel.render(ctx, &app.ui_state.i18n);
             app.ui_state.edge_blend_panel.show(ctx, &app.ui_state.i18n);
-            
+
             app.ui_state.effect_chain_panel.ui(
-                ctx, 
-                &app.ui_state.i18n, 
-                app.ui_state.icon_manager.as_ref(), 
+                ctx,
+                &app.ui_state.i18n,
+                app.ui_state.icon_manager.as_ref(),
                 Some(&mut app.recent_effect_configs)
             );
         });
@@ -151,7 +151,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
         });
 
     // 6. Floating Windows / Overlays
-    
+
     if app.ui_state.show_shader_graph {
         let mut open = app.ui_state.show_shader_graph;
         egui::Window::new(app.ui_state.i18n.t("panel-node-editor"))
@@ -178,9 +178,9 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
     }
 
     app.ui_state.controller_overlay.show(
-        ctx, 
-        app.ui_state.show_controller_overlay, 
-        false, 
+        ctx,
+        app.ui_state.show_controller_overlay,
+        false,
         &mut app.ui_state.user_config
     );
 
