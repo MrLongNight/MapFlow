@@ -107,3 +107,6 @@ Added regression tests `test_resilience_to_bad_input` and `test_resize_mode_zero
 
 **Erkenntnis:** `TriggerSystem` akkumulierte Trigger-Status für gelöschte Parts (Speicherleck) und initialisierte RNG in der Hot-Loop. Außerdem gab es keine Garantie, dass `AudioFFT` Socket-Indizes in `TriggerSystem` mit `module.rs` übereinstimmen.
 **Aktion:** Garbage Collection und RNG-Optimierung in `TriggerSystem::update` implementiert. `test_trigger_system_garbage_collection` und `test_audio_fft_socket_consistency` hinzugefügt, um Lecks und Inkonsistenzen zu verhindern.
+## 2025-03-01 - Testabdeckung im mapmap-core/layer verbessert
+ **Erkenntnis:** Der mapmap-core layer manager (manager.rs) hatte keine Testabdeckung. Dieser Code ist entscheidend für das Handling von Layer-Sichtbarkeit, Grouping und Z-Ordering und muss verlässlich funktionieren.
+ **Aktion:** Umfangreiche Tests für LayerManager in layer_tests.rs hinzugefügt, inklusive CRUD, Grouping, Z-Order, Visible-Filter und CoW-Klonverhalten. In Zukunft bei neuem Code immer den zugehörigen Test-File prüfen, insbesondere bei zentralen Managern in mapmap-core.
