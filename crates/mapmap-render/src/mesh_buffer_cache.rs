@@ -51,7 +51,10 @@ impl MeshBufferCache {
         };
 
         if can_reuse {
-            let cached = self.cache.get_mut(&mapping_id).unwrap();
+            let cached = self
+                .cache
+                .get_mut(&mapping_id)
+                .expect("cache entry must exist when can_reuse=true");
 
             // If revision changed, update the content
             if cached.mesh_revision != mesh.revision {
@@ -85,6 +88,11 @@ impl MeshBufferCache {
         // Cache miss or topology change - create new buffers
         // Use scratch buffer for initial creation too to avoid temp Vec allocation
         self.scratch_vertices.clear();
+        self.scratch_vertices.reserve(
+            mesh.vertices
+                .len()
+                .saturating_sub(self.scratch_vertices.capacity()),
+        );
         self.scratch_vertices
             .extend(mesh.vertices.iter().map(GpuVertex::from_mesh_vertex));
 
@@ -111,13 +119,11 @@ impl MeshBufferCache {
             vertex_count: mesh.vertices.len(),
         };
 
-        self.cache.insert(mapping_id, cached);
-
-        let cached = self.cache.get(&mapping_id).unwrap();
+        let cached_ref = self.cache.entry(mapping_id).insert_entry(cached).into_mut();
         (
-            &cached.vertex_buffer,
-            &cached.index_buffer,
-            cached.index_count,
+            &cached_ref.vertex_buffer,
+            &cached_ref.index_buffer,
+            cached_ref.index_count,
         )
     }
 

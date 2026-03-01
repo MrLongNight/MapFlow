@@ -1,22 +1,16 @@
 # Architecture Documentation
 
-This directory contains detailed information about the architecture and design of MapFlow.
+Dieses Verzeichnis enthält Architektur-Dokumentation für MapFlow.
 
-## Core Concepts
+## Canonical Architecture Document
 
-* [**Architecture Overview**](ARCHITECTURE.md): High-level system design and components.
-* [**System Overview**](overview.md): Detailed explanation of how the system works.
-* [**Data Flow**](DATA-FLOW.md): How data moves through the application.
-* [**Crates**](CRATES.md): Overview of the workspace crates and their responsibilities.
+- [**Render Queue & Pipeline Architektur (Single Source of Truth)**](RENDER-QUEUE.md):
+  Vollständige, konsolidierte Dokumentation für System-/Thread-Architektur,
+  PAP-Datenfluss sowie Decode → Upload → Render Laufzeitlogik.
 
-## Detailed Designs
+## Related Documents
 
-* [**Render Pipeline**](RENDER-PIPELINE_PAP.md): Diagram and explanation of the rendering process.
-* [**Design Patterns**](DESIGN-PATTERNS.md): Common patterns used in the codebase.
-* [**UI Architecture**](UI.md): How the user interface is structured.
-
-## Feature Specifications
-
-* [**Multi-PC Feasibility**](MULTI-PC-FEASIBILITY.md): Analysis of multi-PC architecture options.
-* [**Hue Integration Plan**](HUE_INTEGRATION_PLAN.md): Plan for Philips Hue integration.
-* [**Specifications**](specs/): Detailed specifications for various subsystems.
+- [**Crates Overview**](CRATES.md): Übersicht der Crates und ihrer Rollen.
+- [**Data Flow**](DATA-FLOW.md): Datenflüsse und Zustandsübergänge in der App.
+- [**Design Patterns**](DESIGN-PATTERNS.md): Architektur- und Code-Patterns.
+- [**UI Architecture**](UI.md): UI-Struktur und Zusammenspiel mit dem Core.

@@ -18,6 +18,7 @@ pub struct Allocation<'a> {
 pub struct UniformBufferAllocator {
     device: Arc<wgpu::Device>,
     label: String,
+    uniform_alignment: u64,
 
     // Page size for new buffers
     page_size: u64,
@@ -35,9 +36,11 @@ pub struct UniformBufferAllocator {
 impl UniformBufferAllocator {
     /// Create a new allocator with default page size (64KB).
     pub fn new(device: Arc<wgpu::Device>, label: &str) -> Self {
+        let uniform_alignment = device.limits().min_uniform_buffer_offset_alignment as u64;
         Self {
             device,
             label: label.to_string(),
+            uniform_alignment,
             page_size: 65536, // 64KB default page
             pages: Vec::new(),
             current_page: 0,
@@ -57,51 +60,47 @@ impl UniformBufferAllocator {
     /// Note: The buffer might be shared, so use dynamic offsets or the returned offset.
     pub fn allocate(&mut self, queue: &wgpu::Queue, content: &[u8]) -> Allocation<'_> {
         let size = content.len() as u64;
+        let padded_size = (size + self.uniform_alignment - 1) & !(self.uniform_alignment - 1);
 
-        // Alignment for uniform buffers is typically 256 bytes
-        let limits = self.device.limits();
-        let alignment = limits.min_uniform_buffer_offset_alignment as u64;
-        let padded_size = (size + alignment - 1) & !(alignment - 1);
+        loop {
+            if self.current_page < self.pages.len()
+                && self.current_offset + padded_size <= self.pages[self.current_page].size()
+            {
+                break;
+            }
 
-        // Check if we need a new page or can use current
-        let mut fits = false;
-        if self.current_page < self.pages.len()
-            && self.current_offset + size <= self.pages[self.current_page].size()
-        {
-            fits = true;
+            // If we have pages but didn't fit, move to next.
+            if self.current_page + 1 < self.pages.len() {
+                self.current_page += 1;
+                self.current_offset = 0;
+                continue;
+            }
+
+            // Create new page
+            let new_page_size = self.page_size.max(padded_size * 2); // Ensure it fits and has room
+            let buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some(&format!("{} Page {}", self.label, self.pages.len())),
+                size: new_page_size,
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            });
+
+            self.pages.push(buffer);
+            self.current_page = self.pages.len() - 1;
+            self.current_offset = 0;
         }
 
-        if fits {
+        {
             let page = &self.pages[self.current_page];
             queue.write_buffer(page, self.current_offset, content);
             let offset = self.current_offset;
             let page_index = self.current_page;
             self.current_offset += padded_size;
-            return Allocation {
+            Allocation {
                 buffer: page,
                 offset,
                 page_index,
-            };
+            }
         }
-
-        // If we have pages but didn't fit, move to next
-        if self.current_page < self.pages.len() {
-            self.current_page += 1;
-            self.current_offset = 0;
-            return self.allocate(queue, content);
-        }
-
-        // Create new page
-        let new_page_size = self.page_size.max(padded_size * 2); // Ensure it fits and has room
-        let buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some(&format!("{} Page {}", self.label, self.pages.len())),
-            size: new_page_size,
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
-
-        self.pages.push(buffer);
-        // Recursive call will now find the new page
-        self.allocate(queue, content)
     }
 }
