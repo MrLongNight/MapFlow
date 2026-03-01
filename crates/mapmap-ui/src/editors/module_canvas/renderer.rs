@@ -76,6 +76,51 @@ pub fn show(
         .fill(ui.visuals().panel_fill)
         .show(ui, |ui| {
             ui.horizontal(|ui| {
+                // --- Module Selector ---
+                let modules: Vec<(u64, String, [f32; 4])> = manager
+                    .modules()
+                    .iter()
+                    .map(|m| (m.id, m.name.clone(), m.color))
+                    .collect();
+
+                if !modules.is_empty() {
+                    let active_name = canvas
+                        .active_module_id
+                        .and_then(|id| modules.iter().find(|(mid, _, _)| *mid == id))
+                        .map(|(_, name, _)| name.clone())
+                        .unwrap_or_else(|| "Module wählen...".to_string());
+
+                    egui::ComboBox::from_id_salt("module_selector")
+                        .selected_text(format!("📦 {}", active_name))
+                        .show_ui(ui, |ui| {
+                            for (id, name, color) in &modules {
+                                let color32 = egui::Color32::from_rgba_premultiplied(
+                                    (color[0] * 255.0) as u8,
+                                    (color[1] * 255.0) as u8,
+                                    (color[2] * 255.0) as u8,
+                                    255,
+                                );
+                                let is_selected = canvas.active_module_id == Some(*id);
+                                let label =
+                                    egui::RichText::new(format!("● {}", name)).color(color32);
+                                if ui.selectable_label(is_selected, label).clicked() {
+                                    canvas.set_active_module(Some(*id));
+                                }
+                            }
+                        });
+                    ui.separator();
+                }
+
+                if ui
+                    .button(egui::RichText::new("➕ Neues Modul").strong())
+                    .clicked()
+                {
+                    let new_id = manager.create_module("New Module".to_string());
+                    canvas.set_active_module(Some(new_id));
+                }
+
+                ui.separator();
+
                 draw::render_add_node_menu_content(ui, manager, None, canvas.active_module_id);
 
                 ui.separator();

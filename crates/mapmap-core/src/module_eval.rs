@@ -799,7 +799,8 @@ impl ModuleEvaluator {
         // Step 6: Generate source commands
         for part in &module.parts {
             if let ModulePartType::Source(source_type) = &part.part_type {
-                let trigger_value = trigger_inputs.get(&part.id).copied().unwrap_or(0.0);
+                // Default to 1.0 (playing) so media files play even if no trigger is attached
+                let trigger_value = trigger_inputs.get(&part.id).copied().unwrap_or(1.0);
                 if let Some(cmd) =
                     self.create_source_command(source_type, trigger_value, shared_state)
                 {
