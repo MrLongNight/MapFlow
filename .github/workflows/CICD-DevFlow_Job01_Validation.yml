@@ -60,7 +60,7 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y build-essential pkg-config clang libclang-dev yasm nasm libfontconfig1-dev libfreetype6-dev libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libx11-dev libasound2-dev libudev-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev libudev-dev ffmpeg
+          sudo apt-get install -y build-essential pkg-config clang libclang-dev yasm nasm libfontconfig1-dev libfreetype6-dev libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libx11-dev libasound2-dev libudev-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev libudev-dev ffmpeg      
       - name: Build (Release)
         run: cargo build --release --verbose --features "mapmap-io/ci-linux,ffmpeg"
       - name: Test

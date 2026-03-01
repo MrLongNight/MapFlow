@@ -15,7 +15,6 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
-use std::cell::RefCell;
 
 /// State for individual trigger nodes, stored in the evaluator
 #[derive(Debug, Clone, Default)]
