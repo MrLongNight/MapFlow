@@ -119,7 +119,7 @@ impl MeshBufferCache {
             vertex_count: mesh.vertices.len(),
         };
 
-        let cached_ref = self.cache.entry(mapping_id).insert_entry(cached).into_mut();
+        let cached_ref = self.cache.entry(mapping_id).or_insert(cached);
         (
             &cached_ref.vertex_buffer,
             &cached_ref.index_buffer,

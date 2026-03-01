@@ -277,10 +277,11 @@ impl TexturePool {
     ) {
         self.resize_if_needed(name, width, height);
 
-        let handle = match {
+        let res = {
             let textures = self.textures.read();
             textures.get(name).cloned()
-        } {
+        };
+        let handle = match res {
             Some(handle) => handle,
             None => {
                 self.create(
