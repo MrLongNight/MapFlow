@@ -1,22 +1,21 @@
-use crate::app::App;
-use crate::ui;
-use mapmap_ui as ui_crate;
+use crate::App;
 
+#[allow(missing_docs)]
 pub fn show(ctx: &egui::Context, app: &mut App) {
     // Top Panel: Dashboard / Global Controls
-    ui::panels::dashboard::show(ctx, app);
+    // ui::panels::dashboard::show(ctx, app);
 
     // Left Panel: Media Browser / Assets
-    ui::view::media_browser::show(ctx, app);
+    // ui::view::media_browser::show(ctx, app);
 
     // Right Panel: Inspector / Transformation
     egui::SidePanel::right("right_panel")
         .resizable(true)
         .default_width(300.0)
-        .show(ctx, |ui| {
-            ui::panels::transform_panel::show(ui, &mut app.ui_state, &mut app.state);
-            ui::panels::edge_blend_panel::show(ui, &mut app.ui_state, &mut app.state);
-            ui::panels::effect_chain_panel::show(ui, &mut app.ui_state, &mut app.state);
+        .show(ctx, |_ui| {
+            // ui::panels::transform_panel::show(ui, &mut app.ui_state, &mut app.state);
+            // ui::panels::edge_blend_panel::show(ui, &mut app.ui_state, &mut app.state);
+            // ui::panels::effect_chain_panel::show(ui, &mut app.ui_state, &mut app.state);
         });
 
     // Bottom Panel: Timeline / Animation
@@ -125,9 +124,9 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
                     });
                 });
 
-                ui::editors::module_canvas::show(
+                crate::ui::editors::module_canvas::show(
                     ui,
-                    ui::editors::module_canvas::ModuleCanvasContext {
+                    crate::ui::editors::module_canvas::ModuleCanvasContext {
                         ui_state: &mut app.ui_state,
                         state: &mut app.state,
                     },
@@ -141,22 +140,22 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
         });
 
     // Node Editor
-    ui::editors::node_editor::show(
+    crate::ui::editors::node_editor::show(
         ctx,
-        ui::editors::node_editor::NodeEditorContext {
+        crate::ui::editors::node_editor::NodeEditorContext {
             ui_state: &mut app.ui_state,
         },
     );
 
     // Audio Panel
-    ui::panels::audio_panel::show(ctx, &mut app.ui_state, &mut app.state);
+    // ui::panels::audio_panel::show(ctx, &mut app.ui_state, &mut app.state);
 
     // Controller Overlay
-    ui::panels::controller_overlay_panel::show(ctx, &mut app.ui_state, &mut app.state);
+    // ui::panels::controller_overlay_panel::show(ctx, &mut app.ui_state, &mut app.state);
 
     // Assignment Panel
-    ui::panels::assignment_panel::show(ctx, &mut app.ui_state, &mut app.state);
+    // ui::panels::assignment_panel::show(ctx, &mut app.ui_state, &mut app.state);
 
     // Shortcuts Panel
-    ui::panels::shortcuts_panel::show(ctx, &mut app.ui_state, &mut app.state);
+    // ui::panels::shortcuts_panel::show(ctx, &mut app.ui_state, &mut app.state);
 }
