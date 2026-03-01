@@ -9,13 +9,13 @@ echo "🚀 Starte MapFlow Codex Setup (Ubuntu 24.04)..."
 # 1. System-Abhängigkeiten aktualisieren und installieren
 echo "📦 Installiere System-Abhängigkeiten..."
 sudo apt-get update
-sudo apt-get install -y 
-    build-essential pkg-config libclang-dev cmake 
-    libasound2-dev libudev-dev 
-    libx11-dev libxcursor-dev libxrandr-dev libxi-dev 
-    libgl1-mesa-dev libvulkan-dev libwayland-dev libxkbcommon-dev 
-    libavutil-dev libavcodec-dev libavformat-dev libswscale-dev 
-    libavdevice-dev libavfilter-dev libswresample-dev 
+sudo apt-get install -y
+    build-essential pkg-config libclang-dev cmake
+    libasound2-dev libudev-dev
+    libx11-dev libxcursor-dev libxrandr-dev libxi-dev
+    libgl1-mesa-dev libvulkan-dev libwayland-dev libxkbcommon-dev
+    libavutil-dev libavcodec-dev libavformat-dev libswscale-dev
+    libavdevice-dev libavfilter-dev libswresample-dev
     ffmpeg curl git
 
 # 2. Rust Toolchain konfigurieren
