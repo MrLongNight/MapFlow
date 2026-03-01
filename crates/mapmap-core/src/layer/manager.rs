@@ -1,7 +1,3 @@
-//!
-//! Layer manager handling collections.
-//!
-
 use crate::layer::composition::Composition;
 use crate::layer::layer_struct::Layer;
 use serde::{Deserialize, Serialize};

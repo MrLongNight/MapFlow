@@ -1,7 +1,3 @@
-//!
-//! Module layer types.
-//!
-
 use crate::module::types::mesh::MeshType;
 use crate::module::types::socket::BlendModeType;
 use serde::{Deserialize, Serialize};

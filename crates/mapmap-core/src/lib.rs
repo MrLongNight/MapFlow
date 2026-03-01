@@ -14,42 +14,68 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 // Phase 1: Layer system for compositing
+/// layer module
 pub mod layer;
 pub use layer::{BlendMode, Composition, Layer, LayerManager, ResizeMode, Transform};
 
 // Phase 2: Multi-output and projection mapping
+/// mapping module
 pub mod mapping;
+/// mesh module
 pub mod mesh;
+/// monitor module
 pub mod monitor;
+/// output module
 pub mod output;
+/// paint module
 pub mod paint;
 
 // Phase 3: Effects Pipeline
+/// animation module
 pub mod animation;
+/// assignment module
 pub mod assignment;
+/// audio module
 pub mod audio;
+/// audio_media_pipeline module
 pub mod audio_media_pipeline;
+/// audio_reactive module
 pub mod audio_reactive;
+/// codegen module
 pub mod codegen;
+/// diagnostics module
 pub mod diagnostics;
+/// effect_animation module
 pub mod effect_animation;
+/// effects module
 pub mod effects;
+/// logging module
 pub mod logging;
+/// lut module
 pub mod lut;
 /// Global macros
 #[macro_use]
+/// macros module
 pub mod macros;
 /// Media asset management
 pub mod media_library;
+/// module module
 pub mod module;
+/// module_eval module
 pub mod module_eval;
+/// oscillator module
 pub mod oscillator;
+/// recent_effect_configs module
 pub mod recent_effect_configs;
+/// shader_graph module
 pub mod shader_graph;
+/// state module
 pub mod state;
+/// trigger_system module
 pub mod trigger_system;
 
 // Undo/Redo
+/// history module
 pub mod history;
 pub use history::History;
 

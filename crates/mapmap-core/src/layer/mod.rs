@@ -1,11 +1,12 @@
-//!
-//! Layer types and utilities.
-//!
-
+/// composition module
 pub mod composition;
+/// layer_struct module
 pub mod layer_struct;
+/// manager module
 pub mod manager;
+/// transform module
 pub mod transform;
+/// types module
 pub mod types;
 
 pub use composition::*;

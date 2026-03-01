@@ -1,7 +1,3 @@
-//!
-//! Modulizer variations.
-//!
-
 use crate::module::types::socket::BlendModeType;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
