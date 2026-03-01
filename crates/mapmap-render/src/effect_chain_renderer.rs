@@ -11,7 +11,7 @@
 
 use crate::{pipeline::Allocation, pipeline::UniformBufferAllocator, QuadRenderer, Result};
 use bytemuck::{Pod, Zeroable};
-use mapmap_core::{EffectChain, EffectType};
+use mapmap_core::{warn_once, EffectChain, EffectType};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
 use tracing::{debug, info, warn};
@@ -150,7 +150,7 @@ impl EffectChainRenderer {
         queue: Arc<wgpu::Queue>,
         target_format: wgpu::TextureFormat,
     ) -> Result<Self> {
-        info!("Creating EffectChainRenderer");
+        debug!("Creating EffectChainRenderer");
 
         let quad_renderer = QuadRenderer::new(&device, target_format)?;
 
@@ -615,7 +615,7 @@ impl EffectChainRenderer {
                 match self.pipelines.get(&effect.effect_type.normalized()) {
                     Some(p) => Some(p),
                     None => {
-                        warn!("No pipeline for effect type: {:?}", effect.effect_type);
+                        warn_once!("No pipeline for effect type: {:?}", effect.effect_type);
                         continue;
                     }
                 }
@@ -693,7 +693,7 @@ impl EffectChainRenderer {
                                     );
                                 }
                                 Err(e) => {
-                                    warn!("Failed to load LUT from {}: {}", path, e);
+                                    warn_once!("Failed to load LUT from {}: {}", path, e);
                                     self.lut_cache.insert(path.clone(), None);
                                 }
                             }

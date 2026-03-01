@@ -37,7 +37,7 @@ Mesh Warping wird für komplexe, nicht rechteckige Oberflächen wie Kugeln, Zyli
 
 ## 2. Keystoning (Eckpunkte anpassen)
 
-Keystoning ist eine einfachere Form der Verzerrung, die speziell zur Korrektur perspektivischer Verzerrungen verwendet wird. Dies passiert, wenn ein Projektor nicht perfekt senkrecht auf eine flache Leinwand projiziert (z.B. von unten oder von oben).
+Keystoning ist eine einfachere Form der Verzerrung, die speziell zur Korrektur perspektivischer Verzerrungen verwendet wird. Dies passiert, wenn ein Projektor nicht perfekt senkrecht auf eine Leinwand projiziert (z.B. von unten oder von oben).
 
 > 🖼️ **[PLATZHALTER SCREENSHOT: Das Keystone-Werkzeug aktiv, das zeigt, wie die 4 Eckpunkte gezogen werden, um ein Bild auf einer angewinkelten Leinwand rechtwinklig zu machen.]**
 
@@ -54,7 +54,7 @@ Masking ermöglicht es Ihnen, bestimmte Bereiche Ihrer Projektion zu verbergen. 
 > 🖼️ **[PLATZHALTER SCREENSHOT: Das Masking-Werkzeug aktiv, das zeigt, wie eine benutzerdefinierte Polygonform gezeichnet wird, um einen Teil der Videovorschau auszublenden.]**
 
 *   **Masken erstellen:** Sie können benutzerdefinierte Formen (Polygone oder freihändige Bezier-Kurven) direkt im Mapping Panel zeichnen.
-*   **Maske invertieren (Invert):** Masken können so eingestellt werden, dass sie die von Ihnen gezeichnete Form "ausschneiden" (das Video erscheint nur *außerhalb* der Form) oder nur die von Ihnen gezeichnete Form "behalten" (das Video erscheint nur *innerhalb* der Form).
+*   **Maske invertieren (Invert):** Masken können so eingestellt werden, dass sie die von Ihnen gezeichnete Form \"ausschneiden\" (das Video erscheint nur *außerhalb* der Form) oder nur die von Ihnen gezeichnete Form \"behalten\" (das Video erscheint nur *innerhalb* der Form).
 *   **Weiche Kanten (Feathering):** Sie können die Kanten einer Maske oft weicher machen, um ein sanftes Ausblenden zu erzeugen, was nützlich ist, um Projektionen in komplexe Hintergründe zu überblenden.
 
 ---
@@ -69,8 +69,8 @@ Edge Blending wird im **Output Panel** konfiguriert, da es sich auf das finale A
 
 *   **Überlappungszonen (Overlap Zones):** Sie müssen die Projektionen benachbarter Projektoren physisch überlappen lassen (normalerweise 10-20% der Bildbreite).
 *   **Software Blending:** MapFlow blendet das Bild auf dem einen Projektor schrittweise aus, während es auf dem anderen Projektor über die Überlappungszone hinweg eingeblendet wird.
-*   **Gamma-Korrektur:** Da zwei überlappende Projektoren einen helleren "Hotspot" erzeugen, wendet MapFlow Gamma-Korrekturkurven (die Sie anpassen können) auf die Mischzone an, um eine glatte, gleichmäßige Helligkeit über das gesamte Setup sicherzustellen.
-*   **Schwarzpegelanpassung (Black Level Matching):** Projektoren projizieren kein "echtes Schwarz" (sie projizieren dunkelgraues Licht). In einer Überlappungszone verdoppelt sich dieses dunkelgraue Licht und erzeugt ein sichtbares "schwarzes Band", selbst wenn das Video schwarz ist. MapFlow bietet Werkzeuge, um den Schwarzpegel der nicht überlappenden Bereiche künstlich anzuheben, um ihn an die Überlappung anzupassen und die Naht zu verbergen.
+*   **Gamma-Korrektur:** Da zwei überlappende Projektoren einen helleren \"Hotspot\" erzeugen, wendet MapFlow Gamma-Korrekturkurven (die Sie anpassen können) auf die Mischzone an, um eine glatte, gleichmäßige Helligkeit über das gesamte Setup sicherzustellen.
+*   **Schwarzpegelanpassung (Black Level Matching):** Projektoren projizieren kein \"echtes Schwarz\" (sie projizieren dunkelgraues Licht). In einer Überlappungszone verdoppelt sich dieses dunkelgraue Licht und erzeugt ein sichtbares \"schwarzes Band\", selbst wenn das Video schwarz ist. MapFlow bietet Werkzeuge, um den Schwarzpegel der nicht überlappenden Bereiche künstlich anzuheben, um ihn an die Überlappung anzupassen und die Naht zu verbergen.
 
 > 🚧 **[WIP: Detaillierte Erklärung zur Konfiguration von Output-Nodes und physischen Displays für Edge Blending. Das genaue UI dafür wird noch finalisiert.]**
 

@@ -28,7 +28,9 @@ pub enum Theme {
 pub struct ThemeConfig {
     pub theme: Theme,
     pub custom_colors: Option<CustomColors>,
+    /// The size of the characters in pixels or points.
     pub font_size: f32,
+    /// Distance between individual elements in a grid or particle system.
     pub spacing: f32,
 }
 
@@ -48,6 +50,7 @@ impl Default for ThemeConfig {
 pub struct CustomColors {
     pub background: [u8; 4],
     pub panel_background: [u8; 4],
+    /// The literal string content to be rendered.
     pub text: [u8; 4],
     pub accent: [u8; 4],
     pub warning: [u8; 4],

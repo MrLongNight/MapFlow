@@ -1253,7 +1253,7 @@ impl ModuleEvaluator {
                     break;
                 }
             } else {
-                tracing::warn!(
+                warn_once!(
                     "trace_chain: Node {} not found in part_index, stopping traversal",
                     current_id
                 );
@@ -1263,7 +1263,7 @@ impl ModuleEvaluator {
 
         // Warn if we hit the iteration limit (possible cycle in graph)
         if op.source_part_id.is_none() && !op.effects.is_empty() {
-            tracing::warn!(
+            warn_once!(
                 "trace_chain: Completed 50 iterations starting from {} but found no source. Possible cycle or broken chain.",
                 start_node_id
             );

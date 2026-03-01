@@ -202,6 +202,7 @@ impl EffectType {
 /// Effect instance for UI
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UIEffect {
+    /// Unique identifier for this entity.
     pub id: u64,
     pub effect_type: EffectType,
     pub enabled: bool,
@@ -213,6 +214,7 @@ pub struct UIEffect {
 }
 
 impl UIEffect {
+    /// Unique identifier for this entity.
     pub fn new(id: u64, effect_type: EffectType) -> Self {
         Self {
             id,
@@ -226,10 +228,12 @@ impl UIEffect {
         }
     }
 
+    /// Human-readable display name.
     pub fn get_param(&self, name: &str, default: f32) -> f32 {
         *self.parameters.get(name).unwrap_or(&default)
     }
 
+    /// Human-readable display name.
     pub fn set_param(&mut self, name: &str, value: f32) {
         self.parameters.insert(name.to_string(), value);
     }
@@ -243,6 +247,7 @@ pub struct UIEffectChain {
 }
 
 impl UIEffectChain {
+    /// Creates a new, uninitialized instance with default settings.
     pub fn new() -> Self {
         Self {
             effects: Vec::new(),
@@ -257,10 +262,12 @@ impl UIEffectChain {
         id
     }
 
+    /// Unique identifier for this entity.
     pub fn remove_effect(&mut self, id: u64) {
         self.effects.retain(|e| e.id != id);
     }
 
+    /// Unique identifier for this entity.
     pub fn move_up(&mut self, id: u64) {
         if let Some(pos) = self.effects.iter().position(|e| e.id == id) {
             if pos > 0 {
@@ -269,6 +276,7 @@ impl UIEffectChain {
         }
     }
 
+    /// Unique identifier for this entity.
     pub fn move_down(&mut self, id: u64) {
         if let Some(pos) = self.effects.iter().position(|e| e.id == id) {
             if pos < self.effects.len() - 1 {
@@ -277,6 +285,7 @@ impl UIEffectChain {
         }
     }
 
+    /// Unique identifier for this entity.
     pub fn move_effect(&mut self, id: u64, to_idx: usize) {
         if let Some(from_idx) = self.effects.iter().position(|e| e.id == id) {
             if from_idx == to_idx {
@@ -290,6 +299,7 @@ impl UIEffectChain {
         }
     }
 
+    /// Unique identifier for this entity.
     pub fn get_effect_mut(&mut self, id: u64) -> Option<&mut UIEffect> {
         self.effects.iter_mut().find(|e| e.id == id)
     }
@@ -331,8 +341,10 @@ pub enum EffectChainAction {
 /// Preset entry for the browser
 #[derive(Debug, Clone)]
 pub struct PresetEntry {
+    /// Human-readable display name.
     pub name: String,
     pub category: String,
+    /// File system path to the asset or resource.
     pub path: String,
     pub is_favorite: bool,
 }
@@ -369,6 +381,7 @@ pub struct EffectChainPanel {
 }
 
 impl EffectChainPanel {
+    /// Creates a new, uninitialized instance with default settings.
     pub fn new() -> Self {
         Self {
             chain: UIEffectChain::new(),

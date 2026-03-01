@@ -30,15 +30,27 @@ pub trait Command: Send + Sync + std::fmt::Debug + std::any::Any {
 #[derive(Debug, thiserror::Error)]
 pub enum CommandError {
     #[error("Command execution failed: {0}")]
+    /// Error: Command execution failed.
+    /// Error: Command execution failed.
+    /// Error: Command execution failed.
     ExecutionFailed(String),
 
     #[error("Layer not found: {0}")]
+    /// Error: Layer not found.
+    /// Error: Layer not found.
+    /// Error: Layer not found.
     LayerNotFound(u64),
 
     #[error("Paint not found: {0}")]
+    /// Error: Paint not found.
+    /// Error: Paint not found.
+    /// Error: Paint not found.
     PaintNotFound(u64),
 
     #[error("Invalid state: {0}")]
+    /// Error: Invalid state.
+    /// Error: Invalid state.
+    /// Error: Invalid state.
     InvalidState(String),
 }
 
@@ -53,8 +65,11 @@ pub struct EditorState {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LayerState {
+    /// Unique identifier for this entity.
     pub id: u64,
+    /// Human-readable display name.
     pub name: String,
+    /// Global opacity multiplier (0.0 to 1.0).
     pub opacity: f32,
     pub bypass: bool,
     pub solo: bool,

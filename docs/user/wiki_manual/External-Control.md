@@ -8,9 +8,7 @@ MapFlow ist als zentraler Hub für Live-Visual-Performances konzipiert, was bede
 
 ## 1. MIDI-Integration
 
-MIDI ermöglicht es Ihnen, physische Hardware-Controller (Keyboards, Fader-Boxen, Drum-Pads) zur Steuerung von MapFlow zu verwenden, was Ihnen eine taktile, praktische Kontrolle über Ihre Visuals anstelle einer reinen Maussteuerung bietet.
-
-### Ein MIDI-Gerät einrichten
+MIDI ermöglicht es Ihnen, physische Hardware-Controller (Keyboards, Fader-Boxen, Drum-Pads) zur Steuerung von MapFlow zu verwenden, was Ihnen eine taktile, praktische Kontrolle über Ihre Visuals anstelle einer reinen Maussteuerung bietet.\n\n### Ein MIDI-Gerät einrichten
 
 1.  Schließen Sie Ihren MIDI-Controller über USB oder ein MIDI-Interface an Ihren Computer an.
 2.  Öffnen Sie das **Settings**-Menü (Einstellungen) in MapFlow (oft zu finden unter File > Settings oder in der Dashboard-Toolbar).

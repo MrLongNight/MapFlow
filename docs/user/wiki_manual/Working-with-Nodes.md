@@ -1,6 +1,6 @@
 # Arbeiten mit Nodes
 
-Die Stärke von MapFlow liegt in seiner Node-basierten Architektur. Anstatt Layer (Ebenen) einfach übereinanderzustapeln, bauen Sie einen benutzerdefinierten "Signalfluss" auf, indem Sie verschiedene Module miteinander verbinden. Dies ermöglicht eine beispiellose Flexibilität beim Routing, der Effektverarbeitung und der Performance-Steuerung.
+Die Stärke von MapFlow liegt in seiner Node-basierten Architektur. Anstatt Layer (Ebenen) einfach übereinanderzustapeln, bauen Sie einen benutzerdefinierten \"Signalfluss\" auf, indem Sie verschiedene Module miteinander verbinden. Dies ermöglicht eine beispiellose Flexibilität beim Routing, der Effektverarbeitung und der Performance-Steuerung.
 
 ## Der Module Canvas
 
@@ -14,9 +14,9 @@ Es gibt mehrere Möglichkeiten, Nodes zum Canvas hinzuzufügen:
 
 *   **Drag & Drop:** Der einfachste Weg, Medien (Videos, Bilder) hinzuzufügen, besteht darin, sie direkt aus dem Media Browser auf den Canvas zu ziehen. Dadurch wird automatisch ein Media-Node erstellt.
 *   **Rechtsklick-Menü:** Klicken Sie mit der rechten Maustaste irgendwo auf den leeren Canvas, um das kategorisierte Node-Menü zu öffnen. Durchsuchen Sie Sources, Effects, Layers, Outputs etc. und wählen Sie den benötigten Node aus.
-*   **Quick Create (Tab):** Drücken Sie die `Tab`-Taste auf Ihrer Tastatur. Dadurch öffnet sich ein durchsuchbares Popup-Fenster. Fangen Sie an, den Namen des Nodes (z. B. "Blur", "Projector", "Oscillator") einzutippen, und drücken Sie Enter, um ihn hinzuzufügen.
+*   **Quick Create (Tab):** Drücken Sie die `Tab`-Taste auf Ihrer Tastatur. Dadurch öffnet sich ein durchsuchbares Popup-Fenster. Fangen Sie an, den Namen des Nodes (z. B. \"Blur\", \"Projector\", \"Oscillator\") einzutippen, und drücken Sie Enter, um ihn hinzuzufügen.
 
-> 🖼️ **[PLATZHALTER SCREENSHOT: Das Quick Create (Tab) Popup, das Suchergebnisse für "Blur" anzeigt.]**
+> 🖼️ **[PLATZHALTER SCREENSHOT: Das Quick Create (Tab) Popup, das Suchergebnisse für \"Blur\" anzeigt.]**
 
 ### 2. Node-Struktur
 
@@ -34,7 +34,7 @@ Ein typischer Node in MapFlow besteht aus drei Hauptteilen:
 Damit etwas passiert, müssen Sie Nodes miteinander verbinden.
 
 1.  Fahren Sie mit der Maus über einen **Ausgangs-Socket** (rechte Seite). Der Mauszeiger wird sich ändern.
-2.  Klicken und ziehen Sie von dem Socket weg. Sie zeichnen nun ein "Kabel" (Wire).
+2.  Klicken und ziehen Sie von dem Socket weg. Sie zeichnen nun ein \"Kabel\" (Wire).
 3.  Ziehen Sie das Kabel zu einem **Eingangs-Socket** (linke Seite) an einem anderen Node. Der Socket wird hervorgehoben, wenn Sie in der Nähe sind. Lassen Sie die Maustaste los, um die Verbindung herzustellen.
 
 > 🖼️ **[PLATZHALTER SCREENSHOT: Eine Animation oder Bildsequenz, die zeigt, wie ein Kabel vom Ausgang einer Quelle zum Eingang eines Effekts gezogen wird.]**
@@ -46,7 +46,7 @@ Damit etwas passiert, müssen Sie Nodes miteinander verbinden.
 
 Wenn Sie einen Node durch Klicken auf seinen Körper auswählen, erscheinen seine detaillierten Einstellungen im **Inspector-Panel** (normalerweise auf der rechten Seite des Bildschirms).
 
-> 🖼️ **[PLATZHALTER SCREENSHOT: Das Inspector-Panel, das die Eigenschaften eines ausgewählten "Color Correction"-Nodes anzeigt, mit Schiebereglern für Farbton (Hue), Sättigung (Saturation), Helligkeit (Brightness) und Kontrast (Contrast).]**
+> 🖼️ **[PLATZHALTER SCREENSHOT: Das Inspector-Panel, das die Eigenschaften eines ausgewählten \"Color Correction\"-Nodes anzeigt, mit Schiebereglern für Farbton (Hue), Sättigung (Saturation), Helligkeit (Brightness) und Kontrast (Contrast).]**
 
 Hier passen Sie Parameter an, ändern Blend-Modi, legen Transform-Werte (Position/Skalierung) fest oder konfigurieren die Audio-Reaktivität für diesen spezifischen Node.
 

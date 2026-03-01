@@ -193,6 +193,7 @@ pub struct ElementStateManager {
 }
 
 impl ElementStateManager {
+    /// Creates a new, uninitialized instance with default settings.
     pub fn new() -> Self {
         Self::default()
     }

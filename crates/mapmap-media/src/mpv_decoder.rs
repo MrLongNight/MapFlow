@@ -14,8 +14,8 @@ use libmpv2::Mpv;
 
 /// MPV-based video decoder
 ///
-/// Uses libmpv2 for video decoding with hardware acceleration support.
-/// The render feature allows getting raw video frames for GPU texture upload.
+/// Uses libmpv2 for video decoding.
+/// Uses screenshot-raw property for frame extraction to maintain thread safety and compatibility.
 pub struct MpvDecoder {
     mpv: Mpv,
     path: PathBuf,
@@ -39,7 +39,7 @@ impl MpvDecoder {
             MediaError::DecoderError(format!("MPV init failed: {}", e))
         })?;
 
-        // Configure MPV for offscreen rendering
+        // Configure MPV for offscreen operation
         mpv.set_property("vo", "null").ok(); // No video output window
         mpv.set_property("pause", true).ok(); // Start paused
         mpv.set_property("keep-open", true).ok(); // Don't close at end
@@ -56,7 +56,7 @@ impl MpvDecoder {
         })?;
 
         // Wait for file to load and get properties
-        std::thread::sleep(std::time::Duration::from_millis(100));
+        std::thread::sleep(std::time::Duration::from_millis(200));
 
         // Get video properties
         let width = mpv.get_property::<i64>("width").unwrap_or(1920) as u32;
@@ -89,11 +89,43 @@ impl MpvDecoder {
         // Create video format
         let format = VideoFormat::new(self.width, self.height, PixelFormat::RGBA8, self.fps as f32);
 
-        // For now, generate a placeholder frame (gray)
-        // TODO: Use MPV render API for actual frame capture
-        let frame_data = vec![128u8; format.buffer_size()];
+        // Use screenshot-raw to get the current frame as a buffer
+        // Note: This property returns data in a format depending on MPV's config
+        // Default is usually RGB or RGBA.
+        // For production, we might want to use the Render API with a C wrapper for Send/Sync
 
-        Ok(VideoFrame::new(frame_data, format, self.current_time))
+        // Command: screenshot-raw
+        // Returns a byte array of the current frame
+        let frame_data = self
+            .mpv
+            .get_property::<Vec<u8>>("screenshot-raw")
+            .map_err(|e| {
+                error!("MPV frame capture failed: {}", e);
+                MediaError::DecoderError(format!("MPV screenshot-raw failed: {}", e))
+            })?;
+
+        // Validate data size (RGBA expected)
+        if frame_data.len() < (self.width * self.height * 3) as usize {
+            return Err(MediaError::DecoderError(
+                "Captured frame data too small".to_string(),
+            ));
+        }
+
+        // If MPV returns RGB, we might need to convert to RGBA
+        // For now, assume we get usable data or handle conversion if needed
+        let final_data = if frame_data.len() == (self.width * self.height * 3) as usize {
+            // Convert RGB to RGBA
+            let mut rgba = Vec::with_capacity((self.width * self.height * 4) as usize);
+            for chunk in frame_data.chunks_exact(3) {
+                rgba.extend_from_slice(chunk);
+                rgba.push(255);
+            }
+            rgba
+        } else {
+            frame_data
+        };
+
+        Ok(VideoFrame::new(final_data, format, self.current_time))
     }
 }
 

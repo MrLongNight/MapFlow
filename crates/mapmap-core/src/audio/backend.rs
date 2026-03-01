@@ -6,18 +6,33 @@ use thiserror::Error;
 pub enum AudioError {
     /// No audio input devices were found on the system
     #[error("No audio devices found: {0}")]
+    /// Error: No audio devices found.
+    /// Error: No audio devices found.
+    /// Error: No audio devices found.
     NoDevicesFound(String),
     /// The default audio input device could not be determined
     #[error("Default device not found")]
+    /// Error: Default device not found.
+    /// Error: Default device not found.
+    /// Error: Default device not found.
     DefaultDeviceNotFound,
     /// The audio device supports no compatible format
     #[error("Unsupported stream format")]
+    /// Error: Unsupported stream format.
+    /// Error: Unsupported stream format.
+    /// Error: Unsupported stream format.
     UnsupportedFormat,
     /// Failed to build the audio input stream
     #[error("Failed to build audio stream: {0}")]
+    /// Error: Failed to build audio stream.
+    /// Error: Failed to build audio stream.
+    /// Error: Failed to build audio stream.
     StreamBuildError(String),
     /// Operation timed out
     #[error("Device initialization timed out")]
+    /// Error: Device initialization timed out.
+    /// Error: Device initialization timed out.
+    /// Error: Device initialization timed out.
     Timeout,
 }
 
@@ -33,6 +48,7 @@ pub trait AudioBackend {
 
 /// CPAL implementation of the audio backend
 #[cfg(feature = "audio")]
+/// cpal_backend { module
 pub mod cpal_backend {
     use super::{AudioBackend, AudioError};
     use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
@@ -325,6 +341,7 @@ pub mod cpal_backend {
 
 /// A mock audio backend for testing without native audio dependencies
 #[cfg(any(test, feature = "mock-audio"))]
+/// mock_backend { module
 pub mod mock_backend {
     use super::{AudioBackend, AudioError};
 

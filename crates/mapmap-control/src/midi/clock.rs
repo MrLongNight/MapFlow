@@ -27,6 +27,7 @@ impl MidiClock {
     /// MIDI clock ticks per quarter note
     pub const TICKS_PER_BEAT: u32 = 24;
 
+    /// Creates a new, uninitialized instance with default settings.
     pub fn new() -> Self {
         Self {
             state: ClockState::Stopped,

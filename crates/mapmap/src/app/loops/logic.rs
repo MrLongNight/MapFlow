@@ -100,6 +100,22 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
         }
     }
 
+    // --- Rebuild output_assignments from render_ops ---
+    // Maps each Projector output ID to the source texture names that feed into it.
+    // Without this, prepare_texture_previews cannot find textures and no video is shown.
+    app.output_assignments.clear();
+    for (module_id, op) in &app.render_ops {
+        if let OutputType::Projector { id, .. } = &op.output_type {
+            if let Some(src_id) = op.source_part_id {
+                let tex_name = format!("part_{}_{}", module_id, src_id);
+                app.output_assignments
+                    .entry(*id)
+                    .or_default()
+                    .push(tex_name);
+            }
+        }
+    }
+
     // --- Output Window Sync (Optimized) ---
     if ui_needs_sync || graph_dirty {
         let current_output_ids: HashSet<u64> = app

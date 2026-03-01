@@ -28,7 +28,7 @@ Obwohl der Node-Graph flexibel ist, folgen die meisten Workflows einem gemeinsam
 
 1.  **Quellen (Generatoren / Medien):** Dies sind die Startpunkte jedes Signalflusses. Sie erstellen oder importieren Inhalte. Beispiele sind Videodateien, Bildsequenzen, Live-Kamera-Feeds (NDI, Spout) oder generative Shader.
 2.  **Effekte (FX):** Diese Nodes modifizieren das eingehende Signal. Beispiele sind Unschärfe, Verzerrung, Verpixelung und Farbkorrektur. Sie können mehrere Effekte aneinanderhängen.
-3.  **Layer (Compositing):** Diese Nodes kombinieren mehrere Signale. Sie verwalten Eigenschaften wie Position, Skalierung, Rotation, Deckkraft (Opacity) und Blend-Modi (z.B. Add, Multiply, Screen).
+3.  **Layer (Compositing):** Diese Nodes kombinieren mehrere Signale. Sie verwalten Eigenschaften wie Position, Skalierung, Rotation, Deckkraft (Opacity) und Blend-Modi (z.B. Add, Multiply, Screen, Overlay etc.).
 4.  **Ausgaben (Outputs):** Diese Nodes senden das finale, zusammengesetzte Bild an physische Displays, Projektoren oder virtuelle Ausgaben (wie NDI oder Spout).
 
 ### Projection Mapping

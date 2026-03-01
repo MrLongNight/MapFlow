@@ -17,8 +17,7 @@ Wenn Sie MapFlow starten, sehen Sie mehrere Hauptbereiche:
 > 🖼️ **[PLATZHALTER SCREENSHOT: Vollständige Übersicht der MapFlow-Benutzeroberfläche, Hervorhebung des Media Browsers auf der linken Seite, des zentralen Module Canvas und der Output/Inspector-Panels auf der rechten Seite.]**
 
 *   **Media Browser (Links):** Hier finden Sie Ihre Dateien.
-*   **Module Canvas (Mitte):** Das Herzstück von MapFlow, wo Sie Ihren visuellen Node-Graphen aufbauen.
-*   **Inspector / Panels (Rechts):** Hier passen Sie die Eigenschaften dessen an, was Sie ausgewählt haben.
+*   **Module Canvas (Mitte):** Das Herzstück von MapFlow, wo Sie Ihren visuellen Node-Graphen aufbauen.\n*   **Inspector / Panels (Rechts):** Hier passen Sie die Eigenschaften dessen an, was Sie ausgewählt haben.
 *   **Dashboard (Mitte Oben):** Wiedergabesteuerungen und globale Leistungsstatistiken.
 
 ---
@@ -39,12 +38,12 @@ Ein neuer Node, der Ihre Mediendatei repräsentiert, wird auf dem Canvas erschei
 
 ## 3. Eine einfache Ausgabe erstellen
 
-MapFlow ist eine Node-basierte Software, was bedeutet, dass Sie verschiedene "Blöcke" (Nodes) miteinander verbinden, um einen Datenfluss zu erstellen. Um Ihre Medien zu sehen, benötigen Sie einen Output (Ausgabe).
+MapFlow ist eine Node-basierte Software, was bedeutet, dass Sie verschiedene \"Blöcke\" (Nodes) miteinander verbinden, um einen Datenfluss zu erstellen. Um Ihre Medien zu sehen, benötigen Sie einen Output (Ausgabe).
 
 1.  Klicken Sie mit der rechten Maustaste irgendwo auf eine leere Stelle des **Module Canvas**.
-2.  Wählen Sie aus dem erscheinenden Menü **Output > Projector** (oder drücken Sie einfach `Tab`, um das Schnellmenü "Quick Create" zu öffnen, und suchen Sie nach "Output").
+2.  Wählen Sie aus dem erscheinenden Menü **Output > Projector** (oder drücken Sie einfach `Tab`, um das Schnellmenü \"Quick Create\" zu öffnen, und suchen Sie nach \"Output\").
 
-> 🖼️ **[PLATZHALTER SCREENSHOT: Das Rechtsklick-Menü zur Node-Erstellung oder das Quick Create-Popup mit der Auswahl "Output".]**
+> 🖼️ **[PLATZHALTER SCREENSHOT: Das Rechtsklick-Menü zur Node-Erstellung oder das Quick Create-Popup mit der Auswahl \"Output\".]**
 
 Sie haben nun zwei Nodes: Einen Media-Node (Ihre Quelle) und einen Output-Node.
 
@@ -88,9 +87,7 @@ Möchten Sie Ihr Video bewegen oder skalieren? Dann benötigen Sie einen Layer-N
 2.  Fügen Sie einen **Layer**-Node hinzu (Rechtsklick > Layer > Standard Layer).
 3.  Verbinden Sie den Media-Node mit dem Eingang des Layers.
 4.  Verbinden Sie den Ausgang des Layers mit dem Output-Node.
-5.  Wählen Sie den **Layer Node** aus und verwenden Sie den **Inspector**, um seine Position, Skalierung (Scale) oder Rotation zu ändern.
-
-> 🖼️ **[PLATZHALTER SCREENSHOT: Ein einfacher Graphen mit 3 Nodes: Media -> Layer -> Output. Der Inspector sollte die Transform-Eigenschaften des Layers anzeigen.]**
+5.  Wählen Sie den **Layer Node** aus und verwenden Sie den **Inspector**, um seine Position, Skalierung (Scale) oder Rotation zu ändern.\n\n> 🖼️ **[PLATZHALTER SCREENSHOT: Ein einfacher Graphen mit 3 Nodes: Media -> Layer -> Output. Der Inspector sollte die Transform-Eigenschaften des Layers anzeigen.]**
 
 ---
 

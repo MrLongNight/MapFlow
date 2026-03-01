@@ -38,8 +38,10 @@ pub type NodeId = u64;
 /// Node in the graph (UI representation)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Node {
+    /// Unique identifier for this entity.
     pub id: NodeId,
     pub node_type: NodeType,
+    /// 3D position coordinates [x, y, z].
     pub position: Pos2,
     pub inputs: Vec<Socket>,
     pub outputs: Vec<Socket>,
@@ -50,12 +52,14 @@ pub struct Node {
 /// Socket (input or output connection point)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Socket {
+    /// Human-readable display name.
     pub name: String,
     pub data_type: DataType,
     pub connected: bool,
 }
 
 impl Socket {
+    /// Human-readable display name.
     pub fn new(name: &str, data_type: DataType) -> Self {
         Self {
             name: name.to_string(),
@@ -81,6 +85,7 @@ impl Default for NodeEditor {
 }
 
 impl NodeEditor {
+    /// Creates a new, uninitialized instance with default settings.
     pub fn new() -> Self {
         Self {
             graph_id: None,

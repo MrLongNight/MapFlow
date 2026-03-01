@@ -27,7 +27,7 @@ Das Dashboard ist Ihre Hauptsteuerzentrale während einer Performance. Es bietet
 *   **Wiedergabesteuerungen (Playback Controls):** Play, Pause, Stop und Geschwindigkeitskontrolle für den globalen Transport (Timeline).
 *   **Leistungsstatistiken (Performance Stats):** Echtzeit-Überwachung wichtiger Metriken: FPS (Frames pro Sekunde), Frame Time, CPU-Auslastung und GPU-Auslastung. Behalten Sie diese während komplexer Setups im Auge.
 *   **Master Controls:** Globale Schieberegler für Deckkraft (Opacity / Fade to Black) und Geschwindigkeit, die die gesamte Komposition beeinflussen.
-*   **Toolbar (Werkzeugleiste):** Schneller Zugriff auf häufig verwendete Werkzeuge und Modi, wie das Umschalten zwischen "Edit" (Aufbau des Graphen), "Map" (Verzerrung von Ausgaben) und "Perform" (Sperren der Benutzeroberfläche für den Live-Einsatz).
+*   **Toolbar (Werkzeugleiste):** Schneller Zugriff auf häufig verwendete Werkzeuge und Modi, wie das Umschalten zwischen \"Edit\" (Aufbau des Graphen), \"Map\" (Verzerrung von Ausgaben) und \"Perform\" (Sperren der Benutzeroberfläche für den Live-Einsatz).
 
 ---
 
@@ -40,7 +40,7 @@ Der Module Canvas ist das Herzstück des Node-basierten Workflows von MapFlow. H
 *   **Nodes (Module):** Repräsentieren Funktionseinheiten (Media Player, Effekte, Layer, Ausgaben).
 *   **Verbindungen (Wires / Kabel):** Kabel, die Ausgänge (rechte Sockets) eines Nodes mit Eingängen (linke Sockets) eines anderen verbinden.
 *   **Interaktion:**
-    *   **Rechtsklick:** Öffnet das Menü "Node hinzufügen" (Add Node).
+    *   **Rechtsklick:** Öffnet das Menü \"Node hinzufügen\" (Add Node).
     *   **Kabel ziehen:** Erstellt eine Verbindung, indem Sie von einem Ausgang zu einem Eingang klicken und ziehen.
     *   **Node anklicken:** Wählt ihn aus, um Eigenschaften im Inspector anzuzeigen.
     *   **Tab (Quick Create):** Öffnet ein durchsuchbares Popup-Fenster, um schnell Nodes hinzuzufügen.
@@ -81,8 +81,7 @@ Die Timeline wird zum Sequenzieren, Automatisieren und Auslösen von Ereignissen
 
 > 🖼️ **[PLATZHALTER SCREENSHOT: Das Timeline-Panel, das ein Multi-Track-Layout mit Blöcken zeigt, die die Node-Wiedergabe repräsentieren.]**
 
-*   **Tracks (Spuren):** Jeder Layer oder Parameter kann eine eigene horizontale Spur haben.
-*   **Blöcke/Clips:** Visuelle Darstellungen, wann ein Node oder Effekt aktiv ist.
+*   **Tracks (Spuren):** Jeder Layer oder Parameter kann eine eigene horizontale Spur haben.\n*   **Blöcke/Clips:** Visuelle Darstellungen, wann ein Node oder Effekt aktiv ist.
 *   **Keyframes:** Setzen Sie Werte an bestimmten Zeitpunkten, um Parameter zu animieren.
 *   **Transport:** Der Abspielkopf (Playhead) scrubbt durch die Zeit. Sie können die Dashboard-Steuerungen oder die Leertaste verwenden, um die Wiedergabe zu steuern.
 *   **Modi:** Wechseln Sie zwischen verschiedenen Wiedergabemodi (z.B. Loop, One-Shot, Ping-Pong).
@@ -108,7 +107,7 @@ Das Output Panel verwaltet das endgültige Ziel Ihrer Visuals.
 
 > 🖼️ **[PLATZHALTER SCREENSHOT: Das Output Panel, das mehrere physische Displays und Routing-Optionen zeigt.]**
 
-*   **Displays:** Weisen Sie MapFlow-Output-Nodes physischen Monitoren oder Projektoren zu, die an Ihren Computer angeschlossen sind.
+*   **Displays:** Weisen Sie MapFlow-Output-Nodes physischen Monitoren oder Projektoren zu, die an Ihren Computer angeschlossen ist.
 *   **Virtuelle Ausgaben:** Konfigurieren Sie Ausgaben an NDI-Streams oder Spout/Syphon, um Videos an andere Anwendungen zu senden.
 *   **Auflösung/Bildwiederholrate:** Stellen Sie benutzerdefinierte Auflösungen und Bildwiederholraten für jede Ausgabe ein.
 *   **Edge Blending:** Konfigurieren Sie Überlappungszonen für nahtlose Multi-Projektor-Anordnungen.

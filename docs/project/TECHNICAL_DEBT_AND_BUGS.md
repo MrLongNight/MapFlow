@@ -4,41 +4,27 @@ This document tracks the current state of MapFlow's implementation, identifying 
 
 ---
 
-## 🛑 Critical Architectural Issues & Hacks
+## 🛑 Critical Architectural Issues
 
 | Issue | Status | Impact | File/Location |
 | :--- | :--- | :--- | :--- |
 | **"God Object" module_canvas** | ✅ Completed | `module_canvas` has been split into `controller.rs`, `draw.rs`, `state.rs`, `types.rs`, etc. God object eliminated. | `crates/mapmap-ui/src/editors/module_canvas/` |
-| **Monolithic core/module.rs** | 🟡 In Progress | Refactor started (PR #846). File still large (~4k lines). Needs final cleanup and actual file deletion after full migration to `module/` submodule. | `crates/mapmap-core/src/module.rs` |
-| **GPU Upload Blockage** | ✅ Fixed | Threaded uploads implemented in `FramePipeline` (PR #831). Micro-stutters resolved. | `crates/mapmap/src/orchestration/media.rs` |
-| **wgpu Lifetime Hack** | 🔴 Unsafe Hack | Uses `unsafe transmute` to force `'static` lifetime on `RenderPass`. High risk of UB. | `crates/mapmap/src/app/loops/render.rs` |
-| **UI App Pointer Hack** | 🔴 Unsafe Hack | Uses `*mut App` raw pointer to bypass the Rust borrow checker during egui UI layout. | `crates/mapmap/src/app/loops/render.rs` |
-
----
-
-## 🏗️ Refactoring Strategy (Architecture Audit 2026-02-25)
-
-### 1. module_canvas Decomposition
-- **Goal:** Split into logical sub-modules.
-- **Status:** Directory structure prepared. Logic separation identified. `types.rs` extracted.
-- **Modules:** `types.rs`, `draw.rs`, `interaction.rs`, `integration/`, `state.rs`.
-
-### 2. core/module.rs Splitting
-- **Goal:** Separate data definitions from graph logic.
-- **Status:** Initial `types.rs` and `manager.rs` separation planned.
-- **Modules:** `types/`, `config.rs`, `manager.rs`.
+| **Monolithic core/module.rs** | ✅ Completed | Refactor completed (2026-02-27). Split into `types.rs`, `config.rs`, `manager.rs`, and `mod.rs`. | `crates/mapmap-core/src/module/` |
+| **GPU Upload Blockage** | ✅ Fixed | Threaded uploads implemented in `FramePipeline` (PR #831 and #871). Micro-stutters resolved. | `crates/mapmap/src/orchestration/media.rs` |
+| **wgpu Lifetime Hack** | 🟡 In Progress | Unsafe `transmute` still used in render loop for `egui-wgpu` static lifetimes. | `crates/mapmap/src/app/loops/render.rs` |
+| **UI App Pointer Hack** | 🟡 In Progress | `*mut App` raw pointer still used in render loop for UI layout display. | `crates/mapmap/src/app/loops/render.rs` |
 
 ---
 
 ## 🎨 Feature Gaps: Code vs. UI (Updated)
 
+- **NDI Support**: 🟡 Partial. `NdiSender` implemented; `NdiReceiver` exists as a stub with `TODO`s.
+- **MPV Decoder**: 🟡 Partial Fix. Integrated via `libmpv2`, but currently renders gray placeholder frames.
 - **Link System**: ✅ Integrated (PR #837). UI for linking nodes is functional.
 - **Bevy Node Controls**: UI labels indicate controls for Bevy 3D/Particles nodes are "not yet implemented".
 - **HAP Video Alpha**: Alpha support is partially implemented. HAP Q Alpha (YCoCg+A) is currently a TODO. Complex multi-section decoding is unstable.
-- **NDI Support**: `NdiSender` is a placeholder (stub); `NdiReceiver` is blocking and lacks full async integration. No UI configuration for sending.
 - **Shader Graph Nodes**: Core supports logic nodes, but UI lacks visual representation/wiring for complex operations.
 - **LUT Support**: No "LUT Effect" node in the effect chain UI despite core support.
-- **MPV Decoder**: Implementation in `mpv_decoder.rs` only generates gray frames. Actual MPV render API integration is missing.
 - **SRT Streaming**: Missing `libsrt` integration; connection/sending logic are just stubs.
 - **OSC Triggers**: UI lacks OSC input field for Cue triggers.
 - **Philips Hue**: Pairing logic and Area Selection fetching are missing.

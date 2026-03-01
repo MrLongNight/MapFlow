@@ -18,7 +18,8 @@ use mapmap_core::OutputId;
 use mapmap_media::PlaybackCommand;
 use mapmap_ui::types::MediaPlaybackCommand;
 
-use tracing::{error, info, warn};
+use tracing::{error, info};
+use tracing_subscriber::prelude::*;
 
 use winit::application::ApplicationHandler;
 use winit::event::WindowEvent;
@@ -317,13 +318,34 @@ fn main() -> Result<()> {
     let file_appender = tracing_appender::rolling::daily("logs", "mapflow.log");
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
 
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::from_default_env()
-                .add_directive(tracing::Level::INFO.into()),
-        )
-        .with_writer(std::io::stdout) // Print to stdout
-        .with_writer(non_blocking) // Also print to file
+    // Filter configuration
+    let env_filter = tracing_subscriber::EnvFilter::from_default_env()
+        .add_directive(tracing::Level::INFO.into())
+        // Noise reduction from external crates
+        .add_directive("wgpu_core=warn".parse().unwrap())
+        .add_directive("wgpu_hal=warn".parse().unwrap())
+        .add_directive("naga=warn".parse().unwrap())
+        .add_directive("winit=info".parse().unwrap());
+
+    // Layer for Console output (pretty and colored)
+    let console_layer = tracing_subscriber::fmt::layer()
+        .with_ansi(true)
+        .with_target(true)
+        .with_thread_ids(false)
+        .with_thread_names(false)
+        .with_writer(std::io::stdout);
+
+    // Layer for File output (clean and structured)
+    let file_layer = tracing_subscriber::fmt::layer()
+        .with_ansi(false)
+        .with_target(true)
+        .with_writer(non_blocking);
+
+    // Combine everything
+    tracing_subscriber::registry()
+        .with(env_filter)
+        .with(console_layer)
+        .with(file_layer)
         .init();
 
     info!("Starting MapFlow...");

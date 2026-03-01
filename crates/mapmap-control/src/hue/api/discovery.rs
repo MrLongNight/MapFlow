@@ -7,6 +7,7 @@ use std::time::Duration;
 pub struct DiscoveredBridge {
     #[serde(rename = "internalipaddress")]
     pub ip: String,
+    /// Unique identifier for this entity.
     pub id: String,
 }
 

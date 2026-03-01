@@ -7,9 +7,11 @@ use serde::{Deserialize, Serialize};
 /// Predefined MIDI controller profile
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ControllerProfile {
+    /// Human-readable display name.
     pub name: String,
     pub manufacturer: String,
     pub description: String,
+    /// Set of links between control inputs and application targets.
     pub mappings: Vec<ProfileMapping>,
 }
 
@@ -20,6 +22,7 @@ pub struct ProfileMapping {
     pub min_value: f32,
     pub max_value: f32,
     pub curve: MappingCurve,
+    /// User-friendly name for identifying the element.
     pub label: String,
 }
 

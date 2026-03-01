@@ -15,7 +15,9 @@ use std::time::Instant;
 /// Media file entry in the browser
 #[derive(Debug, Clone)]
 pub struct MediaEntry {
+    /// File system path to the asset or resource.
     pub path: PathBuf,
+    /// Human-readable display name.
     pub name: String,
     pub file_type: MediaType,
     pub size_bytes: u64,

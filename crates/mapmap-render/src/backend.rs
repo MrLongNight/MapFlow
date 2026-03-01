@@ -109,7 +109,7 @@ impl WgpuBackend {
             .await
             .map_err(|e| RenderError::DeviceError(e.to_string()))?;
 
-        info!("Device created successfully");
+        debug!("Device created successfully");
 
         let staging_belt = StagingBelt::new(1024 * 1024); // 1MB chunks
 

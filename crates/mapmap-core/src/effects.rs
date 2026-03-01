@@ -98,7 +98,7 @@ impl EffectType {
 /// An effect instance in the chain
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Effect {
-    /// Unique ID for this effect instance
+    /// Unique identifier for this entity.
     pub id: u64,
     /// Type of effect
     pub effect_type: EffectType,

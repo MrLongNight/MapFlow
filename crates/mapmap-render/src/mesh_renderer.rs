@@ -7,7 +7,7 @@ use std::sync::{Arc, Weak};
 
 use bytemuck::{Pod, Zeroable};
 use glam::Mat4;
-use tracing::info;
+use tracing::debug;
 use wgpu::util::DeviceExt;
 
 use crate::Result;
@@ -73,7 +73,7 @@ pub struct MeshRenderer {
 impl MeshRenderer {
     /// Create a new mesh renderer
     pub fn new(device: Arc<wgpu::Device>, target_format: wgpu::TextureFormat) -> Result<Self> {
-        info!("Creating mesh renderer");
+        debug!("Creating mesh renderer");
 
         // Pre-calculate normalization matrix
         let normalization_matrix = Mat4::from_translation(glam::vec3(-1.0, 1.0, 0.0))

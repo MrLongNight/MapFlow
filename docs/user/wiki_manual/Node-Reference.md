@@ -28,8 +28,7 @@ Effekt-Nodes modifizieren das eingehende visuelle Signal. Sie können aneinander
 *   **Color Correction (Farbkorrektur):** Passt Farbton (Hue), Sättigung (Saturation), Helligkeit (Brightness) und Kontrast (Contrast) an.
 *   **Levels (Tonwertkorrektur):** Feinabstimmung des Schwarzpunkts, Weißpunkts und der Mitteltöne (Gamma) für präzise Kontrastkontrolle.
 *   **Invert:** Invertiert die Farben des Bildes (Negativ-Effekt).
-*   **Pixelate:** Reduziert die Auflösung des Bildes und erzeugt so eine blockige, Retro-Ästhetik.
-*   **Distortion (Warp/Displace):** Verzerrt das Bild basierend auf einem Rauschmuster oder einem anderen Videoeingang (Displacement Mapping).
+*   **Pixelate:** Reduziert die Auflösung des Bildes und erzeugt so eine blockige, Retro-Ästhetik.\n*   **Distortion (Warp/Displace):** Verzerrt das Bild basierend auf einem Rauschmuster oder einem anderen Videoeingang (Displacement Mapping).
 *   **Edge Detect (Kantenerkennung):** Hebt die Kanten innerhalb des Bildes hervor und erzeugt einen stilisierten, umrissenen Look.
 *   **LUT (Look-Up Table):** Wendet komplexes, kinoreifes Color Grading unter Verwendung von branchenüblichen `.cube`-Dateien an.
 
@@ -53,9 +52,7 @@ Output-Nodes sind das Endziel im Node-Graphen und senden die zusammengesetzten V
 *   **Projector (Window):** Sendet das visuelle Signal an ein physisches Display oder einen Projektor, der an Ihren Computer angeschlossen ist.
 *   **Virtual Output (NDI):** Überträgt das visuelle Signal über Ihr lokales Netzwerk unter Verwendung des NDI-Protokolls, sodass andere Computer oder Software es empfangen können.
 *   **Virtual Output (Spout/Syphon):** Teilt das visuelle Signal direkt mit anderen Anwendungen, die auf demselben Computer ausgeführt werden (Spout für Windows, Syphon für macOS), ohne Verzögerung (Zero Latency).
-*   **Record:** Erfasst die endgültige visuelle Ausgabe und speichert sie als Videodatei auf Ihrer Festplatte.
-
----
+*   **Record:** Erfasst die endgültige visuelle Ausgabe und speichert sie als Videodatei auf Ihrer Festplatte.\n\n---
 
 ## 5. Steuerung & Logik (Control & Logic)
 

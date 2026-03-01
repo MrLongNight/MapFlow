@@ -55,6 +55,10 @@
 
 *.json
 
+# Allow vcpkg files
+!vcpkg.json
+!vcpkg-configuration.json
+
 # Rust
 /target/
 target_*/

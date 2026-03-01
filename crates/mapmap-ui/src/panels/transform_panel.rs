@@ -8,8 +8,11 @@ use mapmap_core::ResizeMode;
 
 #[derive(Debug, Clone, Default)]
 pub struct TransformValues {
+    /// 3D position coordinates [x, y, z].
     pub position: (f32, f32),
+    /// Rotation angles in degrees.
     pub rotation: f32, // Z-axis rotation in degrees
+    /// Scale factors for the object's dimensions.
     pub scale: (f32, f32),
     pub anchor: (f32, f32),
 }

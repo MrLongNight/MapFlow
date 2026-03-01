@@ -153,6 +153,7 @@ pub fn osc_to_vec3(osc_args: &[OscType]) -> Result<ControlValue> {
 
 /// Convert ControlValue to OSC type
 #[cfg(feature = "osc")]
+/// The data value associated with the control or message.
 pub fn control_value_to_osc(value: &ControlValue) -> Vec<OscType> {
     match value {
         ControlValue::Float(f) => vec![OscType::Float(*f)],

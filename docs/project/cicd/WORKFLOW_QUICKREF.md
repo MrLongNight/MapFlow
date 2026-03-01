@@ -6,15 +6,14 @@
 
 | Workflow | Trigger | Zweck | Dauer |
 |----------|---------|-------|-------|
-| **CI-01** Build & Test | Push/PR | Baut & testet auf allen Plattformen | ~10-15 min |
-| **CI-02** Security Scan | Push/PR/Weekly | CodeQL Security Analysis | ~5-10 min |
-| **CI-03** Create Issues | Manual | Erstellt Development Issues | ~1 min |
-| **CI-04** Session Trigger | Issue labeled/Manual | Erstellt Jules Session | Sekunden |
-| **CI-05** PR Auto-Merge | PR events/Checks | Merged PR oder benachrichtigt @jules | Sekunden |
-| **CI-06** Update Changelog | PR merged | Aktualisiert CHANGELOG.md | Sekunden |
-| **CI-07** Post-Merge | PR merged | Issue close, Roadmap, Next Session | Sekunden |
-| **CI-08** Monitor Session | On-demand/Manual | Überwacht Jules Sessions | Sekunden |
-| **CI-ADMIN-01** Sync Labels | Manual | Synchronisiert Labels | Sekunden |
+| **CICD-DevFlow: Job01 Validation** | Push/PR | Build, Test, Clippy, Format, Security | ~10-15 min |
+| **CICD-DevFlow: Job02 AutoMerge** | PR Events | Automatisches Mergen nach erfolgreichen Checks | Sekunden |
+| **CICD-MainFlow: Job01 Changelog** | Push main | Aktualisiert CHANGELOG.md & schließt Issues | Sekunden |
+| **CICD-MainFlow: Job02 Backup** | Schedule | GFS-Backup (Tag/Woche/Monat) | ~2 min |
+| **CICD-IssueFlow: Job01 Trigger** | Label/Issue | Startet Jules Session für Issues | Sekunden |
+| **gemini-dispatch** | Comment/PR | Router für KI-Befehle (@gemini-cli) | Sekunden |
+| **gemini-review** | Call/PR | KI-basiertes Pull Request Review | ~2-5 min |
+| **gemini-triage** | Issue open | Automatisches Labeling von Issues | Sekunden |
 
 ## 🚀 Häufige Kommandos
 

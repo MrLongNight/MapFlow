@@ -27,6 +27,7 @@ hound = { workspace = true }
 image = { workspace = true }
 num-complex = "0.4"
 num-traits = "0.2"
+once_cell = { workspace = true }
 parking_lot = { workspace = true }
 rand = "0.10.0"
 rustfft = { workspace = true }

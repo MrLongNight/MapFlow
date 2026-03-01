@@ -7,6 +7,7 @@ use std::time::Duration;
 /// A recorded macro
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Macro {
+    /// Human-readable display name.
     pub name: String,
     pub description: String,
     pub actions: Vec<MacroAction>,
@@ -45,6 +46,7 @@ pub struct MacroRecorder {
 }
 
 impl MacroRecorder {
+    /// Creates a new, uninitialized instance with default settings.
     pub fn new() -> Self {
         Self {
             state: RecordingState::Idle,
@@ -150,6 +152,7 @@ pub struct MacroPlayer {
 }
 
 impl MacroPlayer {
+    /// Creates a new, uninitialized instance with default settings.
     pub fn new() -> Self {
         Self {
             state: PlaybackState::Idle,

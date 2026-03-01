@@ -12,7 +12,9 @@ use super::triggers::{MidiTrigger, OscTrigger, TimeTrigger};
 /// A cue stores a complete snapshot of project state
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Cue {
+    /// Unique identifier for this entity.
     pub id: u32,
+    /// Human-readable display name.
     pub name: String,
     pub description: String,
 
@@ -36,10 +38,14 @@ pub struct Cue {
 /// Snapshot of a layer's state
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LayerState {
+    /// Global opacity multiplier (0.0 to 1.0).
     pub opacity: f32,
     pub visible: bool,
+    /// 3D position coordinates [x, y, z].
     pub position: (f32, f32),
+    /// Rotation angles in degrees.
     pub rotation: f32,
+    /// Scale factors for the object's dimensions.
     pub scale: f32,
 }
 

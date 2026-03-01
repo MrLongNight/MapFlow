@@ -575,18 +575,30 @@ impl Default for LutManager {
 pub enum LutError {
     /// File I/O error
     #[error("IO error: {0}")]
+    /// Error: IO error.
+    /// Error: IO error.
+    /// Error: IO error.
     IoError(String),
 
     /// File parsing error
     #[error("Parse error: {0}")]
+    /// Error: Parse error.
+    /// Error: Parse error.
+    /// Error: Parse error.
     ParseError(String),
 
     /// Invalid LUT dimension
     #[error("Invalid LUT size: {0}")]
+    /// Error: Invalid LUT size.
+    /// Error: Invalid LUT size.
+    /// Error: Invalid LUT size.
     InvalidSize(usize),
 
     /// LUT file or entry not found
     #[error("LUT not found")]
+    /// Error: LUT not found.
+    /// Error: LUT not found.
+    /// Error: LUT not found.
     NotFound,
 }
 

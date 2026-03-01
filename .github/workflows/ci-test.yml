@@ -1,0 +1,13 @@
+name: "CI Test"
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: "Minimal Test"
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Hello World"

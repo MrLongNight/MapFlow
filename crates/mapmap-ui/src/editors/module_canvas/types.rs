@@ -11,6 +11,7 @@ pub struct SocketInfo {
     pub socket_idx: usize,
     pub is_output: bool,
     pub socket_type: ModuleSocketType,
+    /// 3D position coordinates [x, y, z].
     pub position: Pos2,
 }
 
@@ -24,6 +25,7 @@ pub type PresetConnection = (usize, usize, usize, usize); // from_idx, from_sock
 /// A saved module preset/template
 #[derive(Debug, Clone)]
 pub struct ModulePreset {
+    /// Human-readable display name.
     pub name: String,
     pub parts: Vec<PresetPart>,
     pub connections: Vec<PresetConnection>,
@@ -104,6 +106,7 @@ pub struct MyValueType;
 
 #[derive(Clone, Debug)]
 pub struct MyNodeTemplate {
+    /// User-friendly name for identifying the element.
     pub label: String,
     pub part_type_variant: String,
 }

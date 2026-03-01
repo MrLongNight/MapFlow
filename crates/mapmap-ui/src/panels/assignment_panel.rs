@@ -8,6 +8,7 @@ pub struct AssignmentPanel {
 }
 
 impl AssignmentPanel {
+    /// Creates a new, uninitialized instance with default settings.
     pub fn new() -> Self {
         Self { visible: true }
     }

@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 /// DMX fixture profile defining channel layout
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FixtureProfile {
+    /// Human-readable display name.
     pub name: String,
     pub manufacturer: String,
     pub channels: Vec<FixtureChannel>,
@@ -13,6 +14,7 @@ pub struct FixtureProfile {
 /// A channel in a fixture profile
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FixtureChannel {
+    /// Human-readable display name.
     pub name: String,
     pub channel_type: ChannelType,
     pub default_value: u8,
@@ -144,7 +146,9 @@ impl FixtureProfile {
 /// A fixture instance with a starting DMX address
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Fixture {
+    /// Unique identifier for this entity.
     pub id: u32,
+    /// Human-readable display name.
     pub name: String,
     pub profile: FixtureProfile,
     pub universe: u16,
