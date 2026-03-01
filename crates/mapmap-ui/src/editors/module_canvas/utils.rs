@@ -557,7 +557,7 @@ pub fn get_part_property_text(part_type: &ModulePartType) -> String {
         ModulePartType::Trigger(trigger_type) => match trigger_type {
             TriggerType::AudioFFT { band, .. } => format!("\u{1F50A} Audio: {:?}", band),
             TriggerType::Random { .. } => "\u{1F3B2} Random".to_string(),
-            TriggerType::Fixed { interval_ms, .. } => format!("⏱️ï¸  {}ms", interval_ms),
+            TriggerType::Fixed { interval_ms, .. } => format!("⏱️ {}ms", interval_ms),
             TriggerType::Midi { channel, note, .. } => {
                 format!("\u{1F3B9} Ch{} N{}", channel, note)
             }

@@ -47,7 +47,7 @@ pub fn render_diagnostics_popup(canvas: &mut ModuleCanvas, ui: &mut Ui) {
                         for issue in &canvas.diagnostic_issues {
                             let (icon, color) = match issue.severity {
                                 mapmap_core::diagnostics::IssueSeverity::Error => {
-                                    ("â Œ", Color32::RED)
+                                    ("❌", Color32::RED)
                                 }
                                 mapmap_core::diagnostics::IssueSeverity::Warning => {
                                     ("\u{26A0}", Color32::YELLOW)
