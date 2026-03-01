@@ -1,3 +1,7 @@
+//!
+//! Global module data.
+//!
+
 use crate::module::types::connection::ModuleConnection;
 use crate::module::types::hue::HueNodeType;
 use crate::module::types::layer::LayerType;

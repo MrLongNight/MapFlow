@@ -1,3 +1,7 @@
+//!
+//! Connection handling and definition.
+//!
+
 use crate::module::types::module::ModulePartId;
 use serde::{Deserialize, Serialize};
 
