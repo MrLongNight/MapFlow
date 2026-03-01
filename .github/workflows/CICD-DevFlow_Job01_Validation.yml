@@ -1,4 +1,4 @@
-name: "Build & Quality"
+name: "CICD-DevFlow: Job01 Validation"
 
 # ═══════════════════════════════════════════════════════════════
 # WICHTIG: Dieser Workflow läuft automatisch bei jedem Pull Request
@@ -281,13 +281,26 @@ jobs:
           echo "build_linux=${{ needs.build-linux.result }}"
           echo "build_windows=${{ needs.build-windows.result }}"
 
-          if [ "${{ needs.quality.result }}" != "success" ] || \
-             [ "${{ needs.security.result }}" != "success" ] || \
-             [ "${{ needs.build-linux.result }}" != "success" ] || \
-             [ "${{ needs.build-windows.result }}" != "success" ]; then
-            echo "::error::One or more required jobs failed or were skipped."
+          # REQUIRED JOBS must be 'success'
+          if [ "${{ needs.quality.result }}" != "success" ]; then
+            echo "::error::Quality Gate failed."
             exit 1
           fi
+          if [ "${{ needs.security.result }}" != "success" ]; then
+            echo "::error::Security Scan failed."
+            exit 1
+          fi
+          if [ "${{ needs.build-linux.result }}" != "success" ]; then
+            echo "::error::Linux build failed."
+            exit 1
+          fi
+          
+          # OPTIONAL/CONDITIONAL JOBS must not be 'failure' (skipped is OK)
+          if [ "${{ needs.build-windows.result }}" == "failure" ]; then
+            echo "::error::Windows build failed."
+            exit 1
+          fi
+          
           echo "✅ All Validation Checks Passed"
 
       - name: Notify Jules on Failure
