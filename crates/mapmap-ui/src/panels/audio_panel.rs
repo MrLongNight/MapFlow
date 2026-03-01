@@ -67,7 +67,8 @@ impl AudioPanel {
                         egui::vec2(ui.available_width(), height),
                         Sense::hover(),
                     );
-                    ui.painter().rect_filled(rect, egui::CornerRadius::ZERO, colors::DARKER_GREY);
+                    ui.painter()
+                        .rect_filled(rect, egui::CornerRadius::ZERO, colors::DARKER_GREY);
                     ui.painter().rect_stroke(
                         rect,
                         egui::CornerRadius::ZERO,

@@ -281,16 +281,18 @@ impl Drop for FramePipeline {
     }
 }
 
+use std::collections::VecDeque;
+
 /// Frame scheduler for prioritizing frames
 pub struct FrameScheduler {
-    frames: Vec<PipelineFrame>,
+    frames: VecDeque<PipelineFrame>,
     max_frames: usize,
 }
 
 impl FrameScheduler {
     pub fn new(max_frames: usize) -> Self {
         Self {
-            frames: Vec::with_capacity(max_frames),
+            frames: VecDeque::with_capacity(max_frames),
             max_frames,
         }
     }
@@ -310,17 +312,15 @@ impl FrameScheduler {
             }
         }
 
-        self.frames.push(frame);
-        self.frames.sort_by_key(|f| std::cmp::Reverse(f.priority));
+        self.frames.push_back(frame);
+        self.frames
+            .make_contiguous()
+            .sort_by_key(|f| std::cmp::Reverse(f.priority));
     }
 
     /// Get the highest priority frame
     pub fn pop(&mut self) -> Option<PipelineFrame> {
-        if self.frames.is_empty() {
-            None
-        } else {
-            Some(self.frames.remove(0))
-        }
+        self.frames.pop_front()
     }
 
     /// Get number of queued frames
