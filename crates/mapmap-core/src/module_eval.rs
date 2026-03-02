@@ -840,7 +840,9 @@ impl ModuleEvaluator {
                                         scale[2] = val;
                                     }
                                     (
-                                        SourceCommand::Bevy3DModel { position, scale, .. },
+                                        SourceCommand::Bevy3DModel {
+                                            position, scale, ..
+                                        },
                                         crate::module::TriggerTarget::Param(param_name),
                                     ) => {
                                         match param_name.as_str() {
@@ -2000,7 +2002,6 @@ mod tests_coverage {
         MapFlowModule, ModulePartType, SourceType, TriggerConfig, TriggerMappingMode,
         TriggerTarget, TriggerType,
     };
-
 
     fn create_test_module() -> MapFlowModule {
         MapFlowModule {

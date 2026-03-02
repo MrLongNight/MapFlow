@@ -4,8 +4,8 @@ use crate::app::core::app_struct::App;
 use crate::app::ui_layout;
 use anyhow::Result;
 use mapmap_core::effects::{Effect, EffectChain, EffectType as ChainEffectType};
-use mapmap_core::module::{EffectType as ModEffectType, ModulizerType};
 use mapmap_core::module::OutputType::Projector;
+use mapmap_core::module::{EffectType as ModEffectType, ModulizerType};
 use mapmap_core::OutputId;
 #[cfg(feature = "ndi")]
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -436,8 +436,10 @@ fn render_content(
             if !op.effects.is_empty() {
                 let effect_chain = build_effect_chain(&op.effects);
                 if !effect_chain.effects.is_empty() {
-                    let output_texture_name =
-                        format!("effect_tmp_output_{}_layer_{}", real_output_id, op.layer_part_id);
+                    let output_texture_name = format!(
+                        "effect_tmp_output_{}_layer_{}",
+                        real_output_id, op.layer_part_id
+                    );
                     let effect_width = 1024;
                     let effect_height = 1024;
                     ctx.texture_pool.ensure_texture(
@@ -753,7 +755,6 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
         }
     }
 }
-
 
 fn build_effect_chain(modulizers: &[ModulizerType]) -> EffectChain {
     let mut chain = EffectChain::new();
