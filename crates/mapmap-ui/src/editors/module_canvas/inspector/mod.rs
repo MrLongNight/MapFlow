@@ -87,7 +87,7 @@ pub fn render_inspector_for_part(
                             ui.separator();
                             ui.label("\u{1F4E4} Output Configuration:");
                             ui.checkbox(&mut output_config.beat_output, "🥁 Beat Detection");
-                            ui.checkbox(&mut output_config.bpm_output, "⏱️ï¸  BPM");
+                            ui.checkbox(&mut output_config.bpm_output, "⏱️ BPM");
                             ui.checkbox(&mut output_config.volume_outputs, "\u{1F4CA} Volume (RMS, Peak)");
                             ui.checkbox(&mut output_config.frequency_bands, "\u{1F3B5} Frequency Bands (9)");
 
@@ -111,7 +111,7 @@ pub fn render_inspector_for_part(
                                     toggle_invert(ui, "Beat Out", "🥁 Beat Out");
                                 }
                                 if output_config.bpm_output {
-                                    toggle_invert(ui, "BPM Out", "⏱️ï¸  BPM Out");
+                                    toggle_invert(ui, "BPM Out", "⏱️ BPM Out");
                                 }
                                 if output_config.volume_outputs {
                                     toggle_invert(ui, "RMS Volume", "\u{1F4CA} RMS Volume");
@@ -159,7 +159,7 @@ pub fn render_inspector_for_part(
                             offset_ms,
                             ..
                         } => {
-                            ui.label("⏱️ï¸  Fixed Timer");
+                            ui.label("⏱️ Fixed Timer");
                             ui.add(
                                 egui::Slider::new(interval_ms, 16..=10000)
                                     .text("Interval (ms)"),
@@ -452,7 +452,7 @@ pub fn render_inspector_for_part(
                             // === VIDEO OPTIONS ===
                             ui.collapsing("\u{1F3AC} Video Options", |ui| {
                                 let mut reverse = *reverse_playback;
-                                if ui.checkbox(&mut reverse, "â ª Reverse Playback").changed() {
+                                if ui.checkbox(&mut reverse, "⏪ Reverse Playback").changed() {
                                     actions.push(crate::UIAction::MediaCommand(part_id, MediaPlaybackCommand::SetReverse(reverse)));
                                 }
 
@@ -677,7 +677,7 @@ pub fn render_inspector_for_part(
                                         if ui
                                             .selectable_label(
                                                 source_name.is_none(),
-                                                "â Œ None (Disconnect)",
+                                                "❌ None (Disconnect)",
                                             )
                                             .clicked()
                                         {
@@ -1429,7 +1429,7 @@ pub fn render_inspector_for_part(
                             ndi_stream_name: _ndi_stream_name,
                             ..
                         } => {
-                            ui.label("📽️ï¸  Projector Output");
+                            ui.label("📽️ Projector Output");
 
                             // Output ID selection
                             ui.horizontal(|ui| {
@@ -1443,7 +1443,7 @@ pub fn render_inspector_for_part(
                             });
 
                             ui.separator();
-                            ui.label("🖥️ï¸  Window Settings:");
+                            ui.label("🖥️ Window Settings:");
 
                             // Target screen selection
                             ui.horizontal(|ui| {
@@ -1460,10 +1460,10 @@ pub fn render_inspector_for_part(
                                     });
                             });
 
-                            ui.checkbox(hide_cursor, "🖱️ï¸  Hide Mouse Cursor");
+                            ui.checkbox(hide_cursor, "🖱️ Hide Mouse Cursor");
 
                             ui.separator();
-                            ui.label("👁️ï¸  Preview:");
+                            ui.label("👁️ Preview:");
                             ui.checkbox(show_in_preview_panel, "Show in Preview Panel");
                             ui.checkbox(extra_preview_window, "Extra Preview Window");
 
@@ -1519,7 +1519,7 @@ pub fn render_inspector_for_part(
                             ui.separator();
 
                             // --- Tabs for Hue configuration ---
-                            ui.collapsing("âš™ï¸  Setup (Bridge & Pairing)", |ui| {
+                            ui.collapsing("⚙️ Setup (Bridge & Pairing)", |ui| {
                                 // Discovery status
                                 if let Some(msg) = &canvas.hue_status_message {
                                     ui.label(format!("Status: {}", msg));
@@ -1567,7 +1567,7 @@ pub fn render_inspector_for_part(
                                     ui.label("\u{2705} Paired");
                                     // ui.label(format!("User: {}", username)); // Keep secret?
                                 } else {
-                                    ui.label("â Œ Not Paired");
+                                    ui.label("❌ Not Paired");
                                 }
                             });
 
@@ -1584,7 +1584,7 @@ pub fn render_inspector_for_part(
                             });
 
                             if *mapping_mode == HueMappingMode::Spatial {
-                                ui.collapsing("🗺️ï¸  Spatial Editor", |ui| {
+                                ui.collapsing("🗺️ Spatial Editor", |ui| {
                                     ui.label("Position lamps in the virtual room:");
                                     // Render 2D room editor
                                     mesh::render_hue_spatial_editor(ui, lamp_positions);
@@ -2036,7 +2036,7 @@ fn render_transport_controls(
         }
 
         // PAUSE (Secondary Action - Yellow)
-        let pause_btn = egui::Button::new(egui::RichText::new("â ¸").size(24.0))
+        let pause_btn = egui::Button::new(egui::RichText::new("⏸").size(24.0))
             .min_size(big_btn_size)
             .fill(if !is_playing && current_pos > 0.1 {
                 Color32::from_rgb(200, 160, 40)
@@ -2056,7 +2056,7 @@ fn render_transport_controls(
 
         // STOP (Destructive Action - Separated)
         // Mary StyleUX: Use hold-to-confirm for safety
-        if crate::widgets::hold_to_action_button(ui, "â ¹", Color32::from_rgb(255, 80, 80)) {
+        if crate::widgets::hold_to_action_button(ui, "⏹", Color32::from_rgb(255, 80, 80)) {
             canvas
                 .pending_playback_commands
                 .push((part_id, MediaPlaybackCommand::Stop));
@@ -2091,7 +2091,7 @@ fn render_transport_controls(
         };
         if ui
             .add(
-                egui::Button::new(egui::RichText::new("â ª").size(18.0))
+                egui::Button::new(egui::RichText::new("⏪").size(18.0))
                     .min_size(small_btn_size)
                     .fill(rev_color),
             )
