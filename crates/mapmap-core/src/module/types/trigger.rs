@@ -37,6 +37,12 @@ pub enum TriggerTarget {
     FlipH,
     /// Enumeration variant.
     FlipV,
+    /// Particle emission rate.
+    ParticleRate,
+    /// 3D Position mapping.
+    Position3D,
+    /// 3D Scale mapping.
+    Scale3D,
     /// Specific Effect Parameter (by name)
     Param(String),
 }

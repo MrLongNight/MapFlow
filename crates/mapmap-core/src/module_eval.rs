@@ -6,13 +6,15 @@
 use crate::audio::analyzer_v2::AudioAnalysisV2;
 use crate::audio_reactive::AudioTriggerData;
 use crate::module::{
-    BlendModeType, LayerType, LinkBehavior, LinkMode, MapFlowModule, MaskType, MeshType,
+    BlendModeType, LayerType, LinkBehavior, MapFlowModule, MaskType, MeshType,
     ModulePartId, ModulePartType, ModulizerType, OutputType, SharedMediaState, SourceType,
     TriggerType,
 };
 use rand::RngExt;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use crate::module::LinkMode;
+
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -94,7 +96,7 @@ mod tests_evaluator {
     use super::*;
     use crate::audio::analyzer_v2::AudioAnalysisV2;
     use crate::module::{
-        AudioTriggerOutputConfig, LinkMode, MapFlowModule, ModulePartType, SourceType, TriggerType,
+        AudioTriggerOutputConfig, MapFlowModule, ModulePartType, SourceType, TriggerType,
     };
     use std::time::Duration;
 
@@ -803,45 +805,63 @@ impl ModuleEvaluator {
         }
 
         // Step 6: Generate source commands
+        let socket_inputs = self.compute_socket_inputs(module, &self.cached_result.trigger_values);
+
         for part in &module.parts {
             if let ModulePartType::Source(source_type) = &part.part_type {
                 // Default to 1.0 (playing) so media files play even if no trigger is attached
                 let trigger_value = trigger_inputs.get(&part.id).copied().unwrap_or(1.0);
-
-                // Also get socket inputs for trigger targets that might modify source params
-                let socket_inputs = self.compute_socket_inputs(module, &self.cached_result.trigger_values);
-                let part_socket_inputs = socket_inputs.get(&part.id);
-
-                // Create the base source command
                 if let Some(mut cmd) =
                     self.create_source_command(source_type, trigger_value, shared_state)
                 {
-                    // Apply parameter modifications from triggers (e.g., Bevy models)
-                    if let Some(inputs) = part_socket_inputs {
-                        for (socket_id, target_config) in &part.trigger_targets {
-                            if let Some(&input_val) = inputs.get(socket_id) {
-                                let mapped_val = target_config.apply(input_val);
-                                // This is currently hardcoded for Bevy3DModel in tests, let's inject it into the command
-                                match &mut cmd {
-                                    SourceCommand::Bevy3DModel { position, scale, .. } => {
-                                        if let crate::module::TriggerTarget::Param(param_name) = &target_config.target {
-                                            match param_name.as_str() {
-                                                "pos_x" => position[0] = mapped_val,
-                                                "pos_y" => position[1] = mapped_val,
-                                                "pos_z" => position[2] = mapped_val,
-                                                "scale_x" => scale[0] = mapped_val,
-                                                "scale_y" => scale[1] = mapped_val,
-                                                "scale_z" => scale[2] = mapped_val,
-                                                _ => {}
-                                            }
+                    // Apply extra triggers (Position3D, Scale3D, Param(name), etc.)
+                    for (socket_idx, config) in &part.trigger_targets {
+                        if let Some(socket_vals) = socket_inputs.get(&part.id) {
+                            if let Some(&raw_val) = socket_vals.get(socket_idx) {
+                                let raw_final_val = config.apply(raw_val);
+                                let val = self.apply_smoothing(
+                                    part.id,
+                                    *socket_idx,
+                                    raw_final_val,
+                                    &config.mode,
+                                );
+
+                                match (&mut cmd, &config.target) {
+                                    (
+                                        SourceCommand::Bevy3DModel { position, .. },
+                                        crate::module::TriggerTarget::Position3D,
+                                    ) => {
+                                        position[0] = val;
+                                        position[1] = val;
+                                        position[2] = val;
+                                    }
+                                    (
+                                        SourceCommand::Bevy3DModel { scale, .. },
+                                        crate::module::TriggerTarget::Scale3D,
+                                    ) => {
+                                        scale[0] = val;
+                                        scale[1] = val;
+                                        scale[2] = val;
+                                    }
+                                    (
+                                        SourceCommand::Bevy3DModel { position, scale, .. },
+                                        crate::module::TriggerTarget::Param(param_name),
+                                    ) => {
+                                        match param_name.as_str() {
+                                            "pos_x" => position[0] = val,
+                                            "pos_y" => position[1] = val,
+                                            "pos_z" => position[2] = val,
+                                            "scale_x" => scale[0] = val,
+                                            "scale_y" => scale[1] = val,
+                                            "scale_z" => scale[2] = val,
+                                            _ => {}
                                         }
-                                    },
-                                    _ => {} // Other command types
+                                    }
+                                    _ => {}
                                 }
                             }
                         }
                     }
-
                     self.cached_result.source_commands.insert(part.id, cmd);
                 }
             }
@@ -1635,7 +1655,7 @@ mod tests_logic {
         AudioBand, AudioTriggerOutputConfig, MapFlowModule, ModuleConnection, ModulePart,
         ModulePartType, ModulePlaybackMode, SourceType, TriggerType,
     };
-    use std::collections::HashMap;
+
     use std::time::{Duration, Instant};
 
     fn create_audio_data(beat: bool) -> AudioTriggerData {
@@ -1970,10 +1990,10 @@ mod tests_logic {
 mod tests_coverage {
     use super::*;
     use crate::module::{
-        LinkMode, MapFlowModule, ModulePartType, SourceType, TriggerConfig, TriggerMappingMode,
+        MapFlowModule, ModulePartType, SourceType, TriggerConfig, TriggerMappingMode,
         TriggerTarget, TriggerType,
     };
-    use std::collections::HashMap;
+
 
     fn create_test_module() -> MapFlowModule {
         MapFlowModule {
