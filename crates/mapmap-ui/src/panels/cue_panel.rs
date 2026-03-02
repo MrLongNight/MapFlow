@@ -298,18 +298,25 @@ impl CuePanel {
                             changed = true;
                         }
                     });
-
-                    // Optional OSC value payload to send
                     ui.horizontal(|ui| {
-                        ui.label("Value (optional):");
-                        let mut val_str = osc_trigger.value.clone().unwrap_or_default();
-                        if ui.text_edit_singleline(&mut val_str).changed() {
-                            if val_str.is_empty() {
-                                osc_trigger.value = None;
-                            } else {
-                                osc_trigger.value = Some(val_str);
-                            }
+                        let mut has_value = osc_trigger.value.is_some();
+                        if ui
+                            .checkbox(&mut has_value, i18n.t("check-osc-value"))
+                            .changed()
+                        {
                             changed = true;
+                            if has_value {
+                                osc_trigger.value = Some(String::new());
+                            } else {
+                                osc_trigger.value = None;
+                            }
+                        }
+
+                        if let Some(val) = &mut osc_trigger.value {
+                            ui.label(i18n.t("label-osc-value"));
+                            if ui.text_edit_singleline(val).changed() {
+                                changed = true;
+                            }
                         }
                     });
                 }

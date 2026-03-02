@@ -32,8 +32,6 @@ MapFlow unterstützt MIDI-Eingabe für:
 ✅ Controller Overlay zeigt MIDI-Werte in Echtzeit
 
 ### Was noch fehlt:
-❌ Mixer-Foto als Hintergrund im Controller Overlay
-❌ Asset-Bilder für Knobs/Fader (nur geometrische Formen aktuell)
 ❌ MIDI-zu-Layer/Effect Routing (direkte Parametersteuerung)
 
 ---
@@ -193,49 +191,22 @@ Ein **visuelles Fenster**, das den MIDI-Controller (z.B. Ecler NUO 4) darstellt 
 
 ### Aktueller Status
 
-⚠️ **NICHT VOLLSTÄNDIG IMPLEMENTIERT**
-
-Das Controller Overlay zeigt aktuell:
-- Geometrische Formen (Kreise für Knobs, Rechtecke für Fader)
-- Keine Mixer-Foto als Hintergrund
-- Keine benutzerdefinierten Assets
+Das Controller Overlay zeigt:
+- Mixer-Foto als Hintergrund (z.B. Ecler NUO 4)
+- Asset-Bilder für Knobs, Fader und Buttons
 
 ### Schritt 1: Overlay öffnen
 
-Das Overlay wird über `controller_overlay.show(ctx)` aufgerufen.
-Aktuell gibt es **keinen Menüpunkt** dafür.
-
-### Was fehlt:
-
-1. **Mixer-Foto** als Hintergrund:
-   - Datei `resources/controllers/ecler_nuo4/background.png` fehlt
-   - Code zum Laden/Anzeigen fehlt in `draw_controller()`
-
-2. **Asset-Bilder** für Elemente:
-   - JSON referenziert `nuo4_eq_knob.png`, `nuo4_fader_cap.png`, etc.
-   - Diese Dateien existieren nicht in `resources/controllers/ecler_nuo4/`
-   - Code verwendet stattdessen `draw_knob()`, `draw_fader()` (geometrisch)
-
-3. **Menüpunkt** zum Öffnen:
-   - Aktuell nur programmatisch aufrufbar
-   - Sollte in View-Menü oder Toolbar sein
+Das Overlay kann über das Menü **View** → **MIDI Controller Overlay** (oder das entsprechende Icon in der Menüleiste) ein- und ausgeblendet werden.
 
 ---
 
 ## Bekannte Probleme & TODOs
 
-### 🔴 Kritisch
-
-| Problem | Lösung |
-|---------|--------|
-| Controller Overlay hat kein Menüpunkt | UI-Button in Toolbar/View-Menü hinzufügen |
-| Kein Mixer-Foto als Hintergrund | Bild hinzufügen + Code in `draw_controller()` |
-
 ### 🟡 Medium
 
 | Problem | Lösung |
 |---------|--------|
-| Asset-Bilder fehlen | PNGs erstellen/extrahieren |
 | MIDI Learn nur für Trigger-Nodes | Erweitern auf alle Parameter |
 
 ### 🟢 Low Priority
@@ -304,7 +275,4 @@ pub struct MidiInputHandler {
 
 ## Nächste Schritte
 
-1. ⬜ **Controller Overlay Menüpunkt** hinzufügen
-2. ⬜ **Mixer-Foto** als Hintergrund laden
-3. ⬜ **Asset-Bilder** für Knobs/Fader erstellen
-4. ⬜ **MIDI Learn** auf alle Parameter erweitern
+1. ⬜ **MIDI Learn** auf alle Parameter erweitern

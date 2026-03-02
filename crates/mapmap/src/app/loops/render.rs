@@ -3,6 +3,8 @@
 use crate::app::core::app_struct::App;
 use crate::app::ui_layout;
 use anyhow::Result;
+use mapmap_core::effects::{Effect, EffectChain, EffectType as ChainEffectType};
+use mapmap_core::module::{EffectType as ModEffectType, ModulizerType};
 use mapmap_core::module::OutputType::Projector;
 use mapmap_core::OutputId;
 #[cfg(feature = "ndi")]
@@ -74,12 +76,6 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
             ui_layout::show(ctx, app);
         });
 
-        // Temporarily take the renderer out of App to avoid lifetime issues with App
-        // This is safe because we're the only ones using it right now.
-        let mut egui_renderer = std::mem::replace(&mut app.egui_renderer,
-            unsafe { std::mem::zeroed() } // DANGEROUS, but we'll put it back
-        );
-
         // 3. Handle Output (Requires another short-lived borrow of window)
         {
             let window_context = app.window_manager.get(0).unwrap();
@@ -130,6 +126,9 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
                 edge_blend_renderer: &app.edge_blend_renderer,
                 color_calibration_renderer: &app.color_calibration_renderer,
                 mesh_renderer: &mut app.mesh_renderer,
+                effect_chain_renderer: &mut app.effect_chain_renderer,
+                preview_effect_chain_renderer: &mut app.preview_effect_chain_renderer,
+                shader_graph_manager: &app.shader_graph_manager,
                 texture_pool: &app.texture_pool,
                 _dummy_view: &app.dummy_view,
                 mesh_buffer_cache: &mut app.mesh_buffer_cache,
@@ -286,6 +285,9 @@ struct RenderContext<'a> {
     edge_blend_renderer: &'a Option<mapmap_render::EdgeBlendRenderer>,
     color_calibration_renderer: &'a Option<mapmap_render::ColorCalibrationRenderer>,
     mesh_renderer: &'a mut mapmap_render::MeshRenderer,
+    effect_chain_renderer: &'a mut mapmap_render::EffectChainRenderer,
+    preview_effect_chain_renderer: &'a mut mapmap_render::EffectChainRenderer,
+    shader_graph_manager: &'a mapmap_render::ShaderGraphManager,
     texture_pool: &'a mapmap_render::TexturePool,
     _dummy_view: &'a Option<std::sync::Arc<wgpu::TextureView>>,
     mesh_buffer_cache: &'a mut mapmap_render::MeshBufferCache,
@@ -309,6 +311,7 @@ fn render_content(
     let egui_renderer = ctx.egui_renderer;
 
     const PREVIEW_FLAG: u64 = 1u64 << 63;
+    let is_preview_output = (output_id & PREVIEW_FLAG) != 0;
     let real_output_id = output_id & !PREVIEW_FLAG;
 
     let mut target_ops: Vec<(u64, mapmap_core::module_eval::RenderOp)> = ctx
@@ -428,6 +431,54 @@ fn render_content(
         };
 
         if let Some(src_ref) = source_view {
+            let mut final_source_view = src_ref.clone();
+
+            if !op.effects.is_empty() {
+                let effect_chain = build_effect_chain(&op.effects);
+                if !effect_chain.effects.is_empty() {
+                    let output_texture_name =
+                        format!("effect_tmp_output_{}_layer_{}", real_output_id, op.layer_part_id);
+                    let effect_width = 1024;
+                    let effect_height = 1024;
+                    ctx.texture_pool.ensure_texture(
+                        &output_texture_name,
+                        effect_width,
+                        effect_height,
+                        wgpu::TextureFormat::Bgra8UnormSrgb,
+                        wgpu::TextureUsages::TEXTURE_BINDING
+                            | wgpu::TextureUsages::RENDER_ATTACHMENT
+                            | wgpu::TextureUsages::COPY_DST,
+                    );
+
+                    let output_effect_view = ctx.texture_pool.get_view(&output_texture_name);
+                    if is_preview_output {
+                        ctx.preview_effect_chain_renderer.apply_chain(
+                            encoder,
+                            &src_ref,
+                            &output_effect_view,
+                            &effect_chain,
+                            ctx.shader_graph_manager,
+                            0.0,
+                            effect_width,
+                            effect_height,
+                        );
+                    } else {
+                        ctx.effect_chain_renderer.apply_chain(
+                            encoder,
+                            &src_ref,
+                            &output_effect_view,
+                            &effect_chain,
+                            ctx.shader_graph_manager,
+                            0.0,
+                            effect_width,
+                            effect_height,
+                        );
+                    }
+
+                    final_source_view = output_effect_view;
+                }
+            }
+
             let transform = glam::Mat4::IDENTITY;
             let uniform_bind_group = mesh_renderer.get_uniform_bind_group_with_source_props(
                 queue,
@@ -441,7 +492,7 @@ fn render_content(
                 op.source_props.hue_shift,
             );
 
-            let texture_bind_group = mesh_renderer.get_texture_bind_group(&src_ref);
+            let texture_bind_group = mesh_renderer.get_texture_bind_group(&final_source_view);
             let (vb, ib, cnt) = ctx.mesh_buffer_cache.get_buffers(
                 device,
                 queue,
@@ -701,6 +752,63 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
             }
         }
     }
+}
+
+
+fn build_effect_chain(modulizers: &[ModulizerType]) -> EffectChain {
+    let mut chain = EffectChain::new();
+    let mut next_id = 1u64;
+
+    for modulizer in modulizers {
+        let ModulizerType::Effect {
+            effect_type,
+            params,
+        } = modulizer
+        else {
+            continue;
+        };
+
+        let Some(chain_effect_type) = map_effect_type(*effect_type) else {
+            continue;
+        };
+
+        let mut effect = Effect::new(next_id, chain_effect_type);
+        effect.parameters.extend(params.clone());
+        chain.effects.push(effect);
+        next_id += 1;
+    }
+
+    chain
+}
+
+fn map_effect_type(effect_type: ModEffectType) -> Option<ChainEffectType> {
+    Some(match effect_type {
+        ModEffectType::ShaderGraph(id) => ChainEffectType::ShaderGraph(id),
+        ModEffectType::Blur => ChainEffectType::Blur,
+        ModEffectType::Invert => ChainEffectType::Invert,
+        ModEffectType::HueShift => ChainEffectType::HueShift,
+        ModEffectType::Wave => ChainEffectType::Wave,
+        ModEffectType::Mirror => ChainEffectType::Mirror,
+        ModEffectType::Kaleidoscope => ChainEffectType::Kaleidoscope,
+        ModEffectType::Pixelate => ChainEffectType::Pixelate,
+        ModEffectType::EdgeDetect => ChainEffectType::EdgeDetect,
+        ModEffectType::Glitch => ChainEffectType::Glitch,
+        ModEffectType::RgbSplit => ChainEffectType::RgbSplit,
+        ModEffectType::ChromaticAberration => ChainEffectType::ChromaticAberration,
+        ModEffectType::FilmGrain => ChainEffectType::FilmGrain,
+        ModEffectType::Vignette => ChainEffectType::Vignette,
+        ModEffectType::Brightness
+        | ModEffectType::Contrast
+        | ModEffectType::Saturation
+        | ModEffectType::Colorize
+        | ModEffectType::Sharpen
+        | ModEffectType::Threshold
+        | ModEffectType::Spiral
+        | ModEffectType::Pinch
+        | ModEffectType::Halftone
+        | ModEffectType::Posterize
+        | ModEffectType::VHS => return None,
+    })
 }
 
 fn generate_grid_texture(width: u32, height: u32, layer_id: u64) -> Vec<u8> {

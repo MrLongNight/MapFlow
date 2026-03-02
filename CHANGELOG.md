@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- 2026-03-02: refactor(ui): Refactor module_canvas mod.rs into submodules (#886)
 - 2026-03-01: feat: Füge ein Codex-Setup-Skript hinzu und implementiere die Haupt-Render-Schleife der Anwendung. (#888)
 - 2026-03-01: feat: Implement core module graph evaluation, comprehensive UI inspector, MPV video decoding, and initial environment setup script. (#887)
 - 2026-03-01: feat(ui): Enforce sharp corners in AudioPanel visualizer (#882)

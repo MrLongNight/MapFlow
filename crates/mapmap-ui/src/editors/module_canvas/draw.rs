@@ -1132,7 +1132,7 @@ pub fn render_add_node_menu_content(
                 }));
                 ui.close();
             }
-            if ui.button("⏱️ï¸  Fixed Timer").clicked() {
+            if ui.button("⏱️ Fixed Timer").clicked() {
                 add_node(ModulePartType::Trigger(TriggerType::Fixed {
                     interval_ms: 1000,
                     offset_ms: 0,

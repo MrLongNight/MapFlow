@@ -22,20 +22,7 @@ Dieses Dokument dient der zentralen Erfassung von Architektur-Problemen, monolit
 ## 🎨 Feature-Lücken (Code vs. UI)
 *Diskrepanzen, bei denen das Backend existiert, aber die UI unvollständig ist.*
 
-### 📡 Konnektivität & Streaming
-- **NDI Support**: ✅ Funktional. `NdiSender` mit Async-Ringpuffer implementiert.
-- **MPV Decoder**: ✅ Behoben. Nutzt `libmpv2` für volle Videowiedergabe (keine grauen Frames mehr).
-- **Link System**: ✅ Integriert (PR #837). UI für Node-Verlinkung funktional.
-- **SRT Streaming**: `libsrt` Integration fehlt; Logik-Stubs vorhanden. (Status: 🔴)
-- **OSC Triggers**: UI-Felder für Cue-Trigger Mapping fehlen. (Status: 🟡)
-
-### 🎥 Medien & Rendering
-- **HAP Alpha**: YCoCg+A Unterstützung ist bei komplexen Dateien instabil. (Status: 🟡)
-- **LUT Support**: Core-Logik bereit; "LUT Effect" Node fehlt in der UI. (Status: 🔵)
-
-### 🧩 Node-Spezifische UI
-- **Bevy Controls**: UI-Labels für 3D/Particles sind "Not yet implemented". (Status: 🔴)
-- **Shader Graph**: Visuelle Verdrahtung für komplexe Mathe fehlt. (Status: 🟡)
+- **OSC Triggers**: ✅ Integriert (PR #905). UI-Felder für Cue-Trigger Mapping (Adresse und Wert) hinzugefügt.
 - **Philips Hue**: Pairing-Logik und Area-Selection sind Stubs. (Status: 🔴)
 
 ---

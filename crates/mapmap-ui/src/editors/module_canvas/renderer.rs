@@ -71,125 +71,7 @@ pub fn show(
         }
     }
 
-    egui::Frame::default()
-        .inner_margin(egui::Margin::symmetric(8, 6))
-        .fill(ui.visuals().panel_fill)
-        .show(ui, |ui| {
-            ui.horizontal(|ui| {
-                // --- Module Selector ---
-                let modules: Vec<(u64, String, [f32; 4])> = manager
-                    .modules()
-                    .iter()
-                    .map(|m| (m.id, m.name.clone(), m.color))
-                    .collect();
-
-                if !modules.is_empty() {
-                    let active_name = canvas
-                        .active_module_id
-                        .and_then(|id| modules.iter().find(|(mid, _, _)| *mid == id))
-                        .map(|(_, name, _)| name.clone())
-                        .unwrap_or_else(|| "Module wählen...".to_string());
-
-                    egui::ComboBox::from_id_salt("module_selector")
-                        .selected_text(format!("📦 {}", active_name))
-                        .show_ui(ui, |ui| {
-                            for (id, name, color) in &modules {
-                                let color32 = egui::Color32::from_rgba_premultiplied(
-                                    (color[0] * 255.0) as u8,
-                                    (color[1] * 255.0) as u8,
-                                    (color[2] * 255.0) as u8,
-                                    255,
-                                );
-                                let is_selected = canvas.active_module_id == Some(*id);
-                                let label =
-                                    egui::RichText::new(format!("● {}", name)).color(color32);
-                                if ui.selectable_label(is_selected, label).clicked() {
-                                    canvas.set_active_module(Some(*id));
-                                }
-                            }
-                        });
-                    ui.separator();
-                }
-
-                if ui
-                    .button(egui::RichText::new("➕ Neues Modul").strong())
-                    .clicked()
-                {
-                    let new_id = manager.create_module("New Module".to_string());
-                    canvas.set_active_module(Some(new_id));
-                }
-
-                ui.separator();
-
-                draw::render_add_node_menu_content(ui, manager, None, canvas.active_module_id);
-
-                ui.separator();
-
-                if ui.button("\u{1F4BE} Save Presets").clicked() {
-                    canvas.show_presets = true;
-                }
-
-                ui.separator();
-
-                if ui
-                    .button("\u{1F50D}")
-                    .on_hover_text("Search Nodes (Ctrl+F)")
-                    .clicked()
-                {
-                    canvas.show_search = !canvas.show_search;
-                }
-
-                if ui
-                    .button("\u{2714} Check")
-                    .on_hover_text("Check Module")
-                    .clicked()
-                {
-                    if let Some(module_id) = canvas.active_module_id {
-                        if let Some(module) = manager.get_module(module_id) {
-                            canvas.diagnostic_issues =
-                                mapmap_core::diagnostics::check_module_integrity(module);
-                            canvas.show_diagnostics = true;
-                        }
-                    }
-                }
-
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.horizontal(|ui| {
-                        if ui.button("Center").clicked() {
-                            canvas.pan_offset = Vec2::ZERO;
-                            canvas.zoom = 1.0;
-                        }
-                        if ui.button("\u{2795}").on_hover_text("Zoom In").clicked() {
-                            canvas.zoom = (canvas.zoom + 0.1).clamp(0.2, 3.0);
-                        }
-                        if ui.button("âˆ’").on_hover_text("Zoom Out").clicked() {
-                            canvas.zoom = (canvas.zoom - 0.1).clamp(0.2, 3.0);
-                        }
-                        ui.label("Zoom:");
-                    });
-                });
-            });
-        });
-
-    ui.add_space(1.0);
-    ui.separator();
-
     if let Some(module_id) = canvas.active_module_id {
-        egui::SidePanel::left("node_tools")
-            .resizable(true)
-            .default_width(180.0)
-            .show_inside(ui, |ui| {
-                ui.vertical(|ui| {
-                    ui.add_space(4.0);
-                    ui.heading("🛠 Werkzeuge");
-                    ui.separator();
-
-                    egui::ScrollArea::vertical().show(ui, |ui| {
-                        draw::render_add_node_menu_content(ui, manager, None, Some(module_id));
-                    });
-                });
-            });
-
         render_canvas(canvas, ui, manager, module_id, locale, actions);
     } else {
         ui.centered_and_justified(|ui| {
@@ -197,8 +79,8 @@ pub fn show(
                 ui.add_space(50.0);
                 ui.heading("🔧 Module Canvas");
                 ui.add_space(10.0);
-                ui.label("Click '\u{2795} New Module' to create a module.");
-                ui.label("Or select an existing module from the dropdown above.");
+                ui.label("Click '➕ New Module' to create a module.");
+                ui.label("Please select an existing module from the toolbar above.");
             });
         });
     }

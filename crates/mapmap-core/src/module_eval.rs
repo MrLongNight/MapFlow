@@ -5,15 +5,14 @@
 
 use crate::audio::analyzer_v2::AudioAnalysisV2;
 use crate::audio_reactive::AudioTriggerData;
+use crate::module::LinkMode;
 use crate::module::{
-    BlendModeType, LayerType, LinkBehavior, MapFlowModule, MaskType, MeshType,
-    ModulePartId, ModulePartType, ModulizerType, OutputType, SharedMediaState, SourceType,
-    TriggerType,
+    BlendModeType, LayerType, LinkBehavior, MapFlowModule, MaskType, MeshType, ModulePartId,
+    ModulePartType, ModulizerType, OutputType, SharedMediaState, SourceType, TriggerType,
 };
 use rand::RngExt;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use crate::module::LinkMode;
 
 use std::sync::Arc;
 use std::time::Instant;
@@ -227,11 +226,7 @@ mod tests_evaluator {
         module.remove_connection(t_id, 0, s_id, 0);
         let result = evaluator.evaluate(&module, &shared, 1);
 
-        // Since trigger_inputs map is built by evaluating connections,
-        // when the connection is removed, `trigger_inputs` will not contain the part ID.
-        // In the evaluate function, `trigger_inputs.get(&part.id).copied().unwrap_or(1.0)`
-        // defaults to 1.0. This means the source is active by default when not connected.
-        // Therefore, we should expect the command to be present.
+        // A disconnected source defaults to trigger = 1.0, so it SHOULD generate a SourceCommand
         assert!(result.source_commands.contains_key(&s_id));
     }
 
@@ -1994,7 +1989,6 @@ mod tests_coverage {
         TriggerTarget, TriggerType,
     };
 
-
     fn create_test_module() -> MapFlowModule {
         MapFlowModule {
             id: 1,
@@ -2134,8 +2128,8 @@ mod tests_coverage {
             op.source_props.rotation, 90.0,
             "Rotation should be mapped 1.0 -> 90.0"
         );
-        assert_eq!(
-            op.source_props.flip_horizontal, true,
+        assert!(
+            op.source_props.flip_horizontal,
             "FlipH should be true (1.0 > 0.5)"
         );
     }

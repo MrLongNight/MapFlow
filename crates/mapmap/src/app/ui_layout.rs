@@ -5,7 +5,10 @@ use mapmap_ui as ui;
 /// Renders the entire application UI layout using egui.
 pub fn show(ctx: &egui::Context, app: &mut App) {
     // 1. Top Panel: Dashboard / Global Controls
-    let _ = app.ui_state.dashboard.ui(ctx, &app.ui_state.i18n, app.ui_state.icon_manager.as_ref());
+    let _ = app
+        .ui_state
+        .dashboard
+        .ui(ctx, &app.ui_state.i18n, app.ui_state.icon_manager.as_ref());
 
     // 2. Left Panel: Media Browser
     if app.ui_state.show_media_browser {
@@ -13,7 +16,11 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
             .resizable(true)
             .default_width(280.0)
             .show(ctx, |ui_obj| {
-                let _ = app.ui_state.media_browser.ui(ui_obj, &app.ui_state.i18n, app.ui_state.icon_manager.as_ref());
+                let _ = app.ui_state.media_browser.ui(
+                    ui_obj,
+                    &app.ui_state.i18n,
+                    app.ui_state.icon_manager.as_ref(),
+                );
             });
     }
 
@@ -21,7 +28,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
     egui::SidePanel::right("right_panel")
         .resizable(true)
         .default_width(300.0)
-        .show(ctx, |ui_obj| {
+        .show(ctx, |_ui_obj| {
             // Transform and Edge Blend panels manage their own windows
             app.ui_state.transform_panel.render(ctx, &app.ui_state.i18n);
             app.ui_state.edge_blend_panel.show(ctx, &app.ui_state.i18n);
@@ -30,7 +37,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
                 ctx,
                 &app.ui_state.i18n,
                 app.ui_state.icon_manager.as_ref(),
-                Some(&mut app.recent_effect_configs)
+                Some(&mut app.recent_effect_configs),
             );
         });
 
@@ -41,7 +48,10 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
             .default_height(200.0)
             .show(ctx, |ui_obj| {
                 ui_obj.heading("Timeline");
-                let _ = app.ui_state.timeline_panel.ui(ui_obj, app.state.effect_animator_mut());
+                let _ = app
+                    .ui_state
+                    .timeline_panel
+                    .ui(ui_obj, app.state.effect_animator_mut());
             });
     }
 
@@ -109,14 +119,17 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
                     }
 
                     if let Some(module_id) = app.ui_state.module_canvas.active_module_id {
-                        ui_obj.menu_button(egui::RichText::new("➕ Hinzufügen").strong(), |ui_obj| {
-                            ui::editors::module_canvas::draw::render_add_node_menu_content(
-                                ui_obj,
-                                std::sync::Arc::make_mut(&mut app.state.module_manager),
-                                None,
-                                Some(module_id),
-                            );
-                        });
+                        ui_obj.menu_button(
+                            egui::RichText::new("➕ Hinzufügen").strong(),
+                            |ui_obj| {
+                                ui::editors::module_canvas::draw::render_add_node_menu_content(
+                                    ui_obj,
+                                    std::sync::Arc::make_mut(&mut app.state.module_manager),
+                                    None,
+                                    Some(module_id),
+                                );
+                            },
+                        );
                         ui_obj.separator();
                     }
 
@@ -137,20 +150,23 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
                         app.ui_state.module_canvas.set_active_module(Some(new_id));
                     }
 
-                    ui_obj.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui_obj| {
-                        if ui_obj.button("Zentrieren").clicked() {
-                            app.ui_state.module_canvas.pan_offset = egui::Vec2::ZERO;
-                            app.ui_state.module_canvas.zoom = 1.0;
-                        }
-                        ui_obj.label(format!("Zoom: {:.1}x", app.ui_state.module_canvas.zoom));
-                    });
+                    ui_obj.with_layout(
+                        egui::Layout::right_to_left(egui::Align::Center),
+                        |ui_obj| {
+                            if ui_obj.button("Zentrieren").clicked() {
+                                app.ui_state.module_canvas.pan_offset = egui::Vec2::ZERO;
+                                app.ui_state.module_canvas.zoom = 1.0;
+                            }
+                            ui_obj.label(format!("Zoom: {:.1}x", app.ui_state.module_canvas.zoom));
+                        },
+                    );
                 });
 
                 app.ui_state.module_canvas.show(
                     ui_obj,
                     std::sync::Arc::make_mut(&mut app.state.module_manager),
                     &app.ui_state.i18n,
-                    &mut app.ui_state.actions
+                    &mut app.ui_state.actions,
                 );
             } else {
                 ui_obj.centered_and_justified(|ui_obj| {
@@ -166,7 +182,10 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
         egui::Window::new(app.ui_state.i18n.t("panel-node-editor"))
             .open(&mut open)
             .show(ctx, |ui_obj| {
-                let _ = app.ui_state.node_editor_panel.ui(ui_obj, &app.ui_state.i18n);
+                let _ = app
+                    .ui_state
+                    .node_editor_panel
+                    .ui(ui_obj, &app.ui_state.i18n);
             });
         app.ui_state.show_shader_graph = open;
     }
@@ -190,9 +209,11 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
         ctx,
         app.ui_state.show_controller_overlay,
         false,
-        &mut app.ui_state.user_config
+        &mut app.ui_state.user_config,
     );
 
-    app.ui_state.assignment_panel.show(ctx, &app.state.assignment_manager);
+    app.ui_state
+        .assignment_panel
+        .show(ctx, &app.state.assignment_manager);
     app.ui_state.shortcut_editor.show(ctx, &app.ui_state.i18n);
 }
