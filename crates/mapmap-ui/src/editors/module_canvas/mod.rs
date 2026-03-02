@@ -1,21 +1,26 @@
-use crate::i18n::LocaleManager;
-use crate::UIAction;
-use egui::Ui;
-use mapmap_core::module::{EffectType as ModuleEffectType, ModuleManager, ModulePartId};
-
+pub mod canvas_ui;
 pub mod controller;
 pub mod diagnostics;
 pub mod draw;
 pub mod geometry;
 pub mod inspector;
+pub mod interaction_logic;
 pub mod mesh;
+pub mod node_rendering;
 pub mod renderer;
 pub mod state;
 pub mod types;
 pub mod utils;
 
 pub use state::ModuleCanvas;
+
 use types::*;
+use egui::Ui;
+use mapmap_core::module::ModulePartId;
+use crate::app::manager::ModuleManager;
+use crate::app::locale::LocaleManager;
+use crate::app::commands::MediaPlaybackCommand;
+use crate::UIAction;
 
 impl ModuleCanvas {
     pub fn ensure_icons_loaded(&mut self, ctx: &egui::Context) {
@@ -52,7 +57,7 @@ impl ModuleCanvas {
     }
 
     pub fn set_default_effect_params(
-        effect_type: ModuleEffectType,
+        effect_type: mapmap_core::module::EffectType,
         params: &mut std::collections::HashMap<String, f32>,
     ) {
         inspector::set_default_effect_params(effect_type, params);

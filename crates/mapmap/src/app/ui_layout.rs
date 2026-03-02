@@ -28,7 +28,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
     egui::SidePanel::right("right_panel")
         .resizable(true)
         .default_width(300.0)
-        .show(ctx, |ui_obj| {
+        .show(ctx, |_ui_obj| {
             // Transform and Edge Blend panels manage their own windows
             app.ui_state.transform_panel.render(ctx, &app.ui_state.i18n);
             app.ui_state.edge_blend_panel.show(ctx, &app.ui_state.i18n);

@@ -57,7 +57,7 @@ pub fn cyber_list_item<R>(
         egui::Frame::default()
             .fill(bg_color)
             .stroke(stroke)
-            .corner_radius(0.0)
+            .corner_radius(egui::CornerRadius::ZERO)
             .inner_margin(4.0)
             .show(ui, |ui| {
                 // Ensure full width
