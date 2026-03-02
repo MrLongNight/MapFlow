@@ -92,5 +92,5 @@ jobs:
           if [ "${{ needs.quality.result }}" != "success" ]; then exit 1; fi
           if [ "${{ needs.security.result }}" != "success" ]; then exit 1; fi
           if [ "${{ needs.build-linux.result }}" != "success" ]; then exit 1; fi
-          if [ "${{ needs.build-windows.result }}" == "failure" ]; then exit 1; fi
+          if [ "${{ needs.build-windows.result }}" != "success" ] && [ "${{ needs.build-windows.result }}" != "skipped" ]; then exit 1; fi
           echo "✅ All Validation Checks Passed"

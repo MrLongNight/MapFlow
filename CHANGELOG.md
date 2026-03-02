@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Fixed failing `test_evaluator_propagation` in `mapmap-core` by correcting test connection logic.
     - Removed redundant `assert!(true)` in `module_eval.rs` to satisfy clippy.
     - Added support for `LoadLUT` effect type in render loop.
+    - Applied project-wide formatting via `cargo fmt` to satisfy CI Quality Gate.
+    - Removed `ffmpeg` from default features in `mapmap-media` to fix Windows CI build failures.
+    - Improved consistency of CI Validation Success job.
 - 2026-03-02: refactor(ui): Refactor module_canvas mod.rs into submodules (#886)
 - 2026-03-01: feat: Füge ein Codex-Setup-Skript hinzu und implementiere die Haupt-Render-Schleife der Anwendung. (#888)
 - 2026-03-01: feat: Implement core module graph evaluation, comprehensive UI inspector, MPV video decoding, and initial environment setup script. (#887)
