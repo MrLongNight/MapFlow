@@ -5,15 +5,14 @@
 
 use crate::audio::analyzer_v2::AudioAnalysisV2;
 use crate::audio_reactive::AudioTriggerData;
+use crate::module::LinkMode;
 use crate::module::{
-    BlendModeType, LayerType, LinkBehavior, MapFlowModule, MaskType, MeshType,
-    ModulePartId, ModulePartType, ModulizerType, OutputType, SharedMediaState, SourceType,
-    TriggerType,
+    BlendModeType, LayerType, LinkBehavior, MapFlowModule, MaskType, MeshType, ModulePartId,
+    ModulePartType, ModulizerType, OutputType, SharedMediaState, SourceType, TriggerType,
 };
 use rand::RngExt;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use crate::module::LinkMode;
 
 use std::sync::Arc;
 use std::time::Instant;
@@ -1973,7 +1972,6 @@ mod tests_coverage {
         MapFlowModule, ModulePartType, SourceType, TriggerConfig, TriggerMappingMode,
         TriggerTarget, TriggerType,
     };
-
 
     fn create_test_module() -> MapFlowModule {
         MapFlowModule {
