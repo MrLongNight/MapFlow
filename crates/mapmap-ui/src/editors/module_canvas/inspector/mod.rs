@@ -721,8 +721,29 @@ pub fn render_inspector_for_part(
                             }
                         }
                         #[cfg(not(feature = "ndi"))]
-                        SourceType::NdiInput { .. } => {
-                            ui.label("\u{1F4E1} NDI Input (Feature Disabled)");
+                        SourceType::NdiInput { source_name } => {
+                            ui.label("\u{1F4E1} NDI Input");
+
+                            // Simulated smart empty state when NDI is disabled
+                            if source_name.is_none() {
+                                ui.vertical_centered(|ui| {
+                                    ui.add_space(10.0);
+                                    let btn = ui.add_enabled(false, egui::Button::new("🔍 Discover Sources").min_size(egui::vec2(150.0, 30.0)));
+                                    btn.on_hover_text("NDI feature disabled in build");
+                                    ui.label(
+                                        egui::RichText::new("No NDI source selected")
+                                            .weak(),
+                                    );
+                                    ui.add_space(10.0);
+                                });
+                            } else {
+                                let display_name = source_name.clone().unwrap();
+                                ui.label(format!("Current: {}", display_name));
+                                ui.horizontal(|ui| {
+                                    ui.add_enabled(false, egui::Button::new("🔍 Discover Sources"))
+                                        .on_hover_text("NDI feature disabled in build");
+                                });
+                            }
                         }
                         #[cfg(target_os = "windows")]
                         SourceType::SpoutInput { sender_name } => {
@@ -1500,8 +1521,13 @@ pub fn render_inspector_for_part(
                             });
                         }
                         #[cfg(not(feature = "ndi"))]
-                        OutputType::NdiOutput { .. } => {
-                            ui.label("\u{1F4E1} NDI Output (Feature Disabled)");
+                        OutputType::NdiOutput { name } => {
+                            ui.label("\u{1F4E1} NDI Output");
+                            ui.horizontal(|ui| {
+                                ui.label("Stream Name:");
+                                ui.add_enabled(false, egui::TextEdit::singleline(name));
+                            });
+                            ui.label("NDI feature disabled in build");
                         }
                         #[cfg(target_os = "windows")]
                         OutputType::Spout { name } => {

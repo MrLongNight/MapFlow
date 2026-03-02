@@ -824,7 +824,7 @@ impl ModuleEvaluator {
                 if let Some(mut cmd) =
                     self.create_source_command(source_type, trigger_value, shared_state)
                 {
-                    // Apply extra triggers (Position3D, Scale3D, etc.)
+                    // Apply extra triggers (Position3D, Scale3D, Param(name), etc.)
                     for (socket_idx, config) in &part.trigger_targets {
                         if let Some(socket_vals) = socket_inputs.get(&part.id) {
                             if let Some(&raw_val) = socket_vals.get(socket_idx) {
@@ -2191,11 +2191,11 @@ mod tests_coverage {
 
         // Configure triggers
         if let Some(part) = module.parts.iter_mut().find(|p| p.id == p_id) {
-            // Socket 0 (Spawn Trigger) -> ParticleRate
+            // Socket 0 (Spawn Trigger) -> rate
             part.trigger_targets.insert(
                 0,
                 TriggerConfig {
-                    target: TriggerTarget::Param("ParticleRate".to_string()),
+                    target: crate::module::TriggerTarget::Param("rate".to_string()),
                     mode: TriggerMappingMode::Direct,
                     min_value: 10.0,
                     max_value: 100.0,
@@ -2204,7 +2204,7 @@ mod tests_coverage {
                 },
             );
 
-            // Add dummy socket for Position3D
+            // Add dummy socket for pos_y
             part.inputs.push(crate::module::ModuleSocket {
                 name: "Pos Y".to_string(),
                 socket_type: crate::module::ModuleSocketType::Trigger,
@@ -2212,7 +2212,7 @@ mod tests_coverage {
             part.trigger_targets.insert(
                 1,
                 TriggerConfig {
-                    target: TriggerTarget::Param("Position3D".to_string()),
+                    target: crate::module::TriggerTarget::Param("pos_y".to_string()),
                     mode: TriggerMappingMode::Direct,
                     min_value: 0.0,
                     max_value: 5.0, // Add 5.0 to Y
@@ -2272,11 +2272,11 @@ mod tests_coverage {
         );
 
         if let Some(part) = module.parts.iter_mut().find(|p| p.id == m_id) {
-            // Socket 0 -> Position3D (Y axis)
+            // Socket 0 -> pos_y
             part.trigger_targets.insert(
                 0,
                 TriggerConfig {
-                    target: TriggerTarget::Param("Position3D".to_string()),
+                    target: crate::module::TriggerTarget::Param("pos_y".to_string()),
                     mode: TriggerMappingMode::Direct,
                     min_value: 0.0,
                     max_value: 10.0,
@@ -2285,7 +2285,7 @@ mod tests_coverage {
                 },
             );
 
-            // Dummy socket 1 -> Scale3D
+            // Dummy socket 1 -> scale_x
             part.inputs.push(crate::module::ModuleSocket {
                 name: "Scale".to_string(),
                 socket_type: crate::module::ModuleSocketType::Trigger,
@@ -2293,7 +2293,7 @@ mod tests_coverage {
             part.trigger_targets.insert(
                 1,
                 TriggerConfig {
-                    target: TriggerTarget::Param("Scale3D".to_string()),
+                    target: crate::module::TriggerTarget::Param("scale_x".to_string()),
                     mode: TriggerMappingMode::Direct,
                     min_value: 1.0,
                     max_value: 2.0, // Multiply by 2

@@ -6,19 +6,17 @@
 #[cfg(feature = "stream")]
 use crate::error::{IoError, Result};
 #[cfg(feature = "stream")]
-use crate::format::{VideoFormat, VideoFrame};
+use crate::format::{FrameData, VideoFormat, VideoFrame};
 #[cfg(feature = "stream")]
 use crate::sink::{SinkStatistics, VideoSink};
+#[cfg(feature = "stream")]
+use crate::stream::encoder::{EncoderPreset, VideoCodec, VideoEncoder};
 
 /// SRT streamer for sending video via SRT protocol.
 ///
 /// SRT (Secure Reliable Transport) provides low-latency streaming with
-/// error correction and encryption.
-///
-/// # Note
-///
-/// This is currently a stub implementation. Full SRT support requires
-/// the libsrt library and additional FFmpeg configuration.
+/// error correction and encryption. This implementation uses FFmpeg
+/// built with libsrt (`--enable-libsrt`).
 ///
 /// # Example
 ///
@@ -35,11 +33,16 @@ use crate::sink::{SinkStatistics, VideoSink};
 /// ```
 #[cfg(feature = "stream")]
 pub struct SrtStreamer {
+    /// URL of the SRT destination
     url: String,
+    /// Video encoder mapping frames to the stream
+    encoder: VideoEncoder,
+    /// Stream video format
     format: VideoFormat,
-    bitrate: u64,
-    connected: bool,
+    /// Total frames sent successfully
     frame_count: u64,
+    /// Network connection state flag
+    connected: bool,
 }
 
 #[cfg(feature = "stream")]
@@ -61,12 +64,20 @@ impl SrtStreamer {
             ));
         }
 
-        tracing::warn!("SRT streaming is not fully implemented yet");
+        let encoder = VideoEncoder::new(
+            &url,
+            format.clone(),
+            VideoCodec::H264,
+            bitrate,
+            EncoderPreset::UltraFast,
+        )?;
+
+        tracing::info!("Created SRT streamer for {}", url);
 
         Ok(Self {
             url,
+            encoder,
             format,
-            bitrate,
             connected: false,
             frame_count: 0,
         })
@@ -85,16 +96,11 @@ impl SrtStreamer {
 
         tracing::info!("Connecting to SRT server: {}", self.url);
 
-        // TODO: Implement actual SRT connection
-        // This would require:
-        // 1. libsrt integration
-        // 2. SRT handshake
-        // 3. Stream setup
-        // 4. Error correction configuration
+        // Encoder connects when the first frame is sent, or when initialized.
+        // It's initialized in `new()`, so we just set state to connected.
+        self.connected = true;
 
-        Err(IoError::SrtError(
-            "SRT streaming not yet implemented. This requires libsrt integration.".to_string(),
-        ))
+        Ok(())
     }
 
     /// Disconnects from the SRT server.
@@ -104,11 +110,12 @@ impl SrtStreamer {
         }
 
         tracing::info!("Disconnecting from SRT server");
+        self.encoder.flush()?;
         self.connected = false;
         Ok(())
     }
 
-    /// Returns true if connected to the server.
+    /// Checks if the streamer is currently connected.
     pub fn is_connected(&self) -> bool {
         self.connected
     }
@@ -129,19 +136,23 @@ impl VideoSink for SrtStreamer {
         self.format.clone()
     }
 
-    fn send_frame(&mut self, _frame: &VideoFrame) -> Result<()> {
+    fn send_frame(&mut self, frame: &VideoFrame) -> Result<()> {
         if !self.connected {
             self.connect()?;
         }
 
-        // TODO: Implement frame sending
-        Err(IoError::SrtError(
-            "SRT streaming not yet implemented".to_string(),
-        ))
+        // Handle empty frames directly if there's no data
+        if let FrameData::Empty = frame.data {
+            return Ok(());
+        }
+
+        self.encoder.encode(frame)?;
+        self.frame_count += 1;
+        Ok(())
     }
 
     fn is_available(&self) -> bool {
-        false // Not yet implemented
+        true
     }
 
     fn frame_count(&self) -> u64 {
@@ -149,19 +160,30 @@ impl VideoSink for SrtStreamer {
     }
 
     fn flush(&mut self) -> Result<()> {
-        Ok(())
+        self.encoder.flush()
     }
 
     fn reconnect(&mut self) -> Result<()> {
         self.disconnect()?;
+
+        // Need to recreate encoder for reconnection
+        self.encoder = VideoEncoder::new(
+            &self.url,
+            self.format.clone(),
+            VideoCodec::H264,
+            self.encoder.bitrate(),
+            EncoderPreset::UltraFast,
+        )?;
+
         self.connect()
     }
 
     fn statistics(&self) -> Option<SinkStatistics> {
+        let stats = self.encoder.statistics();
         Some(SinkStatistics {
-            frames_sent: self.frame_count,
-            frames_dropped: 0,
-            bitrate: Some(self.bitrate),
+            frames_sent: stats.frames_encoded,
+            frames_dropped: stats.frames_dropped,
+            bitrate: Some(self.encoder.bitrate()),
             average_latency_ms: None,
         })
     }
