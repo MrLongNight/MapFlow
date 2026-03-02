@@ -458,6 +458,7 @@ pub fn get_part_style(
                     EffectType::VHS => "VHS",
                     EffectType::FilmGrain => "Film Grain",
                     EffectType::Vignette => "Vignette",
+                    EffectType::LoadLUT => "Load 3D LUT",
                     EffectType::ShaderGraph(_) => "Custom Graph",
                 },
                 ModulizerType::BlendMode(blend) => match blend {

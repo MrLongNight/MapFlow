@@ -1256,6 +1256,7 @@ pub fn render_add_node_menu_content(
             ui.separator();
             // Effects
             for effect in [
+                EffectType::LoadLUT,
                 EffectType::Blur,
                 EffectType::Pixelate,
                 EffectType::Glitch,

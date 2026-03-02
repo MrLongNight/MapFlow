@@ -79,6 +79,8 @@ pub enum EffectType {
     FilmGrain,
     /// Enumeration variant.
     Vignette,
+    /// Enumeration variant.
+    LoadLUT,
 }
 
 impl EffectType {
@@ -109,6 +111,7 @@ impl EffectType {
             EffectType::VHS,
             EffectType::FilmGrain,
             EffectType::Vignette,
+            EffectType::LoadLUT,
         ]
     }
 
@@ -139,6 +142,7 @@ impl EffectType {
             EffectType::VHS => "VHS",
             EffectType::FilmGrain => "Film Grain",
             EffectType::Vignette => "Vignette",
+            EffectType::LoadLUT => "Load 3D LUT",
             EffectType::ShaderGraph(_) => "Custom Shader Graph",
         }
     }
