@@ -797,7 +797,8 @@ fn map_effect_type(effect_type: ModEffectType) -> Option<ChainEffectType> {
         ModEffectType::ChromaticAberration => ChainEffectType::ChromaticAberration,
         ModEffectType::FilmGrain => ChainEffectType::FilmGrain,
         ModEffectType::Vignette => ChainEffectType::Vignette,
-        ModEffectType::Brightness
+        ModEffectType::LoadLUT
+        | ModEffectType::Brightness
         | ModEffectType::Contrast
         | ModEffectType::Saturation
         | ModEffectType::Colorize

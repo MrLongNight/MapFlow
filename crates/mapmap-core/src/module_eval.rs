@@ -225,20 +225,6 @@ mod tests_evaluator {
         // Now remove connection
         module.remove_connection(t_id, 0, s_id, 0);
 
-        let t2_type = ModulePartType::Trigger(TriggerType::AudioFFT {
-            band: crate::module::AudioBand::Bass,
-            threshold: 0.5,
-            output_config: crate::module::AudioTriggerOutputConfig {
-                volume_outputs: false,
-                beat_output: true,
-                frequency_bands: false,
-                bpm_output: false,
-                inverted_outputs: std::collections::HashSet::new(),
-            },
-        }); // audio trigger with no input
-        let t2_id = module.add_part_with_type(t2_type, (0.0, 0.0));
-        module.add_connection(t2_id, 0, s_id, 0);
-
         let result = evaluator.evaluate(&module, &shared, 1);
 
         // A disconnected source defaults to trigger = 1.0, so it SHOULD generate a SourceCommand
@@ -2317,7 +2303,7 @@ mod tests_coverage {
         }) = result.source_commands.get(&m_id)
         {
             // Position3D mapping logic seems to not map to index 1 or position natively using TriggerTarget::Param
-            assert!(true);
+
         } else {
             panic!("Expected Bevy3DModel command");
         }
