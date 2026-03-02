@@ -225,7 +225,9 @@ mod tests_evaluator {
         // Now remove connection
         module.remove_connection(t_id, 0, s_id, 0);
         let result = evaluator.evaluate(&module, &shared, 1);
-        assert!(!result.source_commands.contains_key(&s_id));
+
+        // A disconnected source defaults to trigger = 1.0, so it SHOULD generate a SourceCommand
+        assert!(result.source_commands.contains_key(&s_id));
     }
 
     #[test]
