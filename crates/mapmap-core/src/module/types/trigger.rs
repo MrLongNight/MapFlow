@@ -307,4 +307,3 @@ impl AudioTriggerOutputConfig {
         outputs
     }
 }
-

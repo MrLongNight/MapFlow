@@ -1,4 +1,4 @@
-﻿# 🛠️ MapFlow: Technische Schulden, Bugs & Roadmap
+# 🛠️ MapFlow: Technische Schulden, Bugs & Roadmap
 
 Dieses Dokument dient der zentralen Erfassung von Architektur-Problemen, monolithischen "God Files" und der Strategie zur Modularisierung des MapFlow (VJMapper) Projekts.
 
@@ -12,8 +12,8 @@ Dieses Dokument dient der zentralen Erfassung von Architektur-Problemen, monolit
 | **Module Canvas** | "God Object" Monolith | ✅ | Aufgeteilt in `controller`, `draw`, `state`, `types`. | `ui/module_canvas/` |
 | **Core Module** | Monolithische Logik | ✅ | Refaktorierung abgeschlossen (2026-02-27). | `core/module/` |
 | **GPU Uploads** | Thread-Blockierung | ✅ | Async `FramePipeline` implementiert. | `orchestration/media.rs` |
-| **wgpu Lifetimes** | Unsafe Transmute | 🟡 | Sicherheitsrisiko im Render-Loop. | `app/loops/render.rs` |
-| **UI App State** | Raw Pointer Hack | 🟡 | `*mut App` Pointer für UI-Layout-Rendering. | `app/loops/render.rs` |
+| **wgpu Lifetimes** | Unsafe Transmute | ✅ | Sicherheitsrisiko im Render-Loop behoben (PR #831). | `app/loops/render.rs` |
+| **UI App State** | Raw Pointer Hack | ✅ | `*mut App` Pointer entfernt; Refaktoriert auf sichere Referenzen. | `app/loops/render.rs` |
 
 **Status-Legende:** ✅ Erledigt | 🟡 In Arbeit | 🔴 Kritisch/Todo | 🔵 Geplant
 
@@ -23,12 +23,13 @@ Dieses Dokument dient der zentralen Erfassung von Architektur-Problemen, monolit
 *Diskrepanzen, bei denen das Backend existiert, aber die UI unvollständig ist.*
 
 ### 📡 Konnektivität & Streaming
-- **NDI Receiver**: Backend als Stub vorhanden; UI zeigt Platzhalter. (Status: 🟡)
+- **NDI Support**: ✅ Funktional. `NdiSender` mit Async-Ringpuffer implementiert.
+- **MPV Decoder**: ✅ Behoben. Nutzt `libmpv2` für volle Videowiedergabe (keine grauen Frames mehr).
+- **Link System**: ✅ Integriert (PR #837). UI für Node-Verlinkung funktional.
 - **SRT Streaming**: `libsrt` Integration fehlt; Logik-Stubs vorhanden. (Status: 🔴)
 - **OSC Triggers**: UI-Felder für Cue-Trigger Mapping fehlen. (Status: 🟡)
 
 ### 🎥 Medien & Rendering
-- **MPV Decoder**: Rendert graue Platzhalter (libmpv2 Sync-Problem). (Status: 🟡)
 - **HAP Alpha**: YCoCg+A Unterstützung ist bei komplexen Dateien instabil. (Status: 🟡)
 - **LUT Support**: Core-Logik bereit; "LUT Effect" Node fehlt in der UI. (Status: 🔵)
 
