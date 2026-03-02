@@ -97,3 +97,11 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 **Aktion:**
 - Dateien erneut verschoben bzw. archiviert.
 - Verifikation der Dateipfade erfolgreich durchgeführt.
+
+## 2026-03-02 - Root Directory Cleanup
+
+**Erkenntnis:** Das Root-Verzeichnis enthielt mehrere Skripte (`fix_docs_*.py`, `fix_ui_layout_*.sh`, `fix_wgpu*.py`) sowie eine leere temporäre Datei `GEMINI.md`, die dort nicht hingehören. Da die weitere Verwendung oder der eigentliche Speicherort der Skripte unklar war, war es am sichersten, sie zunächst zu archivieren.
+
+**Aktion:**
+- Alle identifizierten Skripte (`fix_docs_pro.py`, `fix_docs_smart.py`, `fix_docs_smart_all.py`, `fix_ui_layout_10.sh`, `fix_ui_layout_3.sh`, `fix_ui_layout_4.sh`, `fix_ui_layout_5.sh`, `fix_ui_layout_6.sh`, `fix_ui_layout_7.sh`, `fix_ui_layout_8.sh`, `fix_ui_layout_9.sh`, `fix_wgpu.py`, `fix_wgpu_2.py`, `fix_wgpu_clean.py`) nach `.temp-archive/` mit aktuellem Datums-Präfix archiviert.
+- `GEMINI.md` nach `.temp-archive/` mit aktuellem Datums-Präfix archiviert.

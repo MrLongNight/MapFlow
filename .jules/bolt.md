@@ -45,3 +45,10 @@
 ## 2026-03-05 - Redundant Map Re-computation in Hot Paths
 **Learning:** In `ModuleEvaluator::trace_chain`, a `HashMap` mapping part IDs to indices was being rebuilt from scratch for every layer rendered, despite the same map being built and cached in the parent `evaluate` method. This O(N) operation per layer caused significant overhead in complex scenes.
 **Action:** Always check if a required lookup structure (like an ID-to-index map) is already available in the parent context before building a local one. If so, reuse it to avoid redundant allocations and iterations.
+## 2026-03-02 - Prevent Vec allocation in UI Hot Path
+**Learning:** In UI loops run every frame, allocating an intermediate `Vec` using `.collect()` just to pass a filtered slice to rendering functions creates continuous heap churn. In , filtering items created a new  60 times a second.
+**Action:** Use dynamic trait objects (`&mut dyn Iterator`) to represent variable iterator types (like `FilterMap` vs `Values`), avoiding  and avoiding `collect()` entirely when passing data to UI render functions.
+
+## 2026-06-12 - Prevent Vec allocation in UI Hot Path
+**Learning:** In UI loops run every frame, allocating an intermediate `Vec` using `.collect()` just to pass a filtered slice to rendering functions creates continuous heap churn. In `crates/mapmap/src/media_manager_ui.rs`, filtering items created a new `Vec` 60 times a second.
+**Action:** Use dynamic trait objects (`&mut dyn Iterator`) to represent variable iterator types (like `FilterMap` vs `Values`), avoiding `Box` and avoiding `collect()` entirely when passing data to UI render functions.

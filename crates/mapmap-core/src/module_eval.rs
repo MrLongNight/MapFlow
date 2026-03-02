@@ -226,9 +226,7 @@ mod tests_evaluator {
         module.remove_connection(t_id, 0, s_id, 0);
         let result = evaluator.evaluate(&module, &shared, 1);
 
-        // By default trigger_value is 1.0 if not connected! So SourceCommand WILL be generated.
-        // Wait, `Default to 1.0 (playing) so media files play even if no trigger is attached`
-        // Let's assert it is there, rather than not there.
+        // A disconnected source defaults to trigger = 1.0, so it SHOULD generate a SourceCommand
         assert!(result.source_commands.contains_key(&s_id));
     }
 

@@ -120,7 +120,7 @@ impl MeshBufferCache {
         };
 
         self.cache.insert(mapping_id, cached);
-        let cached_ref = self.cache.get_mut(&mapping_id).unwrap();
+        let cached_ref = self.cache.get(&mapping_id).unwrap();
         (
             &cached_ref.vertex_buffer,
             &cached_ref.index_buffer,
