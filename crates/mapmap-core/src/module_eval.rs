@@ -5,14 +5,15 @@
 
 use crate::audio::analyzer_v2::AudioAnalysisV2;
 use crate::audio_reactive::AudioTriggerData;
+use crate::module::LinkMode;
 use crate::module::{
-    BlendModeType, LayerType, LinkBehavior, LinkMode, MapFlowModule, MaskType, MeshType,
-    ModulePartId, ModulePartType, ModulizerType, OutputType, SharedMediaState, SourceType,
-    TriggerType,
+    BlendModeType, LayerType, LinkBehavior, MapFlowModule, MaskType, MeshType, ModulePartId,
+    ModulePartType, ModulizerType, OutputType, SharedMediaState, SourceType, TriggerType,
 };
 use rand::RngExt;
 use std::cell::RefCell;
 use std::collections::HashMap;
+
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -94,7 +95,7 @@ mod tests_evaluator {
     use super::*;
     use crate::audio::analyzer_v2::AudioAnalysisV2;
     use crate::module::{
-        AudioTriggerOutputConfig, LinkMode, MapFlowModule, ModulePartType, SourceType, TriggerType,
+        AudioTriggerOutputConfig, MapFlowModule, ModulePartType, SourceType, TriggerType,
     };
     use std::time::Duration;
 
@@ -224,7 +225,9 @@ mod tests_evaluator {
         // Now remove connection
         module.remove_connection(t_id, 0, s_id, 0);
         let result = evaluator.evaluate(&module, &shared, 1);
-        assert!(!result.source_commands.contains_key(&s_id));
+
+        // A disconnected source defaults to trigger = 1.0, so it SHOULD generate a SourceCommand
+        assert!(result.source_commands.contains_key(&s_id));
     }
 
     #[test]
@@ -797,13 +800,49 @@ impl ModuleEvaluator {
         }
 
         // Step 6: Generate source commands
+        let socket_inputs = self.compute_socket_inputs(module, &self.cached_result.trigger_values);
+
         for part in &module.parts {
             if let ModulePartType::Source(source_type) = &part.part_type {
                 // Default to 1.0 (playing) so media files play even if no trigger is attached
                 let trigger_value = trigger_inputs.get(&part.id).copied().unwrap_or(1.0);
-                if let Some(cmd) =
+                if let Some(mut cmd) =
                     self.create_source_command(source_type, trigger_value, shared_state)
                 {
+                    // Apply extra triggers (Position3D, Scale3D, etc.)
+                    for (socket_idx, config) in &part.trigger_targets {
+                        if let Some(socket_vals) = socket_inputs.get(&part.id) {
+                            if let Some(&raw_val) = socket_vals.get(socket_idx) {
+                                let raw_final_val = config.apply(raw_val);
+                                let val = self.apply_smoothing(
+                                    part.id,
+                                    *socket_idx,
+                                    raw_final_val,
+                                    &config.mode,
+                                );
+
+                                match (&mut cmd, &config.target) {
+                                    (
+                                        SourceCommand::Bevy3DModel { position, .. },
+                                        crate::module::TriggerTarget::Position3D,
+                                    ) => {
+                                        position[0] = val;
+                                        position[1] = val;
+                                        position[2] = val;
+                                    }
+                                    (
+                                        SourceCommand::Bevy3DModel { scale, .. },
+                                        crate::module::TriggerTarget::Scale3D,
+                                    ) => {
+                                        scale[0] = val;
+                                        scale[1] = val;
+                                        scale[2] = val;
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                    }
                     self.cached_result.source_commands.insert(part.id, cmd);
                 }
             }
@@ -1597,7 +1636,7 @@ mod tests_logic {
         AudioBand, AudioTriggerOutputConfig, MapFlowModule, ModuleConnection, ModulePart,
         ModulePartType, ModulePlaybackMode, SourceType, TriggerType,
     };
-    use std::collections::HashMap;
+
     use std::time::{Duration, Instant};
 
     fn create_audio_data(beat: bool) -> AudioTriggerData {
@@ -1932,10 +1971,9 @@ mod tests_logic {
 mod tests_coverage {
     use super::*;
     use crate::module::{
-        LinkMode, MapFlowModule, ModulePartType, SourceType, TriggerConfig, TriggerMappingMode,
+        MapFlowModule, ModulePartType, SourceType, TriggerConfig, TriggerMappingMode,
         TriggerTarget, TriggerType,
     };
-    use std::collections::HashMap;
 
     fn create_test_module() -> MapFlowModule {
         MapFlowModule {
@@ -2057,7 +2095,7 @@ mod tests_coverage {
         module.add_connection(l_id, 0, o_id, 0);
 
         // Evaluate
-        let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default());
+        let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default(), 0);
 
         // Verify RenderOp
         assert_eq!(result.render_ops.len(), 1);
@@ -2076,8 +2114,8 @@ mod tests_coverage {
             op.source_props.rotation, 90.0,
             "Rotation should be mapped 1.0 -> 90.0"
         );
-        assert_eq!(
-            op.source_props.flip_horizontal, true,
+        assert!(
+            op.source_props.flip_horizontal,
             "FlipH should be true (1.0 > 0.5)"
         );
     }
@@ -2148,7 +2186,7 @@ mod tests_coverage {
         module.add_connection(t_id, 0, p_id, 1); // Trigger -> Pos Y
 
         // Evaluate
-        let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default());
+        let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default(), 0);
 
         // Verify SourceCommand
         if let Some(SourceCommand::BevyInput { trigger_value }) = result.source_commands.get(&p_id)
@@ -2229,7 +2267,7 @@ mod tests_coverage {
         module.add_connection(t_id, 0, m_id, 1); // Trigger -> Scale
 
         // Evaluate
-        let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default());
+        let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default(), 0);
 
         if let Some(SourceCommand::Bevy3DModel {
             position, scale, ..

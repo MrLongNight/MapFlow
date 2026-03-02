@@ -153,48 +153,49 @@ impl MediaManagerUI {
 
             // Content Area
             egui::ScrollArea::vertical().show(ui, |ui| {
-                let items = if let Some(playlist_name) = &self.selected_playlist {
-                    if let Some(playlist) =
-                        library.playlists.iter().find(|p| &p.name == playlist_name)
-                    {
-                        playlist
-                            .items
-                            .iter()
-                            .filter_map(|path| library.items.get(path))
-                            .collect::<Vec<_>>()
-                    } else {
-                        vec![]
-                    }
-                } else {
-                    library.get_items()
-                };
+                let query = self.search_query.to_lowercase();
 
-                let filtered_items: Vec<&MediaItem> = items
-                    .into_iter()
-                    .filter(|item| {
-                        self.search_query.is_empty()
-                            || item
-                                .name
-                                .to_lowercase()
-                                .contains(&self.search_query.to_lowercase())
-                    })
-                    .collect();
+                let mut iter1;
+                let mut iter2;
+                let mut iter3;
+
+                let items: &mut dyn Iterator<Item = &MediaItem> =
+                    if let Some(playlist_name) = &self.selected_playlist {
+                        if let Some(playlist) =
+                            library.playlists.iter().find(|p| &p.name == playlist_name)
+                        {
+                            iter1 = playlist
+                                .items
+                                .iter()
+                                .filter_map(|path| library.items.get(path));
+                            &mut iter1
+                        } else {
+                            iter2 = std::iter::empty();
+                            &mut iter2
+                        }
+                    } else {
+                        iter3 = library.items.values();
+                        &mut iter3
+                    };
+
+                let mut filtered_items = items
+                    .filter(|item| query.is_empty() || item.name.to_lowercase().contains(&query));
 
                 match self.view_mode {
-                    ViewMode::Grid => self.render_grid(ui, &filtered_items),
-                    ViewMode::List => self.render_list(ui, &filtered_items),
+                    ViewMode::Grid => self.render_grid(ui, &mut filtered_items),
+                    ViewMode::List => self.render_list(ui, &mut filtered_items),
                 }
             });
         });
     }
 
-    fn render_grid(&mut self, ui: &mut Ui, items: &[&MediaItem]) {
+    fn render_grid(&mut self, ui: &mut Ui, items: &mut dyn Iterator<Item = &MediaItem>) {
         let available_width = ui.available_width();
         let columns = (available_width / (self.thumbnail_size + 10.0)).floor() as usize;
         let columns = columns.max(1);
 
         egui::Grid::new("media_grid").striped(true).show(ui, |ui| {
-            for (i, item) in items.iter().enumerate() {
+            for (i, item) in items.enumerate() {
                 if i > 0 && i % columns == 0 {
                     ui.end_row();
                 }
@@ -250,7 +251,7 @@ impl MediaManagerUI {
         });
     }
 
-    fn render_list(&mut self, ui: &mut Ui, items: &[&MediaItem]) {
+    fn render_list(&mut self, ui: &mut Ui, items: &mut dyn Iterator<Item = &MediaItem>) {
         for item in items {
             ui.horizontal(|ui| {
                 let icon = match item.media_type {

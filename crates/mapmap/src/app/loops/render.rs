@@ -74,13 +74,6 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
             ui_layout::show(ctx, app);
         });
 
-        // Temporarily take the renderer out of App to avoid lifetime issues with App
-        // This is safe because we're the only ones using it right now.
-        let mut egui_renderer = std::mem::replace(
-            &mut app.egui_renderer,
-            unsafe { std::mem::zeroed() }, // DANGEROUS, but we'll put it back
-        );
-
         // 3. Handle Output (Requires another short-lived borrow of window)
         {
             let window_context = app.window_manager.get(0).unwrap();
