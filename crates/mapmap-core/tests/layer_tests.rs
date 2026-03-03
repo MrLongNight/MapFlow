@@ -306,3 +306,132 @@ fn test_layer_manager_eject_all() {
     assert!(manager.get_layer(id1).unwrap().paint_id.is_none());
     assert!(manager.get_layer(id2).unwrap().paint_id.is_none());
 }
+
+// --- Composition Tests ---
+
+#[test]
+fn test_composition_new_default_initializes_correctly() {
+    let comp = mapmap_core::layer::Composition::default();
+    assert_eq!(comp.name, "Untitled Composition");
+    assert_eq!(comp.master_opacity, 1.0);
+    assert_eq!(comp.master_speed, 1.0);
+    assert_eq!(comp.size, (1920, 1080));
+    assert_eq!(comp.frame_rate, 60.0);
+}
+
+#[test]
+fn test_set_master_opacity_out_of_bounds_clamps_value() {
+    let mut comp = mapmap_core::layer::Composition::default();
+    comp.set_master_opacity(1.5);
+    assert_eq!(comp.master_opacity, 1.0);
+
+    comp.set_master_opacity(-0.5);
+    assert_eq!(comp.master_opacity, 0.0);
+
+    comp.set_master_opacity(0.7);
+    assert_eq!(comp.master_opacity, 0.7);
+}
+
+#[test]
+fn test_set_master_speed_out_of_bounds_clamps_value() {
+    let mut comp = mapmap_core::layer::Composition::default();
+    comp.set_master_speed(15.0);
+    assert_eq!(comp.master_speed, 10.0);
+
+    comp.set_master_speed(0.05);
+    assert_eq!(comp.master_speed, 0.1);
+
+    comp.set_master_speed(2.5);
+    assert_eq!(comp.master_speed, 2.5);
+}
+
+// --- Layer Struct Tests ---
+
+#[test]
+fn test_layer_builder_methods_sets_properties_correctly() {
+    let layer = Layer::new(1, "Test Layer")
+        .with_paint(42)
+        .with_blend_mode(mapmap_core::layer::BlendMode::Multiply)
+        .with_opacity(0.8);
+
+    assert_eq!(layer.id, 1);
+    assert_eq!(layer.name, "Test Layer");
+    assert_eq!(layer.paint_id, Some(42));
+    assert_eq!(layer.blend_mode, mapmap_core::layer::BlendMode::Multiply);
+    assert_eq!(layer.opacity, 0.8);
+}
+
+#[test]
+fn test_add_remove_mapping_valid_ids_updates_list() {
+    let mut layer = Layer::new(1, "Map Layer");
+    assert!(layer.mapping_ids.is_empty());
+
+    layer.add_mapping(10);
+    layer.add_mapping(20);
+    assert_eq!(layer.mapping_ids.len(), 2);
+    assert!(layer.mapping_ids.contains(&10));
+    assert!(layer.mapping_ids.contains(&20));
+
+    // Add same mapping again should not duplicate
+    layer.add_mapping(10);
+    assert_eq!(layer.mapping_ids.len(), 2);
+
+    layer.remove_mapping(10);
+    assert_eq!(layer.mapping_ids.len(), 1);
+    assert!(!layer.mapping_ids.contains(&10));
+
+    // Remove non-existent mapping should be safe
+    layer.remove_mapping(99);
+    assert_eq!(layer.mapping_ids.len(), 1);
+}
+
+#[test]
+fn test_should_render_various_states_returns_expected() {
+    let mut layer = Layer::new(1, "Render Layer").with_paint(1);
+
+    // Default is visible, not bypass, not solo, opacity 1.0 -> should render
+    assert!(layer.should_render());
+
+    // Hidden layer
+    layer.visible = false;
+    assert!(!layer.should_render());
+    layer.visible = true;
+
+    // Zero opacity
+    layer.opacity = 0.0;
+    assert!(!layer.should_render());
+    layer.opacity = 1.0;
+
+    // Bypassed
+    layer.bypass = true;
+    assert!(!layer.should_render());
+    layer.bypass = false;
+
+    assert!(layer.should_render());
+}
+
+#[test]
+fn test_toggle_bypass_solo_toggles_boolean_states() {
+    let mut layer = Layer::new(1, "Toggle Layer");
+
+    assert!(!layer.bypass);
+    layer.toggle_bypass();
+    assert!(layer.bypass);
+    layer.toggle_bypass();
+    assert!(!layer.bypass);
+
+    assert!(!layer.solo);
+    layer.toggle_solo();
+    assert!(layer.solo);
+    layer.toggle_solo();
+    assert!(!layer.solo);
+}
+
+#[test]
+fn test_rename_valid_string_updates_name() {
+    let mut layer = Layer::new(1, "Old Name");
+    assert_eq!(layer.name, "Old Name");
+
+    layer.rename("New Name");
+    assert_eq!(layer.name, "New Name");
+}
