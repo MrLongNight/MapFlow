@@ -199,3 +199,75 @@ impl Default for ModuleManager {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_new_valid_initialization_defaults() {
+        let manager = ModuleManager::new();
+        assert_eq!(manager.modules.len(), 0);
+        assert_eq!(manager.next_module_id, 1);
+        assert_eq!(manager.next_part_id, 1);
+        assert_eq!(manager.next_color_index, 0);
+        assert_eq!(manager.graph_revision, 1);
+    }
+
+    #[test]
+    fn test_create_module_valid_name_creates_module() {
+        let mut manager = ModuleManager::new();
+        let id = manager.create_module("Test Module".to_string());
+        assert_eq!(id, 1);
+        assert_eq!(manager.modules.len(), 1);
+        assert_eq!(manager.modules.get(&id).unwrap().name, "Test Module");
+        assert_eq!(manager.graph_revision, 2);
+    }
+
+    #[test]
+    fn test_create_module_duplicate_name_renames() {
+        let mut manager = ModuleManager::new();
+        let id1 = manager.create_module("Test Module".to_string());
+        let id2 = manager.create_module("Test Module".to_string());
+        assert_ne!(id1, id2);
+        assert_eq!(manager.modules.get(&id1).unwrap().name, "Test Module");
+        assert_eq!(manager.modules.get(&id2).unwrap().name, "Test Module 1");
+    }
+
+    #[test]
+    fn test_delete_module_valid_id_removes_module() {
+        let mut manager = ModuleManager::new();
+        let id = manager.create_module("Test Module".to_string());
+        manager.delete_module(id);
+        assert_eq!(manager.modules.len(), 0);
+    }
+
+    #[test]
+    fn test_rename_module_valid_name_updates() {
+        let mut manager = ModuleManager::new();
+        let id = manager.create_module("Old Name".to_string());
+        assert!(manager.rename_module(id, "New Name".to_string()));
+        assert_eq!(manager.modules.get(&id).unwrap().name, "New Name");
+    }
+
+    #[test]
+    fn test_rename_module_duplicate_name_fails() {
+        let mut manager = ModuleManager::new();
+        let _id1 = manager.create_module("Name 1".to_string());
+        let id2 = manager.create_module("Name 2".to_string());
+        assert!(!manager.rename_module(id2, "Name 1".to_string()));
+        assert_eq!(manager.modules.get(&id2).unwrap().name, "Name 2");
+    }
+
+    #[test]
+    fn test_duplicate_module_valid_id_duplicates() {
+        let mut manager = ModuleManager::new();
+        let id = manager.create_module("Test Module".to_string());
+        let duplicate_id = manager.duplicate_module(id).unwrap();
+        assert_eq!(manager.modules.len(), 2);
+        assert_eq!(
+            manager.modules.get(&duplicate_id).unwrap().name,
+            "Test Module (Copy) 1"
+        );
+    }
+}
