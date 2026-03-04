@@ -249,10 +249,7 @@ pub fn ensure_icons_loaded(
         return;
     }
 
-    let paths = [
-        "resources/stecker_icons",
-        "../resources/stecker_icons",
-    ];
+    let paths = ["resources/stecker_icons", "../resources/stecker_icons"];
 
     let files = [
         "audio-jack.svg",
