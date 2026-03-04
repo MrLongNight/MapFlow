@@ -43,7 +43,11 @@ impl ShortcutsPanel {
         ui.horizontal(|ui| {
             ui.heading(locale.t("shortcuts-panel-title"));
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if ui.button(locale.t("shortcuts-reset-defaults")).clicked() {
+                if crate::widgets::custom::hold_to_action_button(
+                    ui,
+                    &locale.t("shortcuts-reset-defaults"),
+                    crate::theme::colors::WARN_COLOR,
+                ) {
                     key_bindings.reset_to_defaults();
                     self.detect_conflicts(key_bindings);
                     self.search_filter.clear();

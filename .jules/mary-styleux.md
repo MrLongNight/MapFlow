@@ -41,3 +41,9 @@
 - **Effect Level:** "Hold-to-Confirm" button (0.6s) in the effect header.
 - **Parameter Level:** Right-click context menu "Reset to Default" for individual controls.
 - **Power User:** Added keyboard shortcuts (Alt+Arrow Up/Down) to drag handles for quick reordering without mouse drag, improving accessibility and speed.
+
+## 2026-02-19 – Eradicating Live-Performance Hazards
+**Learning:** Destructive actions ("Reset to Default", "Delete Module", "Remove Paint", "Eject All Layers") scattered across various panels remained as immediate-click buttons, creating severe live-performance hazards when performing UI actions in a hurry.
+**Action:** Pushed the "Hold-to-Confirm" pattern globally to all immediate resetting or deleting panel actions.
+- **Implementation:** Mass-replaced `ui.button("Reset to Default").clicked()` and similar calls (`btn-reset-defaults`, `menu-delete`, `btn-eject-all`) with `hold_to_action_button` across effect chain panels, context menus, sidebar, and edge blend panels.
+- **Consistency:** Ensured the same `WARN_COLOR` for reset actions and `ERROR_COLOR` for destructive actions are consistently used with the required `0.6s` delay to enforce user intent.
