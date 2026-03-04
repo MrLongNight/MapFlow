@@ -138,7 +138,6 @@ impl App {
             let paths = [
                 "resources/controllers/ecler_nuo4/elements.json",
                 "../resources/controllers/ecler_nuo4/elements.json",
-                r"C:\Users\Vinyl\Desktop\VJMapper\VjMapper\resources\controllers\ecler_nuo4\elements.json",
             ];
             for path_str in paths {
                 let path = std::path::Path::new(path_str);

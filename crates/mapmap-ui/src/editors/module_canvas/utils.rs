@@ -252,7 +252,6 @@ pub fn ensure_icons_loaded(
     let paths = [
         "resources/stecker_icons",
         "../resources/stecker_icons",
-        r"C:\Users\Vinyl\Desktop\VJMapper\VjMapper\resources\stecker_icons",
     ];
 
     let files = [
