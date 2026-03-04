@@ -1436,7 +1436,7 @@ pub fn draw_quick_create_popup(
 
             // List
             if filtered_items.is_empty() {
-                ui.label("No matching nodes found.");
+                ui.label(egui::RichText::new("No matching nodes found.").weak().italics());
             } else {
                 egui::ScrollArea::vertical()
                     .max_height(300.0)

@@ -149,7 +149,7 @@ pub fn render_effect_ui(ui: &mut Ui, mod_type: &mut ModulizerType, part_id: Modu
                     ui.add(egui::Slider::new(sat, 0.0..=2.0).text("Saturation"));
                 }
                 _ => {
-                    ui.label("No configurable parameters");
+                    ui.label(egui::RichText::new("No configurable parameters").weak());
                 }
             }
         }
