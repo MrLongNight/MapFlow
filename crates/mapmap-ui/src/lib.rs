@@ -280,8 +280,6 @@ use mapmap_io::NdiSource;
 
 /// UI state for the application
 pub struct AppUI {
-    /// Main menu bar
-    pub menu_bar: menu_bar::MenuBar,
     /// Dashboard panel
     pub dashboard: Dashboard,
     /// Paint manager panel
@@ -437,6 +435,12 @@ pub struct AppUI {
 
     /// Last time responsive styles were updated
     last_style_update: std::time::Instant,
+
+    /// Available monitors
+    pub monitors: Vec<mapmap_core::monitor::MonitorInfo>,
+
+    /// Visibility flag for the media manager window
+    pub show_media_manager: bool,
 }
 
 impl Default for AppUI {
@@ -456,10 +460,15 @@ impl Default for AppUI {
         let saved_show_media_browser = user_config.show_media_browser;
         let saved_show_module_canvas = user_config.show_module_canvas;
         let saved_show_controller_overlay = user_config.show_controller_overlay;
+        let saved_show_media_manager = user_config.show_media_manager;
+        let saved_show_dashboard = user_config.show_dashboard;
 
         Self {
-            menu_bar: menu_bar::MenuBar::default(),
-            dashboard: Dashboard::default(),
+            dashboard: {
+                let mut d = Dashboard::default();
+                d.visible = saved_show_dashboard;
+                d
+            },
             paint_panel: PaintPanel::default(),
             show_osc_panel: false, // Hide by default - advanced feature
             selected_control_target: ControlTarget::Custom("".to_string()),
@@ -539,6 +548,8 @@ impl Default for AppUI {
             active_keys: std::collections::HashSet::new(),
             active_sidebar_tab: 0,
             last_style_update: std::time::Instant::now(),
+            monitors: Vec::new(),
+            show_media_manager: saved_show_media_manager,
         }
     }
 }
@@ -869,7 +880,7 @@ impl AppUI {
     /// Render master controls content (embedded)
     pub fn render_master_controls_embedded(
         &mut self,
-        ui: &mut egui::Ui,
+        ui: &mut Ui,
         layer_manager: &mut mapmap_core::LayerManager,
     ) {
         // Determine learning state (capture values to avoid borrow conflict)
@@ -981,17 +992,90 @@ impl AppUI {
             return;
         }
 
-        let mut open = self.show_shader_graph;
+        let mut is_open = self.show_shader_graph;
         egui::Window::new(self.i18n.t("panel-node-editor"))
             .default_size([800.0, 600.0])
             .resizable(true)
             .vscroll(false) // Canvas handles panning
-            .open(&mut open)
+            .open(&mut is_open)
             .show(ctx, |ui: &mut egui::Ui| {
                 if let Some(action) = self.node_editor_panel.ui(ui, &self.i18n) {
                     self.actions.push(UIAction::NodeAction(action));
                 }
             });
-        self.show_shader_graph = open;
+        self.show_shader_graph = is_open;
+    }
+
+    /// Render Application Settings Window
+    pub fn render_settings(&mut self, ctx: &egui::Context) {
+        if !self.show_settings {
+            return;
+        }
+
+        let mut is_open = self.show_settings;
+        egui::Window::new(self.i18n.t("menu-settings"))
+            .open(&mut is_open)
+            .default_size([500.0, 400.0])
+            .show(ctx, |ui| {
+                ui.heading(self.i18n.t("menu-settings"));
+                ui.separator();
+
+                egui::Grid::new("settings_grid")
+                    .num_columns(2)
+                    .spacing([20.0, 10.0])
+                    .show(ui, |ui| {
+                        // Language
+                        ui.label("Language:");
+                        let mut lang = self.user_config.language.clone();
+                        egui::ComboBox::from_id_salt("lang_select")
+                            .selected_text(if lang == "de" { "Deutsch" } else { "English" })
+                            .show_ui(ui, |ui| {
+                                if ui.selectable_label(lang == "en", "English").clicked() { lang = "en".to_string(); }
+                                if ui.selectable_label(lang == "de", "Deutsch").clicked() { lang = "de".to_string(); }
+                            });
+                        if lang != self.user_config.language {
+                            self.actions.push(UIAction::SetLanguage(lang));
+                        }
+                        ui.end_row();
+
+                        // VSync
+                        ui.label("VSync Mode:");
+                        let mut vsync = self.user_config.vsync_mode;
+                        egui::ComboBox::from_id_salt("vsync_select")
+                            .selected_text(vsync.to_string())
+                            .show_ui(ui, |ui| {
+                                ui.selectable_value(&mut vsync, crate::core::config::VSyncMode::Auto, "Auto");
+                                ui.selectable_value(&mut vsync, crate::core::config::VSyncMode::On, "On");
+                                ui.selectable_value(&mut vsync, crate::core::config::VSyncMode::Off, "Off");
+                            });
+                        if vsync != self.user_config.vsync_mode {
+                            self.user_config.vsync_mode = vsync;
+                            let _ = self.user_config.save();
+                        }
+                        ui.end_row();
+
+                        // Audio Meter Style
+                        ui.label("Audio Meter:");
+                        let mut meter = self.user_config.meter_style;
+                        egui::ComboBox::from_id_salt("meter_select")
+                            .selected_text(meter.to_string())
+                            .show_ui(ui, |ui| {
+                                ui.selectable_value(&mut meter, crate::core::config::AudioMeterStyle::Retro, "Retro");
+                                ui.selectable_value(&mut meter, crate::core::config::AudioMeterStyle::Digital, "Digital");
+                            });
+                        if meter != self.user_config.meter_style {
+                            self.user_config.meter_style = meter;
+                            let _ = self.user_config.save();
+                        }
+                        ui.end_row();
+                    });
+
+                ui.add_space(20.0);
+                if ui.button("Close").clicked() {
+                    is_open = false;
+                }
+            });
+        
+        self.show_settings = is_open;
     }
 }

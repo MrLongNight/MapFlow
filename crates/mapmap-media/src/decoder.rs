@@ -601,9 +601,13 @@ impl FFmpegDecoder {
     pub fn open_with_hw_accel<P: AsRef<Path>>(_path: P, _hw_accel: HwAccelType) -> Result<Self> {
         #[cfg(feature = "ffmpeg")]
         {
-            match ffmpeg_impl::RealFFmpegDecoder::open(_path, _hw_accel) {
+            match ffmpeg_impl::RealFFmpegDecoder::open(&_path, _hw_accel) {
                 Ok(decoder) => Ok(FFmpegDecoder::Real(decoder)),
                 Err(e) => {
+                    // IF IT'S A REAL FILE REQUEST, DON'T FALLBACK SILENTLY
+                    if _path.as_ref().exists() {
+                        return Err(e);
+                    }
                     warn!("FFmpeg decoder failed: {}, using test pattern", e);
                     Ok(FFmpegDecoder::TestPattern(TestPatternDecoder::new(
                         1920,
@@ -617,6 +621,12 @@ impl FFmpegDecoder {
 
         #[cfg(not(feature = "ffmpeg"))]
         {
+            // IF IT'S A REAL FILE REQUEST AND NO FFMPEG, ERROR OUT
+            if _path.as_ref().exists() {
+                return Err(MediaError::DecoderError(
+                    "FFmpeg feature not enabled, cannot open video file".to_string(),
+                ));
+            }
             info!("FFmpeg feature not enabled, using test pattern");
             Ok(FFmpegDecoder::TestPattern(TestPatternDecoder::new(
                 1920,

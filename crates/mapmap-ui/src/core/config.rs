@@ -164,6 +164,12 @@ pub struct UserConfig {
     /// Show controller overlay
     #[serde(default)]
     pub show_controller_overlay: bool,
+    /// Show media manager window
+    #[serde(default)]
+    pub show_media_manager: bool,
+    /// Show dashboard window
+    #[serde(default = "default_true")]
+    pub show_dashboard: bool,
 
     /// Philips Hue Configuration
     #[serde(default)]
@@ -205,6 +211,8 @@ impl Default for UserConfig {
             show_media_browser: true,
             show_module_canvas: false,
             show_controller_overlay: false,
+            show_media_manager: false,
+            show_dashboard: true,
             hue_config: HueConfig::default(),
             global_fullscreen: false,
         }
@@ -368,7 +376,8 @@ mod tests {
             show_media_browser: true,
             show_module_canvas: false,
             show_controller_overlay: false,
-
+            show_media_manager: false,
+            show_dashboard: true,
             hue_config: HueConfig::default(),
             global_fullscreen: true,
         };

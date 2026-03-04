@@ -123,9 +123,20 @@ impl WindowManager {
         let output_id: OutputId = 0; // Reserved ID for the main window
 
         let surface = backend.create_surface(window.clone())?;
+        
+        // --- EGUI SRGB FIX ---
+        // Egui prefers non-sRGB formats because it handles its own gamma correction.
+        // We strip the Srgb suffix if present to satisfy egui's preference.
+        let mut format = backend.surface_format();
+        format = match format {
+            wgpu::TextureFormat::Rgba8UnormSrgb => wgpu::TextureFormat::Rgba8Unorm,
+            wgpu::TextureFormat::Bgra8UnormSrgb => wgpu::TextureFormat::Bgra8Unorm,
+            _ => format,
+        };
+
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
-            format: backend.surface_format(),
+            format,
             width: default_width,
             height: default_height,
             present_mode: vsync_mode_to_present_mode(vsync_mode),

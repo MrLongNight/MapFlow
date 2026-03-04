@@ -1,0 +1,55 @@
+param(
+    [Parameter(Mandatory=$true)][int]$Interval,
+    [Parameter(Mandatory=$true)][string]$SessionId
+)
+
+# Initialer Start-Hinweis im Konsolen-Log
+Write-Host "--- MapFlow Orchestrator Wächter (Offizieller Modus) ---"
+Write-Host "Ziel-Session: $SessionId"
+Write-Host "Intervall: $Interval Sekunden"
+Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Monitoring ist bereit und startet jetzt..."
+
+while ($true) {
+    Write-Host "`n[$(Get-Date -Format 'HH:mm:ss')] === STARTE CHECK-ZYKLUS ==="
+    
+    # 1. Jules Status abrufen
+    Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Rufe Jules Remote Sessions ab..."
+    $julesStatus = jules remote list --session | Out-String
+    
+    # 2. Vollständige Übersicht (alle PRs)
+    Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Rufe vollständige PR-Liste ab..."
+    $allPrs = gh pr list --limit 100 --json number,title,author,state | Out-String
+    
+    # 3. Fokus-Liste (für die Arbeit)
+    Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Rufe Fokus-PR-Liste mit Status-Checks ab..."
+    $focusPrs = gh pr list --search "is:open" --json number,title,statusCheckRollup,mergeable,author | Out-String
+    
+    # 4. Der Orchestrator-Prompt
+    $msg = @"
+[ORCHESTRATOR-HEARTBEAT]
+Session-ID: $SessionId
+
+--- JULES REMOTE SESSIONS ---
+$julesStatus
+
+--- VOLLSTÄNDIGE PR ÜBERSICHT (Referenz) ---
+$allPrs
+
+--- FOKUS PR LISTE (Primäre Aufgabe) ---
+$focusPrs
+
+ANWEISUNG:
+1. Nutze die FOKUS-LISTE zur Identifikation von PRs mit 'FAILURE' in statusCheckRollup.
+2. BEI FEHLERN: Analysiere die Ursache via GitHub-Tools und schreibe einen @jules Kommentar mit Korrekturhinweisen. (KEIN Eigen-Fix!)
+3. BEI ERFOLG (SUCCESS) & MERGEABLE: Führe den Merge automatisch durch. WICHTIG: PRs dürfen NIEMALS gemerged werden, wenn nicht alle Checks absolut grün (SUCCESS) sind!
+4. NUTZE DIE VOLLSTÄNDIGE ÜBERSICHT, um sicherzustellen, dass kein PR vergessen wurde.
+5. Melde den Status kurz hier im Chat.
+"@
+
+    # 5. In die Session injizieren
+    Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Sende Update an Gemini-Chat ($SessionId)..."
+    & gemini --prompt $msg --session $SessionId --yolo --approval-mode yolo
+    
+    Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Update gesendet. Nächster Check in $Interval Sekunden."
+    Start-Sleep -Seconds $Interval
+}

@@ -737,7 +737,7 @@ pub fn render_inspector_for_part(
                                     ui.add_space(10.0);
                                 });
                             } else {
-                                let display_name = source_name.clone().unwrap();
+                                let display_name = source_name.clone().unwrap_or_else(|| "Unknown".to_string());
                                 ui.label(format!("Current: {}", display_name));
                                 ui.horizontal(|ui| {
                                     ui.add_enabled(false, egui::Button::new("🔍 Discover Sources"))
@@ -986,120 +986,17 @@ pub fn render_inspector_for_part(
 
                             ui.add(egui::DragValue::new(scale).prefix("Scale:").speed(0.1));
                         }
-                        SourceType::BevyParticles {
-                            rate,
-                            lifetime,
-                            speed,
-                            color_start,
-                            color_end,
-                            position,
-                            rotation,
-                        } => {
-                            ui.label("\u{2728} Particle System Settings");
-                            ui.separator();
-
-                            ui.add(egui::DragValue::new(rate).prefix("Rate:").speed(1.0));
-                            ui.add(egui::DragValue::new(lifetime).prefix("Lifetime:").speed(0.1));
-                            ui.add(egui::DragValue::new(speed).prefix("Speed:").speed(0.1));
-
-                            ui.horizontal(|ui| {
-                                ui.label("Start Color:");
-                                ui.color_edit_button_rgba_unmultiplied(color_start);
-                            });
-                            ui.horizontal(|ui| {
-                                ui.label("End Color:");
-                                ui.color_edit_button_rgba_unmultiplied(color_end);
-                            });
-
-                            ui.label("Position:");
-                            ui.horizontal(|ui| {
-                                ui.add(egui::DragValue::new(&mut position[0]).prefix("X:").speed(0.1));
-                                ui.add(egui::DragValue::new(&mut position[1]).prefix("Y:").speed(0.1));
-                                ui.add(egui::DragValue::new(&mut position[2]).prefix("Z:").speed(0.1));
-                            });
-
-                            ui.label("Rotation:");
-                            ui.horizontal(|ui| {
-                                ui.add(egui::DragValue::new(&mut rotation[0]).prefix("X:").speed(1.0));
-                                ui.add(egui::DragValue::new(&mut rotation[1]).prefix("Y:").speed(1.0));
-                                ui.add(egui::DragValue::new(&mut rotation[2]).prefix("Z:").speed(1.0));
-                            });
-                        }
-                        SourceType::Bevy3DShape {
-                            shape_type,
-                            position,
-                            rotation,
-                            scale,
-                            color,
-                            unlit,
-                            outline_width,
-                            outline_color,
-                            ..
-                        } => {
-                            ui.label("\u{1F9CA} Bevy 3D Shape");
-                            ui.separator();
-
-                            ui.horizontal(|ui| {
-                                ui.label("Shape:");
-                                egui::ComboBox::from_id_salt("shape_type_select")
-                                    .selected_text(format!("{:?}", shape_type))
-                                    .show_ui(ui, |ui| {
-                                        ui.selectable_value(shape_type, mapmap_core::module::BevyShapeType::Cube, "Cube");
-                                        ui.selectable_value(shape_type, mapmap_core::module::BevyShapeType::Sphere, "Sphere");
-                                        ui.selectable_value(shape_type, mapmap_core::module::BevyShapeType::Capsule, "Capsule");
-                                        ui.selectable_value(shape_type, mapmap_core::module::BevyShapeType::Torus, "Torus");
-                                        ui.selectable_value(shape_type, mapmap_core::module::BevyShapeType::Cylinder, "Cylinder");
-                                        ui.selectable_value(shape_type, mapmap_core::module::BevyShapeType::Plane, "Plane");
-                                    });
-                            });
-
-                            ui.horizontal(|ui| {
-                                ui.label("Color:");
-                                ui.color_edit_button_rgba_unmultiplied(color);
-                            });
-
-                            ui.checkbox(unlit, "Unlit (No Shading)");
-
-                            ui.separator();
-
-                            ui.collapsing("📐 Transform (3D)", |ui| {
-                                ui.label("Position:");
-                                ui.horizontal(|ui| {
-                                    ui.add(egui::DragValue::new(&mut position[0]).speed(0.1).prefix("X: "));
-                                    ui.add(egui::DragValue::new(&mut position[1]).speed(0.1).prefix("Y: "));
-                                    ui.add(egui::DragValue::new(&mut position[2]).speed(0.1).prefix("Z: "));
-                                });
-
-                                ui.label("Rotation:");
-                                ui.horizontal(|ui| {
-                                    ui.add(egui::DragValue::new(&mut rotation[0]).speed(1.0).prefix("X: ").suffix("Â°"));
-                                    ui.add(egui::DragValue::new(&mut rotation[1]).speed(1.0).prefix("Y: ").suffix("Â°"));
-                                    ui.add(egui::DragValue::new(&mut rotation[2]).speed(1.0).prefix("Z: ").suffix("Â°"));
-                                });
-
-                                ui.label("Scale:");
-                                ui.horizontal(|ui| {
-                                    ui.add(egui::DragValue::new(&mut scale[0]).speed(0.01).prefix("X: "));
-                                    ui.add(egui::DragValue::new(&mut scale[1]).speed(0.01).prefix("Y: "));
-                                    ui.add(egui::DragValue::new(&mut scale[2]).speed(0.01).prefix("Z: "));
-                                });
-                            });
-
-                            ui.separator();
-                            ui.collapsing("Outline", |ui| {
-                                ui.horizontal(|ui| {
-                                    ui.label("Width:");
-                                    ui.add(egui::Slider::new(outline_width, 0.0..=10.0));
-                                });
-                                ui.horizontal(|ui| {
-                                    ui.label("Color:");
-                                    ui.color_edit_button_rgba_unmultiplied(outline_color);
-                                });
-                            });
-                        }
                         SourceType::Bevy3DModel { .. } => {
                             ui.label("\u{1F3AE} Bevy 3D Model");
                             ui.label("Model controls not yet implemented.");
+                        }
+                        SourceType::BevyParticles { .. } => {
+                            ui.label("\u{2728} Bevy Particles");
+                            ui.label("Particle system controls not yet implemented.");
+                        }
+                        SourceType::Bevy3DShape { .. } => {
+                            ui.label("\u{1F9CA} 3D Shape");
+                            ui.label("3D Shape controls not yet implemented.");
                         }
                         SourceType::Bevy => {
                             ui.label("\u{1F3AE} Bevy Scene");
@@ -1396,11 +1293,6 @@ pub fn render_inspector_for_part(
                 ModulePartType::Layer(layer) => {
                     ui.label("📋 Layer:");
 
-                    // Helper to render mesh UI
-                    let mut render_mesh_ui = |ui: &mut Ui, mesh: &mut mapmap_core::module::MeshType, id_salt: u64| {
-                        mesh::render_mesh_editor_ui(canvas, ui, mesh, part_id, id_salt);
-                    };
-
                     match layer {
                         LayerType::Single { id, name, opacity, blend_mode, mesh, mapping_mode } => {
                             ui.label("🔳 Single Layer");
@@ -1419,14 +1311,22 @@ pub fn render_inspector_for_part(
 
                             ui.checkbox(mapping_mode, "Mapping Mode (Grid)");
 
-                            render_mesh_ui(ui, mesh, *id);
+                            ui.separator();
+                            if ui.button("🖼️ Open Mesh Editor").clicked() {
+                                canvas.show_mesh_editor = true;
+                            }
+                            mesh::render_mesh_editor_ui(canvas, ui, mesh, part_id, *id);
                         }
                         LayerType::Group { name, opacity, mesh, mapping_mode, .. } => {
                             ui.label("📂 Group");
                             ui.text_edit_singleline(name);
                             ui.add(egui::Slider::new(opacity, 0.0..=1.0).text("Opacity"));
                             ui.checkbox(mapping_mode, "Mapping Mode (Grid)");
-                            render_mesh_ui(ui, mesh, 9999); // Dummy ID
+                            ui.separator();
+                            if ui.button("🖼️ Open Mesh Editor").clicked() {
+                                canvas.show_mesh_editor = true;
+                            }
+                            mesh::render_mesh_editor_ui(canvas, ui, mesh, part_id, 9999);
                         }
                         LayerType::All { opacity, .. } => {
                             ui.label("🎚️ Master");
@@ -1437,7 +1337,9 @@ pub fn render_inspector_for_part(
                 ModulePartType::Mesh(mesh) => {
                     ui.label("🕸️ Mesh Node");
                     ui.separator();
-
+                    if ui.button("🖼️ Open Mesh Editor").clicked() {
+                        canvas.show_mesh_editor = true;
+                    }
                     mesh::render_mesh_editor_ui(canvas, ui, mesh, part_id, part_id);
                 }
                 ModulePartType::Output(output) => {
@@ -2185,14 +2087,14 @@ fn render_timeline(
     let mut handled = false;
 
     // 1. Handles (Prioritize resizing)
-    let handle_width = 8.0;
+    let handle_width_const = 8.0;
     let start_handle_rect = Rect::from_center_size(
         Pos2::new(start_x, rect.center().y),
-        Vec2::new(handle_width, rect.height()),
+        Vec2::new(handle_width_const, rect.height()),
     );
     let end_handle_rect = Rect::from_center_size(
         Pos2::new(end_x, rect.center().y),
-        Vec2::new(handle_width, rect.height()),
+        Vec2::new(handle_width_const, rect.height()),
     );
 
     let start_resp = ui.interact(start_handle_rect, response.id.with("start"), Sense::drag());

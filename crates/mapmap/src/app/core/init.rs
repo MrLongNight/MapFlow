@@ -17,6 +17,7 @@ use mapmap_core::{
         backend::{cpal_backend::CpalBackend, AudioBackend},
     },
     media_library::MediaLibrary,
+    monitor::detect_monitors_winit,
     AppState, ModuleEvaluator,
 };
 use mapmap_io::load_project;
@@ -132,6 +133,8 @@ impl App {
         ];
 
         let mut ui_state = AppUI::default();
+        // Detect monitors and store in UI state
+        ui_state.monitors = detect_monitors_winit(elwt).monitors;
 
         #[cfg(feature = "midi")]
         {
