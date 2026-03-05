@@ -15,7 +15,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
             .default_width(300.0)
             .show(ctx, |ui_obj| {
                 ui_obj.set_min_width(200.0);
-                
+
                 // Tabs for sidebar
                 ui_obj.horizontal(|ui| {
                     ui.selectable_value(&mut app.ui_state.active_sidebar_tab, 0, "📁 Media");
@@ -41,15 +41,20 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
                             ) {
                                 match action {
                                     ui::ModuleSidebarAction::AddModule => {
-                                        let id = std::sync::Arc::make_mut(&mut app.state.module_manager)
-                                            .create_module("New Module".to_string());
+                                        let id =
+                                            std::sync::Arc::make_mut(&mut app.state.module_manager)
+                                                .create_module("New Module".to_string());
                                         app.ui_state.module_canvas.set_active_module(Some(id));
                                     }
                                     ui::ModuleSidebarAction::DeleteModule(id) => {
-                                        std::sync::Arc::make_mut(&mut app.state.module_manager).remove_module(id);
+                                        std::sync::Arc::make_mut(&mut app.state.module_manager)
+                                            .remove_module(id);
                                     }
                                     ui::ModuleSidebarAction::SetColor(id, color) => {
-                                        if let Some(m) = std::sync::Arc::make_mut(&mut app.state.module_manager).get_module_mut(id) {
+                                        if let Some(m) =
+                                            std::sync::Arc::make_mut(&mut app.state.module_manager)
+                                                .get_module_mut(id)
+                                        {
                                             m.color = color;
                                         }
                                     }
@@ -58,20 +63,34 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
                         }
                         2 => {
                             // Dashboard in Sidebar
-                            if let Some(action) = app.ui_state.dashboard.ui_embedded(ui, &app.ui_state.i18n, app.ui_state.icon_manager.as_ref()) {
+                            if let Some(action) = app.ui_state.dashboard.ui_embedded(
+                                ui,
+                                &app.ui_state.i18n,
+                                app.ui_state.icon_manager.as_ref(),
+                            ) {
                                 match action {
-                                    ui::DashboardAction::SendCommand(cmd) => {
-                                        match cmd {
-                                            mapmap_media::PlaybackCommand::Play => app.ui_state.actions.push(ui::UIAction::Play),
-                                            mapmap_media::PlaybackCommand::Pause => app.ui_state.actions.push(ui::UIAction::Pause),
-                                            mapmap_media::PlaybackCommand::Stop => app.ui_state.actions.push(ui::UIAction::Stop),
-                                            mapmap_media::PlaybackCommand::SetSpeed(s) => app.ui_state.actions.push(ui::UIAction::SetSpeed(s)),
-                                            mapmap_media::PlaybackCommand::SetLoopMode(m) => app.ui_state.actions.push(ui::UIAction::SetLoopMode(m)),
-                                            _ => {}
+                                    ui::DashboardAction::SendCommand(cmd) => match cmd {
+                                        mapmap_media::PlaybackCommand::Play => {
+                                            app.ui_state.actions.push(ui::UIAction::Play)
                                         }
-                                    }
+                                        mapmap_media::PlaybackCommand::Pause => {
+                                            app.ui_state.actions.push(ui::UIAction::Pause)
+                                        }
+                                        mapmap_media::PlaybackCommand::Stop => {
+                                            app.ui_state.actions.push(ui::UIAction::Stop)
+                                        }
+                                        mapmap_media::PlaybackCommand::SetSpeed(s) => {
+                                            app.ui_state.actions.push(ui::UIAction::SetSpeed(s))
+                                        }
+                                        mapmap_media::PlaybackCommand::SetLoopMode(m) => {
+                                            app.ui_state.actions.push(ui::UIAction::SetLoopMode(m))
+                                        }
+                                        _ => {}
+                                    },
                                     ui::DashboardAction::AudioDeviceChanged(device) => {
-                                        app.ui_state.actions.push(ui::UIAction::SelectAudioDevice(device));
+                                        app.ui_state
+                                            .actions
+                                            .push(ui::UIAction::SelectAudioDevice(device));
                                     }
                                     ui::DashboardAction::ToggleAudioPanel => {
                                         app.ui_state.actions.push(ui::UIAction::ToggleAudioPanel);
@@ -245,18 +264,28 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
         {
             // ... handling ...
             match action {
-                ui::DashboardAction::SendCommand(cmd) => {
-                    match cmd {
-                        mapmap_media::PlaybackCommand::Play => app.ui_state.actions.push(ui::UIAction::Play),
-                        mapmap_media::PlaybackCommand::Pause => app.ui_state.actions.push(ui::UIAction::Pause),
-                        mapmap_media::PlaybackCommand::Stop => app.ui_state.actions.push(ui::UIAction::Stop),
-                        mapmap_media::PlaybackCommand::SetSpeed(s) => app.ui_state.actions.push(ui::UIAction::SetSpeed(s)),
-                        mapmap_media::PlaybackCommand::SetLoopMode(m) => app.ui_state.actions.push(ui::UIAction::SetLoopMode(m)),
-                        _ => {}
+                ui::DashboardAction::SendCommand(cmd) => match cmd {
+                    mapmap_media::PlaybackCommand::Play => {
+                        app.ui_state.actions.push(ui::UIAction::Play)
                     }
-                }
+                    mapmap_media::PlaybackCommand::Pause => {
+                        app.ui_state.actions.push(ui::UIAction::Pause)
+                    }
+                    mapmap_media::PlaybackCommand::Stop => {
+                        app.ui_state.actions.push(ui::UIAction::Stop)
+                    }
+                    mapmap_media::PlaybackCommand::SetSpeed(s) => {
+                        app.ui_state.actions.push(ui::UIAction::SetSpeed(s))
+                    }
+                    mapmap_media::PlaybackCommand::SetLoopMode(m) => {
+                        app.ui_state.actions.push(ui::UIAction::SetLoopMode(m))
+                    }
+                    _ => {}
+                },
                 ui::DashboardAction::AudioDeviceChanged(device) => {
-                    app.ui_state.actions.push(ui::UIAction::SelectAudioDevice(device));
+                    app.ui_state
+                        .actions
+                        .push(ui::UIAction::SelectAudioDevice(device));
                 }
                 ui::DashboardAction::ToggleAudioPanel => {
                     app.ui_state.actions.push(ui::UIAction::ToggleAudioPanel);
@@ -355,7 +384,9 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
         if let Some(action) = app.ui_state.paint_panel.take_action() {
             match action {
                 ui::PaintPanelAction::AddPaint => app.ui_state.actions.push(ui::UIAction::AddPaint),
-                ui::PaintPanelAction::RemovePaint(id) => app.ui_state.actions.push(ui::UIAction::RemovePaint(id)),
+                ui::PaintPanelAction::RemovePaint(id) => {
+                    app.ui_state.actions.push(ui::UIAction::RemovePaint(id))
+                }
             }
         }
     }
@@ -372,7 +403,8 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
 
     // Master controls (Legacy window)
     if app.ui_state.show_master_controls {
-        app.ui_state.render_master_controls(ctx, app.state.layer_manager_mut());
+        app.ui_state
+            .render_master_controls(ctx, app.state.layer_manager_mut());
     }
 
     // Transform Panel - Show as window (if not in inspector)

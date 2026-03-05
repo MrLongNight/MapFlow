@@ -3,7 +3,11 @@ pub struct MediaManagerUIWrapper {
 }
 
 impl MediaManagerUIWrapper {
-    pub fn ui(&mut self, ctx: &egui::Context, library: &mut mapmap_core::media_library::MediaLibrary) {
+    pub fn ui(
+        &mut self,
+        ctx: &egui::Context,
+        library: &mut mapmap_core::media_library::MediaLibrary,
+    ) {
         if !self.visible {
             return;
         }

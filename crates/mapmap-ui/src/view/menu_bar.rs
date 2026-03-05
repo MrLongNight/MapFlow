@@ -72,20 +72,32 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                 ui.menu_button(ui_state.i18n.t("menu-view"), |ui: &mut egui::Ui| {
                     ui.checkbox(&mut ui_state.show_left_sidebar, "🖥 Sidebar");
                     ui.checkbox(&mut ui_state.show_module_canvas, "📦 Module Canvas");
-                    ui.checkbox(&mut ui_state.show_timeline, format!("🎞 {}", ui_state.i18n.t("panel-timeline")));
-                    ui.checkbox(&mut ui_state.show_inspector, format!("🔍 {}", ui_state.i18n.t("panel-inspector")));
-                    
+                    ui.checkbox(
+                        &mut ui_state.show_timeline,
+                        format!("🎞 {}", ui_state.i18n.t("panel-timeline")),
+                    );
+                    ui.checkbox(
+                        &mut ui_state.show_inspector,
+                        format!("🔍 {}", ui_state.i18n.t("panel-inspector")),
+                    );
+
                     ui.separator();
 
-                    if ui.checkbox(&mut ui_state.show_media_manager, "🎞 Media Manager").clicked() {
+                    if ui
+                        .checkbox(&mut ui_state.show_media_manager, "🎞 Media Manager")
+                        .clicked()
+                    {
                         actions.push(UIAction::ToggleMediaManager);
                     }
-                    
+
                     ui.separator();
-                    
+
                     ui.menu_button("🛠 Erweitert", |ui: &mut egui::Ui| {
                         ui.checkbox(&mut ui_state.show_shader_graph, "⚛ Shader Editor");
-                        ui.checkbox(&mut ui_state.show_controller_overlay, "🎹 Controller Overlay");
+                        ui.checkbox(
+                            &mut ui_state.show_controller_overlay,
+                            "🎹 Controller Overlay",
+                        );
                         ui.checkbox(&mut ui_state.show_cue_panel, "🎭 Cue List");
                         ui.checkbox(&mut ui_state.is_midi_learn_mode, "🛰 MIDI Learn Mode");
                     });
@@ -100,12 +112,15 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                     });
 
                     ui.separator();
-                    
-                    ui.checkbox(&mut ui_state.show_toolbar, ui_state.i18n.t("view-show-toolbar"));
+
+                    ui.checkbox(
+                        &mut ui_state.show_toolbar,
+                        ui_state.i18n.t("view-show-toolbar"),
+                    );
                     ui.checkbox(&mut ui_state.show_stats, ui_state.i18n.t("view-show-stats"));
-                    
+
                     ui.separator();
-                    
+
                     if ui.button(ui_state.i18n.t("view-reset-layout")).clicked() {
                         actions.push(UIAction::ResetLayout);
                         ui.close();
@@ -140,23 +155,41 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                     ui.add_space(8.0);
 
                     // Transport
-                    if ui.button("▶").on_hover_text(ui_state.i18n.t("btn-play")).clicked() {
+                    if ui
+                        .button("▶")
+                        .on_hover_text(ui_state.i18n.t("btn-play"))
+                        .clicked()
+                    {
                         actions.push(UIAction::Play);
                     }
-                    if ui.button("⏸").on_hover_text(ui_state.i18n.t("btn-pause")).clicked() {
+                    if ui
+                        .button("⏸")
+                        .on_hover_text(ui_state.i18n.t("btn-pause"))
+                        .clicked()
+                    {
                         actions.push(UIAction::Pause);
                     }
-                    if ui.button("⏹").on_hover_text(ui_state.i18n.t("btn-stop")).clicked() {
+                    if ui
+                        .button("⏹")
+                        .on_hover_text(ui_state.i18n.t("btn-stop"))
+                        .clicked()
+                    {
                         actions.push(UIAction::Stop);
                     }
 
                     ui.separator();
 
                     // Global Tools
-                    if ui.selectable_label(ui_state.dashboard.visible, "🎛 Dashboard").clicked() {
+                    if ui
+                        .selectable_label(ui_state.dashboard.visible, "🎛 Dashboard")
+                        .clicked()
+                    {
                         ui_state.dashboard.visible = !ui_state.dashboard.visible;
                     }
-                    if ui.selectable_label(ui_state.show_audio, "🔊 Audio").clicked() {
+                    if ui
+                        .selectable_label(ui_state.show_audio, "🔊 Audio")
+                        .clicked()
+                    {
                         actions.push(UIAction::ToggleAudioPanel);
                     }
 
@@ -165,13 +198,17 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
                     // Stats Overlay
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         ui.add_space(8.0);
-                        
+
                         // Audio Level
-                        let meter = AudioMeter::new(ui_state.user_config.meter_style, ui_state.current_audio_level, ui_state.current_audio_level);
+                        let meter = AudioMeter::new(
+                            ui_state.user_config.meter_style,
+                            ui_state.current_audio_level,
+                            ui_state.current_audio_level,
+                        );
                         ui.add(meter);
-                        
+
                         ui.separator();
-                        
+
                         // Performance
                         ui.label(
                             egui::RichText::new(format!("{:.0} FPS", ui_state.current_fps))

@@ -1053,8 +1053,12 @@ impl AppUI {
                         egui::ComboBox::from_id_salt("lang_select")
                             .selected_text(if lang == "de" { "Deutsch" } else { "English" })
                             .show_ui(ui, |ui| {
-                                if ui.selectable_label(lang == "en", "English").clicked() { lang = "en".to_string(); }
-                                if ui.selectable_label(lang == "de", "Deutsch").clicked() { lang = "de".to_string(); }
+                                if ui.selectable_label(lang == "en", "English").clicked() {
+                                    lang = "en".to_string();
+                                }
+                                if ui.selectable_label(lang == "de", "Deutsch").clicked() {
+                                    lang = "de".to_string();
+                                }
                             });
                         if lang != self.user_config.language {
                             self.actions.push(UIAction::SetLanguage(lang));
@@ -1067,9 +1071,21 @@ impl AppUI {
                         egui::ComboBox::from_id_salt("vsync_select")
                             .selected_text(vsync.to_string())
                             .show_ui(ui, |ui| {
-                                ui.selectable_value(&mut vsync, crate::core::config::VSyncMode::Auto, "Auto");
-                                ui.selectable_value(&mut vsync, crate::core::config::VSyncMode::On, "On");
-                                ui.selectable_value(&mut vsync, crate::core::config::VSyncMode::Off, "Off");
+                                ui.selectable_value(
+                                    &mut vsync,
+                                    crate::core::config::VSyncMode::Auto,
+                                    "Auto",
+                                );
+                                ui.selectable_value(
+                                    &mut vsync,
+                                    crate::core::config::VSyncMode::On,
+                                    "On",
+                                );
+                                ui.selectable_value(
+                                    &mut vsync,
+                                    crate::core::config::VSyncMode::Off,
+                                    "Off",
+                                );
                             });
                         if vsync != self.user_config.vsync_mode {
                             self.user_config.vsync_mode = vsync;
@@ -1083,8 +1099,16 @@ impl AppUI {
                         egui::ComboBox::from_id_salt("meter_select")
                             .selected_text(meter.to_string())
                             .show_ui(ui, |ui| {
-                                ui.selectable_value(&mut meter, crate::core::config::AudioMeterStyle::Retro, "Retro");
-                                ui.selectable_value(&mut meter, crate::core::config::AudioMeterStyle::Digital, "Digital");
+                                ui.selectable_value(
+                                    &mut meter,
+                                    crate::core::config::AudioMeterStyle::Retro,
+                                    "Retro",
+                                );
+                                ui.selectable_value(
+                                    &mut meter,
+                                    crate::core::config::AudioMeterStyle::Digital,
+                                    "Digital",
+                                );
                             });
                         if meter != self.user_config.meter_style {
                             self.user_config.meter_style = meter;
@@ -1098,7 +1122,7 @@ impl AppUI {
                     should_close = true;
                 }
             });
-        
+
         self.show_settings = is_open && !should_close;
     }
 }

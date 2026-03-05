@@ -221,7 +221,9 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
         tempo_bpm: analysis.tempo_bpm,
         waveform: analysis.waveform,
     };
-    app.ui_state.dashboard.set_audio_analysis(dashboard_analysis);
+    app.ui_state
+        .dashboard
+        .set_audio_analysis(dashboard_analysis);
     app.ui_state
         .dashboard
         .set_audio_devices(app.audio_devices.clone());

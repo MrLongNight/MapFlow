@@ -217,9 +217,9 @@ impl Dashboard {
                                 LoopMode::PlayOnce
                             };
                             self.loop_mode = new_mode;
-                            action = Some(DashboardAction::SendCommand(PlaybackCommand::SetLoopMode(
-                                new_mode,
-                            )));
+                            action = Some(DashboardAction::SendCommand(
+                                PlaybackCommand::SetLoopMode(new_mode),
+                            ));
                         }
                     });
                 });
@@ -230,27 +230,32 @@ impl Dashboard {
             // Audio controls
             ui.group(|ui| {
                 ui.label(locale.t("dashboard-audio-section"));
-                
+
                 // Audio level visualization
                 if let Some(analysis) = &self.audio_analysis {
                     let meter_rect = ui.available_rect_before_wrap();
                     let height = 10.0;
                     let width = meter_rect.width();
-                    let (rect, _) = ui.allocate_at_least(egui::vec2(width, height), egui::Sense::hover());
-                    
+                    let (rect, _) =
+                        ui.allocate_at_least(egui::vec2(width, height), egui::Sense::hover());
+
                     let rms = analysis.rms_volume.clamp(0.0, 1.0);
                     let peak = analysis.peak_volume.clamp(0.0, 1.0);
-                    
+
                     ui.painter().rect_filled(rect, 2.0, colors::DARK_GREY);
-                    
+
                     let rms_width = width * rms;
-                    let rms_rect = egui::Rect::from_min_size(rect.min, egui::vec2(rms_width, height));
+                    let rms_rect =
+                        egui::Rect::from_min_size(rect.min, egui::vec2(rms_width, height));
                     ui.painter().rect_filled(rms_rect, 2.0, colors::MINT_ACCENT);
-                    
+
                     let peak_x = rect.min.x + width * peak;
                     ui.painter().line_segment(
-                        [egui::pos2(peak_x, rect.min.y), egui::pos2(peak_x, rect.max.y)],
-                        egui::Stroke::new(2.0, colors::WARN_COLOR)
+                        [
+                            egui::pos2(peak_x, rect.min.y),
+                            egui::pos2(peak_x, rect.max.y),
+                        ],
+                        egui::Stroke::new(2.0, colors::WARN_COLOR),
                     );
                 }
 

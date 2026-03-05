@@ -95,12 +95,16 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
             UIAction::SetSpeed(s) => {
                 app.state.effect_animator_mut().set_speed(s);
                 for handle in app.media_players.values_mut() {
-                    let _ = handle.command_tx.send(mapmap_media::PlaybackCommand::SetSpeed(s));
+                    let _ = handle
+                        .command_tx
+                        .send(mapmap_media::PlaybackCommand::SetSpeed(s));
                 }
             }
             UIAction::SetLoopMode(m) => {
                 for handle in app.media_players.values_mut() {
-                    let _ = handle.command_tx.send(mapmap_media::PlaybackCommand::SetLoopMode(m));
+                    let _ = handle
+                        .command_tx
+                        .send(mapmap_media::PlaybackCommand::SetLoopMode(m));
                 }
             }
             UIAction::ToggleMediaManager => {
@@ -280,9 +284,13 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
             UIAction::AddPaint => {
                 app.history.push(app.state.clone());
                 let count = app.state.paint_manager.paints().len();
-                app.state.paint_manager_mut().add_paint(
-                    mapmap_core::Paint::color(0, format!("Paint {}", count + 1), [1.0, 1.0, 1.0, 1.0])
-                );
+                app.state
+                    .paint_manager_mut()
+                    .add_paint(mapmap_core::Paint::color(
+                        0,
+                        format!("Paint {}", count + 1),
+                        [1.0, 1.0, 1.0, 1.0],
+                    ));
                 app.state.dirty = true;
             }
             UIAction::RemovePaint(id) => {
@@ -294,9 +302,13 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
             UIAction::AddMapping => {
                 app.history.push(app.state.clone());
                 let count = app.state.mapping_manager.mappings().len();
-                app.state.mapping_manager_mut().add_mapping(
-                    mapmap_core::Mapping::quad(0, format!("Mapping {}", count + 1), 0)
-                );
+                app.state
+                    .mapping_manager_mut()
+                    .add_mapping(mapmap_core::Mapping::quad(
+                        0,
+                        format!("Mapping {}", count + 1),
+                        0,
+                    ));
                 app.state.dirty = true;
             }
             UIAction::RemoveMapping(id) => {
@@ -316,7 +328,9 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
 
             UIAction::AddOutput(name, region, size) => {
                 app.history.push(app.state.clone());
-                app.state.output_manager_mut().add_output(name, region, size);
+                app.state
+                    .output_manager_mut()
+                    .add_output(name, region, size);
                 app.state.dirty = true;
             }
             UIAction::RemoveOutput(id) => {
@@ -578,10 +592,7 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 app.state.dirty = true;
             }
             UIAction::SetMasterBlackout(val) => {
-                app.state
-                    .layer_manager_mut()
-                    .composition
-                    .master_blackout = val;
+                app.state.layer_manager_mut().composition.master_blackout = val;
                 app.state.dirty = true;
             }
             UIAction::SetCompositionName(name) => {
