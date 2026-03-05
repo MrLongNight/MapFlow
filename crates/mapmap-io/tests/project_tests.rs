@@ -30,12 +30,7 @@ fn create_sample_app_state() -> AppState {
 
     {
         let mapping_manager = std::sync::Arc::make_mut(&mut app_state.mapping_manager);
-        let mapping = mapmap_core::Mapping::new(
-            1,
-            "Test Mapping",
-            1,
-            mapmap_core::Mesh::quad()
-        );
+        let mapping = mapmap_core::Mapping::new(1, "Test Mapping", 1, mapmap_core::Mesh::quad());
         mapping_manager.add_mapping(mapping);
     }
 

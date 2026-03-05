@@ -132,12 +132,20 @@ impl NodeEditor {
         // Update socket connection status
         for connection in &self.connections {
             if let Some(node) = self.nodes.get_mut(&connection.to_node) {
-                if let Some(socket) = node.inputs.iter_mut().find(|s| s.name == connection.to_socket) {
+                if let Some(socket) = node
+                    .inputs
+                    .iter_mut()
+                    .find(|s| s.name == connection.to_socket)
+                {
                     socket.connected = true;
                 }
             }
             if let Some(node) = self.nodes.get_mut(&connection.from_node) {
-                if let Some(socket) = node.outputs.iter_mut().find(|s| s.name == connection.from_socket) {
+                if let Some(socket) = node
+                    .outputs
+                    .iter_mut()
+                    .find(|s| s.name == connection.from_socket)
+                {
                     socket.connected = true;
                 }
             }
