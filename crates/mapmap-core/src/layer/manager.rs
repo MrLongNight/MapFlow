@@ -270,6 +270,10 @@ impl LayerManager {
             }
         }
 
+        if self.composition.master_blackout {
+            return 0.0;
+        }
+
         opacity * self.composition.master_opacity
     }
 

@@ -577,6 +577,13 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                     .set_master_speed(val);
                 app.state.dirty = true;
             }
+            UIAction::SetMasterBlackout(val) => {
+                app.state
+                    .layer_manager_mut()
+                    .composition
+                    .master_blackout = val;
+                app.state.dirty = true;
+            }
             UIAction::SetCompositionName(name) => {
                 app.state.layer_manager_mut().composition.name = name;
                 app.state.dirty = true;

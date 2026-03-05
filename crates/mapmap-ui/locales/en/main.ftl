@@ -259,6 +259,7 @@ header-master = Phase 1: Master Controls
 label-composition = Composition
 label-master-opacity = Master Opacity (M)
 label-master-speed = Master Speed (S)
+label-master-blackout = Master Blackout (B)
 label-size = Size
 label-frame-rate = Frame Rate
 label-effective-multipliers = Effective Multipliers:
