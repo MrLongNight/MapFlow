@@ -240,31 +240,27 @@ impl ControlManager {
 
     /// Validate control value for security issues (e.g. path traversal)
     fn validate_security(&self, target: &ControlTarget, value: &ControlValue) -> Result<()> {
-        if let ControlValue::String(s) = value {
-            // Check for path traversal attempts
-            if s == ".."
-                || s.starts_with("../")
-                || s.starts_with("..\\")
-                || s.contains("/../")
-                || s.contains("\\..\\")
-                || s.contains("/..\\")
-                || s.contains("\\../")
-                || s.ends_with("/..")
-                || s.ends_with("\\..")
-            {
-                let name = match target {
-                    ControlTarget::PaintParameter(_, name) => name.clone(),
-                    ControlTarget::EffectParameter(_, name) => name.clone(),
-                    ControlTarget::Custom(name) => name.clone(),
-                    _ => target.name(),
-                };
-
-                return Err(ControlError::InvalidParameter(format!(
-                    "Security violation: Path traversal detected in value for {}",
-                    name
-                )));
-            }
+        if let Err(e) = target.validate() {
+            return Err(ControlError::InvalidParameter(format!(
+                "Security violation in target {}: {}",
+                target.name(),
+                e
+            )));
         }
+
+        if let Err(e) = value.validate() {
+            let name = match target {
+                ControlTarget::PaintParameter(_, name) => name.clone(),
+                ControlTarget::EffectParameter(_, name) => name.clone(),
+                ControlTarget::Custom(name) => name.clone(),
+                _ => target.name(),
+            };
+            return Err(ControlError::InvalidParameter(format!(
+                "Security violation in value for {}: {}",
+                name, e
+            )));
+        }
+
         Ok(())
     }
 

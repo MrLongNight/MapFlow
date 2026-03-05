@@ -191,7 +191,8 @@ impl ControlValue {
                     ));
                 }
                 // Path traversal check
-                if Path::new(s)
+                let normalized = s.replace("\\", "/");
+                if Path::new(&normalized)
                     .components()
                     .any(|c| matches!(c, Component::ParentDir))
                 {
