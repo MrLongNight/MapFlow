@@ -25,7 +25,9 @@ pub mod widgets;
 
 // Re-export categorized modules to maintain API compatibility
 pub use crate::core::*;
-pub use crate::editors::*;
+pub use crate::editors::{
+    mesh_editor::*, module_canvas::*, node_editor::*, shortcut_editor::*, timeline_v2::*,
+};
 pub use crate::panels::*;
 pub use crate::view::*;
 pub use crate::widgets::*;
@@ -255,6 +257,9 @@ pub enum UIAction {
     /// Execute node editor action
     NodeAction(NodeEditorAction),
 
+    /// Execute timeline action
+    TimelineAction(crate::editors::timeline_v2::TimelineAction),
+
     // Global Fullscreen Setting
     /// Set global fullscreen state
     SetGlobalFullscreen(bool),
@@ -360,9 +365,9 @@ pub struct AppUI {
     /// Cue list panel
     pub cue_panel: CuePanel,
     /// Timeline V2 panel
-    pub timeline_panel: timeline_v2::TimelineV2,
+    pub timeline_panel: TimelineV2,
     /// Node editor panel state
-    pub node_editor_panel: node_editor::NodeEditor,
+    pub node_editor_panel: NodeEditor,
     /// Transform control panel
     pub transform_panel: TransformPanel,
     /// Shortcut editor panel
@@ -375,6 +380,8 @@ pub struct AppUI {
     pub user_config: config::UserConfig,
     /// Show settings window
     pub show_settings: bool,
+    /// Show about window
+    pub show_about: bool,
     /// Show media browser
     pub show_media_browser: bool,
     /// Media browser panel
@@ -498,10 +505,10 @@ impl Default for AppUI {
             i18n: LocaleManager::new(&saved_language),
             effect_chain_panel: EffectChainPanel::default(),
             cue_panel: CuePanel::default(),
-            timeline_panel: timeline_v2::TimelineV2::default(),
+            timeline_panel: TimelineV2::default(),
             show_timeline: saved_show_timeline, // Load from config
             show_shader_graph: false,           // Advanced - hide by default
-            node_editor_panel: node_editor::NodeEditor::default(),
+            node_editor_panel: NodeEditor::default(),
             transform_panel: TransformPanel::default(),
             shortcut_editor: ShortcutEditor::new(),
             show_toolbar: true,
@@ -509,6 +516,7 @@ impl Default for AppUI {
             icon_demo_panel: icon_demo_panel::IconDemoPanel::default(),
             user_config,
             show_settings: false,
+            show_about: false,
             show_media_browser: saved_show_media_browser, // Load from config
             media_browser: MediaBrowser::new(std::env::current_dir().unwrap_or_default()),
             inspector_panel: InspectorPanel::default(),

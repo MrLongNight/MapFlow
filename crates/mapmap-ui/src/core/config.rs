@@ -171,6 +171,10 @@ pub struct UserConfig {
     #[serde(default = "default_true")]
     pub show_dashboard: bool,
 
+    /// Enable NDI discovery
+    #[serde(default = "default_true")]
+    pub ndi_discovery: bool,
+
     /// Philips Hue Configuration
     #[serde(default)]
     pub hue_config: HueConfig,
@@ -213,6 +217,7 @@ impl Default for UserConfig {
             show_controller_overlay: false,
             show_media_manager: false,
             show_dashboard: true,
+            ndi_discovery: true,
             hue_config: HueConfig::default(),
             global_fullscreen: false,
         }

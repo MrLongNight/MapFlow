@@ -25,6 +25,29 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
         tracing::trace!("Effect updates: {}", param_updates.len());
     }
 
+    let all_module_ids: Vec<u64> = app
+        .state
+        .module_manager
+        .list_modules()
+        .iter()
+        .map(|m| m.id)
+        .collect();
+    let show_module_id = app.ui_state.timeline_panel.runtime_show_module(
+        app.state.effect_animator.get_current_time() as f32,
+        app.state.effect_animator.is_playing(),
+        &all_module_ids,
+    );
+    if let Some(active_module_id) = show_module_id {
+        app.ui_state
+            .module_canvas
+            .set_active_module(Some(active_module_id));
+    }
+    let modules_for_eval: Vec<u64> = if let Some(module_id) = show_module_id {
+        vec![module_id]
+    } else {
+        all_module_ids.clone()
+    };
+
     // --- Graph & Renderer Evaluation ---
     let graph_dirty = app.state.module_manager.graph_revision != app.last_graph_revision;
 
@@ -37,15 +60,13 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
         let runner: &mut mapmap_bevy::BevyRunner = runner;
         let mut node_triggers = std::collections::HashMap::new();
 
-        for module in app.state.module_manager.list_modules() {
-            let module_id = module.id;
+        for module_id in &modules_for_eval {
+            if let Some(module_ref) = app.state.module_manager.get_module(*module_id) {
+                // OPTIMIZATION: Only apply structural graph state to Bevy if changed
+                if graph_dirty {
+                    runner.apply_graph_state(module_ref);
+                }
 
-            // OPTIMIZATION: Only apply structural graph state to Bevy if changed
-            if graph_dirty {
-                runner.apply_graph_state(module);
-            }
-
-            if let Some(module_ref) = app.state.module_manager.get_module(module_id) {
                 let eval_result = app.module_evaluator.evaluate(
                     module_ref,
                     &app.state.module_manager.shared_media,
@@ -54,7 +75,7 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
 
                 for (part_id, values) in &eval_result.trigger_values {
                     if let Some(last_val) = values.last() {
-                        node_triggers.insert((module_id, *part_id), *last_val);
+                        node_triggers.insert((*module_id, *part_id), *last_val);
                     }
                 }
 
@@ -64,7 +85,7 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
                         .render_ops
                         .iter()
                         .cloned()
-                        .map(|op| (module_id, op)),
+                        .map(|op| (*module_id, op)),
                 );
             }
         }
@@ -86,9 +107,8 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
         app.ui_state.current_bpm = trigger_data.bpm;
     } else {
         // Fallback for when Bevy is disabled: still need to evaluate for render_ops
-        for module in app.state.module_manager.list_modules() {
-            let module_id = module.id;
-            if let Some(module_ref) = app.state.module_manager.get_module(module_id) {
+        for module_id in &modules_for_eval {
+            if let Some(module_ref) = app.state.module_manager.get_module(*module_id) {
                 let eval_result = app.module_evaluator.evaluate(
                     module_ref,
                     &app.state.module_manager.shared_media,
@@ -99,7 +119,7 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
                         .render_ops
                         .iter()
                         .cloned()
-                        .map(|op| (module_id, op)),
+                        .map(|op| (*module_id, op)),
                 );
             }
         }

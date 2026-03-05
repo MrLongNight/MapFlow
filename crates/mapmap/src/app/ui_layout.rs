@@ -72,10 +72,25 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
             .default_height(200.0)
             .show(ctx, |ui_obj| {
                 ui_obj.heading(app.ui_state.i18n.t("panel-timeline"));
-                let _ = app
+                let mut modules: Vec<ui::TimelineModule> = app
+                    .state
+                    .module_manager
+                    .modules()
+                    .iter()
+                    .map(|m| ui::TimelineModule {
+                        id: m.id,
+                        name: m.name.clone(),
+                    })
+                    .collect();
+                modules.sort_by_key(|m| m.id);
+
+                if let Some(action) = app
                     .ui_state
                     .timeline_panel
-                    .ui(ui_obj, app.state.effect_animator_mut());
+                    .ui(ui_obj, app.state.effect_animator_mut(), &modules)
+                {
+                    app.ui_state.actions.push(ui::UIAction::TimelineAction(action));
+                }
             });
     }
 
@@ -235,6 +250,10 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
         false,
         &mut app.ui_state.user_config,
     );
+
+    if app.ui_state.show_about {
+        crate::ui::dialogs::about::show(ctx, &mut app.ui_state.show_about);
+    }
 
     app.ui_state
         .assignment_panel

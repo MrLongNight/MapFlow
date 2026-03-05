@@ -1,8 +1,8 @@
-use egui::{Context, Window};
+use egui::{Context, Window, Color32, RichText};
 use mapmap_control::hue::controller::HueController;
 use mapmap_core::AppState;
 use mapmap_render::WgpuBackend;
-use mapmap_ui::AppUI;
+use mapmap_ui::{AppUI, UIAction};
 
 #[cfg(feature = "midi")]
 use mapmap_control::midi::MidiInputHandler;
@@ -38,66 +38,103 @@ pub struct SettingsContext<'a> {
 pub fn show(ctx: &Context, context: SettingsContext) {
     let mut show_settings = context.ui_state.show_settings;
 
-    // Clone data needed for UI to avoid borrow conflicts
-    let active_audio_device = context.ui_state.selected_audio_device.clone();
-
-    Window::new("Settings")
+    Window::new(RichText::new("⚙ SETTINGS").strong().color(Color32::from_rgb(0, 255, 255)))
         .open(&mut show_settings)
         .resizable(true)
+        .default_width(450.0)
         .show(ctx, |ui| {
-            ui.heading("General");
-            ui.separator();
-            ui.label("MapMap VJ Software");
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                
+                // --- GENERAL ---
+                ui.heading(RichText::new("General").color(Color32::WHITE));
+                ui.add_space(4.0);
+                
+                ui.horizontal(|ui| {
+                    ui.label("Language:");
+                    let current_lang = context.ui_state.user_config.language.clone();
+                    egui::ComboBox::from_id_salt("lang_selector")
+                        .selected_text(if current_lang == "de" { "Deutsch" } else { "English" })
+                        .show_ui(ui, |ui| {
+                            if ui.selectable_label(current_lang == "de", "Deutsch").clicked() {
+                                context.ui_state.actions.push(UIAction::SetLanguage("de".to_string()));
+                            }
+                            if ui.selectable_label(current_lang == "en", "English").clicked() {
+                                context.ui_state.actions.push(UIAction::SetLanguage("en".to_string()));
+                            }
+                        });
+                });
 
-            ui.add_space(10.0);
-
-            ui.heading("Audio");
-            if let Some(audio_device) = &active_audio_device {
-                ui.label(format!("Active Device: {}", audio_device));
-            } else {
-                ui.label("No Audio Device Selected");
-            }
-
-            ui.add_space(10.0);
-
-            ui.heading("Hue");
-            ui.label(format!(
-                "Hue Bridge: {}",
-                if context.hue_controller.is_connected() {
-                    "Connected"
-                } else {
-                    "Disconnected"
-                }
-            ));
-            if ui.button("Connect Hue").clicked() {
-                // Connection logic would go here
-            }
-
-            #[cfg(feature = "midi")]
-            {
                 ui.add_space(10.0);
-                ui.heading("MIDI");
-                if let Some(port_idx) = *context.selected_midi_port {
-                    if let Some(port_name) = context.midi_ports.get(port_idx) {
-                        ui.label(format!("Active MIDI Port: {}", port_name));
+                ui.separator();
+
+                // --- AUDIO ---
+                ui.heading(RichText::new("Audio").color(Color32::WHITE));
+                ui.add_space(4.0);
+                
+                ui.horizontal(|ui| {
+                    ui.label("Device:");
+                    let current_device = context.ui_state.selected_audio_device.clone().unwrap_or_else(|| "None".to_string());
+                    egui::ComboBox::from_id_salt("audio_device_selector")
+                        .selected_text(&current_device)
+                        .show_ui(ui, |ui| {
+                            for device in &context.ui_state.audio_devices {
+                                if ui.selectable_label(Some(device) == context.ui_state.selected_audio_device.as_ref(), device).clicked() {
+                                    context.ui_state.actions.push(UIAction::SelectAudioDevice(device.clone()));
+                                }
+                            }
+                        });
+                });
+
+                ui.add_space(10.0);
+                ui.separator();
+
+                // --- NDI & NETWORK ---
+                ui.heading(RichText::new("Network & NDI").color(Color32::WHITE));
+                ui.add_space(4.0);
+                
+                ui.checkbox(&mut context.ui_state.user_config.ndi_discovery, "Enable NDI Discovery");
+                ui.add_space(4.0);
+                
+                ui.horizontal(|ui| {
+                    ui.label("OSC Input Port:");
+                    ui.text_edit_singleline(&mut context.ui_state.osc_port_input);
+                });
+                ui.horizontal(|ui| {
+                    ui.label("OSC Client Address:");
+                    ui.text_edit_singleline(&mut context.ui_state.osc_client_input);
+                });
+
+                ui.add_space(10.0);
+                ui.separator();
+
+                // --- HUE ---
+                ui.heading(RichText::new("Philips Hue").color(Color32::from_rgb(255, 200, 0)));
+                ui.add_space(4.0);
+                ui.horizontal(|ui| {
+                    ui.label(format!("Status: {}", if context.hue_controller.is_connected() { "CONNECTED" } else { "DISCONNECTED" }));
+                    if ui.button("Discover Bridges").clicked() {
+                        context.ui_state.actions.push(UIAction::DiscoverHueBridges);
                     }
-                } else {
-                    ui.label("No MIDI Port Selected");
+                });
+
+                ui.add_space(10.0);
+                ui.separator();
+
+                // --- THEME ---
+                ui.heading(RichText::new("Appearance").color(Color32::WHITE));
+                ui.add_space(4.0);
+                if ui.button("Toggle Theme (Dark/Light)").clicked() {
+                    // Logic for theme toggle
                 }
-            }
 
-            ui.add_space(10.0);
-
-            ui.heading("Theme");
-            if ui.button("Switch Theme").clicked() {
-                // TODO: Implement theme switching via event or state mutation
-            }
-
-            ui.separator();
-            if ui.button("Restart Application").clicked() {
-                *context.restart_requested = true;
-                *context.exit_requested = true;
-            }
+                ui.add_space(20.0);
+                ui.vertical_centered(|ui| {
+                    if ui.button(RichText::new("Restart Application").color(Color32::RED)).clicked() {
+                        *context.restart_requested = true;
+                        *context.exit_requested = true;
+                    }
+                });
+            });
         });
 
     context.ui_state.show_settings = show_settings;

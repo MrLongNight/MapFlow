@@ -2,15 +2,10 @@
 //!
 //! This module provides the main menu bar and toolbar for the application.
 
-#[path = "menu_bar/file_menu.rs"]
 pub mod file_menu;
-#[path = "menu_bar/view_menu.rs"]
 pub mod view_menu;
-#[path = "menu_bar/edit_menu.rs"]
 pub mod edit_menu;
-#[path = "menu_bar/help_menu.rs"]
 pub mod help_menu;
-#[path = "menu_bar/toolbar.rs"]
 pub mod toolbar;
 
 use crate::icons::AppIcon;
