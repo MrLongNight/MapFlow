@@ -5,6 +5,18 @@ on:
     branches: [ "main" ]
   pull_request:
   workflow_dispatch:
+    inputs:
+      toolchain:
+        description: 'Rust toolchain version'
+        required: true
+        default: 'stable'
+  workflow_call:
+    inputs:
+      toolchain:
+        description: 'Rust toolchain version'
+        required: false
+        type: string
+        default: 'stable'
 
 permissions:
   contents: write
@@ -21,8 +33,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: ${{ inputs.toolchain || github.event.inputs.toolchain || 'stable' }}
           components: rustfmt, clippy
       - name: Install System Deps (Ubuntu)
         run: |
@@ -39,7 +52,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ inputs.toolchain || github.event.inputs.toolchain || 'stable' }}
       - name: Install Tools
         uses: cargo-bins/cargo-binstall@main
       - name: Install cargo-audit
@@ -53,7 +68,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ inputs.toolchain || github.event.inputs.toolchain || 'stable' }}
       - name: Install System Dependencies
         run: |
           sudo apt-get update -y
@@ -72,7 +89,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ inputs.toolchain || github.event.inputs.toolchain || 'stable' }}
       - name: Build
         run: cargo build --release --verbose --no-default-features --features "audio"
 
