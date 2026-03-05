@@ -2,6 +2,7 @@ use super::error::HueError;
 use reqwest::Client;
 use serde::Deserialize;
 use std::time::Duration;
+use futures::future::join_all;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct DiscoveredBridge {
@@ -27,12 +28,15 @@ pub async fn discover_bridges() -> Result<Vec<DiscoveredBridge>, HueError> {
         return Err(HueError::DiscoveryFailed);
     }
 
-    // Verify which bridges are actually reachable
+    // Verify which bridges are actually reachable IN PARALLEL
+    let futures: Vec<_> = devices.iter().map(|d| is_bridge_reachable(&d.ip)).collect();
+    let results = join_all(futures).await;
+
     let mut reachable = Vec::new();
     let mut unreachable = Vec::new();
 
-    for device in devices {
-        if is_bridge_reachable(&device.ip).await {
+    for (device, is_reachable) in devices.into_iter().zip(results) {
+        if is_reachable {
             reachable.push(device);
         } else {
             unreachable.push(device);
@@ -47,7 +51,7 @@ pub async fn discover_bridges() -> Result<Vec<DiscoveredBridge>, HueError> {
 /// Check if a bridge is reachable by making a simple HTTP request
 async fn is_bridge_reachable(ip: &str) -> bool {
     let client = match Client::builder()
-        .timeout(Duration::from_secs(3))
+        .timeout(Duration::from_secs(2)) // Faster timeout for reachability check
         .danger_accept_invalid_certs(true)
         .build()
     {

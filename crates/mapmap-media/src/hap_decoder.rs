@@ -134,11 +134,17 @@ pub fn decode_hap_frame(data: &[u8], width: u32, height: u32) -> Result<HapFrame
     let compressed_data = &data[4..];
 
     // Decompress based on compressor type
-    let texture_data = match compressor {
+    match compressor {
         0xA0 => {
             // No compression - direct copy
             debug!("HAP frame: no compression, {} bytes", compressed_data.len());
-            compressed_data.to_vec()
+            Ok(HapFrame {
+                texture_type,
+                width,
+                height,
+                texture_data: compressed_data.to_vec(),
+                secondary_texture: None,
+            })
         }
         0xB0 => {
             // Snappy compression
@@ -146,7 +152,14 @@ pub fn decode_hap_frame(data: &[u8], width: u32, height: u32) -> Result<HapFrame
                 "HAP frame: Snappy compressed, {} bytes",
                 compressed_data.len()
             );
-            decompress_snappy(compressed_data)?
+            let texture_data = decompress_snappy(compressed_data)?;
+            Ok(HapFrame {
+                texture_type,
+                width,
+                height,
+                texture_data,
+                secondary_texture: None,
+            })
         }
         0xC0 => {
             // Complex multi-section (HAP Q / HAP Q Alpha)
@@ -164,14 +177,16 @@ pub fn decode_hap_frame(data: &[u8], width: u32, height: u32) -> Result<HapFrame
                 None
             };
 
-            return Ok(HapFrame {
+            Ok(HapFrame {
                 texture_type,
                 width,
                 height,
                 texture_data: main_texture,
                 secondary_texture,
-            });
+            })
         }
+        other => Err(HapError::UnsupportedCompressor(other)),
+    }
 }
 
 /// Decompress Snappy-compressed data
@@ -258,7 +273,7 @@ mod tests {
         assert!(!HapTextureType::Rgb.has_alpha());
         assert!(HapTextureType::Rgba.has_alpha());
         assert!(HapTextureType::YCoCg.needs_ycocg_conversion());
-        assert!(!HapTextureType::Rgb.needs_ycocg_conversion());
+        assert!(HapTextureType::Rgb.texture_format() == "Bc1RgbaUnorm");
     }
 
     #[test]

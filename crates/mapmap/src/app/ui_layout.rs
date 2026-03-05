@@ -10,13 +10,26 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
         app.ui_state.actions.push(action);
     }
 
-    // 2. Dashboard / Global Controls (Top Panel)
+    // 2. Toolbar (Separate Panel below Menu)
+    if app.ui_state.show_toolbar {
+        egui::TopBottomPanel::top("toolbar_panel")
+            .frame(egui::Frame::default()
+                .fill(ctx.style().visuals.window_fill())
+                .inner_margin(egui::Margin::symmetric(16, 4))
+                .stroke(egui::Stroke::new(1.0, ctx.style().visuals.widgets.noninteractive.bg_stroke.color))
+            )
+            .show(ctx, |ui_obj| {
+                ui::view::menu_bar::toolbar::show(ui_obj, &mut app.ui_state, &mut app.ui_state.actions);
+            });
+    }
+
+    // 3. Dashboard / Global Controls (Floating or Windows)
     let _ = app
         .ui_state
         .dashboard
         .ui(ctx, &app.ui_state.i18n, app.ui_state.icon_manager.as_ref());
 
-    // 3. Left Panel: Sidebar (Collapsible)
+    // 4. Left Panel: Sidebar (Collapsible)
     if app.ui_state.show_left_sidebar {
         egui::SidePanel::left("left_sidebar_panel")
             .resizable(true)
@@ -36,7 +49,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
             });
     }
 
-    // 4. Right Panel: Inspector (Docked)
+    // 5. Right Panel: Inspector (Docked)
     if app.ui_state.show_inspector {
         egui::SidePanel::right("right_panel")
             .resizable(true)
@@ -65,7 +78,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
             });
     }
 
-    // 5. Bottom Panel: Timeline
+    // 6. Bottom Panel: Timeline
     if app.ui_state.show_timeline {
         egui::TopBottomPanel::bottom("bottom_panel")
             .resizable(true)
@@ -94,7 +107,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
             });
     }
 
-    // 6. Floating Windows / Overlays
+    // 7. Floating Windows / Overlays
     
     // Performance Stats Overlay
     if app.ui_state.show_stats {
@@ -112,7 +125,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
         );
     }
 
-    // 7. Central Panel: Module Canvas
+    // 8. Central Panel: Module Canvas
     egui::CentralPanel::default()
         .frame(egui::Frame::default().fill(ctx.style().visuals.panel_fill))
         .show(ctx, |ui_obj| {
@@ -223,7 +236,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
             }
         });
 
-    // 8. Other Overlays (Shader Graph, Audio, MIDI)
+    // 9. Other Overlays (Shader Graph, Audio, MIDI)
 
     if app.ui_state.show_shader_graph {
         app.ui_state.render_node_editor(ctx);

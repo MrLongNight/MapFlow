@@ -61,13 +61,6 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
             });
 
             ui.add_space(4.0);
-
-            // --- Toolbar ---
-            if ui_state.show_toolbar {
-                toolbar::show(ui, ui_state, &mut actions);
-            }
-
-            ui.add_space(4.0);
             ui.separator();
         });
 
