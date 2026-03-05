@@ -2,7 +2,6 @@ use super::error::HueError;
 use reqwest::Client;
 use serde::Deserialize;
 use std::time::Duration;
-use futures::future::join_all;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct DiscoveredBridge {
@@ -28,15 +27,21 @@ pub async fn discover_bridges() -> Result<Vec<DiscoveredBridge>, HueError> {
         return Err(HueError::DiscoveryFailed);
     }
 
-    // Verify which bridges are actually reachable IN PARALLEL
-    let futures: Vec<_> = devices.iter().map(|d| is_bridge_reachable(&d.ip)).collect();
-    let results = join_all(futures).await;
+    // Verify which bridges are actually reachable IN PARALLEL using Tokio tasks
+    let mut handles = Vec::new();
+    for device in &devices {
+        let ip = device.ip.clone();
+        handles.push(tokio::spawn(async move {
+            let reachable = is_bridge_reachable(&ip).await;
+            reachable
+        }));
+    }
 
     let mut reachable = Vec::new();
     let mut unreachable = Vec::new();
 
-    for (device, is_reachable) in devices.into_iter().zip(results) {
-        if is_reachable {
+    for (device, handle) in devices.into_iter().zip(handles) {
+        if let Ok(true) = handle.await {
             reachable.push(device);
         } else {
             unreachable.push(device);
