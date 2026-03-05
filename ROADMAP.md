@@ -28,7 +28,7 @@ Basierend auf dem aktuellen Status und den Projektzielen für die erste produkti
 ### A) Render Pipeline & Module Logic
 
 * **Priorität:** 🔥 **CRITICAL**
-* **Ziel:** Eine fehlerfreie Render-Pipeline, in der alle Modul-Nodes und die zugehörige Logik stabil funktionieren.  
+* **Ziel:** Eine fehlerfreie Render-Pipeline, in der alle Modul-Nodes und die zugehörige Logik stabil funktionieren.
 * **Status:** ✅ **COMPLETED (v1.0.0 Audit 05.03.2026)**.
 * **Maßnahme:** Alle 'Broken Nodes' im Shader-Graph wurden repariert. Zyklenerkennung implementiert. Bild-Laden stabilisiert.
 
