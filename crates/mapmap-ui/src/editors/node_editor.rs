@@ -108,12 +108,13 @@ impl NodeEditor {
         self.graph_id = Some(graph.id);
         self.nodes.clear();
         self.connections.clear();
+        self.next_id = 1; // todo: sync with graph?
+
         // Map core nodes to UI nodes
-        let mut max_id = 0;
         for (id, core_node) in &graph.nodes {
             let ui_node = self.core_node_to_ui(core_node);
             self.nodes.insert(*id, ui_node);
-            max_id = max_id.max(*id);
+            self.next_id = self.next_id.max(id + 1);
 
             // Reconstruct connections
             for input in &core_node.inputs {
@@ -124,21 +125,13 @@ impl NodeEditor {
                         to_node: *id,
                         to_socket: input.name.clone(),
                     });
-                }
-            }
-        }
-        self.next_id = max_id + 1;
-
-        // Update socket connection status
-        for connection in &self.connections {
-            if let Some(node) = self.nodes.get_mut(&connection.to_node) {
-                if let Some(socket) = node.inputs.iter_mut().find(|s| s.name == connection.to_socket) {
-                    socket.connected = true;
-                }
-            }
-            if let Some(node) = self.nodes.get_mut(&connection.from_node) {
-                if let Some(socket) = node.outputs.iter_mut().find(|s| s.name == connection.from_socket) {
-                    socket.connected = true;
+                    // Mark socket as connected
+                    if let Some(node) = self.nodes.get_mut(id) {
+                        if let Some(socket) = node.inputs.iter_mut().find(|s| s.name == input.name)
+                        {
+                            socket.connected = true;
+                        }
+                    }
                 }
             }
         }

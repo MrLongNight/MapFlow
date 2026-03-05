@@ -17,7 +17,6 @@ use mapmap_core::{
         backend::{cpal_backend::CpalBackend, AudioBackend},
     },
     media_library::MediaLibrary,
-    monitor::detect_monitors_winit,
     AppState, ModuleEvaluator,
 };
 use mapmap_io::load_project;
@@ -133,14 +132,13 @@ impl App {
         ];
 
         let mut ui_state = AppUI::default();
-        // Detect monitors and store in UI state
-        ui_state.monitors = detect_monitors_winit(elwt).monitors;
 
         #[cfg(feature = "midi")]
         {
             let paths = [
                 "resources/controllers/ecler_nuo4/elements.json",
                 "../resources/controllers/ecler_nuo4/elements.json",
+                r"C:\Users\Vinyl\Desktop\VJMapper\VjMapper\resources\controllers\ecler_nuo4\elements.json",
             ];
             for path_str in paths {
                 let path = std::path::Path::new(path_str);

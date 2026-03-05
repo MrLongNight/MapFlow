@@ -158,8 +158,6 @@ pub enum UIAction {
     SetMasterOpacity(f32),
     /// Set master playback speed
     SetMasterSpeed(f32),
-    /// Set master blackout state
-    SetMasterBlackout(bool),
     /// Set composition name
     SetCompositionName(String),
 
@@ -282,6 +280,8 @@ use mapmap_io::NdiSource;
 
 /// UI state for the application
 pub struct AppUI {
+    /// Main menu bar
+    pub menu_bar: menu_bar::MenuBar,
     /// Dashboard panel
     pub dashboard: Dashboard,
     /// Paint manager panel
@@ -437,12 +437,6 @@ pub struct AppUI {
 
     /// Last time responsive styles were updated
     last_style_update: std::time::Instant,
-
-    /// Available monitors
-    pub monitors: Vec<mapmap_core::monitor::MonitorInfo>,
-
-    /// Visibility flag for the media manager window
-    pub show_media_manager: bool,
 }
 
 impl Default for AppUI {
@@ -462,14 +456,10 @@ impl Default for AppUI {
         let saved_show_media_browser = user_config.show_media_browser;
         let saved_show_module_canvas = user_config.show_module_canvas;
         let saved_show_controller_overlay = user_config.show_controller_overlay;
-        let saved_show_media_manager = user_config.show_media_manager;
-        let saved_show_dashboard = user_config.show_dashboard;
 
         Self {
-            dashboard: Dashboard {
-                visible: saved_show_dashboard,
-                ..Default::default()
-            },
+            menu_bar: menu_bar::MenuBar::default(),
+            dashboard: Dashboard::default(),
             paint_panel: PaintPanel::default(),
             show_osc_panel: false, // Hide by default - advanced feature
             selected_control_target: ControlTarget::Custom("".to_string()),
@@ -549,8 +539,6 @@ impl Default for AppUI {
             active_keys: std::collections::HashSet::new(),
             active_sidebar_tab: 0,
             last_style_update: std::time::Instant::now(),
-            monitors: Vec::new(),
-            show_media_manager: saved_show_media_manager,
         }
     }
 }
@@ -929,27 +917,6 @@ impl AppUI {
             self.actions
                 .push(UIAction::SetMasterSpeed(composition.master_speed));
         }
-
-        // Master Blackout
-        ui.separator();
-        let old_master_blackout = composition.master_blackout;
-        let response = ui.checkbox(
-            &mut composition.master_blackout,
-            self.i18n.t("label-master-blackout"),
-        );
-        Self::midi_learn_helper(
-            ui,
-            &response,
-            mapmap_control::target::ControlTarget::MasterBlackout,
-            is_learning,
-            last_active_element.as_ref(),
-            last_active_time,
-            &mut self.actions,
-        );
-        if composition.master_blackout != old_master_blackout {
-            self.actions
-                .push(UIAction::SetMasterBlackout(composition.master_blackout));
-        }
     }
 
     /// Helper for Global MIDI Learn (Way 1)
@@ -1014,91 +981,17 @@ impl AppUI {
             return;
         }
 
-        let mut is_open = self.show_shader_graph;
+        let mut open = self.show_shader_graph;
         egui::Window::new(self.i18n.t("panel-node-editor"))
             .default_size([800.0, 600.0])
             .resizable(true)
             .vscroll(false) // Canvas handles panning
-            .open(&mut is_open)
+            .open(&mut open)
             .show(ctx, |ui: &mut egui::Ui| {
                 if let Some(action) = self.node_editor_panel.ui(ui, &self.i18n) {
                     self.actions.push(UIAction::NodeAction(action));
                 }
             });
-        self.show_shader_graph = is_open;
-    }
-
-    /// Render Application Settings Window
-    pub fn render_settings(&mut self, ctx: &egui::Context) {
-        if !self.show_settings {
-            return;
-        }
-
-        let mut is_open = self.show_settings;
-        let mut should_close = false;
-        egui::Window::new(self.i18n.t("menu-settings"))
-            .open(&mut is_open)
-            .default_size([500.0, 400.0])
-            .show(ctx, |ui| {
-                ui.heading(self.i18n.t("menu-settings"));
-                ui.separator();
-
-                egui::Grid::new("settings_grid")
-                    .num_columns(2)
-                    .spacing([20.0, 10.0])
-                    .show(ui, |ui| {
-                        // Language
-                        ui.label("Language:");
-                        let mut lang = self.user_config.language.clone();
-                        egui::ComboBox::from_id_salt("lang_select")
-                            .selected_text(if lang == "de" { "Deutsch" } else { "English" })
-                            .show_ui(ui, |ui| {
-                                if ui.selectable_label(lang == "en", "English").clicked() { lang = "en".to_string(); }
-                                if ui.selectable_label(lang == "de", "Deutsch").clicked() { lang = "de".to_string(); }
-                            });
-                        if lang != self.user_config.language {
-                            self.actions.push(UIAction::SetLanguage(lang));
-                        }
-                        ui.end_row();
-
-                        // VSync
-                        ui.label("VSync Mode:");
-                        let mut vsync = self.user_config.vsync_mode;
-                        egui::ComboBox::from_id_salt("vsync_select")
-                            .selected_text(vsync.to_string())
-                            .show_ui(ui, |ui| {
-                                ui.selectable_value(&mut vsync, crate::core::config::VSyncMode::Auto, "Auto");
-                                ui.selectable_value(&mut vsync, crate::core::config::VSyncMode::On, "On");
-                                ui.selectable_value(&mut vsync, crate::core::config::VSyncMode::Off, "Off");
-                            });
-                        if vsync != self.user_config.vsync_mode {
-                            self.user_config.vsync_mode = vsync;
-                            let _ = self.user_config.save();
-                        }
-                        ui.end_row();
-
-                        // Audio Meter Style
-                        ui.label("Audio Meter:");
-                        let mut meter = self.user_config.meter_style;
-                        egui::ComboBox::from_id_salt("meter_select")
-                            .selected_text(meter.to_string())
-                            .show_ui(ui, |ui| {
-                                ui.selectable_value(&mut meter, crate::core::config::AudioMeterStyle::Retro, "Retro");
-                                ui.selectable_value(&mut meter, crate::core::config::AudioMeterStyle::Digital, "Digital");
-                            });
-                        if meter != self.user_config.meter_style {
-                            self.user_config.meter_style = meter;
-                            let _ = self.user_config.save();
-                        }
-                        ui.end_row();
-                    });
-
-                ui.add_space(20.0);
-                if ui.button("Close").clicked() {
-                    should_close = true;
-                }
-            });
-        
-        self.show_settings = is_open && !should_close;
+        self.show_shader_graph = open;
     }
 }

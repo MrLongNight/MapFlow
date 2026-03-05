@@ -15,14 +15,8 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
 
     let ui_needs_sync = handle_ui_actions(app).unwrap_or(false);
 
-    // --- Graph Dirty Detection ---
-    let graph_dirty = app.state.module_manager.graph_revision != app.last_graph_revision;
-
-    // --- Media Player Update (Optimized) ---
-    // Only sync if structure changed or project loaded
-    if graph_dirty || app.frame_counter == 0 {
-        sync_media_players(app);
-    }
+    // --- Media Player Update ---
+    sync_media_players(app);
     update_media_players(app, dt);
 
     // --- Effect Animator Update ---
@@ -32,6 +26,8 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     }
 
     // --- Graph & Renderer Evaluation ---
+    let graph_dirty = app.state.module_manager.graph_revision != app.last_graph_revision;
+
     // Always clear and rebuild render_ops for now to ensure reactive triggers work,
     // BUT we could optimize this further if we separate structural from value changes.
     app.render_ops.clear();
@@ -106,6 +102,7 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
 
     // --- Rebuild output_assignments from render_ops ---
     // Maps each Projector output ID to the source texture names that feed into it.
+    // Without this, prepare_texture_previews cannot find textures and no video is shown.
     app.output_assignments.clear();
     for (module_id, op) in &app.render_ops {
         if let OutputType::Projector { id, .. } = &op.output_type {
@@ -183,49 +180,6 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
         };
     }
 
-    // --- Sync UI State with App Data ---
-    app.ui_state.current_fps = app.current_fps;
-    app.ui_state.current_frame_time_ms = app.current_frame_time_ms;
-    app.ui_state.cpu_usage = app.sys_info.global_cpu_usage();
-    app.ui_state.ram_usage_mb = if let Ok(pid) = sysinfo::get_current_pid() {
-        app.sys_info
-            .process(pid)
-            .map(|p| p.memory() as f32 / 1024.0 / 1024.0)
-            .unwrap_or(0.0)
-    } else {
-        0.0
-    };
-
-    let analysis = app.audio_analyzer.get_latest_analysis();
-    app.ui_state.current_audio_level = analysis.rms_volume;
-    app.ui_state.current_bpm = analysis.tempo_bpm;
-
-    // Convert AudioAnalysisV2 to AudioAnalysis for Dashboard
-    let dashboard_analysis = mapmap_core::AudioAnalysis {
-        timestamp: analysis.timestamp,
-        fft_magnitudes: analysis.fft_magnitudes,
-        band_energies: [
-            analysis.band_energies[0],
-            analysis.band_energies[1],
-            analysis.band_energies[2],
-            analysis.band_energies[3],
-            analysis.band_energies[4],
-            analysis.band_energies[6], // Skip UpperMid
-            analysis.band_energies[7], // Skip Air
-        ],
-        rms_volume: analysis.rms_volume,
-        peak_volume: analysis.peak_volume,
-        beat_detected: analysis.beat_detected,
-        beat_strength: analysis.beat_strength,
-        onset_detected: false, // V2 doesn't have onset
-        tempo_bpm: analysis.tempo_bpm,
-        waveform: analysis.waveform,
-    };
-    app.ui_state.dashboard.set_audio_analysis(dashboard_analysis);
-    app.ui_state
-        .dashboard
-        .set_audio_devices(app.audio_devices.clone());
-
     // Check auto-save (every 30s)
     if app.last_autosave.elapsed().as_secs() >= 30 {
         if app.state.dirty {
@@ -257,6 +211,30 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
         app.last_sysinfo_refresh = std::time::Instant::now();
     }
 
+    // Periodic Performance Status (every 10s)
+    static PERF_LOG_COUNTER: std::sync::atomic::AtomicUsize =
+        std::sync::atomic::AtomicUsize::new(0);
+    if PERF_LOG_COUNTER
+        .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+        .is_multiple_of(600)
+    {
+        let ram_mb = if let Ok(pid) = sysinfo::get_current_pid() {
+            app.sys_info
+                .process(pid)
+                .map(|p| p.memory() as f32 / 1024.0 / 1024.0)
+                .unwrap_or(0.0)
+        } else {
+            0.0
+        };
+        info!(
+            "[PERF] FPS: {:.1}, Frame: {:.2}ms, RAM: {:.1}MB, Modules: {}",
+            app.current_fps,
+            app.current_frame_time_ms,
+            ram_mb,
+            app.state.module_manager.list_modules().len()
+        );
+    }
+
     // Periodic VRAM Garbage Collection (every 10s)
     if app.last_texture_gc.elapsed().as_secs() >= 10 {
         let removed = app
@@ -267,8 +245,6 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
         }
         app.last_texture_gc = std::time::Instant::now();
     }
-
-    app.frame_counter += 1;
 
     Ok(())
 }

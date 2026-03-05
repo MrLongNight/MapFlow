@@ -3,7 +3,6 @@
 use crate::app::core::app_struct::App;
 use crate::orchestration::node_logic::load_project_file;
 use anyhow::Result;
-use mapmap_core::AppState;
 use mapmap_io::save_project;
 use mapmap_mcp::McpAction;
 use mapmap_ui::{NodeEditorAction, UIAction};
@@ -70,55 +69,13 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 app.ui_state.show_inspector = true;
                 app.ui_state.show_media_browser = true;
                 app.ui_state.show_module_canvas = false;
-                app.ui_state.show_stats = true;
-                app.ui_state.show_toolbar = true;
-                app.ui_state.show_master_controls = true;
             }
-            UIAction::Play => {
-                app.state.effect_animator_mut().play();
-                for handle in app.media_players.values_mut() {
-                    let _ = handle.command_tx.send(mapmap_media::PlaybackCommand::Play);
-                }
-            }
-            UIAction::Pause => {
-                app.state.effect_animator_mut().pause();
-                for handle in app.media_players.values_mut() {
-                    let _ = handle.command_tx.send(mapmap_media::PlaybackCommand::Pause);
-                }
-            }
-            UIAction::Stop => {
-                app.state.effect_animator_mut().stop();
-                for handle in app.media_players.values_mut() {
-                    let _ = handle.command_tx.send(mapmap_media::PlaybackCommand::Stop);
-                }
-            }
-            UIAction::SetSpeed(s) => {
-                app.state.effect_animator_mut().set_speed(s);
-                for handle in app.media_players.values_mut() {
-                    let _ = handle.command_tx.send(mapmap_media::PlaybackCommand::SetSpeed(s));
-                }
-            }
-            UIAction::SetLoopMode(m) => {
-                for handle in app.media_players.values_mut() {
-                    let _ = handle.command_tx.send(mapmap_media::PlaybackCommand::SetLoopMode(m));
-                }
-            }
+            UIAction::Play => app.state.effect_animator_mut().play(),
+            UIAction::Pause => app.state.effect_animator_mut().pause(),
+            UIAction::Stop => app.state.effect_animator_mut().stop(),
+            UIAction::SetSpeed(s) => app.state.effect_animator_mut().set_speed(s),
             UIAction::ToggleMediaManager => {
-                app.ui_state.show_media_manager = !app.ui_state.show_media_manager;
-                app.media_manager_ui.visible = app.ui_state.show_media_manager;
-            }
-
-            UIAction::NewProject => {
-                info!("Creating new project...");
-                app.history.clear();
-                app.state = AppState::default();
-                app.ui_state.selected_layer_id = None;
-                app.ui_state.selected_output_id = None;
-                app.ui_state.module_canvas.active_module_id = None;
-                // Re-initialize module canvas with default module if it exists
-                if let Some(first) = app.state.module_manager.modules().first() {
-                    app.ui_state.module_canvas.active_module_id = Some(first.id);
-                }
+                app.media_manager_ui.visible = !app.media_manager_ui.visible;
             }
 
             UIAction::SaveProjectAs => {
@@ -157,24 +114,6 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                     }
                 }
             }
-            UIAction::Export => {
-                info!("Export requested (Action implementation pending)");
-                // TODO: Implement export functionality (Phase 5)
-            }
-
-            UIAction::Undo => {
-                if let Some(prev) = app.history.undo(app.state.clone()) {
-                    app.state = prev;
-                    info!("Undo performed");
-                }
-            }
-            UIAction::Redo => {
-                if let Some(next) = app.history.redo(app.state.clone()) {
-                    app.state = next;
-                    info!("Redo performed");
-                }
-            }
-
             UIAction::PickMediaFile(module_id, part_id, path_str) => {
                 app.ui_state.module_canvas.active_module_id = Some(module_id);
                 app.ui_state.module_canvas.editing_part_id = Some(part_id);
@@ -248,83 +187,6 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 info!("Settings requested");
                 app.ui_state.show_settings = true;
             }
-            UIAction::OpenDocs => {
-                app.egui_context.open_url(egui::OpenUrl::new_tab(
-                    "https://github.com/MrLongNight/MapFlow/wiki",
-                ));
-            }
-            UIAction::OpenAbout => {
-                info!("About MapFlow requested");
-                // TODO: Integrated about dialog
-            }
-            UIAction::OpenLicense => {
-                app.egui_context.open_url(egui::OpenUrl::new_tab(
-                    "https://github.com/MrLongNight/MapFlow/blob/main/LICENSE",
-                ));
-            }
-
-            UIAction::ToggleMidiLearn => {
-                app.ui_state.is_midi_learn_mode = !app.ui_state.is_midi_learn_mode;
-                info!("MIDI Learn mode: {}", app.ui_state.is_midi_learn_mode);
-            }
-            UIAction::ToggleAudioPanel => {
-                app.ui_state.show_audio = !app.ui_state.show_audio;
-            }
-            UIAction::SelectAudioDevice(device) => {
-                app.ui_state.selected_audio_device = Some(device.clone());
-                // AudioConfig in state doesn't have input_device, it's in UserConfig
-                app.ui_state.user_config.selected_audio_device = Some(device);
-                let _ = app.ui_state.user_config.save();
-            }
-
-            UIAction::AddPaint => {
-                app.history.push(app.state.clone());
-                let count = app.state.paint_manager.paints().len();
-                app.state.paint_manager_mut().add_paint(
-                    mapmap_core::Paint::color(0, format!("Paint {}", count + 1), [1.0, 1.0, 1.0, 1.0])
-                );
-                app.state.dirty = true;
-            }
-            UIAction::RemovePaint(id) => {
-                app.history.push(app.state.clone());
-                app.state.paint_manager_mut().remove_paint(id);
-                app.state.dirty = true;
-            }
-
-            UIAction::AddMapping => {
-                app.history.push(app.state.clone());
-                let count = app.state.mapping_manager.mappings().len();
-                app.state.mapping_manager_mut().add_mapping(
-                    mapmap_core::Mapping::quad(0, format!("Mapping {}", count + 1), 0)
-                );
-                app.state.dirty = true;
-            }
-            UIAction::RemoveMapping(id) => {
-                app.history.push(app.state.clone());
-                app.state.mapping_manager_mut().remove_mapping(id);
-                app.state.dirty = true;
-            }
-            UIAction::SelectMapping(id) => {
-                app.ui_state.selected_output_id = Some(id);
-            }
-            UIAction::ToggleMappingVisibility(id, visible) => {
-                if let Some(mapping) = app.state.mapping_manager_mut().get_mapping_mut(id) {
-                    mapping.visible = visible;
-                    app.state.dirty = true;
-                }
-            }
-
-            UIAction::AddOutput(name, region, size) => {
-                app.history.push(app.state.clone());
-                app.state.output_manager_mut().add_output(name, region, size);
-                app.state.dirty = true;
-            }
-            UIAction::RemoveOutput(id) => {
-                app.history.push(app.state.clone());
-                app.state.output_manager_mut().remove_output(id);
-                app.state.dirty = true;
-            }
-
             #[cfg(feature = "ndi")]
             UIAction::ConnectNdiSource { part_id, source } => {
                 let receiver = app.ndi_receivers.entry(part_id).or_insert_with(|| {
@@ -342,7 +204,7 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
             UIAction::SetMidiAssignment(element_id, target_id) => {
                 #[cfg(feature = "midi")]
                 {
-                    use mapmap_ui::core::config::MidiAssignmentTarget;
+                    use mapmap_ui::config::MidiAssignmentTarget;
                     app.ui_state.user_config.set_midi_assignment(
                         &element_id,
                         MidiAssignmentTarget::MapFlow(target_id.clone()),
@@ -468,7 +330,6 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 }
             }
             UIAction::AddLayer => {
-                app.history.push(app.state.clone());
                 let count = app.state.layer_manager.len();
                 app.state
                     .layer_manager_mut()
@@ -476,7 +337,6 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 app.state.dirty = true;
             }
             UIAction::CreateGroup => {
-                app.history.push(app.state.clone());
                 let count = app.state.layer_manager.len();
                 app.state
                     .layer_manager_mut()
@@ -484,12 +344,10 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 app.state.dirty = true;
             }
             UIAction::ReparentLayer(id, parent_id) => {
-                app.history.push(app.state.clone());
                 app.state.layer_manager_mut().reparent_layer(id, parent_id);
                 app.state.dirty = true;
             }
             UIAction::SwapLayers(id1, id2) => {
-                app.history.push(app.state.clone());
                 app.state.layer_manager_mut().swap_layers(id1, id2);
                 app.state.dirty = true;
             }
@@ -500,7 +358,6 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 }
             }
             UIAction::RemoveLayer(id) => {
-                app.history.push(app.state.clone());
                 app.state.layer_manager_mut().remove_layer(id);
                 app.state.dirty = true;
                 if app.ui_state.selected_layer_id == Some(id) {
@@ -508,7 +365,6 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 }
             }
             UIAction::DuplicateLayer(id) => {
-                app.history.push(app.state.clone());
                 if let Some(new_id) = app.state.layer_manager_mut().duplicate_layer(id) {
                     app.ui_state.selected_layer_id = Some(new_id);
                     app.state.dirty = true;
@@ -532,7 +388,6 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 }
             }
             UIAction::EjectAllLayers => {
-                app.history.push(app.state.clone());
                 app.state.layer_manager_mut().eject_all();
                 app.state.dirty = true;
             }
@@ -543,7 +398,6 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 }
             }
             UIAction::ApplyResizeMode(id, mode) => {
-                app.history.push(app.state.clone());
                 let target_size = mapmap_core::Vec2::new(
                     app.state.layer_manager.composition.size.0 as f32,
                     app.state.layer_manager.composition.size.1 as f32,
@@ -577,19 +431,11 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                     .set_master_speed(val);
                 app.state.dirty = true;
             }
-            UIAction::SetMasterBlackout(val) => {
-                app.state
-                    .layer_manager_mut()
-                    .composition
-                    .master_blackout = val;
-                app.state.dirty = true;
-            }
             UIAction::SetCompositionName(name) => {
                 app.state.layer_manager_mut().composition.name = name;
                 app.state.dirty = true;
             }
             UIAction::ConfigureOutput(id, config) => {
-                app.history.push(app.state.clone());
                 let fs = config.fullscreen;
                 app.state
                     .output_manager_mut()
@@ -627,6 +473,9 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
 
     // Handle MCP Actions
     handle_mcp_actions(app);
+    // Also process implicit MCP actions that were sent via UI actions?
+    // The loop above already handles UI -> MCP Sender calls, and handle_mcp_actions pulls from Receiver.
+    // So this is correct.
 
     Ok(needs_sync)
 }

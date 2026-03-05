@@ -196,7 +196,7 @@ pub fn styled_slider(
     });
 
     response.context_menu(|ui| {
-        if hold_to_action_button(ui, "↺ Reset", colors::WARN_COLOR) {
+        if ui.button("Reset to Default").clicked() {
             *value = default_value;
             ui.close();
         }
@@ -220,7 +220,7 @@ pub fn styled_slider_log(
     }
 
     response.context_menu(|ui| {
-        if hold_to_action_button(ui, "↺ Reset", colors::WARN_COLOR) {
+        if ui.button("Reset to Default").clicked() {
             *value = default_value;
             ui.close();
         }
@@ -264,7 +264,7 @@ pub fn styled_drag_value(
     }
 
     response.context_menu(|ui| {
-        if hold_to_action_button(ui, "↺ Reset", colors::WARN_COLOR) {
+        if ui.button("Reset to Default").clicked() {
             *value = default_value;
             ui.close();
         }
