@@ -99,20 +99,33 @@ jobs:
       - name: Set FFmpeg environment for ffmpeg-sys-next
         shell: pwsh
         run: |
-          $InstalledDir = "$(Get-Location)\vcpkg_installed\x64-windows"
-          $IncludePath = "$InstalledDir\include"
-          $LibPath = "$InstalledDir\lib"
-          $BinPath = "$InstalledDir\bin"
+          $RawInstalledDir = "$(Get-Location)/vcpkg_installed/x64-windows"
+          $InstalledDir = $RawInstalledDir.Replace('\', '/')
+          $IncludePath = "$InstalledDir/include"
+          $LibPath = "$InstalledDir/lib"
+          $BinPath = "$InstalledDir/bin"
+          $PkgConfigPath = "$InstalledDir/lib/pkgconfig"
 
           Add-Content -Path $env:GITHUB_ENV -Value "FFMPEG_DIR=$InstalledDir"
           Add-Content -Path $env:GITHUB_ENV -Value "FFMPEG_INCLUDE_DIR=$IncludePath"
           Add-Content -Path $env:GITHUB_ENV -Value "FFMPEG_LIB_DIR=$LibPath"
           Add-Content -Path $env:GITHUB_ENV -Value "FFMPEG_VERSION=7.1"
+          Add-Content -Path $env:GITHUB_ENV -Value "PKG_CONFIG_PATH=$PkgConfigPath"
 
           # Force bindgen/clang to use vcpkg headers on Windows MSVC and avoid Linux path leakage
           $ClangArgs = "--target=x86_64-pc-windows-msvc -I`"$IncludePath`""
           Add-Content -Path $env:GITHUB_ENV -Value "BINDGEN_EXTRA_CLANG_ARGS=$ClangArgs"
           Add-Content -Path $env:GITHUB_PATH -Value "$BinPath"
+
+      - name: Verify FFmpeg Headers
+        shell: pwsh
+        run: |
+          if (Test-Path "$env:FFMPEG_INCLUDE_DIR/libavcodec/avfft.h") {
+            Write-Host "✅ avfft.h found at $env:FFMPEG_INCLUDE_DIR/libavcodec/avfft.h"
+          } else {
+            Write-Error "❌ avfft.h NOT found! Check vcpkg installation."
+            exit 1
+          }
 
       - name: Install cargo-wix
         run: |

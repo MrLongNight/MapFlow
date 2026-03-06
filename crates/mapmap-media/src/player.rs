@@ -163,11 +163,10 @@ impl VideoPlayer {
                     match self.loop_mode {
                         LoopMode::Loop => {
                             self.current_time = Duration::ZERO;
-                            if duration > Duration::ZERO {
-                                if let Err(seek_err) = self.seek_internal(Duration::ZERO) {
-                                    self.transition_to_error(seek_err);
-                                    return None;
-                                }
+                            // Always attempt to seek to beginning on EOF loop, regardless of reported duration
+                            if let Err(seek_err) = self.seek_internal(Duration::ZERO) {
+                                self.transition_to_error(seek_err);
+                                return None;
                             }
 
                             let _ = self.status_sender.send(PlaybackStatus::Looped);

@@ -3,9 +3,19 @@ name: "Security Analysis"
 on:
   push:
     branches: [ "main" ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'assets/**'
+      - '.vscode/**'
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [ "main" ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'assets/**'
+      - '.vscode/**'
   schedule:
     - cron: '26 15 * * 1'
   workflow_dispatch:
@@ -41,6 +51,9 @@ jobs:
 
     - name: Set up Rust
       uses: dtolnay/rust-toolchain@stable
+
+    - name: Rust Cache
+      uses: Swatinem/rust-cache@v2
 
     - name: Install System Dependencies
       run: |

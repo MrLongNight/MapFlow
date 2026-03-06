@@ -1,7 +1,7 @@
 use crate::i18n::LocaleManager;
 use crate::panels::transform_panel::TransformPanel;
 use crate::theme::colors;
-use crate::widgets::panel::{cyber_panel_frame, render_panel_header};
+use crate::widgets::panel::render_panel_header;
 
 // Re-export types from the new inspector module
 pub use crate::panels::inspector::{InspectorAction, InspectorContext};
@@ -20,70 +20,62 @@ impl InspectorPanel {
     /// Render the inspector UI based on the current context
     pub fn show(
         &mut self,
-        ctx: &egui::Context,
+        ui: &mut egui::Ui,
         context: InspectorContext,
         i18n: &LocaleManager,
         actions: &mut Vec<crate::UIAction>,
     ) -> Option<InspectorAction> {
         let mut action = None;
 
-        egui::SidePanel::right("inspector_panel")
-            .resizable(true)
-            .default_width(400.0)
-            .min_width(320.0)
-            .max_width(600.0)
-            .frame(cyber_panel_frame(&ctx.style()))
-            .show(ctx, |ui| {
-                // Cyber Header
-                render_panel_header(ui, &i18n.t("panel-inspector"), |ui| {
-                    if ui.button("✕").clicked() {
-                        // TODO: Need a way to close from here
-                    }
-                });
+        // Cyber Header
+        render_panel_header(ui, &i18n.t("panel-inspector"), |ui| {
+            if ui.button("✕").clicked() {
+                // TODO: Need a way to close from here
+            }
+        });
 
-                ui.add_space(8.0);
+        ui.add_space(8.0);
 
-                egui::ScrollArea::vertical().show(ui, |ui| {
-                    match context {
-                        InspectorContext::None => {
-                            ui.centered_and_justified(|ui| {
-                                ui.label(egui::RichText::new("No selection").color(colors::DARK_GREY));
-                            });
-                        }
-                        InspectorContext::Layer {
-                            layer,
-                            transform,
-                            index,
-                        } => {
-                            action = render_layer_inspector(
-                                ui,
-                                layer,
-                                transform,
-                                index,
-                                i18n,
-                            );
-                        }
-                        InspectorContext::Module {
-                            canvas,
-                            module,
-                            part_id,
-                            shared_media_ids,
-                        } => {
-                            show_module_inspector(
-                                ui,
-                                canvas,
-                                module,
-                                part_id,
-                                &shared_media_ids,
-                                actions,
-                            );
-                        }
-                        InspectorContext::Output(config) => {
-                            show_output_inspector(ui, config);
-                        }
-                    }
-                });
-            });
+        egui::ScrollArea::vertical().show(ui, |ui| {
+            match context {
+                InspectorContext::None => {
+                    ui.centered_and_justified(|ui| {
+                        ui.label(egui::RichText::new("No selection").color(colors::DARK_GREY));
+                    });
+                }
+                InspectorContext::Layer {
+                    layer,
+                    transform,
+                    index,
+                } => {
+                    action = render_layer_inspector(
+                        ui,
+                        layer,
+                        transform,
+                        index,
+                        i18n,
+                    );
+                }
+                InspectorContext::Module {
+                    canvas,
+                    module,
+                    part_id,
+                    shared_media_ids,
+                } => {
+                    show_module_inspector(
+                        ui,
+                        canvas,
+                        module,
+                        part_id,
+                        &shared_media_ids,
+                        actions,
+                    );
+                }
+                InspectorContext::Output(config) => {
+                    show_output_inspector(ui, config);
+                }
+            }
+        });
 
         action
     }

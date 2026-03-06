@@ -1,8 +1,8 @@
 # MapFlow – Vollständige Roadmap und Feature-Status
 
 > **Version:** 1.0.0 (Rescue & Reconstruction Edition)
-> **Stand:** 2026-03-05 21:00
-> **Status:** Stabilisierungs-Phase abgeschlossen. Alle Kern-Regressionen behoben.
+> **Stand:** 2026-03-06 01:45
+> **Status:** Erweiterte Stabilisierung & Security Audit (5 PRs im Review).
 
 ---
 
@@ -53,6 +53,13 @@ Das System wurde nach massiven Regressionen erfolgreich rekonstruiert und auf ei
 *   **Testing:** 100% Passrate erreicht (400+ Tests). Neue Tests für Timeline-Automation hinzugefügt.
 *   **Fehler-Handling:** Implementierung von Toast-Notifications für Engine-Fehler steht noch aus.
 
+### 🔍 Aktuelle Review-Phase (Stand 06.03.2026)
+- [ ] **Sicherheit (#934):** Validierung der Pfad-Traversierung (Sentinel) – *In Review*.
+- [ ] **UX-Sicherheit (#937):** "Hold-to-Confirm" für kritische Aktionen (Mary) – *In Review*.
+- [ ] **Core-Tests (#933):** Unit-Tests für ModuleManager & Kernlogik (Guardian) – *In Review*.
+- [ ] **Performance (#935):** VecDeque-Optimierung für den History-Stack (Bolt) – *In Review*.
+- [ ] **UI-Polishing (#936):** Muted Styling für leere Zustände (Jules) – *In Review*.
+
 ---
 
-*Zuletzt aktualisiert: 05.03.2026 | Orchestrator: Gemini CLI (Stabilization Mode) 🦀*
+*Zuletzt aktualisiert: 06.03.2026 | Orchestrator: Gemini CLI (Stabilization Mode) 🦀*

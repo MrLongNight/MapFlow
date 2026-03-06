@@ -69,6 +69,9 @@ impl Widget for AudioMeter {
                     draw_retro_stereo(ui, content_rect, self.level_db_left, self.level_db_right)
                 }
                 AudioMeterStyle::Digital => {
+                    // Decay peak - get dt outside memory_mut to avoid deadlock
+                    let dt = ui.input(|i| i.stable_dt).min(0.1);
+
                     // Use egui memory to track peaks for decay effect
                     let (peak_l, peak_r) = ui.memory_mut(|mem| {
                         let id_l = egui::Id::new("audio_peak_l");
@@ -78,7 +81,6 @@ impl Widget for AudioMeter {
                         let mut p_r = mem.data.get_temp::<f32>(id_r).unwrap_or(-60.0);
                         
                         // Decay peak
-                        let dt = ui.input(|i| i.stable_dt).min(0.1);
                         p_l -= 20.0 * dt; // Decay 20dB per second
                         p_r -= 20.0 * dt;
                         

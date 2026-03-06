@@ -1,10 +1,10 @@
-﻿# Setze das Encoding fÃ¼r Pipes und Konsole auf UTF-8
-# Das ist entscheidend, damit Sonderzeichen wie das 'â€¦' korrekt an die Gemini CLI Ã¼bergeben werden.
+# scripts/monitor_mapflow.ps1
+# Setze das Encoding fÃ¼r Pipes und Konsole auf UTF-8
 $OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::InputEncoding  = [System.Text.Encoding]::UTF8
 
-Write-Host "--- MapFlow Orchestrator WÃ¤chter (Offizieller Modus) ---"
+Write-Host "--- MapFlow Orchestrator WÃ¤chter (Offizieller Modus) ---" -ForegroundColor Cyan
 
 # Parameter-Verarbeitung
 $Interval = 300
@@ -17,19 +17,6 @@ for ($i = 0; $i -lt $args.Count; $i++) {
 
 if ($null -eq $SessionId -or $SessionId -eq "") {
     $SessionId = $env:GEMINI_SESSION_ID
-    if ($null -eq $SessionId -or $SessionId -eq "") {
-        Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Suche nach Session-ID..."
-        try {
-            $sessionsText = gemini --list-sessions | Out-String
-            if ($sessionsText -match "([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})") {
-                $matches = [regex]::Matches($sessionsText, "([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})")
-                $SessionId = $matches[0].Value
-                Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Nutze Session-ID: $SessionId"
-            }
-        } catch {
-            Write-Host "Konnte Sessions nicht auflisten."
-        }
-    }
 }
 
 if ($null -eq $SessionId -or $SessionId -eq "") {
@@ -42,44 +29,43 @@ Write-Host "Intervall: $Interval Sekunden"
 Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Monitoring startet..."
 
 while ($true) {
-    Write-Host "`n[$(Get-Date -Format 'HH:mm:ss')] === CHECK START ==="
+    Write-Host "`n[$(Get-Date -Format 'HH:mm:ss')] === STATUS CHECK START ===" -ForegroundColor Green
 
-    $julesStatus = try { jules remote list --session | Out-String } catch { "Fehler Jules" }
+    # Sammele Daten
     $prStatus = try { gh pr status | Out-String } catch { "Fehler GitHub Status" }
-    $openPrs = try { gh pr list --state open | Out-String } catch { "Fehler GitHub List" }
+    $openPrs = try { gh pr list --limit 5 | Out-String } catch { "Fehler GitHub List" }
+    $branches = git branch --remotes --no-merged origin/main | Select-Object -First 5 | Out-String
 
-    # Ersetze das 'â€¦' durch '...' um absolut sicher zu gehen, dass die CLI es schluckt
-    $julesStatus = $julesStatus -replace "â€¦", "..."
-
-    $msg = @"
-[ORCHESTRATOR-HEARTBEAT]
-Zeitstempel: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
-Session-ID: $SessionId
-
---- JULES REMOTE SESSIONS ---
-$julesStatus
-
---- GITHUB PR STATUS ---
+    # Erstelle den Bericht
+    $report = @"
+------------------------------------------------------------
+[MONITOR-UPDATE] $(Get-Date -Format 'HH:mm:ss')
+------------------------------------------------------------
+GITHUB PR STATUS:
 $prStatus
 
---- OFFENE PULL REQUESTS ---
+OFFENE PULL REQUESTS (Top 5):
 $openPrs
 
-ANWEISUNG:
-Analysiere kurz den Status von Jules und den PRs und gib eine knappe RÃ¼ckmeldung hier im Chat.
+UNMERGED BRANCHES (Top 5):
+$branches
+------------------------------------------------------------
 "@
 
+    # 1. GIB DEN BERICHT DIREKT IN DER KONSOLE AUS (sichtbar im Ctrl+B Fenster)
+    Write-Host $report -ForegroundColor Gray
+
+    # 2. SENDE DEN BERICHT AN DEN CHAT (aktualisiert die Historie)
     Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Sende Update an Chat ($SessionId)..."
-    
     try {
-        # Einfacher Pipe-Versand laut Gemini CLI Doku
-        # Wir nutzen nur -r fÃ¼r Resume und --approval-mode yolo.
-        # Der Prompt kommt direkt vom Standard Input (stdin).
-        $msg | & gemini -r $SessionId --approval-mode yolo --raw-output 2>&1 | Write-Host
+        # Wir geben den Bericht als Argument an gemini -r
+        $aiPrompt = "Hier ist ein automatisches Monitor-Update für den Chat-Verlauf. Bitte nimm es zur Kenntnis: `n$report"
+        & gemini -r $SessionId "$aiPrompt" --approval-mode yolo --raw-output 2>&1 | Out-Null
+        Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Update erfolgreich gesendet."
     } catch {
-        Write-Host "FEHLER beim Senden: $_"
+        Write-Host "FEHLER beim Senden an Gemini: $_" -ForegroundColor Red
     }
 
-    Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Warte $Interval Sekunden..."
+    Write-Host "[$(Get-Date -Format 'HH:mm:ss')] N├ñchster Check in $Interval Sekunden..." -ForegroundColor Yellow
     Start-Sleep -Seconds $Interval
 }

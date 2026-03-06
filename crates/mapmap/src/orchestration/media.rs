@@ -237,6 +237,28 @@ pub fn update_media_players(app: &mut App, _dt: f32) {
                         is_playing: matches!(handle.state, PlaybackState::Playing),
                     },
                 );
+
+                // Update node preview texture for the active module
+                let tex_name = format!("part_{}_{}", mod_id, part_id);
+                if let Some(texture) = app.texture_pool.get_texture(&tex_name) {
+                    let view = std::sync::Arc::new(texture.create_view(&wgpu::TextureViewDescriptor::default()));
+                    
+                    // Register with egui if not already cached
+                    let tex_id = if let Some((cached_id, _cached_view)) = app.preview_texture_cache.get(&(*mod_id, *part_id)) {
+                        // Check if view changed? (e.g. resize)
+                        *cached_id
+                    } else {
+                        let id = app.egui_renderer.register_native_texture(
+                            &app.backend.device,
+                            &view,
+                            wgpu::FilterMode::Linear,
+                        );
+                        app.preview_texture_cache.insert((*mod_id, *part_id), (id, view.clone()));
+                        id
+                    };
+                    
+                    ui_state.module_canvas.node_previews.insert((*mod_id, *part_id), tex_id);
+                }
             }
         }
     }

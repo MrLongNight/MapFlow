@@ -2,12 +2,13 @@
 //!
 //! Quick-access parameter controls for playback and audio analysis.
 
+use crate::editors::module_canvas::types::MediaPlaybackCommand;
 use crate::i18n::LocaleManager;
 use crate::theme::colors;
 use crate::widgets::hold_to_action_icon;
 use egui::Ui;
 use mapmap_core::AudioAnalysis;
-use mapmap_media::{LoopMode, PlaybackCommand, PlaybackState};
+use mapmap_media::{LoopMode, PlaybackState};
 use std::time::Duration;
 
 /// Dashboard control panel
@@ -134,14 +135,14 @@ impl Dashboard {
                     &locale.t("btn-play"),
                 ) {
                     // Using ArrowRight as Play for now
-                    action = Some(DashboardAction::SendCommand(PlaybackCommand::Play));
+                    action = Some(DashboardAction::SendCommand(MediaPlaybackCommand::Play));
                 }
                 // Pause (No icon yet, use text or maybe a placeholder)
                 if icon_btn(
                     Some(crate::icons::AppIcon::ButtonPause),
                     &locale.t("btn-pause"),
                 ) {
-                    action = Some(DashboardAction::SendCommand(PlaybackCommand::Pause));
+                    action = Some(DashboardAction::SendCommand(MediaPlaybackCommand::Pause));
                 }
                 // Stop
                 if hold_to_action_icon(
@@ -151,7 +152,7 @@ impl Dashboard {
                     icon_size,
                     colors::ERROR_COLOR,
                 ) {
-                    action = Some(DashboardAction::SendCommand(PlaybackCommand::Stop));
+                    action = Some(DashboardAction::SendCommand(MediaPlaybackCommand::Stop));
                 }
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     ui.label(format!("{:?}", self.playback_state));
@@ -165,8 +166,8 @@ impl Dashboard {
                 .add(egui::Slider::new(&mut current_secs, 0.0..=total_secs).show_value(false))
                 .changed()
             {
-                action = Some(DashboardAction::SendCommand(PlaybackCommand::Seek(
-                    Duration::from_secs_f32(current_secs),
+                action = Some(DashboardAction::SendCommand(MediaPlaybackCommand::Seek(
+                    current_secs as f64,
                 )));
             }
             ui.label(format!(
@@ -187,7 +188,7 @@ impl Dashboard {
                     .changed()
                 {
                     let new_speed = self.speed;
-                    action = Some(DashboardAction::SendCommand(PlaybackCommand::SetSpeed(
+                    action = Some(DashboardAction::SendCommand(MediaPlaybackCommand::SetSpeed(
                         new_speed,
                     )));
                 }
@@ -198,14 +199,13 @@ impl Dashboard {
                         .checkbox(&mut looping, locale.t("dashboard-loop"))
                         .changed()
                     {
-                        let new_mode = if looping {
+                        self.loop_mode = if looping {
                             LoopMode::Loop
                         } else {
                             LoopMode::PlayOnce
                         };
-                        self.loop_mode = new_mode;
-                        action = Some(DashboardAction::SendCommand(PlaybackCommand::SetLoopMode(
-                            new_mode,
+                        action = Some(DashboardAction::SendCommand(MediaPlaybackCommand::SetLoop(
+                            looping,
                         )));
                     }
                 });
@@ -237,7 +237,7 @@ impl Dashboard {
 /// Actions that can be triggered by the dashboard
 #[derive(Debug, Clone)]
 pub enum DashboardAction {
-    SendCommand(PlaybackCommand),
+    SendCommand(MediaPlaybackCommand),
     AudioDeviceChanged(String),
     ToggleAudioPanel,
 }

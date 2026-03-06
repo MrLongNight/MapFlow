@@ -23,42 +23,68 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
             });
     }
 
-    // 3. Dashboard / Global Controls (Floating or Windows)
-    let _ = app
-        .ui_state
-        .dashboard
-        .ui(ctx, &app.ui_state.i18n, app.ui_state.icon_manager.as_ref());
-
-    // 4. Left Panel: Sidebar (Collapsible)
+    // 3. Left Panel: Sidebar (Collapsible)
     if app.ui_state.show_left_sidebar {
         egui::SidePanel::left("left_sidebar_panel")
             .resizable(true)
-            .default_width(280.0)
+            .default_width(300.0)
+            .min_width(250.0)
             .show(ctx, |ui_obj| {
-                if app.ui_state.show_media_browser {
-                    let _ = app.ui_state.media_browser.ui(
+                egui::ScrollArea::vertical().show(ui_obj, |ui_obj| {
+                    // --- Dashboard Section ---
+                    ui::widgets::panel::render_panel_header(ui_obj, &app.ui_state.i18n.t("panel-dashboard"), |_| {});
+                    if let Some(dash_action) = app.ui_state.dashboard.render_contents(
                         ui_obj,
                         &app.ui_state.i18n,
                         app.ui_state.icon_manager.as_ref(),
-                    );
-                } else {
-                    ui_obj.heading(app.ui_state.i18n.t("panel-dashboard"));
+                    ) {
+                        match dash_action {
+                            ui::view::dashboard::DashboardAction::SendCommand(cmd) => {
+                                // For now, send to active module if any, or global
+                                if let Some(_module_id) = app.ui_state.module_canvas.active_module_id {
+                                    if let Some(part_id) = app.ui_state.module_canvas.get_selected_part_id() {
+                                        app.ui_state.actions.push(ui::UIAction::MediaCommand(part_id, cmd));
+                                    }
+                                }
+                            }
+                            ui::view::dashboard::DashboardAction::ToggleAudioPanel => {
+                                app.ui_state.show_audio = !app.ui_state.show_audio;
+                            }
+                            _ => {}
+                        }
+                    }
                     ui_obj.separator();
-                    ui_obj.label("Wählen Sie ein Modul oder Medium...");
-                }
+
+                    // --- Media Browser Section ---
+                    if app.ui_state.show_media_browser {
+                        ui::widgets::panel::render_panel_header(ui_obj, &app.ui_state.i18n.t("panel-media-browser"), |ui| {
+                            if ui.button("✖").clicked() {
+                                app.ui_state.show_media_browser = false;
+                            }
+                        });
+                        let _ = app.ui_state.media_browser.ui(
+                            ui_obj,
+                            &app.ui_state.i18n,
+                            app.ui_state.icon_manager.as_ref(),
+                        );
+                    } else {
+                        ui_obj.label("Wählen Sie ein Modul oder Medium...");
+                    }
+                });
             });
     }
 
-    // 5. Right Panel: Inspector (Docked)
+    // 4. Right Panel: Inspector (Docked)
     if app.ui_state.show_inspector {
         egui::SidePanel::right("right_panel")
             .resizable(true)
             .default_width(400.0)
             .min_width(320.0)
-            .show(ctx, |_ui_obj| {
+            .max_width(600.0)
+            .show(ctx, |ui_obj| {
                 // Render the unified Inspector
                 app.ui_state.render_inspector(
-                    ctx,
+                    ui_obj,
                     std::sync::Arc::make_mut(&mut app.state.module_manager),
                     &app.state.layer_manager,
                     &app.state.output_manager,
@@ -66,9 +92,9 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
 
                 // Legacy panels (can be toggled separately or integrated)
                 if app.ui_state.show_transforms {
-                    app.ui_state.transform_panel.render(ctx, &app.ui_state.i18n);
+                    app.ui_state.transform_panel.render(ctx, &app.ui_state.i18n);        
                 }
-                
+
                 app.ui_state.effect_chain_panel.ui(
                     ctx,
                     &app.ui_state.i18n,
@@ -78,7 +104,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
             });
     }
 
-    // 6. Bottom Panel: Timeline
+    // 5. Bottom Panel: Timeline
     if app.ui_state.show_timeline {
         egui::TopBottomPanel::bottom("bottom_panel")
             .resizable(true)
@@ -107,7 +133,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
             });
     }
 
-    // 7. Floating Windows / Overlays
+    // 6. Floating Windows / Overlays
     
     // Performance Stats Overlay
     if app.ui_state.show_stats {
@@ -125,7 +151,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
         );
     }
 
-    // 8. Central Panel: Module Canvas
+    // 7. Central Panel: Module Canvas
     egui::CentralPanel::default()
         .frame(egui::Frame::default().fill(ctx.style().visuals.panel_fill))
         .show(ctx, |ui_obj| {
@@ -236,7 +262,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
             }
         });
 
-    // 9. Other Overlays (Shader Graph, Audio, MIDI)
+    // 8. Other Overlays (Shader Graph, Audio, MIDI)
 
     if app.ui_state.show_shader_graph {
         app.ui_state.render_node_editor(ctx);
@@ -266,6 +292,25 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
 
     if app.ui_state.show_about {
         crate::ui::dialogs::about::show(ctx, &mut app.ui_state.show_about);
+    }
+
+    if app.ui_state.show_settings {
+        let context = crate::ui::dialogs::settings::SettingsContext {
+            ui_state: &mut app.ui_state,
+            state: &mut app.state,
+            backend: &app.backend,
+            hue_controller: &mut app.hue_controller,
+            #[cfg(feature = "midi")]
+            midi_handler: &mut app.midi_handler,
+            #[cfg(feature = "midi")]
+            midi_ports: &mut app.midi_ports,
+            #[cfg(feature = "midi")]
+            selected_midi_port: &mut app.selected_midi_port,
+            restart_requested: &mut app.restart_requested,
+            exit_requested: &mut app.exit_requested,
+            tokio_runtime: &app.tokio_runtime,
+        };
+        crate::ui::dialogs::settings::show(ctx, context);
     }
 
     app.ui_state
