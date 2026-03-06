@@ -3,17 +3,7 @@ name: "CICD-DevFlow: Job01 Validation"
 on:
   push:
     branches: [ "main" ]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'assets/**'
-      - '.vscode/**'
   pull_request:
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'assets/**'
-      - '.vscode/**'
   workflow_dispatch:
     inputs:
       toolchain:
