@@ -191,7 +191,9 @@ impl ControlValue {
                     ));
                 }
                 // Path traversal check
-                if Path::new(s)
+                // Normalize windows backslashes to correctly catch ..\ on non-windows systems
+                let normalized = s.replace('\\', "/");
+                if Path::new(&normalized)
                     .components()
                     .any(|c| matches!(c, Component::ParentDir))
                 {
@@ -321,6 +323,9 @@ mod tests {
 
         let traversal2 = ControlValue::String("foo/../bar".to_string());
         assert!(traversal2.validate().is_err());
+
+        let traversal_win = ControlValue::String("..\\secret".to_string());
+        assert!(traversal_win.validate().is_err());
 
         let valid_dots = ControlValue::String("Loading...".to_string());
         assert!(valid_dots.validate().is_ok());
