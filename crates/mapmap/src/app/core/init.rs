@@ -12,10 +12,7 @@ use mapmap_control::hue::controller::HueController;
 use mapmap_control::midi::MidiInputHandler;
 use mapmap_control::ControlManager;
 use mapmap_core::{
-    audio::{
-        analyzer_v2::{AudioAnalyzerV2, AudioAnalyzerV2Config},
-        backend::{cpal_backend::CpalBackend, AudioBackend},
-    },
+    audio::backend::{cpal_backend::CpalBackend, AudioBackend},
     media_library::MediaLibrary,
     AppState, ModuleEvaluator,
 };
@@ -346,13 +343,8 @@ impl App {
             }
         }
 
-        // Initialize Audio Analyzer V2 (new implementation)
-        let audio_analyzer = AudioAnalyzerV2::new(AudioAnalyzerV2Config {
-            sample_rate: state.audio_config.sample_rate,
-            fft_size: state.audio_config.fft_size,
-            overlap: state.audio_config.overlap,
-            smoothing: state.audio_config.smoothing,
-        });
+        // Initialize Audio Analyzer (wrapper around V2 for compatibility)
+        let audio_analyzer = mapmap_core::audio::AudioAnalyzer::new(state.audio_config.clone());
 
         // Start MCP Server in a separate thread
         let (mcp_sender, mcp_receiver) = unbounded();

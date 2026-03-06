@@ -285,7 +285,32 @@ pub fn render_canvas(
         draw::draw_part_with_delete(canvas, ui, &painter, part, part_rect, actions, module.id);
 
         let part_id = part.id;
-        let interact_rect = part_rect.shrink(4.0);
+        
+        // 2.1 Handle Socket Interaction (Priority)
+        for socket_info in &all_sockets {
+            if socket_info.part_id == part_id {
+                let socket_rect = Rect::from_center_size(socket_info.position, Vec2::splat(24.0 * canvas.zoom));
+                let socket_resp = ui.interact(socket_rect, egui::Id::new((part_id, socket_info.is_output, socket_info.socket_idx)), Sense::drag());
+                
+                if socket_resp.drag_started() {
+                    canvas.creating_connection = Some((
+                        part_id,
+                        socket_info.socket_idx,
+                        socket_info.is_output,
+                        socket_info.socket_type,
+                        socket_info.position,
+                    ));
+                    clicked_on_part = true;
+                }
+                
+                if socket_resp.hovered() {
+                    clicked_on_part = true;
+                }
+            }
+        }
+
+        // 2.2 Handle Part Dragging/Selection
+        let interact_rect = part_rect.shrink(2.0);
         let part_response = ui.interact(
             interact_rect,
             egui::Id::new(part_id),
@@ -293,23 +318,7 @@ pub fn render_canvas(
         );
 
         if part_response.hovered() {
-            for socket_info in &all_sockets {
-                if socket_info.part_id == part_id {
-                    let dist = socket_info
-                        .position
-                        .distance(ui.input(|i| i.pointer.hover_pos().unwrap_or_default()));
-                    if dist < 12.0 * canvas.zoom && part_response.drag_started() {
-                        canvas.creating_connection = Some((
-                            part_id,
-                            socket_info.socket_idx,
-                            socket_info.is_output,
-                            socket_info.socket_type,
-                            socket_info.position,
-                        ));
-                        clicked_on_part = true;
-                    }
-                }
-            }
+            clicked_on_part = true;
         }
 
         if part_response.clicked() {

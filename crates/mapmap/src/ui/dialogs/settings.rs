@@ -37,23 +37,27 @@ pub struct SettingsContext<'a> {
 /// Renders the settings window.
 pub fn show(ctx: &Context, context: SettingsContext) {
     let mut show_settings = context.ui_state.show_settings;
+    let i18n = &context.ui_state.i18n;
 
-    Window::new(RichText::new("⚙ SETTINGS").strong().color(Color32::from_rgb(0, 255, 255)))
+    Window::new(RichText::new(format!("⚙ {}", i18n.t("settings").to_uppercase())).strong().color(Color32::from_rgb(0, 255, 255)))
         .open(&mut show_settings)
         .resizable(true)
-        .default_width(450.0)
+        .default_width(500.0)
         .show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 
                 // --- GENERAL ---
                 ui.heading(RichText::new("General").color(Color32::WHITE));
+                
                 ui.add_space(4.0);
                 
                 ui.horizontal(|ui| {
-                    ui.label("Language:");
+                    ui.label(format!("{}:", i18n.t("language")));
                     let current_lang = context.ui_state.user_config.language.clone();
+                    let lang_name = if current_lang == "de" { "Deutsch" } else { "English" };
+                    
                     egui::ComboBox::from_id_salt("lang_selector")
-                        .selected_text(if current_lang == "de" { "Deutsch" } else { "English" })
+                        .selected_text(lang_name)
                         .show_ui(ui, |ui| {
                             if ui.selectable_label(current_lang == "de", "Deutsch").clicked() {
                                 context.ui_state.actions.push(UIAction::SetLanguage("de".to_string()));
@@ -67,18 +71,71 @@ pub fn show(ctx: &Context, context: SettingsContext) {
                 ui.add_space(10.0);
                 ui.separator();
 
-                // --- AUDIO ---
-                ui.heading(RichText::new("Audio").color(Color32::WHITE));
+                // --- APPEARANCE & THEME ---
+                ui.heading(RichText::new(i18n.t("appearance")).color(Color32::WHITE));
                 ui.add_space(4.0);
                 
                 ui.horizontal(|ui| {
-                    ui.label("Device:");
-                    let current_device = context.ui_state.selected_audio_device.clone().unwrap_or_else(|| "None".to_string());
+                    ui.label(format!("{}:", i18n.t("theme")));
+                    let is_dark = ctx.style().visuals.dark_mode;
+                    if ui.selectable_label(is_dark, format!("🌙 {}", i18n.t("theme-dark"))).clicked() {
+                        ctx.set_visuals(egui::Visuals::dark());
+                    }
+                    if ui.selectable_label(!is_dark, format!("☀ {}", i18n.t("theme-light"))).clicked() {
+                        ctx.set_visuals(egui::Visuals::light());
+                    }
+                });
+                
+                ui.add_space(4.0);
+                ui.horizontal(|ui| {
+                    ui.label(format!("{}:", i18n.t("theme-accent")));
+                    ui.label("Cyber Cyan (Default)");
+                });
+
+                ui.add_space(10.0);
+                ui.separator();
+
+                // --- PERFORMANCE & GRAPHICS ---
+                ui.heading(RichText::new(format!("{} & {}", i18n.t("graphics"), i18n.t("performance"))).color(Color32::WHITE));
+                ui.add_space(4.0);
+                
+                egui::Grid::new("perf_grid").num_columns(2).spacing([20.0, 8.0]).show(ui, |ui| {
+                    ui.label(format!("{}:", i18n.t("hw-accel")));
+                    ui.label("D3D11 (Enabled)");
+                    ui.end_row();
+                    
+                    ui.label(format!("{}:", i18n.t("target-fps")));
+                    let mut fps = 60;
+                    ui.add(egui::Slider::new(&mut fps, 24..=144).suffix(" FPS"));
+                    ui.end_row();
+                    
+                    ui.label(format!("{}:", i18n.t("texture-quality")));
+                    let mut quality = 1; // High
+                    egui::ComboBox::from_id_salt("quality_picker")
+                        .selected_text(i18n.t("quality"))
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(&mut quality, 0, "Low");
+                            ui.selectable_value(&mut quality, 1, "High");
+                        });
+                    ui.end_row();
+                });
+
+                ui.add_space(10.0);
+                ui.separator();
+
+                // --- AUDIO ---
+                ui.heading(RichText::new(i18n.t("audio")).color(Color32::WHITE));
+                ui.add_space(4.0);
+                
+                ui.horizontal(|ui| {
+                    ui.label(format!("{}:", i18n.t("label-device")));
+                    let current_device = context.ui_state.selected_audio_device.clone().unwrap_or_else(|| i18n.t("no-device"));
                     egui::ComboBox::from_id_salt("audio_device_selector")
                         .selected_text(&current_device)
                         .show_ui(ui, |ui| {
                             for device in &context.ui_state.audio_devices {
-                                if ui.selectable_label(Some(device) == context.ui_state.selected_audio_device.as_ref(), device).clicked() {
+                                let is_selected = Some(device) == context.ui_state.selected_audio_device.as_ref();
+                                if ui.selectable_label(is_selected, device).clicked() {
                                     context.ui_state.actions.push(UIAction::SelectAudioDevice(device.clone()));
                                 }
                             }
@@ -88,48 +145,30 @@ pub fn show(ctx: &Context, context: SettingsContext) {
                 ui.add_space(10.0);
                 ui.separator();
 
-                // --- NDI & NETWORK ---
-                ui.heading(RichText::new("Network & NDI").color(Color32::WHITE));
-                ui.add_space(4.0);
-                
-                ui.checkbox(&mut context.ui_state.user_config.ndi_discovery, "Enable NDI Discovery");
-                ui.add_space(4.0);
-                
-                ui.horizontal(|ui| {
-                    ui.label("OSC Input Port:");
-                    ui.text_edit_singleline(&mut context.ui_state.osc_port_input);
-                });
-                ui.horizontal(|ui| {
-                    ui.label("OSC Client Address:");
-                    ui.text_edit_singleline(&mut context.ui_state.osc_client_input);
-                });
-
-                ui.add_space(10.0);
-                ui.separator();
-
                 // --- HUE ---
                 ui.heading(RichText::new("Philips Hue").color(Color32::from_rgb(255, 200, 0)));
                 ui.add_space(4.0);
+                let is_connected = context.hue_controller.is_connected();
                 ui.horizontal(|ui| {
-                    ui.label(format!("Status: {}", if context.hue_controller.is_connected() { "CONNECTED" } else { "DISCONNECTED" }));
-                    if ui.button("Discover Bridges").clicked() {
-                        context.ui_state.actions.push(UIAction::DiscoverHueBridges);
+                    ui.label(format!("{}: {}", i18n.t("hue-status"), if is_connected { "CONNECTED" } else { "DISCONNECTED" }));
+                    
+                    if !is_connected {
+                        if ui.button(i18n.t("hue-discover")).clicked() {
+                            context.ui_state.actions.push(UIAction::DiscoverHueBridges);
+                        }
+                    } else {
+                        if ui.button(i18n.t("hue-disconnect")).clicked() {
+                            // Placeholder
+                        }
                     }
                 });
 
-                ui.add_space(10.0);
-                ui.separator();
-
-                // --- THEME ---
-                ui.heading(RichText::new("Appearance").color(Color32::WHITE));
-                ui.add_space(4.0);
-                if ui.button("Toggle Theme (Dark/Light)").clicked() {
-                    // Logic for theme toggle
-                }
-
                 ui.add_space(20.0);
+                ui.separator();
+                ui.add_space(10.0);
+
                 ui.vertical_centered(|ui| {
-                    if ui.button(RichText::new("Restart Application").color(Color32::RED)).clicked() {
+                    if ui.button(RichText::new(i18n.t("restart-app")).color(Color32::RED).strong()).clicked() {
                         *context.restart_requested = true;
                         *context.exit_requested = true;
                     }

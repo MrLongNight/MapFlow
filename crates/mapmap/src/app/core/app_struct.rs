@@ -10,7 +10,7 @@ use mapmap_control::hue::controller::HueController;
 use mapmap_control::midi::MidiInputHandler;
 use mapmap_control::ControlManager;
 use mapmap_core::{
-    audio::{analyzer_v2::AudioAnalyzerV2, backend::cpal_backend::CpalBackend},
+    audio::backend::cpal_backend::CpalBackend,
     media_library::MediaLibrary,
     module::ModulePartId,
     AppState, History, ModuleEvaluator, RenderOp,
@@ -58,7 +58,7 @@ pub struct App {
     /// The audio backend.
     pub audio_backend: Option<CpalBackend>,
     /// The audio analyzer.
-    pub audio_analyzer: AudioAnalyzerV2,
+    pub audio_analyzer: mapmap_core::audio::AudioAnalyzer,
     /// List of available audio devices.
     pub audio_devices: Vec<String>,
     /// The egui context.

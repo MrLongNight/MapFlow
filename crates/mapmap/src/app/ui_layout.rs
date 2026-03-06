@@ -13,6 +13,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
     // 2. Toolbar (Separate Panel below Menu)
     if app.ui_state.show_toolbar {
         egui::TopBottomPanel::top("toolbar_panel")
+            .resizable(true)
             .frame(egui::Frame::default()
                 .fill(ctx.style().visuals.window_fill())
                 .inner_margin(egui::Margin::symmetric(16, 4))
@@ -23,63 +24,89 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
             });
     }
 
-    // 3. Left Panel: Sidebar (Collapsible)
+    // 3. Left Panel: Sidebar (Collapsible & Resizable)
     if app.ui_state.show_left_sidebar {
         egui::SidePanel::left("left_sidebar_panel")
             .resizable(true)
             .default_width(300.0)
-            .min_width(250.0)
+            .min_width(200.0)
             .show(ctx, |ui_obj| {
                 egui::ScrollArea::vertical().show(ui_obj, |ui_obj| {
                     // --- Dashboard Section ---
-                    ui::widgets::panel::render_panel_header(ui_obj, &app.ui_state.i18n.t("panel-dashboard"), |_| {});
-                    if let Some(dash_action) = app.ui_state.dashboard.render_contents(
-                        ui_obj,
-                        &app.ui_state.i18n,
-                        app.ui_state.icon_manager.as_ref(),
-                    ) {
-                        match dash_action {
-                            ui::view::dashboard::DashboardAction::SendCommand(cmd) => {
-                                // For now, send to active module if any, or global
-                                if let Some(_module_id) = app.ui_state.module_canvas.active_module_id {
-                                    if let Some(part_id) = app.ui_state.module_canvas.get_selected_part_id() {
-                                        app.ui_state.actions.push(ui::UIAction::MediaCommand(part_id, cmd));
+                    egui::CollapsingHeader::new(app.ui_state.i18n.t("dashboard"))
+                        .default_open(true)
+                        .show(ui_obj, |ui| {
+                            if let Some(dash_action) = app.ui_state.dashboard.render_contents(
+                                ui,
+                                &app.ui_state.i18n,
+                                app.ui_state.icon_manager.as_ref(),
+                            ) {
+                                match dash_action {
+                                    ui::view::dashboard::DashboardAction::SendCommand(cmd) => {
+                                        if let Some(_module_id) = app.ui_state.module_canvas.active_module_id {
+                                            if let Some(part_id) = app.ui_state.module_canvas.get_selected_part_id() {
+                                                app.ui_state.actions.push(ui::UIAction::MediaCommand(part_id, cmd));
+                                            }
+                                        }
+                                    }
+                                    ui::view::dashboard::DashboardAction::ToggleAudioPanel => {
+                                        app.ui_state.show_audio = !app.ui_state.show_audio;
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        });
+                    ui_obj.separator();
+
+                    // --- Audio Analysis Section ---
+                    egui::CollapsingHeader::new(app.ui_state.i18n.t("audio"))
+                        .default_open(false)
+                        .show(ui_obj, |ui| {
+                            let analysis = app.audio_analyzer.get_latest_analysis();
+                            if let Some(audio_action) = app.ui_state.audio_panel.ui(
+                                ui,
+                                &app.ui_state.i18n,
+                                Some(&analysis),
+                                &app.state.audio_config,
+                                &app.ui_state.audio_devices,
+                                &mut app.ui_state.selected_audio_device,
+                            ) {
+                                match audio_action {
+                                    ui::panels::audio_panel::AudioPanelAction::DeviceChanged(device) => {
+                                        app.ui_state.actions.push(ui::UIAction::SelectAudioDevice(device));
+                                    }
+                                    ui::panels::audio_panel::AudioPanelAction::ConfigChanged(cfg) => {
+                                        app.state.audio_config = cfg;
                                     }
                                 }
                             }
-                            ui::view::dashboard::DashboardAction::ToggleAudioPanel => {
-                                app.ui_state.show_audio = !app.ui_state.show_audio;
-                            }
-                            _ => {}
-                        }
-                    }
+                        });
                     ui_obj.separator();
 
                     // --- Media Browser Section ---
-                    if app.ui_state.show_media_browser {
-                        ui::widgets::panel::render_panel_header(ui_obj, &app.ui_state.i18n.t("panel-media-browser"), |ui| {
-                            if ui.button("✖").clicked() {
-                                app.ui_state.show_media_browser = false;
+                    egui::CollapsingHeader::new(app.ui_state.i18n.t("media"))
+                        .default_open(true)
+                        .show(ui_obj, |ui| {
+                            if app.ui_state.show_media_browser {
+                                let _ = app.ui_state.media_browser.ui(
+                                    ui,
+                                    &app.ui_state.i18n,
+                                    app.ui_state.icon_manager.as_ref(),
+                                );
+                            } else {
+                                ui.label(app.ui_state.i18n.t("media-sidebar-placeholder"));
                             }
                         });
-                        let _ = app.ui_state.media_browser.ui(
-                            ui_obj,
-                            &app.ui_state.i18n,
-                            app.ui_state.icon_manager.as_ref(),
-                        );
-                    } else {
-                        ui_obj.label("Wählen Sie ein Modul oder Medium...");
-                    }
                 });
             });
     }
 
-    // 4. Right Panel: Inspector (Docked)
+    // 4. Right Panel: Inspector (Docked & Resizable)
     if app.ui_state.show_inspector {
         egui::SidePanel::right("right_panel")
             .resizable(true)
             .default_width(400.0)
-            .min_width(320.0)
+            .min_width(300.0)
             .max_width(600.0)
             .show(ctx, |ui_obj| {
                 // Render the unified Inspector
@@ -95,6 +122,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
                     app.ui_state.transform_panel.render(ctx, &app.ui_state.i18n);        
                 }
 
+                // Effect chain integrated into inspector side
                 app.ui_state.effect_chain_panel.ui(
                     ctx,
                     &app.ui_state.i18n,
@@ -104,13 +132,14 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
             });
     }
 
-    // 5. Bottom Panel: Timeline
+    // 5. Bottom Panel: Timeline (Resizable)
     if app.ui_state.show_timeline {
         egui::TopBottomPanel::bottom("bottom_panel")
             .resizable(true)
             .default_height(200.0)
+            .min_height(100.0)
             .show(ctx, |ui_obj| {
-                ui_obj.heading(app.ui_state.i18n.t("panel-timeline"));
+                ui_obj.heading(app.ui_state.i18n.t("timeline"));
                 let mut modules: Vec<ui::TimelineModule> = app
                     .state
                     .module_manager
@@ -269,13 +298,14 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
     }
 
     if app.ui_state.show_audio {
-        egui::Window::new(app.ui_state.i18n.t("panel-audio"))
+        egui::Window::new(app.ui_state.i18n.t("audio"))
             .open(&mut app.ui_state.show_audio)
             .show(ctx, |ui_obj| {
+                let analysis = app.audio_analyzer.get_latest_analysis();
                 app.ui_state.audio_panel.ui(
                     ui_obj,
                     &app.ui_state.i18n,
-                    None, // analysis
+                    Some(&analysis),
                     &app.state.audio_config,
                     &app.ui_state.audio_devices,
                     &mut app.ui_state.selected_audio_device,

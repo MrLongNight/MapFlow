@@ -91,8 +91,15 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
         }
 
         let analysis = app.audio_analyzer.get_latest_analysis();
+        let mut bands = [0.0; 9];
+        for (i, &energy) in analysis.band_energies.iter().enumerate() {
+            if i < 9 {
+                bands[i] = energy;
+            }
+        }
+
         let trigger_data = mapmap_core::audio_reactive::AudioTriggerData {
-            band_energies: analysis.band_energies,
+            band_energies: bands,
             rms_volume: analysis.rms_volume,
             peak_volume: analysis.peak_volume,
             beat_detected: analysis.beat_detected,

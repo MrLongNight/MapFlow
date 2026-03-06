@@ -54,11 +54,11 @@ Das System wurde nach massiven Regressionen erfolgreich rekonstruiert und auf ei
 *   **Fehler-Handling:** Implementierung von Toast-Notifications für Engine-Fehler steht noch aus.
 
 ### 🔍 Aktuelle Review-Phase (Stand 06.03.2026)
-- [ ] **Sicherheit (#934):** Validierung der Pfad-Traversierung (Sentinel) – *In Review*.
-- [ ] **UX-Sicherheit (#937):** "Hold-to-Confirm" für kritische Aktionen (Mary) – *In Review*.
-- [ ] **Core-Tests (#933):** Unit-Tests für ModuleManager & Kernlogik (Guardian) – *In Review*.
-- [ ] **Performance (#935):** VecDeque-Optimierung für den History-Stack (Bolt) – *In Review*.
-- [ ] **UI-Polishing (#936):** Muted Styling für leere Zustände (Jules) – *In Review*.
+- [x] **Sicherheit (#934):** Validierung der Pfad-Traversierung (Sentinel) – **Ready for Merge** ✅
+- [ ] **UX-Sicherheit (#937):** "Hold-to-Confirm" für kritische Aktionen (Mary) – *CI failing (pre-commit)* ❌
+- [x] **Core-Tests (#933):** Unit-Tests für ModuleManager & Kernlogik (Guardian) – **Ready for Merge** ✅
+- [x] **Performance (#935):** VecDeque-Optimierung für den History-Stack (Bolt) – **Ready for Merge** ✅
+- [x] **UI-Polishing (#936):** Muted Styling für leere Zustände (Jules) – **Ready for Merge** ✅
 
 ---
 
