@@ -199,9 +199,15 @@ impl App {
                     if let Some(module) = self.state.module_manager.get_module(mod_id) {
                         if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
                             let path_opt = match &part.part_type {
-                                mapmap_core::module::ModulePartType::Source(mapmap_core::module::SourceType::MediaFile { ref path, .. }) => Some(path.clone()),
-                                mapmap_core::module::ModulePartType::Source(mapmap_core::module::SourceType::VideoUni { ref path, .. }) => Some(path.clone()),
-                                mapmap_core::module::ModulePartType::Source(mapmap_core::module::SourceType::ImageUni { ref path, .. }) => Some(path.clone()),
+                                mapmap_core::module::ModulePartType::Source(
+                                    mapmap_core::module::SourceType::MediaFile { ref path, .. },
+                                ) => Some(path.clone()),
+                                mapmap_core::module::ModulePartType::Source(
+                                    mapmap_core::module::SourceType::VideoUni { ref path, .. },
+                                ) => Some(path.clone()),
+                                mapmap_core::module::ModulePartType::Source(
+                                    mapmap_core::module::SourceType::ImageUni { ref path, .. },
+                                ) => Some(path.clone()),
                                 _ => None,
                             };
 
@@ -284,9 +290,15 @@ impl App {
                     if let Some(module) = self.state.module_manager.get_module(mod_id) {
                         if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
                             let path_opt = match &part.part_type {
-                                mapmap_core::module::ModulePartType::Source(mapmap_core::module::SourceType::MediaFile { ref path, .. }) => Some(path.clone()),
-                                mapmap_core::module::ModulePartType::Source(mapmap_core::module::SourceType::VideoUni { ref path, .. }) => Some(path.clone()),
-                                mapmap_core::module::ModulePartType::Source(mapmap_core::module::SourceType::ImageUni { ref path, .. }) => Some(path.clone()),
+                                mapmap_core::module::ModulePartType::Source(
+                                    mapmap_core::module::SourceType::MediaFile { ref path, .. },
+                                ) => Some(path.clone()),
+                                mapmap_core::module::ModulePartType::Source(
+                                    mapmap_core::module::SourceType::VideoUni { ref path, .. },
+                                ) => Some(path.clone()),
+                                mapmap_core::module::ModulePartType::Source(
+                                    mapmap_core::module::SourceType::ImageUni { ref path, .. },
+                                ) => Some(path.clone()),
                                 _ => None,
                             };
 

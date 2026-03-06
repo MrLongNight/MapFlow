@@ -1043,7 +1043,8 @@ pub fn draw_presets_popup(
                                 for (part_type, position, size) in &preset.parts {
                                     let id = next_id;
                                     next_id += 1;
-                                    let (inputs, outputs) = utils::get_sockets_for_part_type(part_type);
+                                    let (inputs, outputs) =
+                                        utils::get_sockets_for_part_type(part_type);
                                     module.parts.push(mapmap_core::module::ModulePart {
                                         id,
                                         part_type: part_type.clone(),
@@ -1056,14 +1057,18 @@ pub fn draw_presets_popup(
                                     });
                                     part_ids.push(id);
                                 }
-                                for (from_idx, from_socket, to_idx, to_socket) in &preset.connections {
+                                for (from_idx, from_socket, to_idx, to_socket) in
+                                    &preset.connections
+                                {
                                     if *from_idx < part_ids.len() && *to_idx < part_ids.len() {
-                                        module.connections.push(mapmap_core::module::ModuleConnection {
-                                            from_part: part_ids[*from_idx],
-                                            from_socket: *from_socket,
-                                            to_part: part_ids[*to_idx],
-                                            to_socket: *to_socket,
-                                        });
+                                        module.connections.push(
+                                            mapmap_core::module::ModuleConnection {
+                                                from_part: part_ids[*from_idx],
+                                                from_socket: *from_socket,
+                                                to_part: part_ids[*to_idx],
+                                                to_socket: *to_socket,
+                                            },
+                                        );
                                     }
                                 }
                                 canvas.show_presets = false;
@@ -1080,19 +1085,21 @@ pub fn draw_presets_popup(
                     // Create new preset from current module
                     let mut parts = Vec::new();
                     let mut id_map = std::collections::HashMap::new();
-                    
+
                     for (i, part) in module.parts.iter().enumerate() {
                         parts.push((part.part_type.clone(), part.position, part.size));
                         id_map.insert(part.id, i);
                     }
-                    
+
                     let mut connections = Vec::new();
                     for conn in &module.connections {
-                        if let (Some(&from_idx), Some(&to_idx)) = (id_map.get(&conn.from_part), id_map.get(&conn.to_part)) {
+                        if let (Some(&from_idx), Some(&to_idx)) =
+                            (id_map.get(&conn.from_part), id_map.get(&conn.to_part))
+                        {
                             connections.push((from_idx, conn.from_socket, to_idx, conn.to_socket));
                         }
                     }
-                    
+
                     canvas.presets.push(super::types::ModulePreset {
                         name: canvas.new_preset_name.clone(),
                         parts,

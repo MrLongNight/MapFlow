@@ -408,20 +408,28 @@ impl ShaderNode {
                 data_type: DataType::Vec2,
             }],
 
-            NodeType::Add | NodeType::Subtract | NodeType::Multiply | NodeType::Divide | NodeType::Sin | NodeType::Cos => {
+            NodeType::Add
+            | NodeType::Subtract
+            | NodeType::Multiply
+            | NodeType::Divide
+            | NodeType::Sin
+            | NodeType::Cos => {
                 vec![OutputSocket {
                     name: "Result".to_string(),
                     data_type: DataType::Float,
                 }]
             }
 
-            NodeType::TextureSample | NodeType::Mix | NodeType::Blur | NodeType::EdgeDetect |
-            NodeType::Brightness | NodeType::Contrast | NodeType::Desaturate => vec![
-                OutputSocket {
-                    name: "Color".to_string(),
-                    data_type: DataType::Color,
-                },
-            ],
+            NodeType::TextureSample
+            | NodeType::Mix
+            | NodeType::Blur
+            | NodeType::EdgeDetect
+            | NodeType::Brightness
+            | NodeType::Contrast
+            | NodeType::Desaturate => vec![OutputSocket {
+                name: "Color".to_string(),
+                data_type: DataType::Color,
+            }],
 
             NodeType::Output => vec![],
 

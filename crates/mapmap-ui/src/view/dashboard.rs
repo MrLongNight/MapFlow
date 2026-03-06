@@ -188,9 +188,9 @@ impl Dashboard {
                     .changed()
                 {
                     let new_speed = self.speed;
-                    action = Some(DashboardAction::SendCommand(MediaPlaybackCommand::SetSpeed(
-                        new_speed,
-                    )));
+                    action = Some(DashboardAction::SendCommand(
+                        MediaPlaybackCommand::SetSpeed(new_speed),
+                    ));
                 }
 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {

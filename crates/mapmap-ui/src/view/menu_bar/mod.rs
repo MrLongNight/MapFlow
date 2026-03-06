@@ -2,11 +2,11 @@
 //!
 //! This module provides the main menu bar and toolbar for the application.
 
-pub mod file_menu;
-pub mod view_menu;
 pub mod edit_menu;
+pub mod file_menu;
 pub mod help_menu;
 pub mod toolbar;
+pub mod view_menu;
 
 use crate::icons::AppIcon;
 use crate::{AppUI, UIAction};
@@ -16,7 +16,12 @@ use crate::{AppUI, UIAction};
 pub struct MenuBar {}
 
 /// Helper for menu items with icons
-pub(crate) fn menu_item(ui: &mut egui::Ui, ui_state: &AppUI, text: String, icon: Option<AppIcon>) -> bool {
+pub(crate) fn menu_item(
+    ui: &mut egui::Ui,
+    ui_state: &AppUI,
+    text: String,
+    icon: Option<AppIcon>,
+) -> bool {
     if let Some(mgr) = &ui_state.icon_manager {
         if let Some(icon) = icon {
             if let Some(img) = mgr.image(icon, 14.0) {

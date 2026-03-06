@@ -1,6 +1,6 @@
+use super::menu_item;
 use crate::icons::AppIcon;
 use crate::{AppUI, UIAction};
-use super::menu_item;
 
 pub fn show(ui: &mut egui::Ui, ui_state: &AppUI, actions: &mut Vec<UIAction>) {
     ui.menu_button(ui_state.i18n.t("menu-help"), |ui| {

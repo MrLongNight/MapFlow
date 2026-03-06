@@ -4,8 +4,8 @@ pub mod layer;
 pub mod module;
 pub mod output;
 
-use egui::{Color32, Ui};
 use crate::theme::colors;
+use egui::{Color32, Ui};
 use mapmap_core::{Layer, OutputConfig, Transform};
 
 /// Represents the current selection context for the inspector

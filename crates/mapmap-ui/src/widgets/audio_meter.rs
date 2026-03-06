@@ -76,24 +76,35 @@ impl Widget for AudioMeter {
                     let (peak_l, peak_r) = ui.memory_mut(|mem| {
                         let id_l = egui::Id::new("audio_peak_l");
                         let id_r = egui::Id::new("audio_peak_r");
-                        
+
                         let mut p_l = mem.data.get_temp::<f32>(id_l).unwrap_or(-60.0);
                         let mut p_r = mem.data.get_temp::<f32>(id_r).unwrap_or(-60.0);
-                        
+
                         // Decay peak
                         p_l -= 20.0 * dt; // Decay 20dB per second
                         p_r -= 20.0 * dt;
-                        
+
                         // Update with current levels
-                        if self.level_db_left > p_l { p_l = self.level_db_left; }
-                        if self.level_db_right > p_r { p_r = self.level_db_right; }
-                        
+                        if self.level_db_left > p_l {
+                            p_l = self.level_db_left;
+                        }
+                        if self.level_db_right > p_r {
+                            p_r = self.level_db_right;
+                        }
+
                         mem.data.insert_temp(id_l, p_l);
                         mem.data.insert_temp(id_r, p_r);
                         (p_l, p_r)
                     });
 
-                    draw_digital_stereo(ui, content_rect, self.level_db_left, self.level_db_right, peak_l, peak_r)
+                    draw_digital_stereo(
+                        ui,
+                        content_rect,
+                        self.level_db_left,
+                        self.level_db_right,
+                        peak_l,
+                        peak_r,
+                    )
                 }
             }
         }
@@ -327,7 +338,14 @@ fn draw_single_retro_meter(painter: &egui::Painter, rect: Rect, db: f32, label: 
 }
 
 /// Draws stereo digital LED meter (Horizontal Bars)
-fn draw_digital_stereo(ui: &mut egui::Ui, rect: Rect, db_left: f32, db_right: f32, peak_l: f32, peak_r: f32) {
+fn draw_digital_stereo(
+    ui: &mut egui::Ui,
+    rect: Rect,
+    db_left: f32,
+    db_right: f32,
+    peak_l: f32,
+    peak_r: f32,
+) {
     let painter = ui.painter();
 
     // Dark background
@@ -394,7 +412,9 @@ fn draw_horizontal_led_bar(painter: &egui::Painter, rect: Rect, db: f32, peak: f
 
         // If db is very negative (or NEG_INFINITY), show no active segments
         let active = db.is_finite() && db >= threshold_db;
-        let is_peak = peak.is_finite() && peak >= threshold_db && peak < (threshold_db + (max_db - min_db) / segment_count as f32);
+        let is_peak = peak.is_finite()
+            && peak >= threshold_db
+            && peak < (threshold_db + (max_db - min_db) / segment_count as f32);
 
         let color = if threshold_db >= 0.0 {
             Color32::from_rgb(255, 50, 50)
