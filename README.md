@@ -1,8 +1,9 @@
 <div align="center">
   <img src="resources/app_icons/MapFlow_Logo_HQ-Full-M.png" alt="MapFlow Logo" width="500"/>
 
-  # MapFlow
-  ### High-Performance Real-Time Visual Synthesis & Projection Mapping
+# MapFlow
+
+### High-Performance Real-Time Visual Synthesis & Projection Mapping
 
   [![Build & Quality](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-DevFlow_Job01_Validation.yml/badge.svg?branch=main)](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-DevFlow_Job01_Validation.yml)
   [![Security Analysis](https://github.com/MrLongNight/MapFlow/actions/workflows/CI-02_security-scan.yml/badge.svg)](https://github.com/MrLongNight/MapFlow/actions/workflows/CI-02_security-scan.yml)
@@ -24,23 +25,29 @@ In an era of complex visual performances, MapFlow bridges the gap between ease o
 ## ✨ Core Features
 
 ### 🧩 Modular Node System
+
 Design complex visual flows by connecting video sources, generative shaders, and real-time filters. Every node property is a control target for our unified modulation system.
 
 ### ⚡ Professional Rendering Engine
+
 Powered by **WGPU** and the **Bevy Engine**, MapFlow delivers low-latency, hardware-accelerated rendering.
+
 * **Multi-Layer Composition**: Advanced blend modes and hierarchical grouping.
 * **3D & Particle Integration**: Native Bevy support for stunning volumetric effects and 3D scenes.
 * **LUT Color Grading**: Industry-standard `.cube` support for cinematic looks.
 
 ### 🔊 Deep Audio Reactivity
+
 Our **AudioAnalyzer V2** tracks 9 frequency bands, RMS volume, and peak detection in real-time, allowing visuals to dance perfectly to the beat.
 
 ### 📐 Precision Projection Mapping
+
 * **Bezier Warping**: Flexible mesh deformation for complex surfaces.
 * **Edge Blending**: Seamless multi-projector setups with per-output gamma correction.
 * **Advanced Masking**: Integrated shape and file-based masking tools.
 
 ### 🎛️ Unified Control
+
 Seamlessly integrate with your performance setup via **OSC**, **MIDI**, and **Ableton Link**. Our built-in **Jules AI assistant** is always ready to help you extend the software's capabilities.
 
 ---
@@ -61,11 +68,13 @@ Seamlessly integrate with your performance setup via **OSC**, **MIDI**, and **Ab
 ## 🚦 Quick Start
 
 ### 1. Requirements
+
 * **Rust**: [Install latest stable version](https://rustup.rs/)
 * **FFmpeg**: System-wide installation required for video decoding.
 * **NDI (Optional)**: For network video I/O.
 
 ### 2. Run from Source
+
 ```bash
 # Clone the repository
 git clone https://github.com/MrLongNight/MapFlow.git
@@ -76,6 +85,7 @@ cargo run --release
 ```
 
 ### 3. Usage
+
 * Check the [**Quick Start Guide**](docs/user/getting-started/QUICK-START.md) to create your first composition.
 * Explore the [**User Manual**](docs/user/manual/) for detailed control explanations.
 
