@@ -470,7 +470,7 @@ mod tests {
         let converted = converter.convert(&frame, &target_format).unwrap();
 
         if let FrameData::Cpu(data) = converted.data {
-            assert_eq!(data, vec![128, 64, 32, 255]); // RGBA with alpha added
+            assert_eq!(*data, vec![128, 64, 32, 255]); // RGBA with alpha added
         } else {
             panic!("Expected CPU frame data");
         }
@@ -487,7 +487,7 @@ mod tests {
         let converted = converter.convert(&frame, &target_format).unwrap();
 
         if let FrameData::Cpu(data) = converted.data {
-            assert_eq!(data, vec![128, 64, 32]); // RGB with alpha dropped
+            assert_eq!(*data, vec![128, 64, 32]); // RGB with alpha dropped
         } else {
             panic!("Expected CPU frame data");
         }
@@ -503,7 +503,7 @@ mod tests {
         let converted = converter.convert(&frame, &format).unwrap();
 
         if let FrameData::Cpu(converted_data) = converted.data {
-            assert_eq!(converted_data, data);
+            assert_eq!(*converted_data, data);
         } else {
             panic!("Expected CPU frame data");
         }

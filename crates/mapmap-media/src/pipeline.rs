@@ -353,7 +353,7 @@ mod tests {
 
         let frame1 = PipelineFrame {
             frame: mapmap_io::VideoFrame {
-                data: mapmap_io::format::FrameData::Cpu(vec![]),
+                data: mapmap_io::format::FrameData::Cpu(Arc::new(vec![])),
                 format: mapmap_io::VideoFormat {
                     width: 100,
                     height: 100,
@@ -369,7 +369,7 @@ mod tests {
 
         let frame2 = PipelineFrame {
             frame: mapmap_io::VideoFrame {
-                data: mapmap_io::format::FrameData::Cpu(vec![]),
+                data: mapmap_io::format::FrameData::Cpu(Arc::new(vec![])),
                 format: mapmap_io::VideoFormat {
                     width: 100,
                     height: 100,
