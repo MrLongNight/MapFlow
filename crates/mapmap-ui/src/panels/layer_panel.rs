@@ -59,7 +59,11 @@ impl LayerPanel {
                         &[("count", &layer_manager.layers().len().to_string())],
                     ));
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        if ui.button(i18n.t("btn-eject-all")).clicked() {
+                        if crate::widgets::custom::hold_to_action_button(
+                            ui,
+                            &i18n.t("btn-eject-all"),
+                            crate::theme::colors::WARN_COLOR,
+                        ) {
                             actions.push(UIAction::EjectAllLayers);
                         }
                     });

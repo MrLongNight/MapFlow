@@ -229,7 +229,11 @@ impl EdgeBlendPanel {
                     .add(Slider::new(&mut values.gamma, 1.0..=3.0).text(i18n.t("label-gamma")))
                     .changed();
 
-                if ui.button(i18n.t("btn-reset-defaults")).clicked() {
+                if crate::widgets::custom::hold_to_action_button(
+                    ui,
+                    &i18n.t("btn-reset-defaults"),
+                    crate::theme::colors::WARN_COLOR,
+                ) {
                     self.last_action = Some(EdgeBlendAction::ResetEdgeBlend(output_id));
                 }
             });
@@ -296,7 +300,11 @@ impl EdgeBlendPanel {
                     )
                     .changed();
 
-                if ui.button(i18n.t("btn-reset-defaults")).clicked() {
+                if crate::widgets::custom::hold_to_action_button(
+                    ui,
+                    &i18n.t("btn-reset-defaults"),
+                    crate::theme::colors::WARN_COLOR,
+                ) {
                     self.last_action = Some(EdgeBlendAction::ResetColorCalibration(output_id));
                 }
             });

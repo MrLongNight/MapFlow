@@ -107,7 +107,11 @@ impl PaintPanel {
                                         self.action = Some(PaintPanelAction::RemovePaint(paint.id));
                                     }
                                 }
-                            } else if ui.button(i18n.t("btn-remove")).clicked() {
+                            } else if crate::widgets::custom::hold_to_action_button(
+                                ui,
+                                &i18n.t("btn-remove"),
+                                crate::theme::colors::WARN_COLOR,
+                            ) {
                                 self.action = Some(PaintPanelAction::RemovePaint(paint.id));
                             }
                         });

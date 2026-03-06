@@ -122,7 +122,11 @@ pub fn render_layer_inspector(
             .default_open(false)
             .show(ui, |ui| {
                 ui.label("Click to edit mesh points in the preview window.");
-                if ui.button("Reset Mesh").clicked() {
+                if crate::widgets::custom::hold_to_action_button(
+                    ui,
+                    "Reset Mesh",
+                    crate::theme::colors::WARN_COLOR,
+                ) {
                     // Reset logic
                 }
             });
