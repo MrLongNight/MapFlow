@@ -51,6 +51,7 @@ Sprache: Deutsch
 | MF-027-STATUS-WORKFLOW-STANDARD | Process | Feature | Statusfluss Jules -> Review -> Abnahme -> Abgeschlossen vereinheitlichen. | SRC-054, SRC-055, SRC-056 | 🔵 In Umsetzung | 🔴 Offen | - | `MF-027-status-workflow-standard` | - | 2026-03-06 |
 | MF-028-MF-ID-NAMING-COMPLIANCE | Process | Feature | MF-ID Naming Pflicht fuer Branch/PR durchsetzen. | SRC-048 | 🔵 In Umsetzung | 🔴 Offen | - | `MF-028-mf-id-naming-compliance` | - | 2026-03-06 |
 | MF-033-PR-933-CONFLICT-RESOLUTION | Process | Fix | Prio A: Merge Konflikte in PR #933 auflösen. | GH-933 | 🔵 In Umsetzung | 🔴 Offen | 10832908683854701416 | `guardian-module-core-tests-14161047196552787958` | #933 | 2026-03-06 |
+| MF-034-CI-FIX-BATCH | CI/CD | Fix | Prio A: Behebe pre-commit/CI Fehler in PRs #928, #930, #936, #937, #944, #946. | GH-928, GH-930, GH-936, GH-937, GH-944, GH-946 | 🔵 In Umsetzung | 🔴 Offen | 13254202037157575175 | `main` | - | 2026-03-06 |
 | MF-040-SECURITY-934-VALIDATION | Security | Fix | Historischer Security-Fix, finale User-Abnahme dokumentieren. | SRC-017 | 🟢 Bereit fuer QA | 🔴 Offen | - | `MF-040-security-934-validation` | #934 | 2026-03-06 |
 | MF-041-CORE-TESTS-933 | Core | Test | Historischer Core-Test-Fix, Regressionstest nachziehen. | SRC-019 | 🟢 Bereit fuer QA | 🔴 Offen | - | `MF-041-core-tests-933` | #933 | 2026-03-06 |
 | MF-042-PERF-935 | Core/Perf | Refactor | Historische Performance-Optimierung gegen aktuelle Basis pruefen. | SRC-020 | 🟢 Bereit fuer QA | 🔴 Offen | - | `MF-042-perf-935` | #935 | 2026-03-06 |
