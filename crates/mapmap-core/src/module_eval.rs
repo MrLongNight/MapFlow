@@ -1530,7 +1530,7 @@ impl ModuleEvaluator {
             } => {
                 // Check if the key is currently pressed
                 let is_pressed = active_keys.contains(key_code);
-                
+
                 // Check modifiers bitmask (1=Shift, 2=Control, 4=Alt)
                 let mut modifiers_match = true;
                 if *modifiers & 1 != 0 && !active_keys.contains("Shift") { modifiers_match = false; }

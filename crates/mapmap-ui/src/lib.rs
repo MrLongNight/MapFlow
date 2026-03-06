@@ -791,12 +791,12 @@ impl AppUI {
         // 1. Module Selection
         if self.show_module_canvas {
             if let Some(module_id) = self.module_canvas.active_module_id {
-                // Collect shared media IDs before borrowing module mutably from manager 
+                // Collect shared media IDs before borrowing module mutably from manager
                 let shared_media_ids: Vec<String> =
                     module_manager.shared_media.items.keys().cloned().collect();
 
                 if let Some(module) = module_manager.get_module_mut(module_id) {
-                    if let Some(part_id) = self.module_canvas.get_selected_part_id() {   
+                    if let Some(part_id) = self.module_canvas.get_selected_part_id() {
                         context = crate::InspectorContext::Module {
                             canvas: &mut self.module_canvas,
                             module,
@@ -845,11 +845,11 @@ impl AppUI {
         if let Some(action) = action {
             match action {
                 crate::InspectorAction::UpdateOpacity(id, val) => {
-                    self.actions.push(crate::UIAction::SetLayerOpacity(id, val));        
+                    self.actions.push(crate::UIAction::SetLayerOpacity(id, val));
                 }
                 crate::InspectorAction::UpdateTransform(id, transform) => {
                     self.actions
-                        .push(crate::UIAction::SetLayerTransform(id, transform));        
+                        .push(crate::UIAction::SetLayerTransform(id, transform));
                 }
             }
         }

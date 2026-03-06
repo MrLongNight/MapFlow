@@ -165,7 +165,7 @@ pub fn decode_hap_frame(data: &[u8], width: u32, height: u32) -> Result<HapFrame
             // Complex multi-section (HAP Q / HAP Q Alpha)
             debug!("HAP frame: Complex multi-section");
             let sections = decode_complex_frame(compressed_data)?;
-            
+
             if sections.is_empty() {
                 return Err(HapError::InvalidSectionCount);
             }

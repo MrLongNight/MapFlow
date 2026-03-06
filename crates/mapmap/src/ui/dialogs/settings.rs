@@ -45,17 +45,17 @@ pub fn show(ctx: &Context, context: SettingsContext) {
         .default_width(500.0)
         .show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
-                
+
                 // --- GENERAL ---
                 ui.heading(RichText::new("General").color(Color32::WHITE));
-                
+
                 ui.add_space(4.0);
-                
+
                 ui.horizontal(|ui| {
                     ui.label(format!("{}:", i18n.t("language")));
                     let current_lang = context.ui_state.user_config.language.clone();
                     let lang_name = if current_lang == "de" { "Deutsch" } else { "English" };
-                    
+
                     egui::ComboBox::from_id_salt("lang_selector")
                         .selected_text(lang_name)
                         .show_ui(ui, |ui| {
@@ -74,7 +74,7 @@ pub fn show(ctx: &Context, context: SettingsContext) {
                 // --- APPEARANCE & THEME ---
                 ui.heading(RichText::new(i18n.t("appearance")).color(Color32::WHITE));
                 ui.add_space(4.0);
-                
+
                 ui.horizontal(|ui| {
                     ui.label(format!("{}:", i18n.t("theme")));
                     let is_dark = ctx.style().visuals.dark_mode;
@@ -85,7 +85,7 @@ pub fn show(ctx: &Context, context: SettingsContext) {
                         ctx.set_visuals(egui::Visuals::light());
                     }
                 });
-                
+
                 ui.add_space(4.0);
                 ui.horizontal(|ui| {
                     ui.label(format!("{}:", i18n.t("theme-accent")));
@@ -98,17 +98,17 @@ pub fn show(ctx: &Context, context: SettingsContext) {
                 // --- PERFORMANCE & GRAPHICS ---
                 ui.heading(RichText::new(format!("{} & {}", i18n.t("graphics"), i18n.t("performance"))).color(Color32::WHITE));
                 ui.add_space(4.0);
-                
+
                 egui::Grid::new("perf_grid").num_columns(2).spacing([20.0, 8.0]).show(ui, |ui| {
                     ui.label(format!("{}:", i18n.t("hw-accel")));
                     ui.label("D3D11 (Enabled)");
                     ui.end_row();
-                    
+
                     ui.label(format!("{}:", i18n.t("target-fps")));
                     let mut fps = 60;
                     ui.add(egui::Slider::new(&mut fps, 24..=144).suffix(" FPS"));
                     ui.end_row();
-                    
+
                     ui.label(format!("{}:", i18n.t("texture-quality")));
                     let mut quality = 1; // High
                     egui::ComboBox::from_id_salt("quality_picker")
@@ -126,7 +126,7 @@ pub fn show(ctx: &Context, context: SettingsContext) {
                 // --- AUDIO ---
                 ui.heading(RichText::new(i18n.t("audio")).color(Color32::WHITE));
                 ui.add_space(4.0);
-                
+
                 ui.horizontal(|ui| {
                     ui.label(format!("{}:", i18n.t("label-device")));
                     let current_device = context.ui_state.selected_audio_device.clone().unwrap_or_else(|| i18n.t("no-device"));
@@ -151,7 +151,7 @@ pub fn show(ctx: &Context, context: SettingsContext) {
                 let is_connected = context.hue_controller.is_connected();
                 ui.horizontal(|ui| {
                     ui.label(format!("{}: {}", i18n.t("hue-status"), if is_connected { "CONNECTED" } else { "DISCONNECTED" }));
-                    
+
                     if !is_connected {
                         if ui.button(i18n.t("hue-discover")).clicked() {
                             context.ui_state.actions.push(UIAction::DiscoverHueBridges);

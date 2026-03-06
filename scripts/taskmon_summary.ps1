@@ -16,10 +16,10 @@ Write-Host "`n--- Unmerged Branches ohne PR (PR Manager Fokus) ---" -ForegroundC
 if (Get-Command gh -ErrorAction SilentlyContinue) {
     # Hole alle Remote Branches, die nicht in main sind
     $branches = git branch --remotes --no-merged origin/main | ForEach-Object { $_.Trim() }
-    
+
     # Hole alle Branches, die bereits einen PR haben
     $prBranches = gh pr list --json headRefName --jq '.[].headRefName'
-    
+
     foreach ($branch in $branches) {
         $branchName = $branch -replace "^origin/", ""
         if ($prBranches -notcontains $branchName -and $branchName -ne "origin/HEAD") {
@@ -31,8 +31,8 @@ if (Get-Command gh -ErrorAction SilentlyContinue) {
 }
 
 Write-Host "`n--- Aktive Mapflow Monitore ---" -ForegroundColor Yellow
-$monitors = Get-Process -Name "powershell" -ErrorAction SilentlyContinue | Where-Object { 
-    $_.CommandLine -like "*monitor_mapflow.ps1*" 
+$monitors = Get-Process -Name "powershell" -ErrorAction SilentlyContinue | Where-Object {
+    $_.CommandLine -like "*monitor_mapflow.ps1*"
 }
 if ($monitors) {
     $monitors | Select-Object Id, @{Name="CPU(s)"; Expression={$_.CPU}}, StartTime | Format-Table

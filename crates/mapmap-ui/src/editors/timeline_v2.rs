@@ -771,7 +771,7 @@ impl TimelineV2 {
 
                 let active_module =
                     self.runtime_show_module(self.playhead, animator.is_playing(), &available_module_ids);
-                
+
                 // TRIGGER ACTION IF CHANGED
                 if let Some(mod_id) = active_module {
                     // Check if we need to emit a select action (only if not already the active one in the app)

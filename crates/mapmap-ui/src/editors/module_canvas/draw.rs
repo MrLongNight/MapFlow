@@ -1080,19 +1080,19 @@ pub fn draw_presets_popup(
                     // Create new preset from current module
                     let mut parts = Vec::new();
                     let mut id_map = std::collections::HashMap::new();
-                    
+
                     for (i, part) in module.parts.iter().enumerate() {
                         parts.push((part.part_type.clone(), part.position, part.size));
                         id_map.insert(part.id, i);
                     }
-                    
+
                     let mut connections = Vec::new();
                     for conn in &module.connections {
                         if let (Some(&from_idx), Some(&to_idx)) = (id_map.get(&conn.from_part), id_map.get(&conn.to_part)) {
                             connections.push((from_idx, conn.from_socket, to_idx, conn.to_socket));
                         }
                     }
-                    
+
                     canvas.presets.push(super::types::ModulePreset {
                         name: canvas.new_preset_name.clone(),
                         parts,

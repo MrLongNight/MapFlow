@@ -52,9 +52,9 @@ Dieses Dokument dient der zentralen Erfassung von Architektur-Problemen, monolit
 | Crate | Maßnahme | Status | Ergebnis |
 | :--- | :--- | :---: | :--- |
 | **mapmap-core** | TODO Resolution & Graph Validation | ✅ | Zyklus-Check & Auto-Disconnect implementiert. Clippy sauber. |
-| **mapmap-io** | NDI Activation & Test Stability | ✅ | NDI-Warnungen entfernt, Projekt-Roundtrip verifiziert. |        
+| **mapmap-io** | NDI Activation & Test Stability | ✅ | NDI-Warnungen entfernt, Projekt-Roundtrip verifiziert. |  
 | **mapmap-render** | Paint Image Loading | ✅ | Synchrones Laden von Bildern in GPU-Cache implementiert. |
-| **mapmap-ui** | ID Sync & Clippy Scrub | ✅ | Node-Editor ID-Synchronisation gefixt. Redundante Bindings entfernt. |   
+| **mapmap-ui** | ID Sync & Clippy Scrub | ✅ | Node-Editor ID-Synchronisation gefixt. Redundante Bindings entfernt. |  
 | **mapmap-bevy** | Integration Audit | ✅ | Main-Loop und UI-Brücke validiert. |
 | **mapmap-mcp** | Protocol Audit | ✅ | JSON-Schnittstellen für AI-Tools stabilisiert. |
 

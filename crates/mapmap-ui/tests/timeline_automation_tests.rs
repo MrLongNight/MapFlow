@@ -22,13 +22,13 @@ fn test_timeline_fully_automated_switch() {
         ],
         ..TimelineV2::default()
     };
-    
+
     let available_ids = vec![101, 102];
-    
+
     // Check at time 5.0 (should be module 101)
     let mod_id = timeline.runtime_show_module(5.0, true, &available_ids);
     assert_eq!(mod_id, Some(101));
-    
+
     // Check at time 15.0 (should be module 102)
     let mod_id = timeline.runtime_show_module(15.0, true, &available_ids);
     assert_eq!(mod_id, Some(102));
@@ -50,9 +50,9 @@ fn test_timeline_manual_mode_no_auto_switch() {
         ],
         ..TimelineV2::default()
     };
-    
+
     let available_ids = vec![101];
-    
+
     // Even at time 15.0 (outside block), it should return the manual selection
     let mod_id = timeline.runtime_show_module(15.0, true, &available_ids);
     assert_eq!(mod_id, Some(101));

@@ -76,18 +76,18 @@ impl Widget for AudioMeter {
                     let (peak_l, peak_r) = ui.memory_mut(|mem| {
                         let id_l = egui::Id::new("audio_peak_l");
                         let id_r = egui::Id::new("audio_peak_r");
-                        
+
                         let mut p_l = mem.data.get_temp::<f32>(id_l).unwrap_or(-60.0);
                         let mut p_r = mem.data.get_temp::<f32>(id_r).unwrap_or(-60.0);
-                        
+
                         // Decay peak
                         p_l -= 20.0 * dt; // Decay 20dB per second
                         p_r -= 20.0 * dt;
-                        
+
                         // Update with current levels
                         if self.level_db_left > p_l { p_l = self.level_db_left; }
                         if self.level_db_right > p_r { p_r = self.level_db_right; }
-                        
+
                         mem.data.insert_temp(id_l, p_l);
                         mem.data.insert_temp(id_r, p_r);
                         (p_l, p_r)

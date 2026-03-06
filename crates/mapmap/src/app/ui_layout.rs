@@ -119,7 +119,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
 
                 // Legacy panels (can be toggled separately or integrated)
                 if app.ui_state.show_transforms {
-                    app.ui_state.transform_panel.render(ctx, &app.ui_state.i18n);        
+                    app.ui_state.transform_panel.render(ctx, &app.ui_state.i18n);
                 }
 
                 // Effect chain integrated into inspector side
@@ -163,7 +163,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
     }
 
     // 6. Floating Windows / Overlays
-    
+
     // Performance Stats Overlay
     if app.ui_state.show_stats {
         app.ui_state.render_stats_overlay(ctx, app.ui_state.current_fps, app.ui_state.current_frame_time_ms);

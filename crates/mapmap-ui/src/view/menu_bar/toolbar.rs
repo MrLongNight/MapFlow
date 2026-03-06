@@ -4,7 +4,7 @@ use crate::{AppUI, UIAction};
 
 pub fn show(ui: &mut egui::Ui, ui_state: &mut AppUI) {
     let mut actions = Vec::new();
-    
+
     egui::ScrollArea::horizontal()
         .auto_shrink([false, true])
         .show(ui, |ui| {

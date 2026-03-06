@@ -20,10 +20,10 @@ pub fn render_layer_inspector(
                 ui.label(egui::RichText::new("LAYER").color(egui::Color32::GRAY));
             });
         });
-        
+
         ui.add_space(10.0);
         ui.separator();
-        
+
         // --- TRANSFORM SECTION ---
         egui::CollapsingHeader::new(i18n.t("inspector-transform"))
             .default_open(true)
