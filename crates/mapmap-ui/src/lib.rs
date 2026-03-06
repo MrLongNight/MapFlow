@@ -204,6 +204,12 @@ pub enum UIAction {
     ToggleAudioPanel,
 
     // Settings
+    /// Set target frames per second
+    SetTargetFps(f32),
+    /// Set VSync mode
+    SetVsyncMode(crate::config::VSyncMode),
+    /// Set preferred GPU
+    SetPreferredGpu(Option<String>),
     /// Set UI language
     SetLanguage(String),
     /// Connect to Philips Hue bridge
