@@ -476,9 +476,10 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                     TimelineAction::Pause => app.state.effect_animator_mut().pause(),
                     TimelineAction::Stop => app.state.effect_animator_mut().stop(),
                     TimelineAction::Seek(time) => app.state.effect_animator_mut().seek(time as f64),
-                    TimelineAction::SelectModule(module_id) => {
-                        app.ui_state.module_canvas.set_active_module(Some(module_id))
-                    }
+                    TimelineAction::SelectModule(module_id) => app
+                        .ui_state
+                        .module_canvas
+                        .set_active_module(Some(module_id)),
                 }
             }
             _ => {

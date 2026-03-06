@@ -1,7 +1,7 @@
+use super::{inspector_row, inspector_section, inspector_value};
+use crate::widgets::panel::render_panel_header;
 use egui::Ui;
 use mapmap_core::OutputConfig;
-use crate::widgets::panel::render_panel_header;
-use super::{inspector_section, inspector_row, inspector_value};
 
 /// Show output properties inspector
 pub fn show_output_inspector(ui: &mut Ui, output: &OutputConfig) {

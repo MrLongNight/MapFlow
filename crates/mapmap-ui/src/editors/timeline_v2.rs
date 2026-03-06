@@ -155,7 +155,9 @@ impl TimelineV2 {
     }
 
     fn find_block(&self, block_id: u64) -> Option<&ModuleArrangementItem> {
-        self.module_arrangement.iter().find(|item| item.id == block_id)
+        self.module_arrangement
+            .iter()
+            .find(|item| item.id == block_id)
     }
 
     fn first_enabled_block_id(&self) -> Option<u64> {
@@ -280,7 +282,8 @@ impl TimelineV2 {
                 }
 
                 if is_playing {
-                    if let Some(time_block_id) = self.active_block_for_time(current_time).map(|b| b.id)
+                    if let Some(time_block_id) =
+                        self.active_block_for_time(current_time).map(|b| b.id)
                     {
                         if self.semi_auto_current_block_id != Some(time_block_id) {
                             self.semi_auto_pending_block_id = Some(time_block_id);
@@ -312,7 +315,10 @@ impl TimelineV2 {
         }
 
         let next_index = if let Some(current_id) = self.manual_current_block_id {
-            let idx = block_ids.iter().position(|id| *id == current_id).unwrap_or(0);
+            let idx = block_ids
+                .iter()
+                .position(|id| *id == current_id)
+                .unwrap_or(0);
             (idx + 1) % block_ids.len()
         } else {
             0
@@ -331,7 +337,10 @@ impl TimelineV2 {
         }
 
         let prev_index = if let Some(current_id) = self.manual_current_block_id {
-            let idx = block_ids.iter().position(|id| *id == current_id).unwrap_or(0);
+            let idx = block_ids
+                .iter()
+                .position(|id| *id == current_id)
+                .unwrap_or(0);
             if idx == 0 {
                 block_ids.len() - 1
             } else {
@@ -359,7 +368,10 @@ impl TimelineV2 {
         }
 
         let next_index = if let Some(current_id) = self.semi_auto_current_block_id {
-            let idx = block_ids.iter().position(|id| *id == current_id).unwrap_or(0);
+            let idx = block_ids
+                .iter()
+                .position(|id| *id == current_id)
+                .unwrap_or(0);
             (idx + 1).min(block_ids.len().saturating_sub(1))
         } else {
             0
@@ -769,16 +781,22 @@ impl TimelineV2 {
                     Color32::from_rgb(200, 220, 255),
                 );
 
-                let active_module =
-                    self.runtime_show_module(self.playhead, animator.is_playing(), &available_module_ids);
-                
+                let active_module = self.runtime_show_module(
+                    self.playhead,
+                    animator.is_playing(),
+                    &available_module_ids,
+                );
+
                 // TRIGGER ACTION IF CHANGED
                 if let Some(mod_id) = active_module {
                     // Check if we need to emit a select action (only if not already the active one in the app)
                     // We use a simple heuristic: if it's the first frame or the ID changed.
                     // For now, we just emit it, the handler in actions.rs should be idempotent.
-                    if action.is_none() && animator.is_playing() && self.show_mode == ShowMode::FullyAutomated {
-                         action = Some(TimelineAction::SelectModule(mod_id));
+                    if action.is_none()
+                        && animator.is_playing()
+                        && self.show_mode == ShowMode::FullyAutomated
+                    {
+                        action = Some(TimelineAction::SelectModule(mod_id));
                     }
                 }
 

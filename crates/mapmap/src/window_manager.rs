@@ -123,7 +123,7 @@ impl WindowManager {
         let output_id: OutputId = 0; // Reserved ID for the main window
 
         let surface = backend.create_surface(window.clone())?;
-        
+
         // --- EGUI SRGB FIX ---
         // Egui prefers non-sRGB formats because it handles its own gamma correction.
         // We strip the Srgb suffix if present to satisfy egui's preference.

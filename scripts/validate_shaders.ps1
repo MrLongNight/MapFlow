@@ -16,7 +16,7 @@ $allPassed = $true
 foreach ($shader in $shaders) {
     Write-Host "Validierung: $($shader.FullName)..." -ForegroundColor Cyan
     & $nagaExe $shader.FullName | Out-Null
-    
+
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Shader-Fehler in: $($shader.FullName)"
         $allPassed = $false

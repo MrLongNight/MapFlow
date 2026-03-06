@@ -19,7 +19,7 @@
 Das System wurde nach massiven Regressionen erfolgreich rekonstruiert und auf eine modulare Architektur umgestellt.
 
 ### ✅ Erledigte Reparaturen & Features:
-- **UI-Architektur:** Komplette Modularisierung von `MenuBar` und `Inspector`. 
+- **UI-Architektur:** Komplette Modularisierung von `MenuBar` und `Inspector`.
 - **UI-Stabilität:** Fix von Layout-Deadlocks durch separate Toolbar-Orchestrierung in `ui_layout.rs`.
 - **Canvas Node Graph:** Verbindungen funktionieren wieder einwandfrei (Radius: 30px).
 - **Audio-Analyse:** Echtzeit-Sync zwischen Engine und UI repariert; Peak-Decay für Level-Meter implementiert.

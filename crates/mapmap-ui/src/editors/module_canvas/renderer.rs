@@ -285,13 +285,18 @@ pub fn render_canvas(
         draw::draw_part_with_delete(canvas, ui, &painter, part, part_rect, actions, module.id);
 
         let part_id = part.id;
-        
+
         // 2.1 Handle Socket Interaction (Priority)
         for socket_info in &all_sockets {
             if socket_info.part_id == part_id {
-                let socket_rect = Rect::from_center_size(socket_info.position, Vec2::splat(24.0 * canvas.zoom));
-                let socket_resp = ui.interact(socket_rect, egui::Id::new((part_id, socket_info.is_output, socket_info.socket_idx)), Sense::drag());
-                
+                let socket_rect =
+                    Rect::from_center_size(socket_info.position, Vec2::splat(24.0 * canvas.zoom));
+                let socket_resp = ui.interact(
+                    socket_rect,
+                    egui::Id::new((part_id, socket_info.is_output, socket_info.socket_idx)),
+                    Sense::drag(),
+                );
+
                 if socket_resp.drag_started() {
                     canvas.creating_connection = Some((
                         part_id,
@@ -302,7 +307,7 @@ pub fn render_canvas(
                     ));
                     clicked_on_part = true;
                 }
-                
+
                 if socket_resp.hovered() {
                     clicked_on_part = true;
                 }
