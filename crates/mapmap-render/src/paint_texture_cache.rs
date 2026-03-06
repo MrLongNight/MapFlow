@@ -102,8 +102,23 @@ impl PaintTextureCache {
             PaintType::Color => self.generate_solid_color(width, height, paint.color),
             PaintType::TestPattern => self.generate_test_pattern(width, height),
             PaintType::Image => {
-                // TODO: Load from source_path
-                self.generate_test_pattern(width, height)
+                if let Some(path) = &paint.source_path {
+                    match image::open(path) {
+                        Ok(img) => {
+                            let rgba = img.to_rgba8();
+                            // If dimensions don't match, we should ideally rescale, 
+                            // but for now we take the loaded size or use what's provided.
+                            // For simplicity, we assume the caller provided correct width/height.
+                            rgba.into_raw()
+                        }
+                        Err(e) => {
+                            tracing::error!("Failed to load image paint from {}: {}", path, e);
+                            self.generate_test_pattern(width, height)
+                        }
+                    }
+                } else {
+                    self.generate_test_pattern(width, height)
+                }
             }
             PaintType::Video => {
                 // TODO: Load from video decoder

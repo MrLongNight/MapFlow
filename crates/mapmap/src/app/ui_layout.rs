@@ -4,67 +4,183 @@ use mapmap_ui as ui;
 /// Main UI orchestration function.
 /// Renders the entire application UI layout using egui.
 pub fn show(ctx: &egui::Context, app: &mut App) {
-    // 1. Top Panel: Dashboard / Global Controls
-    let _ = app
-        .ui_state
-        .dashboard
-        .ui(ctx, &app.ui_state.i18n, app.ui_state.icon_manager.as_ref());
+    // 1. Global Menu Bar (Top-most)
+    let menu_actions = ui::view::menu_bar::show(ctx, &mut app.ui_state);
+    for action in menu_actions {
+        app.ui_state.actions.push(action);
+    }
 
-    // 2. Left Panel: Media Browser
-    if app.ui_state.show_media_browser {
-        egui::SidePanel::left("media_browser_panel")
+    // 2. Toolbar (Separate Panel below Menu)
+    if app.ui_state.show_toolbar {
+        egui::TopBottomPanel::top("toolbar_panel")
             .resizable(true)
-            .default_width(280.0)
+            .frame(egui::Frame::default()
+                .fill(ctx.style().visuals.window_fill())
+                .inner_margin(egui::Margin::symmetric(16, 4))
+                .stroke(egui::Stroke::new(1.0, ctx.style().visuals.widgets.noninteractive.bg_stroke.color))
+            )
             .show(ctx, |ui_obj| {
-                let _ = app.ui_state.media_browser.ui(
+                ui::view::menu_bar::toolbar::show(ui_obj, &mut app.ui_state);
+            });
+    }
+
+    // 3. Left Panel: Sidebar (Collapsible & Resizable)
+    if app.ui_state.show_left_sidebar {
+        egui::SidePanel::left("left_sidebar_panel")
+            .resizable(true)
+            .default_width(300.0)
+            .min_width(200.0)
+            .show(ctx, |ui_obj| {
+                egui::ScrollArea::vertical().show(ui_obj, |ui_obj| {
+                    // --- Dashboard Section ---
+                    egui::CollapsingHeader::new(app.ui_state.i18n.t("dashboard"))
+                        .default_open(true)
+                        .show(ui_obj, |ui| {
+                            if let Some(dash_action) = app.ui_state.dashboard.render_contents(
+                                ui,
+                                &app.ui_state.i18n,
+                                app.ui_state.icon_manager.as_ref(),
+                            ) {
+                                match dash_action {
+                                    ui::view::dashboard::DashboardAction::SendCommand(cmd) => {
+                                        if let Some(_module_id) = app.ui_state.module_canvas.active_module_id {
+                                            if let Some(part_id) = app.ui_state.module_canvas.get_selected_part_id() {
+                                                app.ui_state.actions.push(ui::UIAction::MediaCommand(part_id, cmd));
+                                            }
+                                        }
+                                    }
+                                    ui::view::dashboard::DashboardAction::ToggleAudioPanel => {
+                                        app.ui_state.show_audio = !app.ui_state.show_audio;
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        });
+                    ui_obj.separator();
+
+                    // --- Audio Analysis Section ---
+                    egui::CollapsingHeader::new(app.ui_state.i18n.t("audio"))
+                        .default_open(false)
+                        .show(ui_obj, |ui| {
+                            let analysis = app.audio_analyzer.get_latest_analysis();
+                            if let Some(audio_action) = app.ui_state.audio_panel.ui(
+                                ui,
+                                &app.ui_state.i18n,
+                                Some(&analysis),
+                                &app.state.audio_config,
+                                &app.ui_state.audio_devices,
+                                &mut app.ui_state.selected_audio_device,
+                            ) {
+                                match audio_action {
+                                    ui::panels::audio_panel::AudioPanelAction::DeviceChanged(device) => {
+                                        app.ui_state.actions.push(ui::UIAction::SelectAudioDevice(device));
+                                    }
+                                    ui::panels::audio_panel::AudioPanelAction::ConfigChanged(cfg) => {
+                                        app.state.audio_config = cfg;
+                                    }
+                                }
+                            }
+                        });
+                    ui_obj.separator();
+
+                    // --- Media Browser Section ---
+                    egui::CollapsingHeader::new(app.ui_state.i18n.t("media"))
+                        .default_open(true)
+                        .show(ui_obj, |ui| {
+                            if app.ui_state.show_media_browser {
+                                let _ = app.ui_state.media_browser.ui(
+                                    ui,
+                                    &app.ui_state.i18n,
+                                    app.ui_state.icon_manager.as_ref(),
+                                );
+                            } else {
+                                ui.label(app.ui_state.i18n.t("media-sidebar-placeholder"));
+                            }
+                        });
+                });
+            });
+    }
+
+    // 4. Right Panel: Inspector (Docked & Resizable)
+    if app.ui_state.show_inspector {
+        egui::SidePanel::right("right_panel")
+            .resizable(true)
+            .default_width(400.0)
+            .min_width(300.0)
+            .max_width(600.0)
+            .show(ctx, |ui_obj| {
+                // Render the unified Inspector
+                app.ui_state.render_inspector(
                     ui_obj,
+                    std::sync::Arc::make_mut(&mut app.state.module_manager),
+                    &app.state.layer_manager,
+                    &app.state.output_manager,
+                );
+
+                // Legacy panels (can be toggled separately or integrated)
+                if app.ui_state.show_transforms {
+                    app.ui_state.transform_panel.render(ctx, &app.ui_state.i18n);        
+                }
+
+                // Effect chain integrated into inspector side
+                app.ui_state.effect_chain_panel.ui(
+                    ctx,
                     &app.ui_state.i18n,
                     app.ui_state.icon_manager.as_ref(),
+                    Some(&mut app.recent_effect_configs),
                 );
             });
     }
 
-    // 3. Right Panel: Inspector & Functional Panels
-    egui::SidePanel::right("right_panel")
-        .resizable(true)
-        .default_width(300.0)
-        .show(ctx, |_ui_obj| {
-            // Transform and Edge Blend panels manage their own windows
-            app.ui_state.transform_panel.render(ctx, &app.ui_state.i18n);
-            app.ui_state.edge_blend_panel.show(ctx, &app.ui_state.i18n);
-
-            app.ui_state.effect_chain_panel.ui(
-                ctx,
-                &app.ui_state.i18n,
-                app.ui_state.icon_manager.as_ref(),
-                Some(&mut app.recent_effect_configs),
-            );
-        });
-
-    // 4. Bottom Panel: Timeline
+    // 5. Bottom Panel: Timeline (Resizable)
     if app.ui_state.show_timeline {
         egui::TopBottomPanel::bottom("bottom_panel")
             .resizable(true)
             .default_height(200.0)
+            .min_height(100.0)
             .show(ctx, |ui_obj| {
-                ui_obj.heading("Timeline");
-                let _ = app
+                ui_obj.heading(app.ui_state.i18n.t("timeline"));
+                let mut modules: Vec<ui::TimelineModule> = app
+                    .state
+                    .module_manager
+                    .modules()
+                    .iter()
+                    .map(|m| ui::TimelineModule {
+                        id: m.id,
+                        name: m.name.clone(),
+                    })
+                    .collect();
+                modules.sort_by_key(|m| m.id);
+
+                if let Some(action) = app
                     .ui_state
                     .timeline_panel
-                    .ui(ui_obj, app.state.effect_animator_mut());
+                    .ui(ui_obj, app.state.effect_animator_mut(), &modules)
+                {
+                    app.ui_state.actions.push(ui::UIAction::TimelineAction(action));
+                }
             });
     }
 
-    // Cue Panel
-    app.ui_state.cue_panel.show(
-        ctx,
-        &app.control_manager,
-        &app.ui_state.i18n,
-        &mut app.ui_state.actions,
-        app.ui_state.icon_manager.as_ref(),
-    );
+    // 6. Floating Windows / Overlays
+    
+    // Performance Stats Overlay
+    if app.ui_state.show_stats {
+        app.ui_state.render_stats_overlay(ctx, app.ui_state.current_fps, app.ui_state.current_frame_time_ms);
+    }
 
-    // 5. Central Panel: Module Canvas
+    // Cue Panel
+    if app.ui_state.show_cue_panel {
+        app.ui_state.cue_panel.show(
+            ctx,
+            &app.control_manager,
+            &app.ui_state.i18n,
+            &mut app.ui_state.actions,
+            app.ui_state.icon_manager.as_ref(),
+        );
+    }
+
+    // 7. Central Panel: Module Canvas
     egui::CentralPanel::default()
         .frame(egui::Frame::default().fill(ctx.style().visuals.panel_fill))
         .show(ctx, |ui_obj| {
@@ -175,29 +291,21 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
             }
         });
 
-    // 6. Floating Windows / Overlays
+    // 8. Other Overlays (Shader Graph, Audio, MIDI)
 
     if app.ui_state.show_shader_graph {
-        let mut open = app.ui_state.show_shader_graph;
-        egui::Window::new(app.ui_state.i18n.t("panel-node-editor"))
-            .open(&mut open)
-            .show(ctx, |ui_obj| {
-                let _ = app
-                    .ui_state
-                    .node_editor_panel
-                    .ui(ui_obj, &app.ui_state.i18n);
-            });
-        app.ui_state.show_shader_graph = open;
+        app.ui_state.render_node_editor(ctx);
     }
 
     if app.ui_state.show_audio {
-        egui::Window::new(app.ui_state.i18n.t("panel-audio"))
+        egui::Window::new(app.ui_state.i18n.t("audio"))
             .open(&mut app.ui_state.show_audio)
             .show(ctx, |ui_obj| {
+                let analysis = app.audio_analyzer.get_latest_analysis();
                 app.ui_state.audio_panel.ui(
                     ui_obj,
                     &app.ui_state.i18n,
-                    None, // analysis
+                    Some(&analysis),
                     &app.state.audio_config,
                     &app.ui_state.audio_devices,
                     &mut app.ui_state.selected_audio_device,
@@ -211,6 +319,29 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
         false,
         &mut app.ui_state.user_config,
     );
+
+    if app.ui_state.show_about {
+        crate::ui::dialogs::about::show(ctx, &mut app.ui_state.show_about);
+    }
+
+    if app.ui_state.show_settings {
+        let context = crate::ui::dialogs::settings::SettingsContext {
+            ui_state: &mut app.ui_state,
+            state: &mut app.state,
+            backend: &app.backend,
+            hue_controller: &mut app.hue_controller,
+            #[cfg(feature = "midi")]
+            midi_handler: &mut app.midi_handler,
+            #[cfg(feature = "midi")]
+            midi_ports: &mut app.midi_ports,
+            #[cfg(feature = "midi")]
+            selected_midi_port: &mut app.selected_midi_port,
+            restart_requested: &mut app.restart_requested,
+            exit_requested: &mut app.exit_requested,
+            tokio_runtime: &app.tokio_runtime,
+        };
+        crate::ui::dialogs::settings::show(ctx, context);
+    }
 
     app.ui_state
         .assignment_panel

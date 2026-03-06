@@ -192,6 +192,11 @@ impl ModuleManager {
             false
         }
     }
+
+    /// Remove a module
+    pub fn remove_module(&mut self, module_id: ModuleId) -> Option<MapFlowModule> {
+        self.modules.remove(&module_id)
+    }
 }
 
 impl Default for ModuleManager {

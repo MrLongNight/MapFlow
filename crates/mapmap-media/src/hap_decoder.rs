@@ -134,11 +134,17 @@ pub fn decode_hap_frame(data: &[u8], width: u32, height: u32) -> Result<HapFrame
     let compressed_data = &data[4..];
 
     // Decompress based on compressor type
-    let texture_data = match compressor {
+    match compressor {
         0xA0 => {
             // No compression - direct copy
             debug!("HAP frame: no compression, {} bytes", compressed_data.len());
-            compressed_data.to_vec()
+            Ok(HapFrame {
+                texture_type,
+                width,
+                height,
+                texture_data: compressed_data.to_vec(),
+                secondary_texture: None,
+            })
         }
         0xB0 => {
             // Snappy compression
@@ -146,23 +152,41 @@ pub fn decode_hap_frame(data: &[u8], width: u32, height: u32) -> Result<HapFrame
                 "HAP frame: Snappy compressed, {} bytes",
                 compressed_data.len()
             );
-            decompress_snappy(compressed_data)?
+            let texture_data = decompress_snappy(compressed_data)?;
+            Ok(HapFrame {
+                texture_type,
+                width,
+                height,
+                texture_data,
+                secondary_texture: None,
+            })
         }
         0xC0 => {
-            // Complex multi-section (HAP Q)
+            // Complex multi-section (HAP Q / HAP Q Alpha)
             debug!("HAP frame: Complex multi-section");
-            decode_complex_frame(compressed_data)?
-        }
-        other => return Err(HapError::UnsupportedCompressor(other)),
-    };
+            let sections = decode_complex_frame(compressed_data)?;
+            
+            if sections.is_empty() {
+                return Err(HapError::InvalidSectionCount);
+            }
 
-    Ok(HapFrame {
-        texture_type,
-        width,
-        height,
-        texture_data,
-        secondary_texture: None, // TODO: Handle HAP Q Alpha secondary texture
-    })
+            let main_texture = sections[0].clone();
+            let secondary_texture = if sections.len() > 1 {
+                Some(sections[1].clone())
+            } else {
+                None
+            };
+
+            Ok(HapFrame {
+                texture_type,
+                width,
+                height,
+                texture_data: main_texture,
+                secondary_texture,
+            })
+        }
+        other => Err(HapError::UnsupportedCompressor(other)),
+    }
 }
 
 /// Decompress Snappy-compressed data
@@ -178,11 +202,7 @@ fn decompress_snappy(data: &[u8]) -> Result<Vec<u8>, HapError> {
 
 /// Decode complex multi-section frame (HAP Q)
 #[cfg(feature = "hap")]
-fn decode_complex_frame(data: &[u8]) -> Result<Vec<u8>, HapError> {
-    // Complex frames have multiple sections
-    // For now, we'll handle the simple case
-    warn!("Complex HAP frame decoding not fully implemented");
-
+fn decode_complex_frame(data: &[u8]) -> Result<Vec<Vec<u8>>, HapError> {
     if data.len() < 4 {
         return Err(HapError::InvalidSectionCount);
     }
@@ -199,10 +219,10 @@ fn decode_complex_frame(data: &[u8]) -> Result<Vec<u8>, HapError> {
     // For single section, just decompress
     if section_count == 1 {
         let section_data = &data[4..];
-        return decompress_snappy(section_data);
+        return Ok(vec![decompress_snappy(section_data)?]);
     }
 
-    // Multi-section: concatenate all decompressed sections
+    // Multi-section: extract each decompressed section
     let mut offset = 4 + (section_count * 4); // Skip section sizes
     let mut result = Vec::new();
 
@@ -228,7 +248,7 @@ fn decode_complex_frame(data: &[u8]) -> Result<Vec<u8>, HapError> {
 
         let section_data = &data[offset..offset + section_size];
         let decompressed = decompress_snappy(section_data)?;
-        result.extend(decompressed);
+        result.push(decompressed);
 
         offset += section_size;
     }
@@ -253,7 +273,7 @@ mod tests {
         assert!(!HapTextureType::Rgb.has_alpha());
         assert!(HapTextureType::Rgba.has_alpha());
         assert!(HapTextureType::YCoCg.needs_ycocg_conversion());
-        assert!(!HapTextureType::Rgb.needs_ycocg_conversion());
+        assert!(HapTextureType::Rgb.texture_format() == "Bc1RgbaUnorm");
     }
 
     #[test]

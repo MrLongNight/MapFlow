@@ -147,11 +147,11 @@ impl App {
                         error!("Update error: {}", e);
                     }
                     self.last_update = now;
-                }
 
-                // Request redraw for all windows
-                for context in self.window_manager.iter() {
-                    context.window.request_redraw();
+                    // Request redraw ONLY at 60Hz
+                    for context in self.window_manager.iter() {
+                        context.window.request_redraw();
+                    }
                 }
             }
             _ => (),
@@ -198,10 +198,14 @@ impl App {
                     // Find the source path
                     if let Some(module) = self.state.module_manager.get_module(mod_id) {
                         if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
-                            if let mapmap_core::module::ModulePartType::Source(
-                                mapmap_core::module::SourceType::MediaFile { ref path, .. },
-                            ) = &part.part_type
-                            {
+                            let path_opt = match &part.part_type {
+                                mapmap_core::module::ModulePartType::Source(mapmap_core::module::SourceType::MediaFile { ref path, .. }) => Some(path.clone()),
+                                mapmap_core::module::ModulePartType::Source(mapmap_core::module::SourceType::VideoUni { ref path, .. }) => Some(path.clone()),
+                                mapmap_core::module::ModulePartType::Source(mapmap_core::module::SourceType::ImageUni { ref path, .. }) => Some(path.clone()),
+                                _ => None,
+                            };
+
+                            if let Some(path) = path_opt {
                                 info!("Found media path: '{}' in module '{}'", path, module.name);
                                 if !path.is_empty() {
                                     let tex_name = format!("part_{}_{}", mod_id, part_id);
@@ -209,7 +213,7 @@ impl App {
                                     let device = self.backend.device.clone();
                                     let queue = self.backend.queue.clone();
                                     match crate::orchestration::media::create_player_handle(
-                                        pool, device, queue, path, &tex_name,
+                                        pool, device, queue, &path, &tex_name,
                                     ) {
                                         Ok(handle) => {
                                             info!("Successfully created player for '{}'", path);
@@ -279,17 +283,21 @@ impl App {
                     // Immediately recreate the player
                     if let Some(module) = self.state.module_manager.get_module(mod_id) {
                         if let Some(part) = module.parts.iter().find(|p| p.id == part_id) {
-                            if let mapmap_core::module::ModulePartType::Source(
-                                mapmap_core::module::SourceType::MediaFile { ref path, .. },
-                            ) = &part.part_type
-                            {
+                            let path_opt = match &part.part_type {
+                                mapmap_core::module::ModulePartType::Source(mapmap_core::module::SourceType::MediaFile { ref path, .. }) => Some(path.clone()),
+                                mapmap_core::module::ModulePartType::Source(mapmap_core::module::SourceType::VideoUni { ref path, .. }) => Some(path.clone()),
+                                mapmap_core::module::ModulePartType::Source(mapmap_core::module::SourceType::ImageUni { ref path, .. }) => Some(path.clone()),
+                                _ => None,
+                            };
+
+                            if let Some(path) = path_opt {
                                 if !path.is_empty() {
                                     let tex_name = format!("part_{}_{}", mod_id, part_id);
                                     let pool = self.texture_pool.clone();
                                     let device = self.backend.device.clone();
                                     let queue = self.backend.queue.clone();
                                     match crate::orchestration::media::create_player_handle(
-                                        pool, device, queue, path, &tex_name,
+                                        pool, device, queue, &path, &tex_name,
                                     ) {
                                         Ok(handle) => {
                                             info!("Recreated player for '{}' after reload", path);

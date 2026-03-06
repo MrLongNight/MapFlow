@@ -26,7 +26,7 @@ pub fn show(ctx: &Context, context: PaintContext) {
 pub fn handle_actions(ui_state: &mut AppUI, state: &mut AppState) {
     if let Some(action) = ui_state.paint_panel.take_action() {
         match action {
-            mapmap_ui::paint_panel::PaintPanelAction::AddPaint => {
+            mapmap_ui::PaintPanelAction::AddPaint => {
                 state
                     .paint_manager_mut()
                     .add_paint(mapmap_core::paint::Paint::color(
@@ -36,7 +36,7 @@ pub fn handle_actions(ui_state: &mut AppUI, state: &mut AppState) {
                     ));
                 state.dirty = true;
             }
-            mapmap_ui::paint_panel::PaintPanelAction::RemovePaint(id) => {
+            mapmap_ui::PaintPanelAction::RemovePaint(id) => {
                 state.paint_manager_mut().remove_paint(id);
                 state.dirty = true;
             }

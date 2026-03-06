@@ -13,6 +13,8 @@ pub struct Composition {
     pub description: String,
     /// Master opacity (M) - global opacity multiplier (Phase 1, Month 4)
     pub master_opacity: f32,
+    /// Master blackout (B) - if true, everything is black (Phase 1, Month 6)
+    pub master_blackout: bool,
     /// Master speed (S) - global speed multiplier (Phase 1, Month 5)
     pub master_speed: f32,
     /// Composition size in pixels (width, height)
@@ -27,6 +29,7 @@ impl Default for Composition {
             name: "Untitled Composition".to_string(),
             description: String::new(),
             master_opacity: 1.0,
+            master_blackout: false,
             master_speed: 1.0,
             size: (1920, 1080),
             frame_rate: 60.0,
@@ -41,6 +44,7 @@ impl Composition {
             name: name.into(),
             description: String::new(),
             master_opacity: 1.0,
+            master_blackout: false,
             master_speed: 1.0,
             size,
             frame_rate,

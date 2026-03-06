@@ -1529,11 +1529,15 @@ impl ModuleEvaluator {
                 modifiers,
             } => {
                 // Check if the key is currently pressed
-                // key_code is stored as the winit KeyCode debug format (e.g., "KeyA")
                 let is_pressed = active_keys.contains(key_code);
-                // TODO: Check modifiers (Ctrl, Shift, Alt) if needed
-                let _ = modifiers; // Suppress unused warning for now
-                output.push(if is_pressed { 1.0 } else { 0.0 });
+                
+                // Check modifiers bitmask (1=Shift, 2=Control, 4=Alt)
+                let mut modifiers_match = true;
+                if *modifiers & 1 != 0 && !active_keys.contains("Shift") { modifiers_match = false; }
+                if *modifiers & 2 != 0 && !active_keys.contains("Control") { modifiers_match = false; }
+                if *modifiers & 4 != 0 && !active_keys.contains("Alt") { modifiers_match = false; }
+
+                output.push(if is_pressed && modifiers_match { 1.0 } else { 0.0 });
             }
         }
     }

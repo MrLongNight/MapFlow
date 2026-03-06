@@ -3,8 +3,6 @@
 //! This module provides NDI input (receiving) and output (sending) capabilities
 //! using the grafton-ndi crate which wraps the official NDI SDK.
 
-#![allow(dead_code, unused_variables)] // TODO: Remove during implementation
-
 #[cfg(feature = "ndi")]
 use crate::error::{IoError, Result};
 #[cfg(feature = "ndi")]

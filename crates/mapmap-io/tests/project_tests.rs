@@ -19,7 +19,26 @@ fn create_sample_app_state() -> AppState {
         log_config: Default::default(),
         output_count: 1,
     });
-    // TODO: Add more complex data to the managers once their structures are more stable.
+    
+    // Create and fill managers before they are wrapped in Arc (if AppState allows)
+    // Or use make_mut if they are already in Arc
+    {
+        let layer_manager = std::sync::Arc::make_mut(&mut app_state.layer_manager);
+        let layer = mapmap_core::Layer::new(1, "Test Layer");
+        layer_manager.add_layer(layer);
+    }
+    
+    {
+        let mapping_manager = std::sync::Arc::make_mut(&mut app_state.mapping_manager);
+        let mapping = mapmap_core::Mapping::new(
+            1, 
+            "Test Mapping", 
+            1, 
+            mapmap_core::Mesh::quad()
+        );
+        mapping_manager.add_mapping(mapping);
+    }
+    
     app_state
 }
 

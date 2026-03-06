@@ -34,17 +34,31 @@ pub fn show(ctx: &Context, context: TimelineContext) {
             });
             ui.separator();
 
+            let timeline_modules = context
+                .state
+                .module_manager
+                .modules()
+                .iter()
+                .map(|m| mapmap_ui::TimelineModule {
+                    id: m.id,
+                    name: m.name.clone(),
+                })
+                .collect::<Vec<_>>();
+
             if let Some(action) = context
                 .ui_state
                 .timeline_panel
-                .ui(ui, context.state.effect_animator_mut())
+                .ui(ui, context.state.effect_animator_mut(), &timeline_modules)
             {
-                use mapmap_ui::timeline_v2::TimelineAction;
+                use mapmap_ui::TimelineAction;
                 match action {
                     TimelineAction::Play => context.state.effect_animator_mut().play(),
                     TimelineAction::Pause => context.state.effect_animator_mut().pause(),
                     TimelineAction::Stop => context.state.effect_animator_mut().stop(),
                     TimelineAction::Seek(t) => context.state.effect_animator_mut().seek(t as f64),
+                    TimelineAction::SelectModule(module_id) => {
+                        context.ui_state.module_canvas.set_active_module(Some(module_id));
+                    }
                 }
             }
         });

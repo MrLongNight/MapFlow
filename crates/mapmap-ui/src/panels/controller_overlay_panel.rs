@@ -173,8 +173,6 @@ impl ControllerOverlayPanel {
                 "resources/controllers/ecler_nuo4/background.jpg",
                 "../resources/controllers/ecler_nuo4/background.png",
                 "../resources/controllers/ecler_nuo4/background.jpg",
-                r"C:\Users\Vinyl\Desktop\VJMapper\VjMapper\resources\controllers\ecler_nuo4\background.png",
-                r"C:\Users\Vinyl\Desktop\VJMapper\VjMapper\resources\controllers\ecler_nuo4\background.jpg",
             ];
             if let Some(tex) = self.load_texture_from_candidates(ctx, &bg_paths, "mixer_background")
             {
@@ -198,10 +196,6 @@ impl ControllerOverlayPanel {
                     let paths = [
                         format!("resources/controllers/ecler_nuo4/{}", asset_name),
                         format!("../resources/controllers/ecler_nuo4/{}", asset_name),
-                        format!(
-                            r"C:\Users\Vinyl\Desktop\VJMapper\VjMapper\resources\controllers\ecler_nuo4\{}",
-                            asset_name
-                        ),
                     ];
                     if let Some(tex) = self.load_texture_from_candidates(ctx, &paths, &asset_name) {
                         self.assets.insert(asset_name, tex);
@@ -1017,7 +1011,6 @@ impl ControllerOverlayPanel {
             let paths = [
                 "resources/controllers/ecler_nuo4/elements.json",
                 "../resources/controllers/ecler_nuo4/elements.json",
-                r"C:\Users\Vinyl\Desktop\VJMapper\VjMapper\resources\controllers\ecler_nuo4\elements.json",
             ];
 
             for path_str in paths {

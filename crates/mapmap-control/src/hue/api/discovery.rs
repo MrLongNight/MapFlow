@@ -27,12 +27,21 @@ pub async fn discover_bridges() -> Result<Vec<DiscoveredBridge>, HueError> {
         return Err(HueError::DiscoveryFailed);
     }
 
-    // Verify which bridges are actually reachable
+    // Verify which bridges are actually reachable IN PARALLEL using Tokio tasks
+    let mut handles = Vec::new();
+    for device in &devices {
+        let ip = device.ip.clone();
+        handles.push(tokio::spawn(async move {
+            let reachable = is_bridge_reachable(&ip).await;
+            reachable
+        }));
+    }
+
     let mut reachable = Vec::new();
     let mut unreachable = Vec::new();
 
-    for device in devices {
-        if is_bridge_reachable(&device.ip).await {
+    for (device, handle) in devices.into_iter().zip(handles) {
+        if let Ok(true) = handle.await {
             reachable.push(device);
         } else {
             unreachable.push(device);
@@ -47,7 +56,7 @@ pub async fn discover_bridges() -> Result<Vec<DiscoveredBridge>, HueError> {
 /// Check if a bridge is reachable by making a simple HTTP request
 async fn is_bridge_reachable(ip: &str) -> bool {
     let client = match Client::builder()
-        .timeout(Duration::from_secs(3))
+        .timeout(Duration::from_secs(2)) // Faster timeout for reachability check
         .danger_accept_invalid_certs(true)
         .build()
     {

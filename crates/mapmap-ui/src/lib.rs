@@ -25,8 +25,16 @@ pub mod widgets;
 
 // Re-export categorized modules to maintain API compatibility
 pub use crate::core::*;
-pub use crate::editors::*;
-pub use crate::panels::*;
+pub use crate::editors::{
+    mesh_editor::*, module_canvas::*, node_editor::*, shortcut_editor::*, timeline_v2::*,
+};
+// Re-export panel types directly to avoid ambiguous glob re-exports
+pub use crate::panels::{
+    assignment_panel::*, audio_panel::*, controller_overlay_panel::*, cue_panel::*,
+    edge_blend_panel::*, effect_chain_panel::*, inspector_panel::*, layer_panel::*,
+    mapping_panel::*, osc_panel::*, oscillator_panel::*, output_panel::*, paint_panel::*,
+    preview_panel::*, shortcuts_panel::*, transform_panel::*,
+};
 pub use crate::view::*;
 pub use crate::widgets::*;
 
@@ -255,6 +263,9 @@ pub enum UIAction {
     /// Execute node editor action
     NodeAction(NodeEditorAction),
 
+    /// Execute timeline action
+    TimelineAction(TimelineAction),
+
     // Global Fullscreen Setting
     /// Set global fullscreen state
     SetGlobalFullscreen(bool),
@@ -320,7 +331,7 @@ pub struct AppUI {
     /// Show output configuration
     pub show_outputs: bool, // Phase 2
     /// Output panel state
-    pub output_panel: output_panel::OutputPanel,
+    pub output_panel: OutputPanel,
     /// Edge blend configuration panel
     pub edge_blend_panel: EdgeBlendPanel,
     /// Oscillator control panel
@@ -360,9 +371,9 @@ pub struct AppUI {
     /// Cue list panel
     pub cue_panel: CuePanel,
     /// Timeline V2 panel
-    pub timeline_panel: timeline_v2::TimelineV2,
+    pub timeline_panel: TimelineV2,
     /// Node editor panel state
-    pub node_editor_panel: node_editor::NodeEditor,
+    pub node_editor_panel: NodeEditor,
     /// Transform control panel
     pub transform_panel: TransformPanel,
     /// Shortcut editor panel
@@ -375,6 +386,8 @@ pub struct AppUI {
     pub user_config: config::UserConfig,
     /// Show settings window
     pub show_settings: bool,
+    /// Show about window
+    pub show_about: bool,
     /// Show media browser
     pub show_media_browser: bool,
     /// Media browser panel
@@ -475,7 +488,7 @@ impl Default for AppUI {
             show_master_controls: true, // Keep visible
             show_outputs: false,        // Hide by default
             output_panel: {
-                let mut panel = output_panel::OutputPanel::default();
+                let mut panel = OutputPanel::default();
                 panel.visible = false;
                 panel
             },
@@ -498,10 +511,10 @@ impl Default for AppUI {
             i18n: LocaleManager::new(&saved_language),
             effect_chain_panel: EffectChainPanel::default(),
             cue_panel: CuePanel::default(),
-            timeline_panel: timeline_v2::TimelineV2::default(),
+            timeline_panel: TimelineV2::default(),
             show_timeline: saved_show_timeline, // Load from config
             show_shader_graph: false,           // Advanced - hide by default
-            node_editor_panel: node_editor::NodeEditor::default(),
+            node_editor_panel: NodeEditor::default(),
             transform_panel: TransformPanel::default(),
             shortcut_editor: ShortcutEditor::new(),
             show_toolbar: true,
@@ -509,6 +522,7 @@ impl Default for AppUI {
             icon_demo_panel: icon_demo_panel::IconDemoPanel::default(),
             user_config,
             show_settings: false,
+            show_about: false,
             show_media_browser: saved_show_media_browser, // Load from config
             media_browser: MediaBrowser::new(std::env::current_dir().unwrap_or_default()),
             inspector_panel: InspectorPanel::default(),
@@ -762,7 +776,7 @@ impl AppUI {
     /// Render the right-side inspector panel (docked)
     pub fn render_inspector(
         &mut self,
-        ctx: &egui::Context,
+        ui: &mut egui::Ui,
         module_manager: &mut mapmap_core::module::ModuleManager,
         layer_manager: &mapmap_core::LayerManager,
         output_manager: &mapmap_core::OutputManager,
@@ -777,12 +791,12 @@ impl AppUI {
         // 1. Module Selection
         if self.show_module_canvas {
             if let Some(module_id) = self.module_canvas.active_module_id {
-                // Collect shared media IDs before borrowing module mutably from manager
+                // Collect shared media IDs before borrowing module mutably from manager 
                 let shared_media_ids: Vec<String> =
                     module_manager.shared_media.items.keys().cloned().collect();
 
                 if let Some(module) = module_manager.get_module_mut(module_id) {
-                    if let Some(part_id) = self.module_canvas.get_selected_part_id() {
+                    if let Some(part_id) = self.module_canvas.get_selected_part_id() {   
                         context = crate::InspectorContext::Module {
                             canvas: &mut self.module_canvas,
                             module,
@@ -821,34 +835,25 @@ impl AppUI {
             }
         }
 
-        let is_learning = self.is_midi_learn_mode;
-        let last_active_element = self.controller_overlay.last_active_element.clone();
-        let last_active_time = self.controller_overlay.last_active_time;
-
         let action = self.inspector_panel.show(
-            ctx,
+            ui,
             context,
             &self.i18n,
-            self.icon_manager.as_ref(),
-            is_learning,
-            last_active_element.as_ref(),
-            last_active_time,
             &mut self.actions,
         );
 
         if let Some(action) = action {
             match action {
                 crate::InspectorAction::UpdateOpacity(id, val) => {
-                    self.actions.push(crate::UIAction::SetLayerOpacity(id, val));
+                    self.actions.push(crate::UIAction::SetLayerOpacity(id, val));        
                 }
                 crate::InspectorAction::UpdateTransform(id, transform) => {
                     self.actions
-                        .push(crate::UIAction::SetLayerTransform(id, transform));
+                        .push(crate::UIAction::SetLayerTransform(id, transform));        
                 }
             }
         }
     }
-
     /// Render master controls panel (Phase 6 Migration)
     pub fn render_master_controls(
         &mut self,

@@ -105,6 +105,8 @@ pub struct ModuleCanvas {
 
     /// Advanced Mesh Editor instance
     pub mesh_editor: MeshEditor,
+    /// Whether to show the mesh editor in a separate window
+    pub show_mesh_editor: bool,
     /// ID of the part currently being edited in the mesh editor (to detect selection changes)
     pub last_mesh_edit_id: Option<ModulePartId>,
 
@@ -165,6 +167,7 @@ impl Default for ModuleCanvas {
             hue_status_message: None,
             last_trigger_values: std::collections::HashMap::new(),
             mesh_editor: MeshEditor::new(),
+            show_mesh_editor: false,
             last_mesh_edit_id: None,
             show_quick_create: false,
             quick_create_filter: String::new(),

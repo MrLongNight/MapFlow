@@ -3,8 +3,30 @@ name: "CICD-DevFlow: Job01 Validation"
 on:
   push:
     branches: [ "main" ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'assets/**'
+      - '.vscode/**'
   pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'assets/**'
+      - '.vscode/**'
   workflow_dispatch:
+    inputs:
+      toolchain:
+        description: 'Rust toolchain version'
+        required: true
+        default: 'stable'
+  workflow_call:
+    inputs:
+      toolchain:
+        description: 'Rust toolchain version'
+        required: false
+        type: string
+        default: 'stable'
 
 permissions:
   contents: write
@@ -21,9 +43,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: ${{ inputs.toolchain || github.event.inputs.toolchain || 'stable' }}
           components: rustfmt, clippy
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
       - name: Install System Deps (Ubuntu)
         run: |
           sudo apt-get update
@@ -39,7 +64,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ inputs.toolchain || github.event.inputs.toolchain || 'stable' }}
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
       - name: Install Tools
         uses: cargo-bins/cargo-binstall@main
       - name: Install cargo-audit
@@ -53,15 +82,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ inputs.toolchain || github.event.inputs.toolchain || 'stable' }}
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
       - name: Install System Dependencies
         run: |
           sudo apt-get update -y
           sudo apt-get install -y build-essential pkg-config clang libclang-dev yasm nasm libfontconfig1-dev libfreetype6-dev libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libx11-dev libasound2-dev libudev-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev libudev-dev ffmpeg
-      - name: Build (Release)
-        run: cargo build --release --verbose --features "mapmap-io/ci-linux,ffmpeg"
+      - name: Build
+        run: cargo build --verbose --features "mapmap-io/ci-linux,ffmpeg"
       - name: Test
-        run: cargo test --release --workspace --features "mapmap-io/ci-linux,ffmpeg"
+        run: cargo test --workspace --features "mapmap-io/ci-linux,ffmpeg"
 
   build-windows:
     name: "Build & Test (Windows)"
@@ -72,7 +105,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ inputs.toolchain || github.event.inputs.toolchain || 'stable' }}
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
       - name: Build
         run: cargo build --release --verbose --no-default-features --features "audio"
 

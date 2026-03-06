@@ -114,10 +114,6 @@ pub fn render_canvas(
         canvas.pan_offset += response.drag_delta();
     }
 
-    if drag_started_on_empty && !middle_button {
-        // Panning will be set later if no part is clicked
-    }
-
     let ctrl_held = ui.input(|i| i.modifiers.ctrl);
 
     if response.secondary_clicked()
@@ -190,17 +186,14 @@ pub fn render_canvas(
         }
     }
 
+    // 1. Collect ALL socket positions first
     let mut all_sockets = Vec::new();
-    let mut clicked_on_part = false;
-    let mut delete_part_id = None;
-    let mut resize_ops = Vec::new();
-    let mut drag_delta = Vec2::ZERO;
+    let node_width = 200.0;
+    let title_height = 28.0;
+    let socket_offset_y = 10.0;
+    let socket_spacing = 22.0;
 
-    for part in &mut module.parts {
-        let node_width = 200.0;
-        let title_height = 28.0;
-        let socket_offset_y = 10.0;
-        let socket_spacing = 22.0;
+    for part in &module.parts {
         let socket_start_y = part.position.1 + title_height + socket_offset_y;
 
         for (i, socket) in part.inputs.iter().enumerate() {
@@ -226,7 +219,15 @@ pub fn render_canvas(
                 position: to_screen(pos),
             });
         }
+    }
 
+    let mut clicked_on_part = false;
+    let mut delete_part_id = None;
+    let mut resize_ops = Vec::new();
+    let mut drag_delta = Vec2::ZERO;
+
+    // 2. Render parts and handle interactions
+    for part in &mut module.parts {
         let part_pos = to_screen(Pos2::new(part.position.0, part.position.1));
         let (w, h) = part.size.unwrap_or_else(|| {
             let h = 80.0 + (part.inputs.len().max(part.outputs.len()) as f32) * 20.0;
@@ -284,7 +285,32 @@ pub fn render_canvas(
         draw::draw_part_with_delete(canvas, ui, &painter, part, part_rect, actions, module.id);
 
         let part_id = part.id;
-        let interact_rect = part_rect.shrink(4.0);
+        
+        // 2.1 Handle Socket Interaction (Priority)
+        for socket_info in &all_sockets {
+            if socket_info.part_id == part_id {
+                let socket_rect = Rect::from_center_size(socket_info.position, Vec2::splat(24.0 * canvas.zoom));
+                let socket_resp = ui.interact(socket_rect, egui::Id::new((part_id, socket_info.is_output, socket_info.socket_idx)), Sense::drag());
+                
+                if socket_resp.drag_started() {
+                    canvas.creating_connection = Some((
+                        part_id,
+                        socket_info.socket_idx,
+                        socket_info.is_output,
+                        socket_info.socket_type,
+                        socket_info.position,
+                    ));
+                    clicked_on_part = true;
+                }
+                
+                if socket_resp.hovered() {
+                    clicked_on_part = true;
+                }
+            }
+        }
+
+        // 2.2 Handle Part Dragging/Selection
+        let interact_rect = part_rect.shrink(2.0);
         let part_response = ui.interact(
             interact_rect,
             egui::Id::new(part_id),
@@ -292,23 +318,7 @@ pub fn render_canvas(
         );
 
         if part_response.hovered() {
-            for socket_info in &all_sockets {
-                if socket_info.part_id == part_id {
-                    let dist = socket_info
-                        .position
-                        .distance(ui.input(|i| i.pointer.hover_pos().unwrap_or_default()));
-                    if dist < 10.0 * canvas.zoom && part_response.drag_started() {
-                        canvas.creating_connection = Some((
-                            part_id,
-                            socket_info.socket_idx,
-                            socket_info.is_output,
-                            socket_info.socket_type,
-                            socket_info.position,
-                        ));
-                        clicked_on_part = true;
-                    }
-                }
-            }
+            clicked_on_part = true;
         }
 
         if part_response.clicked() {
@@ -347,42 +357,6 @@ pub fn render_canvas(
 
         if part_response.drag_stopped() {
             canvas.dragging_part = None;
-            if let Some((from_part, from_idx, is_output, _, _)) = canvas.creating_connection.take()
-            {
-                if let Some(pointer_pos) = ui.input(|i| i.pointer.hover_pos()) {
-                    for target in &all_sockets {
-                        if target.position.distance(pointer_pos) < 15.0 * canvas.zoom
-                            && target.part_id != from_part
-                            && target.is_output != is_output
-                        {
-                            let (out_part, out_idx, in_part, in_idx) = if is_output {
-                                (from_part, from_idx, target.part_id, target.socket_idx)
-                            } else {
-                                (target.part_id, target.socket_idx, from_part, from_idx)
-                            };
-
-                            let exists = module.connections.iter().any(|c| {
-                                c.from_part == out_part
-                                    && c.from_socket == out_idx
-                                    && c.to_part == in_part
-                                    && c.to_socket == in_idx
-                            });
-
-                            if !exists {
-                                module
-                                    .connections
-                                    .push(mapmap_core::module::ModuleConnection {
-                                        from_part: out_part,
-                                        from_socket: out_idx,
-                                        to_part: in_part,
-                                        to_socket: in_idx,
-                                    });
-                                ui.ctx().request_repaint();
-                            }
-                        }
-                    }
-                }
-            }
         }
 
         let delete_rect = draw::get_delete_button_rect(canvas, part_rect);
@@ -401,7 +375,46 @@ pub fn render_canvas(
         }
     }
 
-    // Apply drag delta
+    // 3. Global Connection Release
+    if ui.input(|i| i.pointer.any_released()) {
+        if let Some((from_part, from_idx, is_output, _, _)) = canvas.creating_connection.take() {
+            if let Some(pointer_pos) = ui.input(|i| i.pointer.hover_pos()) {
+                for target in &all_sockets {
+                    if target.position.distance(pointer_pos) < 30.0 * canvas.zoom
+                        && target.part_id != from_part
+                        && target.is_output != is_output
+                    {
+                        let (out_part, out_idx, in_part, in_idx) = if is_output {
+                            (from_part, from_idx, target.part_id, target.socket_idx)
+                        } else {
+                            (target.part_id, target.socket_idx, from_part, from_idx)
+                        };
+
+                        let exists = module.connections.iter().any(|c| {
+                            c.from_part == out_part
+                                && c.from_socket == out_idx
+                                && c.to_part == in_part
+                                && c.to_socket == in_idx
+                        });
+
+                        if !exists {
+                            module
+                                .connections
+                                .push(mapmap_core::module::ModuleConnection {
+                                    from_part: out_part,
+                                    from_socket: out_idx,
+                                    to_part: in_part,
+                                    to_socket: in_idx,
+                                });
+                            ui.ctx().request_repaint();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 4. Apply drag delta to all selected parts
     if drag_delta != Vec2::ZERO {
         for pid in &canvas.selected_parts {
             if let Some(p) = module.parts.iter_mut().find(|p| p.id == *pid) {
@@ -411,6 +424,7 @@ pub fn render_canvas(
         }
     }
 
+    // 5. Apply resize operations
     for (part_id, delta) in resize_ops {
         if let Some(part) = module.parts.iter_mut().find(|p| p.id == part_id) {
             let current_size = part.size.unwrap_or_else(|| {

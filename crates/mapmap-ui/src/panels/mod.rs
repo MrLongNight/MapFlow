@@ -4,6 +4,7 @@ pub mod controller_overlay_panel;
 pub mod cue_panel;
 pub mod edge_blend_panel;
 pub mod effect_chain_panel;
+pub mod inspector;
 pub mod inspector_panel;
 pub mod layer_panel;
 pub mod mapping_panel;

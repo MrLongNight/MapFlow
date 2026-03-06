@@ -187,6 +187,10 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 info!("Settings requested");
                 app.ui_state.show_settings = true;
             }
+            UIAction::OpenAbout => {
+                info!("About dialog requested");
+                app.ui_state.show_about = true;
+            }
             #[cfg(feature = "ndi")]
             UIAction::ConnectNdiSource { part_id, source } => {
                 let receiver = app.ndi_receivers.entry(part_id).or_insert_with(|| {
@@ -464,6 +468,18 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                     .module_canvas
                     .pending_playback_commands
                     .push((part_id, command));
+            }
+            UIAction::TimelineAction(timeline_action) => {
+                use mapmap_ui::TimelineAction;
+                match timeline_action {
+                    TimelineAction::Play => app.state.effect_animator_mut().play(),
+                    TimelineAction::Pause => app.state.effect_animator_mut().pause(),
+                    TimelineAction::Stop => app.state.effect_animator_mut().stop(),
+                    TimelineAction::Seek(time) => app.state.effect_animator_mut().seek(time as f64),
+                    TimelineAction::SelectModule(module_id) => {
+                        app.ui_state.module_canvas.set_active_module(Some(module_id))
+                    }
+                }
             }
             _ => {
                 // Other actions

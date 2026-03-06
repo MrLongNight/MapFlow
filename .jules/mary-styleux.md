@@ -41,3 +41,9 @@
 - **Effect Level:** "Hold-to-Confirm" button (0.6s) in the effect header.
 - **Parameter Level:** Right-click context menu "Reset to Default" for individual controls.
 - **Power User:** Added keyboard shortcuts (Alt+Arrow Up/Down) to drag handles for quick reordering without mouse drag, improving accessibility and speed.
+
+## 2026-03-01 – Universal Safe Reset
+**Learning:** Destructive reset actions in context menus (e.g. parameter-level resets) were still immediate-click, posing the same risk as immediate deletion.
+**Action:** Enforced "Hold-to-Confirm" for reset actions universally.
+- **Context Menus:** Replaced standard immediate "Reset to Default" buttons with `hold_to_action_button` in `styled_slider`, `styled_slider_log`, and `styled_drag_value`.
+- **Visuals:** Used "↺ Reset" text with `colors::WARN_COLOR` (Orange) for context menu reset options to clearly warn users.

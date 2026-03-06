@@ -347,7 +347,49 @@ impl ShaderNode {
                 connected_output: None,
             }],
 
-            _ => vec![], // TODO: Implement for all node types
+            NodeType::Sin | NodeType::Cos => vec![InputSocket {
+                name: "In".to_string(),
+                data_type: DataType::Float,
+                default_value: Some(Vec4::new(0.0, 0.0, 0.0, 0.0)),
+                connected_output: None,
+            }],
+
+            NodeType::Mix => vec![
+                InputSocket {
+                    name: "A".to_string(),
+                    data_type: DataType::Color,
+                    default_value: None,
+                    connected_output: None,
+                },
+                InputSocket {
+                    name: "B".to_string(),
+                    data_type: DataType::Color,
+                    default_value: None,
+                    connected_output: None,
+                },
+                InputSocket {
+                    name: "Factor".to_string(),
+                    data_type: DataType::Float,
+                    default_value: Some(Vec4::new(0.5, 0.0, 0.0, 0.0)),
+                    connected_output: None,
+                },
+            ],
+
+            NodeType::Blur | NodeType::EdgeDetect => vec![InputSocket {
+                name: "Color".to_string(),
+                data_type: DataType::Color,
+                default_value: None,
+                connected_output: None,
+            }],
+
+            NodeType::Brightness | NodeType::Contrast | NodeType::Desaturate => vec![InputSocket {
+                name: "Color".to_string(),
+                data_type: DataType::Color,
+                default_value: None,
+                connected_output: None,
+            }],
+
+            _ => vec![],
         };
 
         let outputs = match node_type {
@@ -366,27 +408,24 @@ impl ShaderNode {
                 data_type: DataType::Vec2,
             }],
 
-            NodeType::Add | NodeType::Subtract | NodeType::Multiply | NodeType::Divide => {
+            NodeType::Add | NodeType::Subtract | NodeType::Multiply | NodeType::Divide | NodeType::Sin | NodeType::Cos => {
                 vec![OutputSocket {
                     name: "Result".to_string(),
                     data_type: DataType::Float,
                 }]
             }
 
-            NodeType::TextureSample => vec![
+            NodeType::TextureSample | NodeType::Mix | NodeType::Blur | NodeType::EdgeDetect |
+            NodeType::Brightness | NodeType::Contrast | NodeType::Desaturate => vec![
                 OutputSocket {
                     name: "Color".to_string(),
                     data_type: DataType::Color,
-                },
-                OutputSocket {
-                    name: "Alpha".to_string(),
-                    data_type: DataType::Float,
                 },
             ],
 
             NodeType::Output => vec![],
 
-            _ => vec![], // TODO: Implement for all node types
+            _ => vec![],
         };
 
         (inputs, outputs)
@@ -450,7 +489,16 @@ impl ShaderGraph {
 
     /// Remove a node from the graph
     pub fn remove_node(&mut self, node_id: NodeId) -> Option<ShaderNode> {
-        // TODO: Disconnect all connections to/from this node
+        // Disconnect all connections from this node in other nodes
+        for node in self.nodes.values_mut() {
+            for input in node.inputs.iter_mut() {
+                if let Some((source_id, _)) = input.connected_output {
+                    if source_id == node_id {
+                        input.connected_output = None;
+                    }
+                }
+            }
+        }
         self.nodes.remove(&node_id)
     }
 
@@ -526,13 +574,60 @@ impl ShaderGraph {
             errors.push("No output node found".to_string());
         }
 
-        // TODO: Check for cycles, type mismatches, etc.
+        // Cycle Detection using DFS
+        if self.has_cycle() {
+            errors.push("Cycle detected in shader graph".to_string());
+        }
 
         if errors.is_empty() {
             Ok(())
         } else {
             Err(errors)
         }
+    }
+
+    /// Helper for cycle detection
+    fn has_cycle(&self) -> bool {
+        let mut visited = std::collections::HashSet::new();
+        let mut stack = std::collections::HashSet::new();
+
+        for node_id in self.nodes.keys() {
+            if self.has_cycle_recursive(*node_id, &mut visited, &mut stack) {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    fn has_cycle_recursive(
+        &self,
+        node_id: NodeId,
+        visited: &mut std::collections::HashSet<NodeId>,
+        stack: &mut std::collections::HashSet<NodeId>,
+    ) -> bool {
+        if stack.contains(&node_id) {
+            return true;
+        }
+        if visited.contains(&node_id) {
+            return false;
+        }
+
+        visited.insert(node_id);
+        stack.insert(node_id);
+
+        if let Some(node) = self.nodes.get(&node_id) {
+            for input in &node.inputs {
+                if let Some((source_id, _)) = input.connected_output {
+                    if self.has_cycle_recursive(source_id, visited, stack) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        stack.remove(&node_id);
+        false
     }
 }
 
