@@ -106,7 +106,7 @@ impl PaintTextureCache {
                     match image::open(path) {
                         Ok(img) => {
                             let rgba = img.to_rgba8();
-                            // If dimensions don't match, we should ideally rescale, 
+                            // If dimensions don't match, we should ideally rescale,
                             // but for now we take the loaded size or use what's provided.
                             // For simplicity, we assume the caller provided correct width/height.
                             rgba.into_raw()

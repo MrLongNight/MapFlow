@@ -14,10 +14,14 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
     if app.ui_state.show_toolbar {
         egui::TopBottomPanel::top("toolbar_panel")
             .resizable(true)
-            .frame(egui::Frame::default()
-                .fill(ctx.style().visuals.window_fill())
-                .inner_margin(egui::Margin::symmetric(16, 4))
-                .stroke(egui::Stroke::new(1.0, ctx.style().visuals.widgets.noninteractive.bg_stroke.color))
+            .frame(
+                egui::Frame::default()
+                    .fill(ctx.style().visuals.window_fill())
+                    .inner_margin(egui::Margin::symmetric(16, 4))
+                    .stroke(egui::Stroke::new(
+                        1.0,
+                        ctx.style().visuals.widgets.noninteractive.bg_stroke.color,
+                    )),
             )
             .show(ctx, |ui_obj| {
                 ui::view::menu_bar::toolbar::show(ui_obj, &mut app.ui_state);
@@ -43,9 +47,15 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
                             ) {
                                 match dash_action {
                                     ui::view::dashboard::DashboardAction::SendCommand(cmd) => {
-                                        if let Some(_module_id) = app.ui_state.module_canvas.active_module_id {
-                                            if let Some(part_id) = app.ui_state.module_canvas.get_selected_part_id() {
-                                                app.ui_state.actions.push(ui::UIAction::MediaCommand(part_id, cmd));
+                                        if let Some(_module_id) =
+                                            app.ui_state.module_canvas.active_module_id
+                                        {
+                                            if let Some(part_id) =
+                                                app.ui_state.module_canvas.get_selected_part_id()
+                                            {
+                                                app.ui_state
+                                                    .actions
+                                                    .push(ui::UIAction::MediaCommand(part_id, cmd));
                                             }
                                         }
                                     }
@@ -72,10 +82,16 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
                                 &mut app.ui_state.selected_audio_device,
                             ) {
                                 match audio_action {
-                                    ui::panels::audio_panel::AudioPanelAction::DeviceChanged(device) => {
-                                        app.ui_state.actions.push(ui::UIAction::SelectAudioDevice(device));
+                                    ui::panels::audio_panel::AudioPanelAction::DeviceChanged(
+                                        device,
+                                    ) => {
+                                        app.ui_state
+                                            .actions
+                                            .push(ui::UIAction::SelectAudioDevice(device));
                                     }
-                                    ui::panels::audio_panel::AudioPanelAction::ConfigChanged(cfg) => {
+                                    ui::panels::audio_panel::AudioPanelAction::ConfigChanged(
+                                        cfg,
+                                    ) => {
                                         app.state.audio_config = cfg;
                                     }
                                 }
@@ -119,7 +135,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
 
                 // Legacy panels (can be toggled separately or integrated)
                 if app.ui_state.show_transforms {
-                    app.ui_state.transform_panel.render(ctx, &app.ui_state.i18n);        
+                    app.ui_state.transform_panel.render(ctx, &app.ui_state.i18n);
                 }
 
                 // Effect chain integrated into inspector side
@@ -152,21 +168,27 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
                     .collect();
                 modules.sort_by_key(|m| m.id);
 
-                if let Some(action) = app
-                    .ui_state
-                    .timeline_panel
-                    .ui(ui_obj, app.state.effect_animator_mut(), &modules)
-                {
-                    app.ui_state.actions.push(ui::UIAction::TimelineAction(action));
+                if let Some(action) = app.ui_state.timeline_panel.ui(
+                    ui_obj,
+                    app.state.effect_animator_mut(),
+                    &modules,
+                ) {
+                    app.ui_state
+                        .actions
+                        .push(ui::UIAction::TimelineAction(action));
                 }
             });
     }
 
     // 6. Floating Windows / Overlays
-    
+
     // Performance Stats Overlay
     if app.ui_state.show_stats {
-        app.ui_state.render_stats_overlay(ctx, app.ui_state.current_fps, app.ui_state.current_frame_time_ms);
+        app.ui_state.render_stats_overlay(
+            ctx,
+            app.ui_state.current_fps,
+            app.ui_state.current_frame_time_ms,
+        );
     }
 
     // Cue Panel

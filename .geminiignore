@@ -1,0 +1,18 @@
+# Ignore massive build and dependency directories from Gemini CLI context
+# This prevents context bloat, API timeouts, and "Aborted" errors!
+
+target/
+vcpkg/
+vcpkg_installed/
+.git/
+tmp/
+.temp-archive/
+logs/
+.jules/
+assets/
+resources/
+*.zip
+*.psd
+*.mmp
+*.mov
+*.ogg

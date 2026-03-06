@@ -4,7 +4,7 @@ use crate::{AppUI, UIAction};
 
 pub fn show(ui: &mut egui::Ui, ui_state: &mut AppUI) {
     let mut actions = Vec::new();
-    
+
     egui::ScrollArea::horizontal()
         .auto_shrink([false, true])
         .show(ui, |ui| {
@@ -92,8 +92,7 @@ pub fn show(ui: &mut egui::Ui, ui_state: &mut AppUI) {
                     };
 
                     if fader_clicked {
-                        ui_state.show_controller_overlay =
-                            !ui_state.show_controller_overlay;
+                        ui_state.show_controller_overlay = !ui_state.show_controller_overlay;
                     }
 
                     ui.separator();
@@ -129,81 +128,70 @@ pub fn show(ui: &mut egui::Ui, ui_state: &mut AppUI) {
 
                 ui.label("🔊");
 
-                ui.add(AudioMeter::new(
-                    ui_state.user_config.meter_style,
-                    left_db,
-                    right_db,
-                ).height(40.0));
+                ui.add(
+                    AudioMeter::new(ui_state.user_config.meter_style, left_db, right_db)
+                        .height(40.0),
+                );
 
                 // === SPACER - push performance to right ===
-                ui.with_layout(
-                    egui::Layout::right_to_left(egui::Align::Center),
-                    |ui| {
-                        let fps = ui_state.current_fps;
-                        let target_fps = ui_state.target_fps;
-                        let frame_time = ui_state.current_frame_time_ms;
-                        let cpu = ui_state.cpu_usage;
-                        let gpu = ui_state.gpu_usage;
-                        let ram = ui_state.ram_usage_mb;
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    let fps = ui_state.current_fps;
+                    let target_fps = ui_state.target_fps;
+                    let frame_time = ui_state.current_frame_time_ms;
+                    let cpu = ui_state.cpu_usage;
+                    let gpu = ui_state.gpu_usage;
+                    let ram = ui_state.ram_usage_mb;
 
-                        // Traffic light colors
-                        let traffic_light =
-                            |value: f32, warn: f32, crit: f32| -> egui::Color32 {
-                                if value >= crit {
-                                    egui::Color32::from_rgb(255, 50, 50)
-                                } else if value >= warn {
-                                    egui::Color32::from_rgb(255, 200, 50)
-                                } else {
-                                    egui::Color32::from_rgb(50, 200, 50)
-                                }
-                            };
-
-                        let fps_ratio = fps / target_fps.max(1.0);
-                        let fps_color = if fps_ratio >= 0.95 {
-                            egui::Color32::from_rgb(50, 200, 50)
-                        } else if fps_ratio >= 0.8 {
+                    // Traffic light colors
+                    let traffic_light = |value: f32, warn: f32, crit: f32| -> egui::Color32 {
+                        if value >= crit {
+                            egui::Color32::from_rgb(255, 50, 50)
+                        } else if value >= warn {
                             egui::Color32::from_rgb(255, 200, 50)
                         } else {
-                            egui::Color32::from_rgb(255, 50, 50)
-                        };
+                            egui::Color32::from_rgb(50, 200, 50)
+                        }
+                    };
 
-                        // Overall traffic light
-                        let overall_color =
-                            if cpu >= 90.0 || gpu >= 90.0 || fps_ratio < 0.8 {
-                                egui::Color32::from_rgb(255, 50, 50)
-                            } else if cpu >= 70.0 || gpu >= 70.0 || fps_ratio < 0.95 {
-                                egui::Color32::from_rgb(255, 200, 50)
-                            } else {
-                                egui::Color32::from_rgb(50, 200, 50)
-                            };
+                    let fps_ratio = fps / target_fps.max(1.0);
+                    let fps_color = if fps_ratio >= 0.95 {
+                        egui::Color32::from_rgb(50, 200, 50)
+                    } else if fps_ratio >= 0.8 {
+                        egui::Color32::from_rgb(255, 200, 50)
+                    } else {
+                        egui::Color32::from_rgb(255, 50, 50)
+                    };
 
-                        let (rect, _) = ui.allocate_exact_size(
-                            egui::vec2(14.0, 14.0),
-                            egui::Sense::hover(),
-                        );
-                        ui.painter()
-                            .circle_filled(rect.center(), 7.0, overall_color);
+                    // Overall traffic light
+                    let overall_color = if cpu >= 90.0 || gpu >= 90.0 || fps_ratio < 0.8 {
+                        egui::Color32::from_rgb(255, 50, 50)
+                    } else if cpu >= 70.0 || gpu >= 70.0 || fps_ratio < 0.95 {
+                        egui::Color32::from_rgb(255, 200, 50)
+                    } else {
+                        egui::Color32::from_rgb(50, 200, 50)
+                    };
 
-                        ui.label(format!("RAM:{:.0}MB", ram));
+                    let (rect, _) =
+                        ui.allocate_exact_size(egui::vec2(14.0, 14.0), egui::Sense::hover());
+                    ui.painter()
+                        .circle_filled(rect.center(), 7.0, overall_color);
 
-                        let gpu_color = traffic_light(gpu, 70.0, 90.0);
-                        ui.colored_label(gpu_color, format!("Load:{:.0}%", gpu));
+                    ui.label(format!("RAM:{:.0}MB", ram));
 
-                        let cpu_color = traffic_light(cpu, 70.0, 90.0);
-                        ui.colored_label(cpu_color, format!("CPU:{:.0}%", cpu));
+                    let gpu_color = traffic_light(gpu, 70.0, 90.0);
+                    ui.colored_label(gpu_color, format!("Load:{:.0}%", gpu));
 
-                        ui.separator();
+                    let cpu_color = traffic_light(cpu, 70.0, 90.0);
+                    ui.colored_label(cpu_color, format!("CPU:{:.0}%", cpu));
 
-                        ui.label(format!("{:.1}ms/f", frame_time))
-                            .clone()
-                            .on_hover_text("Millisekunden pro Frame");
+                    ui.separator();
 
-                        ui.colored_label(
-                            fps_color,
-                            format!("{:.0}/{:.0}FPS", fps, target_fps),
-                        );
-                    },
-                );
+                    ui.label(format!("{:.1}ms/f", frame_time))
+                        .clone()
+                        .on_hover_text("Millisekunden pro Frame");
+
+                    ui.colored_label(fps_color, format!("{:.0}/{:.0}FPS", fps, target_fps));
+                });
             });
         });
 

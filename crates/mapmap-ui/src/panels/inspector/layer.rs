@@ -1,7 +1,7 @@
-use egui::Ui;
-use crate::i18n::LocaleManager;
-use mapmap_core::{Layer, Transform};
 use super::InspectorAction;
+use crate::i18n::LocaleManager;
+use egui::Ui;
+use mapmap_core::{Layer, Transform};
 
 pub fn render_layer_inspector(
     ui: &mut Ui,
@@ -20,10 +20,10 @@ pub fn render_layer_inspector(
                 ui.label(egui::RichText::new("LAYER").color(egui::Color32::GRAY));
             });
         });
-        
+
         ui.add_space(10.0);
         ui.separator();
-        
+
         // --- TRANSFORM SECTION ---
         egui::CollapsingHeader::new(i18n.t("inspector-transform"))
             .default_open(true)
@@ -33,21 +33,66 @@ pub fn render_layer_inspector(
 
                 ui.horizontal(|ui| {
                     ui.label("Position:");
-                    changed |= ui.add(egui::DragValue::new(&mut new_transform.position.x).speed(1.0).prefix("X: ")).changed();
-                    changed |= ui.add(egui::DragValue::new(&mut new_transform.position.y).speed(1.0).prefix("Y: ")).changed();
+                    changed |= ui
+                        .add(
+                            egui::DragValue::new(&mut new_transform.position.x)
+                                .speed(1.0)
+                                .prefix("X: "),
+                        )
+                        .changed();
+                    changed |= ui
+                        .add(
+                            egui::DragValue::new(&mut new_transform.position.y)
+                                .speed(1.0)
+                                .prefix("Y: "),
+                        )
+                        .changed();
                 });
 
                 ui.horizontal(|ui| {
                     ui.label("Scale:");
-                    changed |= ui.add(egui::DragValue::new(&mut new_transform.scale.x).speed(0.01).prefix("X: ")).changed();
-                    changed |= ui.add(egui::DragValue::new(&mut new_transform.scale.y).speed(0.01).prefix("Y: ")).changed();
+                    changed |= ui
+                        .add(
+                            egui::DragValue::new(&mut new_transform.scale.x)
+                                .speed(0.01)
+                                .prefix("X: "),
+                        )
+                        .changed();
+                    changed |= ui
+                        .add(
+                            egui::DragValue::new(&mut new_transform.scale.y)
+                                .speed(0.01)
+                                .prefix("Y: "),
+                        )
+                        .changed();
                 });
 
                 ui.horizontal(|ui| {
                     ui.label("Rotation:");
-                    changed |= ui.add(egui::DragValue::new(&mut new_transform.rotation.x).speed(1.0).prefix("X: ").suffix("°")).changed();
-                    changed |= ui.add(egui::DragValue::new(&mut new_transform.rotation.y).speed(1.0).prefix("Y: ").suffix("°")).changed();
-                    changed |= ui.add(egui::DragValue::new(&mut new_transform.rotation.z).speed(1.0).prefix("Z: ").suffix("°")).changed();
+                    changed |= ui
+                        .add(
+                            egui::DragValue::new(&mut new_transform.rotation.x)
+                                .speed(1.0)
+                                .prefix("X: ")
+                                .suffix("°"),
+                        )
+                        .changed();
+                    changed |= ui
+                        .add(
+                            egui::DragValue::new(&mut new_transform.rotation.y)
+                                .speed(1.0)
+                                .prefix("Y: ")
+                                .suffix("°"),
+                        )
+                        .changed();
+                    changed |= ui
+                        .add(
+                            egui::DragValue::new(&mut new_transform.rotation.z)
+                                .speed(1.0)
+                                .prefix("Z: ")
+                                .suffix("°"),
+                        )
+                        .changed();
                 });
 
                 if changed {
