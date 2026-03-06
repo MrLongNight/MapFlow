@@ -214,5 +214,3 @@ Spaltenstandard:
 | Quellzeilen ohne Feature/MF Bezug | 0 |
 | MF-Tasks ohne Testfall | 0 |
 | Orphan-Points | 0 |
-
-
