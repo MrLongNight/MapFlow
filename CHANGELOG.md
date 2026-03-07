@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2026-03-07: fix: Restore visual trigger feedback in the Module Canvas. (#965)
+- 2026-03-07: fix: Fix Philips Hue bridge connection persistence by saving application_id. (#964)
+- 2026-03-07: feat: Implement Error Toast Notifications for real-time engine feedback. (MF-023)
+- 2026-03-07: feat: Refine Cyber Purple/Pink themes with vibrant neon accents and sharp corners. (MF-039)
 - 2026-03-07: fix: Nur typgleiche Ein-/Ausgaenge verbindbar machen. (#947)
 - 2026-03-07: fix: Merge Konflikte in PR #933 auflösen. (#951)
 - 2026-03-07: fix: Grafik/Performance Controls wirksam, persistiert und runtime-wirksam (#948)

@@ -60,9 +60,9 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     app.render_ops.clear();
 
     // --- Bevy Runner Update ---
+    let mut node_triggers = std::collections::HashMap::new();
     if let Some(runner) = &mut app.bevy_runner {
         let runner: &mut mapmap_bevy::BevyRunner = runner;
-        let mut node_triggers = std::collections::HashMap::new();
 
         for module_id in &modules_for_eval {
             if let Some(module_ref) = app.state.module_manager.get_module(*module_id) {
@@ -113,6 +113,15 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
         runner.update(&trigger_data, &node_triggers);
 
         // SYNC WITH UI
+        if let Some(active_mod) = app.ui_state.module_canvas.active_module_id() {
+            app.ui_state.module_canvas.set_trigger_data(
+                node_triggers
+                    .iter()
+                    .filter(|((mod_id, _), _)| *mod_id == active_mod)
+                    .map(|((_, part), val)| (*part, *val))
+                    .collect(),
+            );
+        }
         app.ui_state
             .module_canvas
             .set_audio_data(trigger_data.clone());
@@ -127,6 +136,12 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
                     &app.state.module_manager.shared_media,
                     app.state.module_manager.graph_revision,
                 );
+
+                for (part_id, values) in &eval_result.trigger_values {
+                    if let Some(last_val) = values.last() {
+                        node_triggers.insert((*module_id, *part_id), *last_val);
+                    }
+                }
                 app.render_ops.extend(
                     eval_result
                         .render_ops
@@ -135,6 +150,17 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
                         .map(|op| (*module_id, op)),
                 );
             }
+        }
+
+        // SYNC WITH UI EVEN WITHOUT BEVY
+        if let Some(active_mod) = app.ui_state.module_canvas.active_module_id() {
+            app.ui_state.module_canvas.set_trigger_data(
+                node_triggers
+                    .iter()
+                    .filter(|((mod_id, _), _)| *mod_id == active_mod)
+                    .map(|((_, part), val)| (*part, *val))
+                    .collect(),
+            );
         }
     }
 

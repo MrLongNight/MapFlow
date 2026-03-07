@@ -31,6 +31,10 @@ impl ModuleCanvas {
         self.audio_trigger_data = data;
     }
 
+    pub fn set_trigger_data(&mut self, triggers: std::collections::HashMap<ModulePartId, f32>) {
+        self.last_trigger_values = triggers;
+    }
+
     pub fn get_audio_trigger_data(&self) -> Option<&mapmap_core::audio_reactive::AudioTriggerData> {
         Some(&self.audio_trigger_data)
     }

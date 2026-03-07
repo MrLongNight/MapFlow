@@ -222,7 +222,11 @@ pub fn render_canvas(
     ui.scope_builder(egui::UiBuilder::new().max_rect(zoom_ui_rect), |ui| {
         ui.horizontal(|ui| {
             ui.spacing_mut().item_spacing.x = 4.0;
-            if ui.button(RichText::new("-").strong()).on_hover_text("Zoom Out").clicked() {
+            if ui
+                .button(RichText::new("-").strong())
+                .on_hover_text("Zoom Out")
+                .clicked()
+            {
                 canvas.zoom = (canvas.zoom - 0.1).max(0.1);
             }
             ui.add(
@@ -230,10 +234,18 @@ pub fn render_canvas(
                     .show_value(false)
                     .trailing_fill(true),
             );
-            if ui.button(RichText::new("+").strong()).on_hover_text("Zoom In").clicked() {
+            if ui
+                .button(RichText::new("+").strong())
+                .on_hover_text("Zoom In")
+                .clicked()
+            {
                 canvas.zoom = (canvas.zoom + 0.1).min(5.0);
             }
-            ui.label(RichText::new(format!("{:.0}%", canvas.zoom * 100.0)).size(11.0).color(Color32::WHITE));
+            ui.label(
+                RichText::new(format!("{:.0}%", canvas.zoom * 100.0))
+                    .size(11.0)
+                    .color(Color32::WHITE),
+            );
         });
     });
 
@@ -354,7 +366,7 @@ pub fn render_canvas(
                         part_id,
                         socket_info.socket_idx,
                         socket_info.is_output,
-                        socket_info.socket_type.clone(),
+                        socket_info.socket_type,
                         socket_info.position,
                     ));
                     clicked_on_part = true;

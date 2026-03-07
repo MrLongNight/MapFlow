@@ -845,7 +845,7 @@ pub fn draw_part_with_delete(
             socket_radius,
             Stroke::new(1.0 * canvas.zoom, stroke_color),
         );
-        
+
         // Very subtle inner glow
         painter.circle_filled(
             socket_pos,
@@ -855,7 +855,11 @@ pub fn draw_part_with_delete(
 
         // Socket label
         let type_name = socket.socket_type.name();
-        let display_name = if socket.name.to_lowercase().contains(&type_name.to_lowercase()) {
+        let display_name = if socket
+            .name
+            .to_lowercase()
+            .contains(&type_name.to_lowercase())
+        {
             socket.name.clone()
         } else {
             format!("{} ({})", socket.name, type_name)
@@ -896,7 +900,7 @@ pub fn draw_part_with_delete(
             socket_radius,
             Stroke::new(1.0 * canvas.zoom, stroke_color),
         );
-        
+
         // Very subtle inner glow
         painter.circle_filled(
             socket_pos,
@@ -906,7 +910,11 @@ pub fn draw_part_with_delete(
 
         // Socket label
         let type_name = socket.socket_type.name();
-        let display_name = if socket.name.to_lowercase().contains(&type_name.to_lowercase()) {
+        let display_name = if socket
+            .name
+            .to_lowercase()
+            .contains(&type_name.to_lowercase())
+        {
             socket.name.clone()
         } else {
             format!("{} ({})", socket.name, type_name)
