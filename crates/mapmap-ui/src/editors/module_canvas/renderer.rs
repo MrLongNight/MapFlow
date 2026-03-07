@@ -382,7 +382,9 @@ pub fn render_canvas(
 
     // 3. Global Connection Release
     if ui.input(|i| i.pointer.any_released()) {
-        if let Some((from_part, from_idx, is_output, from_type, _)) = canvas.creating_connection.take() {
+        if let Some((from_part, from_idx, is_output, from_type, _)) =
+            canvas.creating_connection.take()
+        {
             if let Some(pointer_pos) = ui.input(|i| i.pointer.hover_pos()) {
                 for target in &all_sockets {
                     if target.position.distance(pointer_pos) < 30.0 * canvas.zoom

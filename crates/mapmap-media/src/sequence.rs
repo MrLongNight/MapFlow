@@ -3,7 +3,6 @@
 use crate::{MediaError, Result, VideoDecoder};
 use mapmap_io::VideoFrame;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use std::time::Duration;
 use tracing::{info, warn};
 use walkdir::WalkDir;
@@ -31,7 +30,7 @@ pub struct ImageSequenceDecoder {
     duration: Duration,
     current_time: Duration,
     // Cache for the current frame to avoid re-loading
-    cached_frame: Option<(usize, Arc<Vec<u8>>)>,
+    cached_frame: Option<(usize, Vec<u8>)>,
 }
 
 impl ImageSequenceDecoder {
@@ -136,11 +135,11 @@ impl ImageSequenceDecoder {
     }
 
     /// Load and cache a frame
-    fn load_frame(&mut self, index: usize) -> Result<Arc<Vec<u8>>> {
+    fn load_frame(&mut self, index: usize) -> Result<Vec<u8>> {
         // Check cache
         if let Some((cached_idx, ref data)) = self.cached_frame {
             if cached_idx == index {
-                return Ok(Arc::clone(data));
+                return Ok(data.clone());
             }
         }
 
@@ -150,10 +149,10 @@ impl ImageSequenceDecoder {
             .map_err(|e| MediaError::DecoderError(format!("Failed to load frame: {}", e)))?;
 
         let rgba_image = image.to_rgba8();
-        let frame_data = Arc::new(rgba_image.into_raw());
+        let frame_data = rgba_image.into_raw();
 
         // Update cache
-        self.cached_frame = Some((index, Arc::clone(&frame_data)));
+        self.cached_frame = Some((index, frame_data.clone()));
 
         Ok(frame_data)
     }
@@ -172,7 +171,7 @@ impl VideoDecoder for ImageSequenceDecoder {
         self.current_frame += 1;
         self.current_time += Duration::from_secs_f64(1.0 / self.fps);
 
-        Ok(VideoFrame::from_arc(
+        Ok(VideoFrame::new(
             frame_data,
             mapmap_io::VideoFormat {
                 width: self.width,

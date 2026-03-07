@@ -59,11 +59,7 @@ impl ShortcutEditor {
         ui.separator();
 
         ui.horizontal(|ui| {
-            if crate::widgets::custom::hold_to_action_button(
-                ui,
-                &i18n.t("btn-reset-defaults"),
-                crate::theme::colors::WARN_COLOR,
-            ) {
+            if ui.button(i18n.t("btn-reset-defaults")).clicked() {
                 self.bindings = mapmap_control::shortcuts::DefaultShortcuts::all();
             }
             let _ = ui.button(i18n.t("btn-import"));
