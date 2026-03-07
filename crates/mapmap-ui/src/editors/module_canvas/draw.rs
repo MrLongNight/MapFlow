@@ -189,7 +189,7 @@ where
             let end_pos = to_screen(to_socket_world);
 
             // Draw Plugs - plugs should point INTO the nodes
-            let plug_size = 20.0 * canvas.zoom;
+            let plug_size = 32.0 * canvas.zoom;
 
             let icon_name = match socket_type {
                 mapmap_core::module::ModuleSocketType::Trigger => "audio-jack1.1.svg",
