@@ -28,7 +28,11 @@ impl AssignmentPanel {
 
                 // Display a dummy list or debug info for now
                 if assignment_manager.assignments().is_empty() {
-                    ui.label("No assignments configured.");
+                    ui.label(
+                        egui::RichText::new("No assignments configured.")
+                            .weak()
+                            .italics(),
+                    );
                 } else {
                     for assignment in assignment_manager.assignments() {
                         ui.label(format!("{:?}", assignment));

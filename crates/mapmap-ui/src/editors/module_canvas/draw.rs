@@ -845,7 +845,7 @@ pub fn draw_part_with_delete(
             socket_radius,
             Stroke::new(1.0 * canvas.zoom, stroke_color),
         );
-        
+
         // Very subtle inner glow
         painter.circle_filled(
             socket_pos,
@@ -855,7 +855,11 @@ pub fn draw_part_with_delete(
 
         // Socket label
         let type_name = socket.socket_type.name();
-        let display_name = if socket.name.to_lowercase().contains(&type_name.to_lowercase()) {
+        let display_name = if socket
+            .name
+            .to_lowercase()
+            .contains(&type_name.to_lowercase())
+        {
             socket.name.clone()
         } else {
             format!("{} ({})", socket.name, type_name)
@@ -896,7 +900,7 @@ pub fn draw_part_with_delete(
             socket_radius,
             Stroke::new(1.0 * canvas.zoom, stroke_color),
         );
-        
+
         // Very subtle inner glow
         painter.circle_filled(
             socket_pos,
@@ -906,7 +910,11 @@ pub fn draw_part_with_delete(
 
         // Socket label
         let type_name = socket.socket_type.name();
-        let display_name = if socket.name.to_lowercase().contains(&type_name.to_lowercase()) {
+        let display_name = if socket
+            .name
+            .to_lowercase()
+            .contains(&type_name.to_lowercase())
+        {
             socket.name.clone()
         } else {
             format!("{} ({})", socket.name, type_name)
@@ -1061,7 +1069,7 @@ pub fn draw_presets_popup(
                 .show(ui, |ui| {
                     let presets = canvas.presets.clone();
                     if presets.is_empty() {
-                        ui.label("No presets found.");
+                        ui.label(egui::RichText::new("No presets found.").weak().italics());
                     }
                     for preset in &presets {
                         ui.horizontal(|ui| {
@@ -1493,7 +1501,11 @@ pub fn draw_quick_create_popup(
 
             // List
             if filtered_items.is_empty() {
-                ui.label("No matching nodes found.");
+                ui.label(
+                    egui::RichText::new("No matching nodes found.")
+                        .weak()
+                        .italics(),
+                );
             } else {
                 egui::ScrollArea::vertical()
                     .max_height(300.0)
