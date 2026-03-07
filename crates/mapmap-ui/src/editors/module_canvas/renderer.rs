@@ -6,7 +6,7 @@ use super::types::*;
 use super::utils;
 use crate::i18n::LocaleManager;
 use crate::UIAction;
-use egui::{Color32, Pos2, Rect, Sense, Stroke, Ui, Vec2};
+use egui::{Color32, Pos2, Rect, RichText, Sense, Stroke, Ui, Vec2};
 use mapmap_core::module::{ModuleId, ModuleManager, TriggerType};
 
 pub fn show(
@@ -178,7 +178,7 @@ pub fn render_canvas(
         if scroll != 0.0 {
             let old_zoom = canvas.zoom;
             canvas.zoom = (canvas.zoom * (1.0 + scroll * 0.001)).clamp(0.1, 5.0);
-            
+
             if let Some(mouse_pos) = ui.input(|i| i.pointer.hover_pos()) {
                 let zoom_factor = canvas.zoom / old_zoom;
                 canvas.pan_offset = mouse_pos - (mouse_pos - canvas.pan_offset) * zoom_factor;
@@ -203,12 +203,21 @@ pub fn render_canvas(
     // --- ZOOM UI ---
     let zoom_ui_rect = Rect::from_min_size(
         Pos2::new(canvas_rect.max.x - 150.0, canvas_rect.max.y - 45.0),
-        Vec2::new(140.0, 35.0)
+        Vec2::new(140.0, 35.0),
     );
-    
+
     // Draw background for zoom UI
-    painter.rect_filled(zoom_ui_rect.expand(4.0), 4.0, Color32::from_rgba_unmultiplied(20, 20, 30, 200));
-    painter.rect_stroke(zoom_ui_rect.expand(4.0), 4.0, Stroke::new(1.0, Color32::from_gray(80)), egui::StrokeKind::Middle);
+    painter.rect_filled(
+        zoom_ui_rect.expand(4.0),
+        4.0,
+        Color32::from_rgba_unmultiplied(20, 20, 30, 200),
+    );
+    painter.rect_stroke(
+        zoom_ui_rect.expand(4.0),
+        4.0,
+        Stroke::new(1.0, Color32::from_gray(80)),
+        egui::StrokeKind::Middle,
+    );
 
     ui.scope_builder(egui::UiBuilder::new().max_rect(zoom_ui_rect), |ui| {
         ui.horizontal(|ui| {
@@ -216,7 +225,11 @@ pub fn render_canvas(
             if ui.button(RichText::new("-").strong()).clicked() {
                 canvas.zoom = (canvas.zoom - 0.1).max(0.1);
             }
-            ui.add(egui::Slider::new(&mut canvas.zoom, 0.1..=5.0).show_value(false).trailing_fill(true));
+            ui.add(
+                egui::Slider::new(&mut canvas.zoom, 0.1..=5.0)
+                    .show_value(false)
+                    .trailing_fill(true),
+            );
             if ui.button(RichText::new("+").strong()).clicked() {
                 canvas.zoom = (canvas.zoom + 0.1).min(5.0);
             }
@@ -420,7 +433,9 @@ pub fn render_canvas(
 
     // 3. Global Connection Release
     if ui.input(|i| i.pointer.any_released()) {
-        if let Some((from_part, from_idx, is_output, from_type, _)) = canvas.creating_connection.take() {
+        if let Some((from_part, from_idx, is_output, from_type, _)) =
+            canvas.creating_connection.take()
+        {
             if let Some(pointer_pos) = ui.input(|i| i.pointer.hover_pos()) {
                 let mut best_target = None;
                 let mut min_dist = 25.0 * canvas.zoom; // Slightly tighter radius
@@ -553,8 +568,17 @@ pub fn render_canvas(
                 canvas.context_menu_connection = None;
             } else {
                 let painter = ui.painter();
-                painter.rect_filled(menu_rect, 4.0, Color32::from_rgba_unmultiplied(30, 30, 40, 245));
-                painter.rect_stroke(menu_rect, 4.0, Stroke::new(1.0, Color32::from_rgb(200, 80, 80)), egui::StrokeKind::Middle);
+                painter.rect_filled(
+                    menu_rect,
+                    4.0,
+                    Color32::from_rgba_unmultiplied(30, 30, 40, 245),
+                );
+                painter.rect_stroke(
+                    menu_rect,
+                    4.0,
+                    Stroke::new(1.0, Color32::from_rgb(200, 80, 80)),
+                    egui::StrokeKind::Middle,
+                );
 
                 let inner = menu_rect.shrink(8.0);
                 ui.scope_builder(egui::UiBuilder::new().max_rect(inner), |ui| {

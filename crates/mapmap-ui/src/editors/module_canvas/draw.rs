@@ -317,27 +317,27 @@ where
 
             if let Some(texture) = canvas.plug_icons.get(icon_name) {
                 use std::f32::consts::PI;
-                
+
                 // Helper to draw rotated image via Mesh
                 let draw_rotated = |pos: Pos2, angle: f32, size: f32, uv: Rect| {
                     let mut mesh = egui::Mesh::with_texture(texture.id());
                     let rotation = egui::emath::Rot2::from_angle(angle);
                     let half_size = size / 2.0;
-                    
+
                     let corners = [
                         Pos2::new(-half_size, -half_size),
                         Pos2::new(half_size, -half_size),
                         Pos2::new(half_size, half_size),
                         Pos2::new(-half_size, half_size),
                     ];
-                    
+
                     let uvs = [
                         Pos2::new(uv.min.x, uv.min.y),
                         Pos2::new(uv.max.x, uv.min.y),
                         Pos2::new(uv.max.x, uv.max.y),
                         Pos2::new(uv.min.x, uv.max.y),
                     ];
-                    
+
                     for i in 0..4 {
                         mesh.vertices.push(egui::epaint::Vertex {
                             pos: pos + rotation * corners[i].to_vec2(),
@@ -351,10 +351,20 @@ where
                 };
 
                 // Source Plug at OUTPUT socket - points LEFT (-PI/2). 45 deg CCW from that is -PI/2 - PI/4 = -3*PI/4
-                draw_rotated(start_pos, -3.0 * PI / 4.0, current_plug_size, Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)));
+                draw_rotated(
+                    start_pos,
+                    -3.0 * PI / 4.0,
+                    current_plug_size,
+                    Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
+                );
 
                 // Target Plug at INPUT socket - points RIGHT (PI/2). 45 deg CCW from that is PI/2 - PI/4 = PI/4
-                draw_rotated(end_pos, PI / 4.0, current_plug_size, Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)));
+                draw_rotated(
+                    end_pos,
+                    PI / 4.0,
+                    current_plug_size,
+                    Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
+                );
             } else {
                 // Fallback circles
                 painter.circle_filled(start_pos, 6.0 * canvas.zoom, cable_color);
@@ -835,7 +845,7 @@ pub fn draw_part_with_delete(
             socket_radius,
             Stroke::new(1.0 * canvas.zoom, stroke_color),
         );
-        
+
         // Very subtle inner glow
         painter.circle_filled(
             socket_pos,
@@ -845,7 +855,11 @@ pub fn draw_part_with_delete(
 
         // Socket label
         let type_name = socket.socket_type.name();
-        let display_name = if socket.name.to_lowercase().contains(&type_name.to_lowercase()) {
+        let display_name = if socket
+            .name
+            .to_lowercase()
+            .contains(&type_name.to_lowercase())
+        {
             socket.name.clone()
         } else {
             format!("{} ({})", socket.name, type_name)
@@ -886,7 +900,7 @@ pub fn draw_part_with_delete(
             socket_radius,
             Stroke::new(1.0 * canvas.zoom, stroke_color),
         );
-        
+
         // Very subtle inner glow
         painter.circle_filled(
             socket_pos,
@@ -896,7 +910,11 @@ pub fn draw_part_with_delete(
 
         // Socket label
         let type_name = socket.socket_type.name();
-        let display_name = if socket.name.to_lowercase().contains(&type_name.to_lowercase()) {
+        let display_name = if socket
+            .name
+            .to_lowercase()
+            .contains(&type_name.to_lowercase())
+        {
             socket.name.clone()
         } else {
             format!("{} ({})", socket.name, type_name)

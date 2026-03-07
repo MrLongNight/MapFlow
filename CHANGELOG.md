@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2026-03-07: fix: Refine module canvas UI (plugs, sockets, zoom) and improve CI trigger reliability
+- 2026-03-07: feat: Refine Cyber Purple/Pink themes, rotate cable plugs 90deg, and swap trigger icon to SVG
+- 2026-03-07: feat: Add a comprehensive settings dialog for language, theme, graphics, and audio configuration.
+- 2026-03-07: chore: Sync ROADMAP.md: Restore MF-039 and add MF-044, MF-045, MF-046
+- 2026-03-07: feat: Add MF-039 task and implement UI/Performance improvements
+- 2026-03-07: fix(ci): remove paths-ignore from Job01 to ensure required checks run on all PRs
+- 2026-03-07: fix: Resolve double connection bug, increase plug size, and restore canvas zoom UI
+- 2026-03-07: fix: Fix connection type safety in Module Canvas (#947)
+- 2026-03-07: feat: Add core module socket and blend mode definitions, and initial module canvas drawing components for grid, mini-map, and connections.
+- 2026-03-07: fix(ci): improve FFmpeg build in release workflow for Windows and Linux
+
 - 2026-03-03: docs: Repariere veraltete Links und Ordner-Referenzen in der Dokumentation (0[1-9]-* -> neue Struktur).
 
 - 2026-03-02: fix(stability): Resolve main branch build failures, failing tests, and clippy warnings.

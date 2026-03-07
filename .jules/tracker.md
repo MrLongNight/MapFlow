@@ -70,6 +70,10 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 **Erkenntnis:** PR #886 (Refactor module_canvas mod.rs) was merged but missing from `CHANGELOG.md` and `ROADMAP.md`.
 **Aktion:** Added entry to `CHANGELOG.md` and updated `ROADMAP.md` timestamp and feature status.
 
+## 2026-03-07 - Missing Documentation for Recent Feature/Bugfix Commits
+**Erkenntnis:** Many PRs and direct commits on main were missing from `CHANGELOG.md` over the past few days, especially the updates for the latest MF-007, MF-039 features, UI theme polish, and connection type safety bugs.
+**Aktion:** Tracker audited the recent history on the `main` branch, extracting 10+ missing commits, and appended them under `[Unreleased]` in `CHANGELOG.md`. Updated `ROADMAP.md` to reflect QA completion of MF-007 and MF-039.
+
 ## 2026-03-01 - Missing Documentation for Multiple PRs and Commits
 **Erkenntnis:** Many PRs and direct commits on main were missing from `CHANGELOG.md` (e.g., #888, #887, #882, #885, #881, #870, etc.). The sheer volume of missing entries suggests merges occurred without adhering to changelog documentation standards.
 **Aktion:** Tracker audited the recent history on the `main` branch, extracting 20+ missing commits, and appended them accurately under `[Unreleased]` in `CHANGELOG.md`. Also updated `ROADMAP.md` stand date to match the current date.
