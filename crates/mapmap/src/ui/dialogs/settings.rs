@@ -180,7 +180,7 @@ pub fn show(ctx: &Context, context: SettingsContext) {
                     ui.label("Preferred GPU:");
                     let current_gpu = context.ui_state.user_config.preferred_gpu.clone();
                     let gpu_text = current_gpu.as_deref().unwrap_or("Default");
-                    
+
                     egui::ComboBox::from_id_salt("gpu_picker")
                         .selected_text(gpu_text)
                         .show_ui(ui, |ui| {

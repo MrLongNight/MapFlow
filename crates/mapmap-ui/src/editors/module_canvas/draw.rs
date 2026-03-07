@@ -317,27 +317,27 @@ where
 
             if let Some(texture) = canvas.plug_icons.get(icon_name) {
                 use std::f32::consts::PI;
-                
+
                 // Helper to draw rotated image via Mesh
                 let draw_rotated = |pos: Pos2, angle: f32, size: f32, uv: Rect| {
                     let mut mesh = egui::Mesh::with_texture(texture.id());
                     let rotation = egui::emath::Rot2::from_angle(angle);
                     let half_size = size / 2.0;
-                    
+
                     let corners = [
                         Pos2::new(-half_size, -half_size),
                         Pos2::new(half_size, -half_size),
                         Pos2::new(half_size, half_size),
                         Pos2::new(-half_size, half_size),
                     ];
-                    
+
                     let uvs = [
                         Pos2::new(uv.min.x, uv.min.y),
                         Pos2::new(uv.max.x, uv.min.y),
                         Pos2::new(uv.max.x, uv.max.y),
                         Pos2::new(uv.min.x, uv.max.y),
                     ];
-                    
+
                     for i in 0..4 {
                         mesh.vertices.push(egui::epaint::Vertex {
                             pos: pos + rotation * corners[i].to_vec2(),
@@ -835,7 +835,7 @@ pub fn draw_part_with_delete(
             socket_radius,
             Stroke::new(1.0 * canvas.zoom, stroke_color),
         );
-        
+
         // Very subtle inner glow
         painter.circle_filled(
             socket_pos,
@@ -886,7 +886,7 @@ pub fn draw_part_with_delete(
             socket_radius,
             Stroke::new(1.0 * canvas.zoom, stroke_color),
         );
-        
+
         // Very subtle inner glow
         painter.circle_filled(
             socket_pos,

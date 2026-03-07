@@ -178,7 +178,7 @@ pub fn render_canvas(
         if scroll != 0.0 {
             let old_zoom = canvas.zoom;
             canvas.zoom = (canvas.zoom * (1.0 + scroll * 0.001)).clamp(0.1, 5.0);
-            
+
             if let Some(mouse_pos) = ui.input(|i| i.pointer.hover_pos()) {
                 let zoom_factor = canvas.zoom / old_zoom;
                 canvas.pan_offset = mouse_pos - (mouse_pos - canvas.pan_offset) * zoom_factor;
@@ -205,7 +205,7 @@ pub fn render_canvas(
         Pos2::new(canvas_rect.max.x - 150.0, canvas_rect.max.y - 45.0),
         Vec2::new(140.0, 35.0)
     );
-    
+
     // Draw background for zoom UI
     painter.rect_filled(zoom_ui_rect.expand(4.0), 4.0, Color32::from_rgba_unmultiplied(20, 20, 30, 200));
     painter.rect_stroke(zoom_ui_rect.expand(4.0), 4.0, Stroke::new(1.0, Color32::from_gray(80)), egui::StrokeKind::Middle);
