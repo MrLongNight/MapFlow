@@ -1,44 +1,18 @@
-# Gemini CLI Ignore Patterns
-# Supplementing .gitignore for better token/context optimization
+# Ignore massive build and dependency directories from Gemini CLI context
+# This prevents context bloat, API timeouts, and "Aborted" errors!
 
-# Binary Assets
-*.png
-*.jpg
-*.jpeg
-*.gif
-*.svg
-*.mp4
+target/
+vcpkg/
+vcpkg_installed/
+.git/
+tmp/
+.temp-archive/
+logs/
+.jules/
+assets/
+resources/
+*.zip
+*.psd
+*.mmp
 *.mov
 *.ogg
-*.otf
-*.ttf
-*.woff
-*.woff2
-*.ico
-*.pdf
-*.psd
-*.ai
-
-# Project Metadata/Secondary Config
-.gitattributes
-.markdownlint.json
-.secrets.baseline
-.pre-commit-config.yaml
-deny.toml
-rust-toolchain.toml
-vcpkg.json
-vcpkg-configuration.json
-
-# Explicitly restate critical ignores from .gitignore
-/target/
-/logs/
-/tmp/
-.gemini/
-/.temp-archive/
-
-# Build/test output files
-check_*.txt
-*.pdb
-*.tmp
-*.bak
-*.rs.bk

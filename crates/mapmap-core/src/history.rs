@@ -1,13 +1,12 @@
 //! History management for Undo/Redo
 
 use crate::AppState;
-use std::collections::VecDeque;
 
 /// Manages the history of application states
 #[derive(Debug)]
 pub struct History {
-    undo_stack: VecDeque<AppState>,
-    redo_stack: VecDeque<AppState>,
+    undo_stack: Vec<AppState>,
+    redo_stack: Vec<AppState>,
     max_history: usize,
 }
 
@@ -21,8 +20,8 @@ impl History {
     /// Create a new history manager
     pub fn new(max_history: usize) -> Self {
         Self {
-            undo_stack: VecDeque::new(),
-            redo_stack: VecDeque::new(),
+            undo_stack: Vec::new(),
+            redo_stack: Vec::new(),
             max_history,
         }
     }
@@ -30,9 +29,9 @@ impl History {
     /// Push a state to the undo stack.
     /// Should be called *before* applying a change to the state.
     pub fn push(&mut self, state: AppState) {
-        self.undo_stack.push_back(state);
+        self.undo_stack.push(state);
         if self.undo_stack.len() > self.max_history {
-            self.undo_stack.pop_front();
+            self.undo_stack.remove(0);
         }
         self.redo_stack.clear();
     }
@@ -41,8 +40,8 @@ impl History {
     /// Returns the state to restore, if any.
     /// The current state is pushed to the redo stack.
     pub fn undo(&mut self, current: AppState) -> Option<AppState> {
-        if let Some(prev) = self.undo_stack.pop_back() {
-            self.redo_stack.push_back(current);
+        if let Some(prev) = self.undo_stack.pop() {
+            self.redo_stack.push(current);
             Some(prev)
         } else {
             None
@@ -53,8 +52,8 @@ impl History {
     /// Returns the state to restore, if any.
     /// The current state is pushed to the undo stack.
     pub fn redo(&mut self, current: AppState) -> Option<AppState> {
-        if let Some(next) = self.redo_stack.pop_back() {
-            self.undo_stack.push_back(current);
+        if let Some(next) = self.redo_stack.pop() {
+            self.undo_stack.push(current);
             Some(next)
         } else {
             None
