@@ -366,7 +366,7 @@ pub fn render_canvas(
                         part_id,
                         socket_info.socket_idx,
                         socket_info.is_output,
-                        socket_info.socket_type.clone(),
+                        socket_info.socket_type,
                         socket_info.position,
                     ));
                     clicked_on_part = true;
