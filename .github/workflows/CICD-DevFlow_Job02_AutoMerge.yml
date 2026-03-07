@@ -24,7 +24,7 @@ jobs:
         run: |
           # Get the PR number associated with the workflow run
           PR_NUMBER=$(gh pr list --head "${{ github.event.workflow_run.head_branch }}" --json number --jq '.[0].number')
-          
+
           if [ -n "$PR_NUMBER" ]; then
             echo "Merging PR #$PR_NUMBER..."
             gh pr merge "$PR_NUMBER" --squash --delete-branch || echo "Merge failed or already merged."
