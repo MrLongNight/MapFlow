@@ -11,6 +11,13 @@ on:
         description: 'Rust toolchain version'
         required: true
         default: 'stable'
+  workflow_call:
+    inputs:
+      toolchain:
+        description: 'Rust toolchain version'
+        required: false
+        type: string
+        default: 'stable'
 
 permissions:
   contents: write

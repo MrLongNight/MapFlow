@@ -414,9 +414,6 @@ impl App {
         ui_state.initialize_icons(&egui_context, &assets_path);
         ui_state.user_config.theme.apply(&egui_context);
 
-        // Populate available GPU adapters
-        ui_state.gpu_adapters = WgpuBackend::get_available_adapters(wgpu::Backends::all());
-
         // Initialize preview quad buffers
         // Use manual construction to ensure -1..1 NDC range coverage for full viewport
         let preview_mesh = mapmap_core::Mesh {
@@ -445,7 +442,7 @@ impl App {
             bridge_ip: ui_hue_conf.bridge_ip.clone(),
             username: ui_hue_conf.username.clone(),
             client_key: ui_hue_conf.client_key.clone(),
-            application_id: ui_hue_conf.application_id.clone(), // Fetched and reused
+            application_id: String::new(), // Will be fetched if needed
             entertainment_group_id: ui_hue_conf.entertainment_area.clone(),
         };
 
@@ -458,18 +455,6 @@ impl App {
             info!("Initializing Hue Controller...");
             if let Err(e) = tokio_runtime.block_on(hue_controller.connect()) {
                 warn!("Hue Controller initial connection failed: {}", e);
-            } else {
-                // If connected successfully and the controller fetched a new application_id, save it.
-                let mut needs_save = false;
-                if ui_state.user_config.hue_config.application_id.is_empty() {
-                    // Update the application ID in config and save if it was missing.
-                    ui_state.user_config.hue_config.application_id =
-                        hue_controller.get_application_id().to_string();
-                    needs_save = true;
-                }
-                if needs_save {
-                    let _ = ui_state.user_config.save();
-                }
             }
         }
 
