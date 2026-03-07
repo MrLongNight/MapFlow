@@ -134,7 +134,6 @@ impl Dashboard {
                     Some(crate::icons::AppIcon::ArrowRight),
                     &locale.t("btn-play"),
                 ) {
-                    // Using ArrowRight as Play for now
                     action = Some(DashboardAction::SendCommand(MediaPlaybackCommand::Play));
                 }
                 // Pause
