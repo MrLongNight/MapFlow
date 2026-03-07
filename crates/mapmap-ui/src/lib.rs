@@ -296,6 +296,27 @@ use mapmap_control::ControlTarget;
 #[cfg(feature = "ndi")]
 use mapmap_io::NdiSource;
 
+/// Type of toast notification
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ToastKind {
+    /// Information message
+    Info,
+    /// Success message
+    Success,
+    /// Error message
+    Error,
+}
+
+/// A toast notification
+pub struct Toast {
+    /// The message to display
+    pub message: String,
+    /// The kind of notification
+    pub kind: ToastKind,
+    /// When it expires
+    pub expires_at: std::time::Instant,
+}
+
 /// UI state for the application
 pub struct AppUI {
     /// Main menu bar
@@ -363,6 +384,8 @@ pub struct AppUI {
     pub selected_output_id: Option<u64>,
     /// List of available audio devices
     pub audio_devices: Vec<String>,
+    /// List of available GPU adapters
+    pub gpu_adapters: Vec<String>,
     /// Currently selected audio device
     pub selected_audio_device: Option<String>,
     /// Recent project files
@@ -455,6 +478,9 @@ pub struct AppUI {
 
     /// Last time responsive styles were updated
     last_style_update: std::time::Instant,
+
+    /// Toast notifications
+    pub toasts: Vec<Toast>,
 }
 
 impl Default for AppUI {
@@ -508,6 +534,7 @@ impl Default for AppUI {
             selected_layer_id: None,
             selected_output_id: None,
             audio_devices: vec!["None".to_string()],
+            gpu_adapters: Vec::new(),
             // Load selected audio device from user config
             selected_audio_device: saved_audio_device,
             recent_files: saved_recent_files,
@@ -557,11 +584,81 @@ impl Default for AppUI {
             active_keys: std::collections::HashSet::new(),
             active_sidebar_tab: 0,
             last_style_update: std::time::Instant::now(),
+            toasts: Vec::new(),
         }
     }
 }
 
 impl AppUI {
+    /// Add a toast notification
+    pub fn add_toast(&mut self, message: impl Into<String>, kind: ToastKind) {
+        self.toasts.push(Toast {
+            message: message.into(),
+            kind,
+            expires_at: std::time::Instant::now() + std::time::Duration::from_secs(5),
+        });
+    }
+
+    /// Render active toast notifications
+    pub fn render_toasts(&mut self, ctx: &egui::Context) {
+        let now = std::time::Instant::now();
+        // Remove expired toasts
+        self.toasts.retain(|t| t.expires_at > now);
+
+        if self.toasts.is_empty() {
+            return;
+        }
+
+        // Render toasts in the bottom right
+        egui::Area::new(egui::Id::new("toasts_area"))
+            .anchor(egui::Align2::RIGHT_BOTTOM, [-20.0, -20.0])
+            .order(egui::Order::Tooltip)
+            .interactable(true)
+            .show(ctx, |ui| {
+                ui.vertical(|ui| {
+                    ui.spacing_mut().item_spacing.y = 8.0;
+
+                    for toast in &self.toasts {
+                        let (background, text_color, icon) = match toast.kind {
+                            ToastKind::Info => (
+                                egui::Color32::from_rgb(30, 30, 40),
+                                egui::Color32::from_rgb(200, 200, 255),
+                                "ℹ",
+                            ),
+                            ToastKind::Success => (
+                                egui::Color32::from_rgb(20, 50, 20),
+                                egui::Color32::from_rgb(180, 255, 180),
+                                "✔",
+                            ),
+                            ToastKind::Error => (
+                                egui::Color32::from_rgb(60, 20, 20),
+                                egui::Color32::from_rgb(255, 180, 180),
+                                "⚠",
+                            ),
+                        };
+
+                        egui::Frame::default()
+                            .fill(background.linear_multiply(0.95))
+                            .stroke(egui::Stroke::new(1.0, egui::Color32::from_gray(80)))
+                            .corner_radius(4.0)
+                            .inner_margin(egui::Margin::symmetric(16, 10))
+                            .show(ui, |ui| {
+                                ui.horizontal(|ui| {
+                                    ui.label(
+                                        egui::RichText::new(icon)
+                                            .color(text_color)
+                                            .size(16.0)
+                                            .strong(),
+                                    );
+                                    ui.add_space(4.0);
+                                    ui.label(egui::RichText::new(&toast.message).color(text_color));
+                                });
+                            });
+                    }
+                });
+            });
+    }
+
     /// Update responsive styles based on viewport size
     ///
     /// Only updates every 500ms to preserve performance
