@@ -35,6 +35,7 @@
 
 # Mac OS X / MacOS
 *.DS_Store
+Thumbs.db
 
 # Created by git
 *.BACKUP.*
