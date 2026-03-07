@@ -1075,7 +1075,7 @@ pub fn draw_presets_popup(
                 .show(ui, |ui| {
                     let presets = canvas.presets.clone();
                     if presets.is_empty() {
-                        ui.label("No presets found.");
+                        ui.label(egui::RichText::new("No presets found.").weak().italics());
                     }
                     for preset in &presets {
                         ui.horizontal(|ui| {
@@ -1507,7 +1507,11 @@ pub fn draw_quick_create_popup(
 
             // List
             if filtered_items.is_empty() {
-                ui.label("No matching nodes found.");
+                ui.label(
+                    egui::RichText::new("No matching nodes found.")
+                        .weak()
+                        .italics(),
+                );
             } else {
                 egui::ScrollArea::vertical()
                     .max_height(300.0)
