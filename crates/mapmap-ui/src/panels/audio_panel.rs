@@ -121,6 +121,36 @@ impl AudioPanel {
                     }
                     ui.end_row();
 
+                    // Low Band Gain
+                    ui.label(locale.t("audio-gain-low"));
+                    let mut low_band_gain = config.low_band_gain;
+                    if custom::styled_slider(ui, &mut low_band_gain, 0.0..=10.0, 1.0).changed() {
+                        let mut new_cfg = config.clone();
+                        new_cfg.low_band_gain = low_band_gain;
+                        action = Some(AudioPanelAction::ConfigChanged(new_cfg));
+                    }
+                    ui.end_row();
+
+                    // Mid Band Gain
+                    ui.label(locale.t("audio-gain-mid"));
+                    let mut mid_band_gain = config.mid_band_gain;
+                    if custom::styled_slider(ui, &mut mid_band_gain, 0.0..=10.0, 1.0).changed() {
+                        let mut new_cfg = config.clone();
+                        new_cfg.mid_band_gain = mid_band_gain;
+                        action = Some(AudioPanelAction::ConfigChanged(new_cfg));
+                    }
+                    ui.end_row();
+
+                    // High Band Gain
+                    ui.label(locale.t("audio-gain-high"));
+                    let mut high_band_gain = config.high_band_gain;
+                    if custom::styled_slider(ui, &mut high_band_gain, 0.0..=10.0, 1.0).changed() {
+                        let mut new_cfg = config.clone();
+                        new_cfg.high_band_gain = high_band_gain;
+                        action = Some(AudioPanelAction::ConfigChanged(new_cfg));
+                    }
+                    ui.end_row();
+
                     // Smoothing
                     ui.label(locale.t("audio-smoothing"));
                     let mut smoothing = config.smoothing;
@@ -137,6 +167,52 @@ impl AudioPanel {
     }
 
     fn show_visualizer(&self, ui: &mut Ui, analysis: &AudioAnalysis) {
+        // RMS and Peak Meters
+        ui.horizontal(|ui| {
+            // Volume Meter (RMS and Peak)
+            let meter_height = 12.0;
+            let meter_width = ui.available_width() - 40.0;
+
+            ui.vertical(|ui| {
+                ui.add_space(4.0);
+
+                // RMS
+                let (rms_rect, _) = ui.allocate_at_least(egui::vec2(meter_width, meter_height), Sense::hover());
+                ui.painter().rect_filled(rms_rect, egui::CornerRadius::ZERO, colors::DARKER_GREY);
+                ui.painter().rect_stroke(rms_rect, egui::CornerRadius::ZERO, Stroke::new(1.0, colors::STROKE_GREY), egui::StrokeKind::Middle);
+
+                let rms_width = (analysis.rms_volume * meter_width).min(meter_width);
+                if rms_width > 0.0 {
+                    let rms_fill_rect = Rect::from_min_max(rms_rect.min, egui::pos2(rms_rect.min.x + rms_width, rms_rect.max.y));
+                    ui.painter().rect_filled(rms_fill_rect, egui::CornerRadius::ZERO, colors::CYAN_ACCENT.linear_multiply(0.6));
+                }
+
+                // Peak
+                let (peak_rect, _) = ui.allocate_at_least(egui::vec2(meter_width, meter_height), Sense::hover());
+                ui.painter().rect_filled(peak_rect, egui::CornerRadius::ZERO, colors::DARKER_GREY);
+                ui.painter().rect_stroke(peak_rect, egui::CornerRadius::ZERO, Stroke::new(1.0, colors::STROKE_GREY), egui::StrokeKind::Middle);
+
+                let peak_width = (analysis.peak_volume * meter_width).min(meter_width);
+                if peak_width > 0.0 {
+                    let peak_fill_rect = Rect::from_min_max(peak_rect.min, egui::pos2(peak_rect.min.x + peak_width, peak_rect.max.y));
+                    ui.painter().rect_filled(peak_fill_rect, egui::CornerRadius::ZERO, colors::WARN_COLOR.linear_multiply(0.8));
+                }
+            });
+
+            // Beat Indicator
+            let beat_size = 24.0;
+            let (beat_rect, _) = ui.allocate_exact_size(egui::vec2(beat_size, beat_size), Sense::hover());
+            let beat_color = if analysis.beat_detected {
+                colors::MINT_ACCENT
+            } else {
+                colors::DARKER_GREY
+            };
+            ui.painter().rect_filled(beat_rect, egui::CornerRadius::ZERO, beat_color);
+            ui.painter().rect_stroke(beat_rect, egui::CornerRadius::ZERO, Stroke::new(1.0, colors::STROKE_GREY), egui::StrokeKind::Middle);
+        });
+
+        ui.add_space(4.0);
+
         let height = 60.0;
         let (rect, _response) =
             ui.allocate_at_least(egui::vec2(ui.available_width(), height), Sense::hover());

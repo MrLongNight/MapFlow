@@ -401,7 +401,13 @@ param-zoom = Zoom
 
 # Added by Lina StyleUI
 audio-gain = Gain
+audio-gain-low = Low Band Gain
+audio-gain-mid = Mid Band Gain
+audio-gain-high = High Band Gain
 audio-smoothing = Smoothing
+audio-rms = RMS Volume
+audio-peak = Peak Volume
+audio-beat = Beat
 btn-add-mapping = Add Mapping
 no-signal = No Signal
 no-device = No Device

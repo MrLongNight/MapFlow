@@ -31,6 +31,15 @@ pub struct AudioConfig {
 
     /// Noise gate threshold (0.0-1.0) - samples below this are silenced
     pub noise_gate: f32,
+
+    /// Low frequency band gain multiplier
+    pub low_band_gain: f32,
+
+    /// Mid frequency band gain multiplier
+    pub mid_band_gain: f32,
+
+    /// High frequency band gain multiplier
+    pub high_band_gain: f32,
 }
 
 impl Default for AudioConfig {
@@ -42,6 +51,9 @@ impl Default for AudioConfig {
             smoothing: 0.8,
             gain: 1.0,          // Default: no amplification (1.0 = unity gain)
             noise_gate: 0.0001, // Very low threshold - only filter true silence
+            low_band_gain: 1.0,
+            mid_band_gain: 1.0,
+            high_band_gain: 1.0,
         }
     }
 }
@@ -248,13 +260,13 @@ impl AudioAnalyzer {
         // V1: SubBass, Bass, LowMid, Mid, HighMid, Presence, Brilliance
         let b = v2_analysis.band_energies;
         let mapped_bands = [
-            b[0], // SubBass -> SubBass
-            b[1], // Bass -> Bass
-            b[2], // LowMid -> LowMid
-            b[3], // Mid -> Mid
-            b[4], // HighMid -> HighMid
-            b[6], // Presence -> Presence (skip UpperMid)
-            b[7], // Brilliance -> Brilliance (skip Air)
+            b[0] * self.config.low_band_gain, // SubBass -> SubBass
+            b[1] * self.config.low_band_gain, // Bass -> Bass
+            b[2] * self.config.low_band_gain, // LowMid -> LowMid
+            b[3] * self.config.mid_band_gain, // Mid -> Mid
+            b[4] * self.config.mid_band_gain, // HighMid -> HighMid
+            b[6] * self.config.high_band_gain, // Presence -> Presence (skip UpperMid)
+            b[7] * self.config.high_band_gain, // Brilliance -> Brilliance (skip Air)
         ];
 
         let analysis = AudioAnalysis {
