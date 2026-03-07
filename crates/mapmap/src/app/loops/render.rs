@@ -172,7 +172,9 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
                                     let height = window_context.surface_config.height;
 
                                     let video_frame = mapmap_io::format::VideoFrame {
-                                        data: mapmap_io::format::FrameData::Cpu(Arc::new(frame_data)),
+                                        data: mapmap_io::format::FrameData::Cpu(Arc::new(
+                                            frame_data,
+                                        )),
                                         format: mapmap_io::format::VideoFormat {
                                             width,
                                             height,
