@@ -845,7 +845,7 @@ pub fn draw_part_with_delete(
             socket_radius,
             Stroke::new(1.0 * canvas.zoom, stroke_color),
         );
-        
+
         // Very subtle inner glow
         painter.circle_filled(
             socket_pos,
@@ -896,7 +896,7 @@ pub fn draw_part_with_delete(
             socket_radius,
             Stroke::new(1.0 * canvas.zoom, stroke_color),
         );
-        
+
         // Very subtle inner glow
         painter.circle_filled(
             socket_pos,
