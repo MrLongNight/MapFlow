@@ -135,22 +135,20 @@ impl App {
                 }
             }
             winit::event::Event::AboutToWait => {
-                // Logic update at a fixed rate (e.g. 60Hz or from settings)
+                // Logic update at a fixed rate (e.g. 60Hz)
                 let now = std::time::Instant::now();
                 let dt = now.duration_since(self.last_update).as_secs_f32();
 
                 // Cap dt to avoid huge jumps
                 let dt = dt.min(0.1);
 
-                let target_fps = self.ui_state.target_fps;
-
-                if dt >= 1.0 / target_fps {
+                if dt >= 1.0 / 60.0 {
                     if let Err(e) = self.update(elwt, dt) {
                         error!("Update error: {}", e);
                     }
                     self.last_update = now;
 
-                    // Request redraw at target rate
+                    // Request redraw ONLY at 60Hz
                     for context in self.window_manager.iter() {
                         context.window.request_redraw();
                     }

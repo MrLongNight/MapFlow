@@ -12,7 +12,6 @@ It really helps us efficiently process your contribution!
 [Report a bug](#bug-reports)
 [Request a feature](#feature-requests)
 [Contribute code](#contributing-code)
-[MF-ID Naming Compliance & Governance](#mf-id-governance)
 
 ## <a id='bug-reports'></a>Report a bug
 
@@ -88,11 +87,9 @@ A page describing how well-written commit messages look like can be found [in th
   Your branch should be only about a single topic or area of MapFlow.
 If you have multiple things to submit, make separate branches for each topic and submit multiple pull requests.
 (This makes it easier to review different parts of your code separately, and get it into the core faster.)
-- **CRITICAL: Branch Naming Compliance**
-  All branches MUST follow the format `MF-###-SLUG` (e.g., `MF-001-AUDIO-FIX`). This ID must correspond to an entry in the [ROADMAP.md](ROADMAP.md).
-  - Do NOT use generic prefixes like `feature/` or `bugfix/` anymore.
-  - Branches without a valid MF-ID will be rejected by the CI gate.
-- Remember, _commit early, commit often_ - use commits to isolate small subsets of code.
+- The branch name should start with either **feature/** for features or **bugfix/** for bug fixes.
+  - For example, if your patch adds code to draw ellipses, your branch should be called something like **feature/draw-ellipses**.
+  - Remember, _commit early, commit often_ - use commits to isolate small subsets of code.
 This granularity makes the code easier to deal with in cases where some things have to be modified/isolated/removed from the pull request.
 - When you commit your files and you find you can't do that without using `git add -f/--force`,
   this is because of the existing gitignore patterns. _Think about if those files really should be in the repo in the first place_.
@@ -107,8 +104,6 @@ This granularity makes the code easier to deal with in cases where some things h
 #### Submitting the pull request
 
 - Submit your pull request to the **`main`** branch of MapFlow (which you branched off from).
-- **CRITICAL: PR Naming Compliance**
-  All Pull Requests MUST be prefixed with the MF-ID in brackets: `[MF-###-SLUG] Summary of changes`.
 - All pull requests that contain significant changes should update the relevant documentation in the `docs/` folder.
 - In the comments field on your new pull request, enter a description of everything that the code in the pull request does.
   - This description is the first contact most of the core team will have with your code,
@@ -127,39 +122,23 @@ This granularity makes the code easier to deal with in cases where some things h
 - Keep commits atomic with clear messages
 - Follow the existing code structure and patterns
 
-## <a id='mf-id-governance'></a>MF-ID Naming Compliance & Governance
-
-MapFlow uses a strict **Task-ID based workflow** to ensure traceability between requirements, development, and QA.
-
-### Task Identification (MF-ID)
-Every change must be associated with a unique Task ID from the [ROADMAP.md](ROADMAP.md).
-Format: `MF-[NUMBER]-[SLUG]`
-Example: `MF-016-FEATURE-STATUS-BASELINE`
-
-### Priority & Scope Governance
-- **Prioritization**: Tasks in the Roadmap are prioritized (Prio A, B, C). Work should generally follow this priority unless discussed otherwise.
-- **Scope Control**: Each task has a defined description in the Roadmap. Changes outside this scope should be discussed and may require a new Task ID.
-- **"Is this needed?"**: We avoid "just-in-case" features. If a feature's necessity is questioned, it is handled via the scope description in the Roadmap, not as a separate section.
-
 ## Development workflow
 
-1. **Identify Task ID**: Find the relevant task in [ROADMAP.md](ROADMAP.md) or request a new one.
-2. Fork the repository
-3. Create a feature branch: `git checkout -b MF-###-MY-FEATURE`
-4. Make your changes
-5. Run tests: `cargo test`
-6. Run clippy: `cargo clippy`
-7. Format code: `cargo fmt`
-8. Commit changes: `git commit -m "[MF-###] Add feature X"`
-9. Push to your fork: `git push origin MF-###-MY-FEATURE`
-10. Create a pull request with title `[MF-###-MY-FEATURE] ...`
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/my-feature`
+3. Make your changes
+4. Run tests: `cargo test`
+5. Run clippy: `cargo clippy`
+6. Format code: `cargo fmt`
+7. Commit changes: `git commit -m "Add feature X"`
+8. Push to your fork: `git push origin feature/my-feature`
+9. Create a pull request
 
 ## Additional resources
 
 - [Build Instructions](docs/user/getting-started/BUILD.md)
 - [Architecture Documentation](docs/dev/architecture/ARCHITECTURE.md)
 - [Development Setup](docs/dev/setup/DEVELOPMENT-SETUP.md)
-- [Official Workflow Guide](docs/dev/WORKFLOW.md)
 - [Roadmap](ROADMAP.md)
 
 ## Questions?

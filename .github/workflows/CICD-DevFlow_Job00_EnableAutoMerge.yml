@@ -1,21 +1,78 @@
 name: "CICD-DevFlow: Job00 Enable Auto-Merge"
 
+# ═══════════════════════════════════════════════════════════════
+# Dieser Workflow aktiviert automatisch "Auto-Merge" für jeden
+# neu geöffneten Pull Request via GitHub GraphQL API.
+# Voraussetzung: "Allow auto-merge" muss in den Repository-Settings
+# aktiviert sein (Settings → General → Pull Requests → Allow auto-merge).
+# ═══════════════════════════════════════════════════════════════
+
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
+    types: [opened, reopened, ready_for_review]
 
 permissions:
-  contents: write
   pull-requests: write
+  contents: write
 
 jobs:
   enable-auto-merge:
     name: "Enable Auto-Merge"
     runs-on: ubuntu-latest
+    # Nur für Nicht-Draft-PRs
     if: github.event.pull_request.draft == false
     steps:
-      - name: Enable auto-merge for PR
-        run: gh pr merge --auto --squash "$PR_URL"
-        env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Enable Auto-Merge via GraphQL
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNodeId = context.payload.pull_request.node_id;
+            const prNumber = context.payload.pull_request.number;
+
+            console.log(`🔀 Aktiviere Auto-Merge für PR #${prNumber} (node_id: ${prNodeId})...`);
+
+            try {
+              // GitHub GraphQL Mutation zum Aktivieren von Auto-Merge
+              await github.graphql(`
+                mutation EnableAutoMerge($pullRequestId: ID!) {
+                  enablePullRequestAutoMerge(input: {
+                    pullRequestId: $pullRequestId,
+                    mergeMethod: SQUASH
+                  }) {
+                    pullRequest {
+                      autoMergeRequest {
+                        enabledAt
+                        mergeMethod
+                      }
+                    }
+                  }
+                }
+              `, {
+                pullRequestId: prNodeId
+              });
+
+              console.log(`✅ Auto-Merge erfolgreich aktiviert für PR #${prNumber} (Methode: SQUASH)`);
+
+              // Bestätigungs-Kommentar (optional – kann entfernt werden)
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: `🤖 **Auto-Merge aktiviert** — Dieser PR wird automatisch gemergt (Squash), sobald alle erforderlichen Checks bestanden haben.`
+              });
+
+            } catch (error) {
+              console.error(`❌ Fehler beim Aktivieren von Auto-Merge: ${error.message}`);
+
+              // Häufige Ursachen ausgeben
+              if (error.message.includes('auto merge is not allowed')) {
+                console.error('💡 Lösung: Aktiviere "Allow auto-merge" unter Settings → General → Pull Requests');
+              }
+              if (error.message.includes('Required status checks')) {
+                console.error('💡 Auto-Merge benötigt mindestens einen Required Status Check in den Branch Protection Rules');
+              }
+
+              // Fehler nicht als Workflow-Fehler markieren (non-blocking)
+              core.warning(`Auto-Merge konnte nicht aktiviert werden: ${error.message}`);
+            }

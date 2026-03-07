@@ -473,11 +473,15 @@ impl EffectChainPanel {
             }
 
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if crate::widgets::custom::hold_to_action_button(
+                if icon_button_simple(
                     ui,
+                    icon_manager,
+                    AppIcon::Remove,
+                    16.0,
                     &locale.t("effect-clear"),
-                    colors::WARN_COLOR,
-                ) {
+                )
+                .clicked()
+                {
                     self.actions.push(EffectChainAction::ClearAll);
                     self.chain.effects.clear();
                 }
@@ -1358,7 +1362,8 @@ impl EffectChainPanel {
             let response = styled_slider(ui, &mut value, min..=max, default_value);
 
             response.context_menu(|ui| {
-                if ui.button("↺ Reset").clicked() {
+                if crate::widgets::custom::hold_to_action_button(ui, "↺ Reset", colors::WARN_COLOR)
+                {
                     value = default_value;
                     ui.close();
                 }

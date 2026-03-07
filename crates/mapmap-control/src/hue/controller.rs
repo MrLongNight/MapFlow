@@ -74,11 +74,6 @@ impl HueController {
         self.is_connected
     }
 
-    /// Get the application id that was discovered or loaded
-    pub fn get_application_id(&self) -> &str {
-        &self.config.application_id
-    }
-
     /// Connect to the bridge and start the entertainment stream.
     pub async fn connect(&mut self) -> Result<(), String> {
         if self.is_connected {

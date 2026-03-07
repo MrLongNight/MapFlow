@@ -105,17 +105,7 @@ pub fn show(ctx: &Context, context: SettingsContext) {
             ui.add_space(4.0);
             ui.horizontal(|ui| {
                 ui.label(format!("{}:", i18n.t("theme-accent")));
-                let accent_text = match current_theme {
-                    mapmap_ui::theme::Theme::Dark => "Cyan",
-                    mapmap_ui::theme::Theme::Light => "Blue",
-                    mapmap_ui::theme::Theme::HighContrast => "Yellow",
-                    mapmap_ui::theme::Theme::Resolume => "Cyber Cyan",
-                    mapmap_ui::theme::Theme::Synthwave => "Neon Pink",
-                    mapmap_ui::theme::Theme::Purple => "Purple",
-                    mapmap_ui::theme::Theme::Pink => "Pink",
-                    mapmap_ui::theme::Theme::Custom => "Custom",
-                };
-                ui.label(accent_text);
+                ui.label("Cyber Cyan (Default)");
             });
 
             ui.add_space(10.0);
@@ -179,30 +169,30 @@ pub fn show(ctx: &Context, context: SettingsContext) {
 
                     ui.label("Preferred GPU:");
                     let current_gpu = context.ui_state.user_config.preferred_gpu.clone();
-                    let gpu_text = current_gpu.as_deref().unwrap_or("Default");
-
-                    egui::ComboBox::from_id_salt("gpu_picker")
-                        .selected_text(gpu_text)
-                        .show_ui(ui, |ui| {
-                            if ui
-                                .selectable_label(current_gpu.is_none(), "Default")
-                                .clicked()
+                    let gpu_text = current_gpu.unwrap_or_else(|| "Default".to_string());
+                    // In a real scenario, you'd list available GPUs. Here we let the user enter one or select Default.
+                    ui.horizontal(|ui| {
+                        let mut temp_gpu = gpu_text.clone();
+                        if ui.text_edit_singleline(&mut temp_gpu).changed() {
+                            let new_val = if temp_gpu.trim().is_empty()
+                                || temp_gpu.trim().eq_ignore_ascii_case("default")
                             {
-                                context
-                                    .ui_state
-                                    .actions
-                                    .push(UIAction::SetPreferredGpu(None));
-                            }
-                            for adapter in &context.ui_state.gpu_adapters {
-                                let is_selected = current_gpu.as_ref() == Some(adapter);
-                                if ui.selectable_label(is_selected, adapter).clicked() {
-                                    context
-                                        .ui_state
-                                        .actions
-                                        .push(UIAction::SetPreferredGpu(Some(adapter.clone())));
-                                }
-                            }
-                        });
+                                None
+                            } else {
+                                Some(temp_gpu.trim().to_string())
+                            };
+                            context
+                                .ui_state
+                                .actions
+                                .push(UIAction::SetPreferredGpu(new_val));
+                        }
+                        if ui.button("Clear").clicked() {
+                            context
+                                .ui_state
+                                .actions
+                                .push(UIAction::SetPreferredGpu(None));
+                        }
+                    });
                     ui.end_row();
                 });
 

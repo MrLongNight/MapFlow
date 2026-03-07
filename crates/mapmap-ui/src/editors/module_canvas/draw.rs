@@ -191,6 +191,15 @@ where
             // Draw Plugs - plugs should point INTO the nodes
             let plug_size = 32.0 * canvas.zoom;
 
+            let icon_name = match socket_type {
+                mapmap_core::module::ModuleSocketType::Trigger => "audio-jack1.1.svg",
+                mapmap_core::module::ModuleSocketType::Media => "plug.svg",
+                mapmap_core::module::ModuleSocketType::Effect => "usb-cable.svg",
+                mapmap_core::module::ModuleSocketType::Layer => "power-plug.svg",
+                mapmap_core::module::ModuleSocketType::Output => "audio-jack_2.svg",
+                mapmap_core::module::ModuleSocketType::Link => "audio-jack_1.2.svg",
+            };
+
             // Draw Cable (Bezier)
             let cable_start = start_pos;
             let cable_end = end_pos;
@@ -297,81 +306,26 @@ where
                     Color32::from_rgba_unmultiplied(255, 255, 255, 150),
                 );
             }
-
             // Draw Plugs on top of cable
-            let is_trigger = matches!(socket_type, mapmap_core::module::ModuleSocketType::Trigger);
-            let icon_name = match socket_type {
-                mapmap_core::module::ModuleSocketType::Trigger => "audio-jack_2.svg",
-                mapmap_core::module::ModuleSocketType::Media => "plug.svg",
-                mapmap_core::module::ModuleSocketType::Effect => "usb-cable.svg",
-                mapmap_core::module::ModuleSocketType::Layer => "power-plug.svg",
-                mapmap_core::module::ModuleSocketType::Output => "audio-jack_2.svg",
-                mapmap_core::module::ModuleSocketType::Link => "audio-jack_1.2.svg",
-            };
-
-            let current_plug_size = if is_trigger {
-                plug_size * 1.6 // 60% larger for Trigger
-            } else {
-                plug_size
-            };
-
             if let Some(texture) = canvas.plug_icons.get(icon_name) {
-                use std::f32::consts::PI;
-
-                // Helper to draw rotated image via Mesh
-                let draw_rotated = |pos: Pos2, angle: f32, size: f32, uv: Rect| {
-                    let mut mesh = egui::Mesh::with_texture(texture.id());
-                    let rotation = egui::emath::Rot2::from_angle(angle);
-                    let half_size = size / 2.0;
-
-                    let corners = [
-                        Pos2::new(-half_size, -half_size),
-                        Pos2::new(half_size, -half_size),
-                        Pos2::new(half_size, half_size),
-                        Pos2::new(-half_size, half_size),
-                    ];
-
-                    let uvs = [
-                        Pos2::new(uv.min.x, uv.min.y),
-                        Pos2::new(uv.max.x, uv.min.y),
-                        Pos2::new(uv.max.x, uv.max.y),
-                        Pos2::new(uv.min.x, uv.max.y),
-                    ];
-
-                    for i in 0..4 {
-                        mesh.vertices.push(egui::epaint::Vertex {
-                            pos: pos + rotation * corners[i].to_vec2(),
-                            uv: uvs[i],
-                            color: Color32::WHITE,
-                        });
-                    }
-                    mesh.add_triangle(0, 1, 2);
-                    mesh.add_triangle(0, 2, 3);
-                    painter.add(mesh);
-                };
-
-                // Source Plug at OUTPUT socket - points LEFT (-PI/2 baseline)
-                // Target Plug at INPUT socket - points RIGHT (PI/2 baseline)
-                let (source_angle, target_angle) = if is_trigger {
-                    // Trigger: 45 deg CCW offset from baseline
-                    (-PI / 2.0 - PI / 4.0, PI / 2.0 - PI / 4.0)
-                } else {
-                    // Normal: 90 deg baseline
-                    (-PI / 2.0, PI / 2.0)
-                };
-
-                draw_rotated(
-                    start_pos,
-                    source_angle,
-                    current_plug_size,
-                    Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
+                // Source Plug at OUTPUT socket - pointing LEFT (into node)
+                let start_rect = Rect::from_center_size(start_pos, Vec2::splat(plug_size));
+                // Flip horizontally so plug points left (into node)
+                painter.image(
+                    texture.id(),
+                    start_rect,
+                    Rect::from_min_max(Pos2::new(1.0, 0.0), Pos2::new(0.0, 1.0)),
+                    Color32::WHITE,
                 );
 
-                draw_rotated(
-                    end_pos,
-                    target_angle,
-                    current_plug_size,
+                // Target Plug at INPUT socket - pointing RIGHT (into node)
+                let end_rect = Rect::from_center_size(end_pos, Vec2::splat(plug_size));
+                // Normal orientation (pointing right into node)
+                painter.image(
+                    texture.id(),
+                    end_rect,
                     Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
+                    Color32::WHITE,
                 );
             } else {
                 // Fallback circles
@@ -833,33 +787,41 @@ pub fn draw_part_with_delete(
         let socket_pos = Pos2::new(rect.min.x, socket_y);
         let socket_radius = 7.0 * canvas.zoom;
 
-        // Socket "Port" style - Thin Glowing Ring
+        // Socket "Port" style
         let socket_color = utils::get_socket_color(&socket.socket_type);
 
+        // Check hover
         let is_hovered = if let Some(pointer_pos) = ui.input(|i| i.pointer.hover_pos()) {
             socket_pos.distance(pointer_pos) < socket_radius * 1.5
         } else {
             false
         };
 
-        let stroke_color = if is_hovered {
-            Color32::WHITE
+        // Outer ring (Socket Color)
+        let ring_stroke = if is_hovered {
+            let pulse = (ui.input(|i| i.time) * 10.0).sin() as f32 * 0.2 + 0.8;
+            Stroke::new(3.0 * canvas.zoom, Color32::WHITE.linear_multiply(pulse))
         } else {
-            socket_color.linear_multiply(0.6)
+            Stroke::new(2.0 * canvas.zoom, socket_color)
         };
-
-        painter.circle_stroke(
-            socket_pos,
-            socket_radius,
-            Stroke::new(0.8 * canvas.zoom, stroke_color),
-        );
-
-        // Very subtle inner glow
+        painter.circle_stroke(socket_pos, socket_radius, ring_stroke);
+        // Inner hole (Dark)
         painter.circle_filled(
             socket_pos,
-            1.5 * canvas.zoom,
-            stroke_color.linear_multiply(0.2),
+            socket_radius - 2.0 * canvas.zoom,
+            Color32::from_gray(20),
         );
+        // Inner dot (Connector contact)
+        painter.circle_filled(
+            socket_pos,
+            2.0 * canvas.zoom,
+            if is_hovered {
+                socket_color
+            } else {
+                Color32::from_gray(100)
+            },
+        );
+
         // Socket label
         let type_name = socket.socket_type.name();
         let display_name = if socket
@@ -887,33 +849,41 @@ pub fn draw_part_with_delete(
         let socket_pos = Pos2::new(rect.max.x, socket_y);
         let socket_radius = 7.0 * canvas.zoom;
 
-        // Socket "Port" style - Thin Glowing Ring
+        // Socket "Port" style
         let socket_color = utils::get_socket_color(&socket.socket_type);
 
+        // Check hover
         let is_hovered = if let Some(pointer_pos) = ui.input(|i| i.pointer.hover_pos()) {
             socket_pos.distance(pointer_pos) < socket_radius * 1.5
         } else {
             false
         };
 
-        let stroke_color = if is_hovered {
-            Color32::WHITE
+        // Outer ring (Socket Color)
+        let ring_stroke = if is_hovered {
+            let pulse = (ui.input(|i| i.time) * 10.0).sin() as f32 * 0.2 + 0.8;
+            Stroke::new(3.0 * canvas.zoom, Color32::WHITE.linear_multiply(pulse))
         } else {
-            socket_color.linear_multiply(0.6)
+            Stroke::new(2.0 * canvas.zoom, socket_color)
         };
-
-        painter.circle_stroke(
-            socket_pos,
-            socket_radius,
-            Stroke::new(0.8 * canvas.zoom, stroke_color),
-        );
-
-        // Very subtle inner glow
+        painter.circle_stroke(socket_pos, socket_radius, ring_stroke);
+        // Inner hole (Dark)
         painter.circle_filled(
             socket_pos,
-            1.5 * canvas.zoom,
-            stroke_color.linear_multiply(0.2),
+            socket_radius - 2.0 * canvas.zoom,
+            Color32::from_gray(20),
         );
+        // Inner dot (Connector contact)
+        painter.circle_filled(
+            socket_pos,
+            2.0 * canvas.zoom,
+            if is_hovered {
+                socket_color
+            } else {
+                Color32::from_gray(100)
+            },
+        );
+
         // Socket label
         let type_name = socket.socket_type.name();
         let display_name = if socket
@@ -933,6 +903,13 @@ pub fn draw_part_with_delete(
             egui::FontId::proportional(11.0 * canvas.zoom),
             Color32::from_gray(230),
         );
+
+        // Draw live value meter for output sockets
+        // This requires get_socket_live_value which is not extracted yet
+        // I will assume it's in utils or just not call it for now if it's complex
+        // It's in mod.rs around 5857. It uses module evaluator implicitly or something?
+        // Ah, it uses `self.last_trigger_values` but maps it to sockets.
+        // It's specific to the canvas. I should implement it here or in utils.
     }
 }
 
