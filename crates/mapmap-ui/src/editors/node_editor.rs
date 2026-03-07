@@ -125,6 +125,7 @@ impl NodeEditor {
                         to_node: *id,
                         to_socket: input.name.clone(),
                     });
+<<<<<<< HEAD
                     // Mark socket as connected
                     if let Some(node) = self.nodes.get_mut(id) {
                         if let Some(socket) = node.inputs.iter_mut().find(|s| s.name == input.name)
@@ -132,6 +133,31 @@ impl NodeEditor {
                             socket.connected = true;
                         }
                     }
+=======
+                }
+            }
+        }
+        self.next_id = max_id + 1;
+
+        // Update socket connection status
+        for connection in &self.connections {
+            if let Some(node) = self.nodes.get_mut(&connection.to_node) {
+                if let Some(socket) = node
+                    .inputs
+                    .iter_mut()
+                    .find(|s| s.name == connection.to_socket)
+                {
+                    socket.connected = true;
+                }
+            }
+            if let Some(node) = self.nodes.get_mut(&connection.from_node) {
+                if let Some(socket) = node
+                    .outputs
+                    .iter_mut()
+                    .find(|s| s.name == connection.from_socket)
+                {
+                    socket.connected = true;
+>>>>>>> remotes/origin/jules/bolt-optimize-history-vecdeque-15195946004347935531
                 }
             }
         }

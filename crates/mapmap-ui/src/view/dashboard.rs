@@ -208,18 +208,78 @@ impl Dashboard {
                             looping,
                         )));
                     }
+<<<<<<< HEAD
+=======
+
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        let mut looping = self.loop_mode == LoopMode::Loop;
+                        if ui
+                            .checkbox(&mut looping, locale.t("dashboard-loop"))
+                            .changed()
+                        {
+                            let new_mode = if looping {
+                                LoopMode::Loop
+                            } else {
+                                LoopMode::PlayOnce
+                            };
+                            self.loop_mode = new_mode;
+                            action = Some(DashboardAction::SendCommand(
+                                PlaybackCommand::SetLoopMode(new_mode),
+                            ));
+                        }
+                    });
+>>>>>>> remotes/origin/jules/bolt-optimize-history-vecdeque-15195946004347935531
                 });
             });
         });
 
         ui.add_space(8.0);
 
+<<<<<<< HEAD
         // Audio controls
         ui.group(|ui| {
             ui.label(locale.t("dashboard-audio-section"));
             if ui.button(locale.t("dashboard-open-audio-panel")).clicked() {
                 action = Some(DashboardAction::ToggleAudioPanel);
             }
+=======
+            // Audio controls
+            ui.group(|ui| {
+                ui.label(locale.t("dashboard-audio-section"));
+
+                // Audio level visualization
+                if let Some(analysis) = &self.audio_analysis {
+                    let meter_rect = ui.available_rect_before_wrap();
+                    let height = 10.0;
+                    let width = meter_rect.width();
+                    let (rect, _) =
+                        ui.allocate_at_least(egui::vec2(width, height), egui::Sense::hover());
+
+                    let rms = analysis.rms_volume.clamp(0.0, 1.0);
+                    let peak = analysis.peak_volume.clamp(0.0, 1.0);
+
+                    ui.painter().rect_filled(rect, 2.0, colors::DARK_GREY);
+
+                    let rms_width = width * rms;
+                    let rms_rect =
+                        egui::Rect::from_min_size(rect.min, egui::vec2(rms_width, height));
+                    ui.painter().rect_filled(rms_rect, 2.0, colors::MINT_ACCENT);
+
+                    let peak_x = rect.min.x + width * peak;
+                    ui.painter().line_segment(
+                        [
+                            egui::pos2(peak_x, rect.min.y),
+                            egui::pos2(peak_x, rect.max.y),
+                        ],
+                        egui::Stroke::new(2.0, colors::WARN_COLOR),
+                    );
+                }
+
+                if ui.button(locale.t("dashboard-open-audio-panel")).clicked() {
+                    action = Some(DashboardAction::ToggleAudioPanel);
+                }
+            });
+>>>>>>> remotes/origin/jules/bolt-optimize-history-vecdeque-15195946004347935531
         });
 
         action
