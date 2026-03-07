@@ -444,6 +444,15 @@ impl WindowManager {
             context.window.request_redraw();
         }
     }
+
+    /// Updates the VSync mode for all managed windows.
+    pub fn update_vsync_mode(&mut self, backend: &WgpuBackend, mode: VSyncMode) {
+        let present_mode = vsync_mode_to_present_mode(mode);
+        for context in self.windows.values_mut() {
+            context.surface_config.present_mode = present_mode;
+            context.surface.configure(&backend.device, &context.surface_config);
+        }
+    }
 }
 
 /// Helper function to load the application icon.

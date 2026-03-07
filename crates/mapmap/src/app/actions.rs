@@ -29,8 +29,9 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
             // Settings
             UIAction::SelectAudioDevice(device) => {
                 app.ui_state.selected_audio_device = Some(device.clone());
+                app.ui_state.user_config.selected_audio_device = Some(device.clone());
                 app.state.dirty = true;
-                // Note: Re-initializing audio backend with new device is currently missing/complex
+                let _ = app.ui_state.user_config.save();
                 info!(
                     "Selected audio device: {:?}",
                     app.ui_state.selected_audio_device
@@ -101,8 +102,6 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 app.ui_state.show_inspector = true;
                 app.ui_state.show_media_browser = true;
                 app.ui_state.show_module_canvas = false;
-<<<<<<< HEAD
-=======
                 app.ui_state.show_stats = true;
                 app.ui_state.show_toolbar = true;
                 app.ui_state.show_master_controls = true;
@@ -139,12 +138,7 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                         .command_tx
                         .send(mapmap_media::PlaybackCommand::SetLoopMode(m));
                 }
->>>>>>> 8688cbac (docs: Fix legacy folder references to semantic structure)
             }
-            UIAction::Play => app.state.effect_animator_mut().play(),
-            UIAction::Pause => app.state.effect_animator_mut().pause(),
-            UIAction::Stop => app.state.effect_animator_mut().stop(),
-            UIAction::SetSpeed(s) => app.state.effect_animator_mut().set_speed(s),
             UIAction::ToggleMediaManager => {
                 app.media_manager_ui.visible = !app.media_manager_ui.visible;
             }
@@ -268,8 +262,6 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 info!("About dialog requested");
                 app.ui_state.show_about = true;
             }
-<<<<<<< HEAD
-=======
             UIAction::OpenLicense => {
                 app.egui_context.open_url(egui::OpenUrl::new_tab(
                     "https://github.com/MrLongNight/MapFlow/blob/main/LICENSE",
@@ -282,12 +274,6 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
             }
             UIAction::ToggleAudioPanel => {
                 app.ui_state.show_audio = !app.ui_state.show_audio;
-            }
-            UIAction::SelectAudioDevice(device) => {
-                app.ui_state.selected_audio_device = Some(device.clone());
-                // AudioConfig in state doesn't have input_device, it's in UserConfig
-                app.ui_state.user_config.selected_audio_device = Some(device);
-                let _ = app.ui_state.user_config.save();
             }
 
             UIAction::AddPaint => {
@@ -348,7 +334,6 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 app.state.dirty = true;
             }
 
->>>>>>> 8688cbac (docs: Fix legacy folder references to semantic structure)
             #[cfg(feature = "ndi")]
             UIAction::ConnectNdiSource { part_id, source } => {
                 let receiver = app.ndi_receivers.entry(part_id).or_insert_with(|| {
@@ -601,13 +586,10 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                     .set_master_speed(val);
                 app.state.dirty = true;
             }
-<<<<<<< HEAD
-=======
             UIAction::SetMasterBlackout(val) => {
                 app.state.layer_manager_mut().composition.master_blackout = val;
                 app.state.dirty = true;
             }
->>>>>>> 8688cbac (docs: Fix legacy folder references to semantic structure)
             UIAction::SetCompositionName(name) => {
                 app.state.layer_manager_mut().composition.name = name;
                 app.state.dirty = true;
@@ -701,16 +683,10 @@ fn handle_node_action(app: &mut App, action: NodeEditorAction) -> Result<()> {
                         needs_update = true;
                     }
                 }
-                NodeEditorAction::RemoveConnection(_from, _sub_idx, to, to_socket) => {
-                    if let Err(e) = graph.disconnect(to, &to_socket) {
-                        tracing::warn!("Failed to disconnect nodes: {}", e);
-                    } else {
-                        needs_update = true;
-                    }
-                }
                 NodeEditorAction::UpdateGraph(_) => {
                     needs_update = true;
                 }
+                _ => {}
             }
 
             if needs_update {

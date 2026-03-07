@@ -35,34 +35,16 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
             .default_width(300.0)
             .min_width(200.0)
             .show(ctx, |ui_obj| {
-<<<<<<< HEAD
                 egui::ScrollArea::vertical().show(ui_obj, |ui_obj| {
                     // --- Dashboard Section ---
                     egui::CollapsingHeader::new(app.ui_state.i18n.t("dashboard"))
                         .default_open(true)
                         .show(ui_obj, |ui| {
                             if let Some(dash_action) = app.ui_state.dashboard.render_contents(
-=======
-                ui_obj.set_min_width(200.0);
-
-                // Tabs for sidebar
-                ui_obj.horizontal(|ui| {
-                    ui.selectable_value(&mut app.ui_state.active_sidebar_tab, 0, "📁 Media");
-                    ui.selectable_value(&mut app.ui_state.active_sidebar_tab, 1, "📦 Modules");
-                    ui.selectable_value(&mut app.ui_state.active_sidebar_tab, 2, "🎛 Dashboard");
-                });
-                ui_obj.separator();
-
-                egui::ScrollArea::vertical().show(ui_obj, |ui| {
-                    match app.ui_state.active_sidebar_tab {
-                        0 => {
-                            let _ = app.ui_state.media_browser.ui(
->>>>>>> 8688cbac (docs: Fix legacy folder references to semantic structure)
                                 ui,
                                 &app.ui_state.i18n,
                                 app.ui_state.icon_manager.as_ref(),
                             ) {
-<<<<<<< HEAD
                                 match dash_action {
                                     ui::view::dashboard::DashboardAction::SendCommand(cmd) => {
                                         if let Some(_module_id) =
@@ -75,25 +57,6 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
                                                     .actions
                                                     .push(ui::UIAction::MediaCommand(part_id, cmd));
                                             }
-=======
-                                match action {
-                                    ui::ModuleSidebarAction::AddModule => {
-                                        let id =
-                                            std::sync::Arc::make_mut(&mut app.state.module_manager)
-                                                .create_module("New Module".to_string());
-                                        app.ui_state.module_canvas.set_active_module(Some(id));
-                                    }
-                                    ui::ModuleSidebarAction::DeleteModule(id) => {
-                                        std::sync::Arc::make_mut(&mut app.state.module_manager)
-                                            .remove_module(id);
-                                    }
-                                    ui::ModuleSidebarAction::SetColor(id, color) => {
-                                        if let Some(m) =
-                                            std::sync::Arc::make_mut(&mut app.state.module_manager)
-                                                .get_module_mut(id)
-                                        {
-                                            m.color = color;
->>>>>>> 8688cbac (docs: Fix legacy folder references to semantic structure)
                                         }
                                     }
                                     ui::view::dashboard::DashboardAction::ToggleAudioPanel => {
@@ -143,7 +106,6 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
                                     }
                                 }
                             }
-<<<<<<< HEAD
                         });
                     ui_obj.separator();
 
@@ -159,44 +121,6 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
                                 );
                             } else {
                                 ui.label(app.ui_state.i18n.t("media-sidebar-placeholder"));
-=======
-                        }
-                        2 => {
-                            // Dashboard in Sidebar
-                            if let Some(action) = app.ui_state.dashboard.ui_embedded(
-                                ui,
-                                &app.ui_state.i18n,
-                                app.ui_state.icon_manager.as_ref(),
-                            ) {
-                                match action {
-                                    ui::DashboardAction::SendCommand(cmd) => match cmd {
-                                        mapmap_media::PlaybackCommand::Play => {
-                                            app.ui_state.actions.push(ui::UIAction::Play)
-                                        }
-                                        mapmap_media::PlaybackCommand::Pause => {
-                                            app.ui_state.actions.push(ui::UIAction::Pause)
-                                        }
-                                        mapmap_media::PlaybackCommand::Stop => {
-                                            app.ui_state.actions.push(ui::UIAction::Stop)
-                                        }
-                                        mapmap_media::PlaybackCommand::SetSpeed(s) => {
-                                            app.ui_state.actions.push(ui::UIAction::SetSpeed(s))
-                                        }
-                                        mapmap_media::PlaybackCommand::SetLoopMode(m) => {
-                                            app.ui_state.actions.push(ui::UIAction::SetLoopMode(m))
-                                        }
-                                        _ => {}
-                                    },
-                                    ui::DashboardAction::AudioDeviceChanged(device) => {
-                                        app.ui_state
-                                            .actions
-                                            .push(ui::UIAction::SelectAudioDevice(device));
-                                    }
-                                    ui::DashboardAction::ToggleAudioPanel => {
-                                        app.ui_state.actions.push(ui::UIAction::ToggleAudioPanel);
-                                    }
-                                }
->>>>>>> 8688cbac (docs: Fix legacy folder references to semantic structure)
                             }
                         });
                 });
@@ -418,7 +342,6 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
         },
     );
 
-<<<<<<< HEAD
     crate::ui::panels::mapping::show(
         ctx,
         crate::ui::panels::mapping::MappingContext {
@@ -426,46 +349,6 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
             state: &mut app.state,
         },
     );
-=======
-    // Dashboard (Floating window fallback if sidebar is hidden)
-    if !app.ui_state.show_left_sidebar && app.ui_state.dashboard.visible {
-        if let Some(action) =
-            app.ui_state
-                .dashboard
-                .ui(ctx, &app.ui_state.i18n, app.ui_state.icon_manager.as_ref())
-        {
-            // ... handling ...
-            match action {
-                ui::DashboardAction::SendCommand(cmd) => match cmd {
-                    mapmap_media::PlaybackCommand::Play => {
-                        app.ui_state.actions.push(ui::UIAction::Play)
-                    }
-                    mapmap_media::PlaybackCommand::Pause => {
-                        app.ui_state.actions.push(ui::UIAction::Pause)
-                    }
-                    mapmap_media::PlaybackCommand::Stop => {
-                        app.ui_state.actions.push(ui::UIAction::Stop)
-                    }
-                    mapmap_media::PlaybackCommand::SetSpeed(s) => {
-                        app.ui_state.actions.push(ui::UIAction::SetSpeed(s))
-                    }
-                    mapmap_media::PlaybackCommand::SetLoopMode(m) => {
-                        app.ui_state.actions.push(ui::UIAction::SetLoopMode(m))
-                    }
-                    _ => {}
-                },
-                ui::DashboardAction::AudioDeviceChanged(device) => {
-                    app.ui_state
-                        .actions
-                        .push(ui::UIAction::SelectAudioDevice(device));
-                }
-                ui::DashboardAction::ToggleAudioPanel => {
-                    app.ui_state.actions.push(ui::UIAction::ToggleAudioPanel);
-                }
-            }
-        }
-    }
->>>>>>> 8688cbac (docs: Fix legacy folder references to semantic structure)
 
     crate::ui::panels::paint::show(
         ctx,
@@ -499,7 +382,6 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
     app.ui_state.selected_layer_id = selected_layer;
     app.ui_state.actions.extend(actions);
 
-<<<<<<< HEAD
     if app.ui_state.show_master_controls {
         let mut layer_manager = std::sync::Arc::make_mut(&mut app.state.layer_manager).clone();
         app.ui_state.render_master_controls(ctx, &mut layer_manager);
@@ -507,75 +389,6 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
             *std::sync::Arc::make_mut(&mut app.state.layer_manager) = layer_manager;
             app.state.dirty = true;
         }
-=======
-    // Mapping Panel (Legacy)
-    if app.ui_state.show_mappings {
-        app.ui_state.mapping_panel.show(
-            ctx,
-            app.state.mapping_manager_mut(),
-            &mut app.ui_state.actions,
-            &app.ui_state.i18n,
-            app.ui_state.icon_manager.as_ref(),
-        );
-    }
-
-    // Output Panel (Legacy)
-    if app.ui_state.show_outputs {
-        app.ui_state.output_panel.show(
-            ctx,
-            &app.ui_state.i18n,
-            app.state.output_manager_mut(),
-            &app.ui_state.monitors,
-            app.ui_state.icon_manager.as_ref(),
-        );
-        // Process internal actions from output panel
-        let panel_actions = app.ui_state.output_panel.take_actions();
-        app.ui_state.actions.extend(panel_actions);
-    }
-
-    // Paint Panel (Legacy)
-    if app.ui_state.paint_panel.visible {
-        app.ui_state.paint_panel.show(
-            ctx,
-            &app.ui_state.i18n,
-            app.state.paint_manager_mut(),
-            app.ui_state.icon_manager.as_ref(),
-        );
-        if let Some(action) = app.ui_state.paint_panel.take_action() {
-            match action {
-                ui::PaintPanelAction::AddPaint => app.ui_state.actions.push(ui::UIAction::AddPaint),
-                ui::PaintPanelAction::RemovePaint(id) => {
-                    app.ui_state.actions.push(ui::UIAction::RemovePaint(id))
-                }
-            }
-        }
-    }
-
-    // Oscillator Panel (Legacy)
-    if app.ui_state.oscillator_panel.visible {
-        app.ui_state.oscillator_panel.render(
-            ctx,
-            &app.ui_state.i18n,
-            &mut app.state.oscillator_config,
-            app.ui_state.icon_manager.as_ref(),
-        );
-    }
-
-    // Master controls (Legacy window)
-    if app.ui_state.show_master_controls {
-        app.ui_state
-            .render_master_controls(ctx, app.state.layer_manager_mut());
-    }
-
-    // Transform Panel - Show as window (if not in inspector)
-    if app.ui_state.show_transforms && !app.ui_state.show_inspector {
-        app.ui_state.transform_panel.render(ctx, &app.ui_state.i18n);
-    }
-
-    // Edge Blend Panel - Show as window (if not in inspector)
-    if !app.ui_state.show_inspector {
-        app.ui_state.edge_blend_panel.show(ctx, &app.ui_state.i18n);
->>>>>>> 8688cbac (docs: Fix legacy folder references to semantic structure)
     }
 
     if app.ui_state.show_shader_graph {

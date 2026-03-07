@@ -209,8 +209,6 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
         };
     }
 
-<<<<<<< HEAD
-=======
     // --- Sync UI State with App Data ---
     app.ui_state.current_fps = app.current_fps;
     app.ui_state.current_frame_time_ms = app.current_frame_time_ms;
@@ -256,7 +254,6 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
         .dashboard
         .set_audio_devices(app.audio_devices.clone());
 
->>>>>>> 8688cbac (docs: Fix legacy folder references to semantic structure)
     // Check auto-save (every 30s)
     if app.last_autosave.elapsed().as_secs() >= 30 {
         if app.state.dirty {

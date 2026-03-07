@@ -210,6 +210,14 @@ pub enum UIAction {
     SetLanguage(String),
     /// Set audio meter style
     SetMeterStyle(crate::config::AudioMeterStyle),
+    /// Set target FPS
+    SetTargetFps(f32),
+    /// Set VSync mode
+    SetVsyncMode(crate::core::config::VSyncMode),
+    /// Set preferred GPU
+    SetPreferredGpu(Option<String>),
+    /// Set master blackout
+    SetMasterBlackout(bool),
     /// Connect to Philips Hue bridge
     ConnectHue,
     /// Disconnect from Philips Hue bridge
@@ -1016,108 +1024,6 @@ impl AppUI {
                     self.actions.push(UIAction::NodeAction(action));
                 }
             });
-<<<<<<< HEAD
         self.show_shader_graph = open;
-=======
-        self.show_shader_graph = is_open;
-    }
-
-    /// Render Application Settings Window
-    pub fn render_settings(&mut self, ctx: &egui::Context) {
-        if !self.show_settings {
-            return;
-        }
-
-        let mut is_open = self.show_settings;
-        let mut should_close = false;
-        egui::Window::new(self.i18n.t("menu-settings"))
-            .open(&mut is_open)
-            .default_size([500.0, 400.0])
-            .show(ctx, |ui| {
-                ui.heading(self.i18n.t("menu-settings"));
-                ui.separator();
-
-                egui::Grid::new("settings_grid")
-                    .num_columns(2)
-                    .spacing([20.0, 10.0])
-                    .show(ui, |ui| {
-                        // Language
-                        ui.label("Language:");
-                        let mut lang = self.user_config.language.clone();
-                        egui::ComboBox::from_id_salt("lang_select")
-                            .selected_text(if lang == "de" { "Deutsch" } else { "English" })
-                            .show_ui(ui, |ui| {
-                                if ui.selectable_label(lang == "en", "English").clicked() {
-                                    lang = "en".to_string();
-                                }
-                                if ui.selectable_label(lang == "de", "Deutsch").clicked() {
-                                    lang = "de".to_string();
-                                }
-                            });
-                        if lang != self.user_config.language {
-                            self.actions.push(UIAction::SetLanguage(lang));
-                        }
-                        ui.end_row();
-
-                        // VSync
-                        ui.label("VSync Mode:");
-                        let mut vsync = self.user_config.vsync_mode;
-                        egui::ComboBox::from_id_salt("vsync_select")
-                            .selected_text(vsync.to_string())
-                            .show_ui(ui, |ui| {
-                                ui.selectable_value(
-                                    &mut vsync,
-                                    crate::core::config::VSyncMode::Auto,
-                                    "Auto",
-                                );
-                                ui.selectable_value(
-                                    &mut vsync,
-                                    crate::core::config::VSyncMode::On,
-                                    "On",
-                                );
-                                ui.selectable_value(
-                                    &mut vsync,
-                                    crate::core::config::VSyncMode::Off,
-                                    "Off",
-                                );
-                            });
-                        if vsync != self.user_config.vsync_mode {
-                            self.user_config.vsync_mode = vsync;
-                            let _ = self.user_config.save();
-                        }
-                        ui.end_row();
-
-                        // Audio Meter Style
-                        ui.label("Audio Meter:");
-                        let mut meter = self.user_config.meter_style;
-                        egui::ComboBox::from_id_salt("meter_select")
-                            .selected_text(meter.to_string())
-                            .show_ui(ui, |ui| {
-                                ui.selectable_value(
-                                    &mut meter,
-                                    crate::core::config::AudioMeterStyle::Retro,
-                                    "Retro",
-                                );
-                                ui.selectable_value(
-                                    &mut meter,
-                                    crate::core::config::AudioMeterStyle::Digital,
-                                    "Digital",
-                                );
-                            });
-                        if meter != self.user_config.meter_style {
-                            self.user_config.meter_style = meter;
-                            let _ = self.user_config.save();
-                        }
-                        ui.end_row();
-                    });
-
-                ui.add_space(20.0);
-                if ui.button("Close").clicked() {
-                    should_close = true;
-                }
-            });
-
-        self.show_settings = is_open && !should_close;
->>>>>>> 8688cbac (docs: Fix legacy folder references to semantic structure)
     }
 }

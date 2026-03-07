@@ -1602,15 +1602,7 @@ impl ModuleEvaluator {
                     modifiers_match = false;
                 }
 
-<<<<<<< HEAD
                 push_val_internal(if is_pressed && modifiers_match { 1.0 } else { 0.0 }, output, false);
-=======
-                output.push(if is_pressed && modifiers_match {
-                    1.0
-                } else {
-                    0.0
-                });
->>>>>>> 8688cbac (docs: Fix legacy folder references to semantic structure)
             }
         }
     }
