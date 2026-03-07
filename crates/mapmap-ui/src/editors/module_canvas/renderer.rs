@@ -6,7 +6,7 @@ use super::types::*;
 use super::utils;
 use crate::i18n::LocaleManager;
 use crate::UIAction;
-use egui::{Color32, Pos2, Rect, RichText, Sense, Stroke, Ui, Vec2};
+use egui::{Color32, Pos2, Rect, Sense, Stroke, Ui, Vec2};
 use mapmap_core::module::{ModuleId, ModuleManager, TriggerType};
 
 pub fn show(
@@ -172,20 +172,6 @@ pub fn render_canvas(
     // Draw grid
     draw::draw_grid(canvas, &painter, canvas_rect);
 
-    // Handle Zoom (Mouse Wheel)
-    if response.hovered() {
-        let scroll = ui.input(|i| i.smooth_scroll_delta.y);
-        if scroll != 0.0 {
-            let old_zoom = canvas.zoom;
-            canvas.zoom = (canvas.zoom * (1.0 + scroll * 0.001)).clamp(0.1, 5.0);
-
-            if let Some(mouse_pos) = ui.input(|i| i.pointer.hover_pos()) {
-                let zoom_factor = canvas.zoom / old_zoom;
-                canvas.pan_offset = mouse_pos - (mouse_pos - canvas.pan_offset) * zoom_factor;
-            }
-        }
-    }
-
     let zoom = canvas.zoom;
     let pan_offset = canvas.pan_offset;
     let canvas_min = canvas_rect.min.to_vec2();
@@ -199,55 +185,6 @@ pub fn render_canvas(
             module.connections.remove(idx);
         }
     }
-
-    // --- ZOOM UI (Top Right) ---
-    let zoom_ui_rect = Rect::from_min_size(
-        Pos2::new(canvas_rect.max.x - 160.0, canvas_rect.min.y + 40.0),
-        Vec2::new(150.0, 35.0),
-    );
-
-    // Draw background for zoom UI
-    painter.rect_filled(
-        zoom_ui_rect.expand(4.0),
-        4.0,
-        Color32::from_rgba_unmultiplied(20, 20, 30, 220),
-    );
-    painter.rect_stroke(
-        zoom_ui_rect.expand(4.0),
-        4.0,
-        Stroke::new(1.0, Color32::from_gray(100)),
-        egui::StrokeKind::Middle,
-    );
-
-    ui.scope_builder(egui::UiBuilder::new().max_rect(zoom_ui_rect), |ui| {
-        ui.horizontal(|ui| {
-            ui.spacing_mut().item_spacing.x = 4.0;
-            if ui
-                .button(RichText::new("-").strong())
-                .on_hover_text("Zoom Out")
-                .clicked()
-            {
-                canvas.zoom = (canvas.zoom - 0.1).max(0.1);
-            }
-            ui.add(
-                egui::Slider::new(&mut canvas.zoom, 0.1..=5.0)
-                    .show_value(false)
-                    .trailing_fill(true),
-            );
-            if ui
-                .button(RichText::new("+").strong())
-                .on_hover_text("Zoom In")
-                .clicked()
-            {
-                canvas.zoom = (canvas.zoom + 0.1).min(5.0);
-            }
-            ui.label(
-                RichText::new(format!("{:.0}%", canvas.zoom * 100.0))
-                    .size(11.0)
-                    .color(Color32::WHITE),
-            );
-        });
-    });
 
     // 1. Collect ALL socket positions first
     let mut all_sockets = Vec::new();
@@ -352,9 +289,8 @@ pub fn render_canvas(
         // 2.1 Handle Socket Interaction (Priority)
         for socket_info in &all_sockets {
             if socket_info.part_id == part_id {
-                let interact_radius = 18.0 * canvas.zoom; // Smaller radius to avoid overlap
                 let socket_rect =
-                    Rect::from_center_size(socket_info.position, Vec2::splat(interact_radius));
+                    Rect::from_center_size(socket_info.position, Vec2::splat(24.0 * canvas.zoom));
                 let socket_resp = ui.interact(
                     socket_rect,
                     egui::Id::new((part_id, socket_info.is_output, socket_info.socket_idx)),
@@ -450,42 +386,45 @@ pub fn render_canvas(
             canvas.creating_connection.take()
         {
             if let Some(pointer_pos) = ui.input(|i| i.pointer.hover_pos()) {
-                let mut best_target = None;
-                let mut min_dist = 20.0 * canvas.zoom; // Very tight radius
+                let mut closest_socket = None;
+                let mut min_dist = 30.0 * canvas.zoom;
 
                 for target in &all_sockets {
                     let dist = target.position.distance(pointer_pos);
-                    // CRITICAL: Type must match EXACTLY
                     if dist < min_dist
                         && target.part_id != from_part
                         && target.is_output != is_output
                         && target.socket_type == from_type
                     {
                         min_dist = dist;
-                        best_target = Some(target.clone());
+                        closest_socket = Some(target);
                     }
                 }
 
-                if let Some(target) = best_target {
+                if let Some(target) = closest_socket {
                     let (out_part, out_idx, in_part, in_idx) = if is_output {
                         (from_part, from_idx, target.part_id, target.socket_idx)
                     } else {
                         (target.part_id, target.socket_idx, from_part, from_idx)
                     };
 
-                    // Final safety check: no self-connection and NO DUPLICATES
-                    if out_part != in_part {
-                        let exists = module.connections.iter().any(|c| {
-                            c.from_part == out_part
-                                && c.from_socket == out_idx
-                                && c.to_part == in_part
-                                && c.to_socket == in_idx
-                        });
+                    let exists = module.connections.iter().any(|c| {
+                        c.from_part == out_part
+                            && c.from_socket == out_idx
+                            && c.to_part == in_part
+                            && c.to_socket == in_idx
+                    });
 
-                        if !exists {
-                            module.add_connection(out_part, out_idx, in_part, in_idx);
-                            ui.ctx().request_repaint();
-                        }
+                    if !exists {
+                        module
+                            .connections
+                            .push(mapmap_core::module::ModuleConnection {
+                                from_part: out_part,
+                                from_socket: out_idx,
+                                to_part: in_part,
+                                to_socket: in_idx,
+                            });
+                        ui.ctx().request_repaint();
                     }
                 }
             }
@@ -649,54 +588,4 @@ pub fn render_canvas(
             }
         }
     }
-
-    // --- ZOOM UI (Top Right) ---
-    // Rendered last to be on top
-    let zoom_ui_rect = Rect::from_min_size(
-        Pos2::new(canvas_rect.max.x - 160.0, canvas_rect.min.y + 40.0),
-        Vec2::new(150.0, 35.0),
-    );
-
-    // Draw background for zoom UI
-    painter.rect_filled(
-        zoom_ui_rect.expand(4.0),
-        4.0,
-        Color32::from_rgba_unmultiplied(20, 20, 30, 220),
-    );
-    painter.rect_stroke(
-        zoom_ui_rect.expand(4.0),
-        4.0,
-        Stroke::new(1.0, Color32::from_gray(100)),
-        egui::StrokeKind::Middle,
-    );
-
-    ui.scope_builder(egui::UiBuilder::new().max_rect(zoom_ui_rect), |ui| {
-        ui.horizontal(|ui| {
-            ui.spacing_mut().item_spacing.x = 4.0;
-            if ui
-                .button(RichText::new("-").strong())
-                .on_hover_text("Zoom Out")
-                .clicked()
-            {
-                canvas.zoom = (canvas.zoom - 0.1).max(0.1);
-            }
-            ui.add(
-                egui::Slider::new(&mut canvas.zoom, 0.1..=5.0)
-                    .show_value(false)
-                    .trailing_fill(true),
-            );
-            if ui
-                .button(RichText::new("+").strong())
-                .on_hover_text("Zoom In")
-                .clicked()
-            {
-                canvas.zoom = (canvas.zoom + 0.1).min(5.0);
-            }
-            ui.label(
-                RichText::new(format!("{:.0}%", canvas.zoom * 100.0))
-                    .size(11.0)
-                    .color(Color32::WHITE),
-            );
-        });
-    });
 }

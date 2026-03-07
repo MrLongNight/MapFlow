@@ -347,7 +347,4 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
         .assignment_panel
         .show(ctx, &app.state.assignment_manager);
     app.ui_state.shortcut_editor.show(ctx, &app.ui_state.i18n);
-
-    // --- Toast Notifications (Overlay) ---
-    app.ui_state.render_toasts(ctx);
 }
