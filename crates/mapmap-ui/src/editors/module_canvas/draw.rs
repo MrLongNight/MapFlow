@@ -824,7 +824,11 @@ pub fn draw_part_with_delete(
 
         // Socket label
         let type_name = socket.socket_type.name();
-        let display_name = if socket.name.to_lowercase().contains(&type_name.to_lowercase()) {
+        let display_name = if socket
+            .name
+            .to_lowercase()
+            .contains(&type_name.to_lowercase())
+        {
             socket.name.clone()
         } else {
             format!("{} ({})", socket.name, type_name)
@@ -882,7 +886,11 @@ pub fn draw_part_with_delete(
 
         // Socket label
         let type_name = socket.socket_type.name();
-        let display_name = if socket.name.to_lowercase().contains(&type_name.to_lowercase()) {
+        let display_name = if socket
+            .name
+            .to_lowercase()
+            .contains(&type_name.to_lowercase())
+        {
             socket.name.clone()
         } else {
             format!("{} ({})", socket.name, type_name)

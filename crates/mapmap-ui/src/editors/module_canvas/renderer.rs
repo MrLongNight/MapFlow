@@ -203,7 +203,7 @@ pub fn render_canvas(
     // --- ZOOM UI ---
     let zoom_ui_rect = Rect::from_min_size(
         Pos2::new(canvas_rect.max.x - 120.0, canvas_rect.max.y - 140.0),
-        Vec2::new(100.0, 30.0)
+        Vec2::new(100.0, 30.0),
     );
     ui.scope_builder(egui::UiBuilder::new().max_rect(zoom_ui_rect), |ui| {
         ui.horizontal(|ui| {
@@ -413,7 +413,9 @@ pub fn render_canvas(
 
     // 3. Global Connection Release
     if ui.input(|i| i.pointer.any_released()) {
-        if let Some((from_part, from_idx, is_output, from_type, _)) = canvas.creating_connection.take() {
+        if let Some((from_part, from_idx, is_output, from_type, _)) =
+            canvas.creating_connection.take()
+        {
             if let Some(pointer_pos) = ui.input(|i| i.pointer.hover_pos()) {
                 let mut best_target = None;
                 let mut min_dist = 25.0 * canvas.zoom; // Slightly tighter radius
@@ -546,8 +548,17 @@ pub fn render_canvas(
                 canvas.context_menu_connection = None;
             } else {
                 let painter = ui.painter();
-                painter.rect_filled(menu_rect, 4.0, Color32::from_rgba_unmultiplied(30, 30, 40, 245));
-                painter.rect_stroke(menu_rect, 4.0, Stroke::new(1.0, Color32::from_rgb(200, 80, 80)), egui::StrokeKind::Middle);
+                painter.rect_filled(
+                    menu_rect,
+                    4.0,
+                    Color32::from_rgba_unmultiplied(30, 30, 40, 245),
+                );
+                painter.rect_stroke(
+                    menu_rect,
+                    4.0,
+                    Stroke::new(1.0, Color32::from_rgb(200, 80, 80)),
+                    egui::StrokeKind::Middle,
+                );
 
                 let inner = menu_rect.shrink(8.0);
                 ui.scope_builder(egui::UiBuilder::new().max_rect(inner), |ui| {
