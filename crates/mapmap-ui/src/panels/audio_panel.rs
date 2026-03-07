@@ -177,38 +177,73 @@ impl AudioPanel {
                 ui.add_space(4.0);
 
                 // RMS
-                let (rms_rect, _) = ui.allocate_at_least(egui::vec2(meter_width, meter_height), Sense::hover());
-                ui.painter().rect_filled(rms_rect, egui::CornerRadius::ZERO, colors::DARKER_GREY);
-                ui.painter().rect_stroke(rms_rect, egui::CornerRadius::ZERO, Stroke::new(1.0, colors::STROKE_GREY), egui::StrokeKind::Middle);
+                let (rms_rect, _) =
+                    ui.allocate_at_least(egui::vec2(meter_width, meter_height), Sense::hover());
+                ui.painter()
+                    .rect_filled(rms_rect, egui::CornerRadius::ZERO, colors::DARKER_GREY);
+                ui.painter().rect_stroke(
+                    rms_rect,
+                    egui::CornerRadius::ZERO,
+                    Stroke::new(1.0, colors::STROKE_GREY),
+                    egui::StrokeKind::Middle,
+                );
 
                 let rms_width = (analysis.rms_volume * meter_width).min(meter_width);
                 if rms_width > 0.0 {
-                    let rms_fill_rect = Rect::from_min_max(rms_rect.min, egui::pos2(rms_rect.min.x + rms_width, rms_rect.max.y));
-                    ui.painter().rect_filled(rms_fill_rect, egui::CornerRadius::ZERO, colors::CYAN_ACCENT.linear_multiply(0.6));
+                    let rms_fill_rect = Rect::from_min_max(
+                        rms_rect.min,
+                        egui::pos2(rms_rect.min.x + rms_width, rms_rect.max.y),
+                    );
+                    ui.painter().rect_filled(
+                        rms_fill_rect,
+                        egui::CornerRadius::ZERO,
+                        colors::CYAN_ACCENT.linear_multiply(0.6),
+                    );
                 }
 
                 // Peak
-                let (peak_rect, _) = ui.allocate_at_least(egui::vec2(meter_width, meter_height), Sense::hover());
-                ui.painter().rect_filled(peak_rect, egui::CornerRadius::ZERO, colors::DARKER_GREY);
-                ui.painter().rect_stroke(peak_rect, egui::CornerRadius::ZERO, Stroke::new(1.0, colors::STROKE_GREY), egui::StrokeKind::Middle);
+                let (peak_rect, _) =
+                    ui.allocate_at_least(egui::vec2(meter_width, meter_height), Sense::hover());
+                ui.painter()
+                    .rect_filled(peak_rect, egui::CornerRadius::ZERO, colors::DARKER_GREY);
+                ui.painter().rect_stroke(
+                    peak_rect,
+                    egui::CornerRadius::ZERO,
+                    Stroke::new(1.0, colors::STROKE_GREY),
+                    egui::StrokeKind::Middle,
+                );
 
                 let peak_width = (analysis.peak_volume * meter_width).min(meter_width);
                 if peak_width > 0.0 {
-                    let peak_fill_rect = Rect::from_min_max(peak_rect.min, egui::pos2(peak_rect.min.x + peak_width, peak_rect.max.y));
-                    ui.painter().rect_filled(peak_fill_rect, egui::CornerRadius::ZERO, colors::WARN_COLOR.linear_multiply(0.8));
+                    let peak_fill_rect = Rect::from_min_max(
+                        peak_rect.min,
+                        egui::pos2(peak_rect.min.x + peak_width, peak_rect.max.y),
+                    );
+                    ui.painter().rect_filled(
+                        peak_fill_rect,
+                        egui::CornerRadius::ZERO,
+                        colors::WARN_COLOR.linear_multiply(0.8),
+                    );
                 }
             });
 
             // Beat Indicator
             let beat_size = 24.0;
-            let (beat_rect, _) = ui.allocate_exact_size(egui::vec2(beat_size, beat_size), Sense::hover());
+            let (beat_rect, _) =
+                ui.allocate_exact_size(egui::vec2(beat_size, beat_size), Sense::hover());
             let beat_color = if analysis.beat_detected {
                 colors::MINT_ACCENT
             } else {
                 colors::DARKER_GREY
             };
-            ui.painter().rect_filled(beat_rect, egui::CornerRadius::ZERO, beat_color);
-            ui.painter().rect_stroke(beat_rect, egui::CornerRadius::ZERO, Stroke::new(1.0, colors::STROKE_GREY), egui::StrokeKind::Middle);
+            ui.painter()
+                .rect_filled(beat_rect, egui::CornerRadius::ZERO, beat_color);
+            ui.painter().rect_stroke(
+                beat_rect,
+                egui::CornerRadius::ZERO,
+                Stroke::new(1.0, colors::STROKE_GREY),
+                egui::StrokeKind::Middle,
+            );
         });
 
         ui.add_space(4.0);

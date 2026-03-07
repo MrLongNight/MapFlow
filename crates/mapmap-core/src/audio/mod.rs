@@ -260,11 +260,11 @@ impl AudioAnalyzer {
         // V1: SubBass, Bass, LowMid, Mid, HighMid, Presence, Brilliance
         let b = v2_analysis.band_energies;
         let mapped_bands = [
-            b[0] * self.config.low_band_gain, // SubBass -> SubBass
-            b[1] * self.config.low_band_gain, // Bass -> Bass
-            b[2] * self.config.low_band_gain, // LowMid -> LowMid
-            b[3] * self.config.mid_band_gain, // Mid -> Mid
-            b[4] * self.config.mid_band_gain, // HighMid -> HighMid
+            b[0] * self.config.low_band_gain,  // SubBass -> SubBass
+            b[1] * self.config.low_band_gain,  // Bass -> Bass
+            b[2] * self.config.low_band_gain,  // LowMid -> LowMid
+            b[3] * self.config.mid_band_gain,  // Mid -> Mid
+            b[4] * self.config.mid_band_gain,  // HighMid -> HighMid
             b[6] * self.config.high_band_gain, // Presence -> Presence (skip UpperMid)
             b[7] * self.config.high_band_gain, // Brilliance -> Brilliance (skip Air)
         ];
