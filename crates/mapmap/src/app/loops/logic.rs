@@ -66,11 +66,23 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
         // Process MIDI events
         for event in midi_events {
             match event {
-                mapmap_control::midi::MidiMessage::NoteOn { channel, note, velocity } => {
-                    shared_media.active_midi_events.push((channel, note, velocity));
+                mapmap_control::midi::MidiMessage::NoteOn {
+                    channel,
+                    note,
+                    velocity,
+                } => {
+                    shared_media
+                        .active_midi_events
+                        .push((channel, note, velocity));
                 }
-                mapmap_control::midi::MidiMessage::ControlChange { channel, controller, value } => {
-                    shared_media.active_midi_cc.insert((channel, controller), value);
+                mapmap_control::midi::MidiMessage::ControlChange {
+                    channel,
+                    controller,
+                    value,
+                } => {
+                    shared_media
+                        .active_midi_cc
+                        .insert((channel, controller), value);
                 }
                 _ => {}
             }
@@ -79,7 +91,9 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
         // Process OSC events
         for packet in osc_events {
             if let rosc::OscPacket::Message(msg) = packet {
-                let floats: Vec<f32> = msg.args.into_iter()
+                let floats: Vec<f32> = msg
+                    .args
+                    .into_iter()
                     .filter_map(|arg| match arg {
                         rosc::OscType::Float(f) => Some(f),
                         rosc::OscType::Double(d) => Some(d as f32),

@@ -189,7 +189,7 @@ where
             let end_pos = to_screen(to_socket_world);
 
             // Draw Plugs - plugs should point INTO the nodes
-            let plug_size = 32.0 * canvas.zoom;
+            let plug_size = 20.0 * canvas.zoom;
 
             let icon_name = match socket_type {
                 mapmap_core::module::ModuleSocketType::Trigger => "audio-jack1.1.svg",
@@ -824,7 +824,11 @@ pub fn draw_part_with_delete(
 
         // Socket label
         let type_name = socket.socket_type.name();
-        let display_name = if socket.name.to_lowercase().contains(&type_name.to_lowercase()) {
+        let display_name = if socket
+            .name
+            .to_lowercase()
+            .contains(&type_name.to_lowercase())
+        {
             socket.name.clone()
         } else {
             format!("{} ({})", socket.name, type_name)
@@ -882,7 +886,11 @@ pub fn draw_part_with_delete(
 
         // Socket label
         let type_name = socket.socket_type.name();
-        let display_name = if socket.name.to_lowercase().contains(&type_name.to_lowercase()) {
+        let display_name = if socket
+            .name
+            .to_lowercase()
+            .contains(&type_name.to_lowercase())
+        {
             socket.name.clone()
         } else {
             format!("{} ({})", socket.name, type_name)
