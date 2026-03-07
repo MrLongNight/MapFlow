@@ -222,7 +222,7 @@ impl NdiReceiver {
                 self.frame_count += 1;
 
                 let frame = VideoFrame {
-                    data: FrameData::Cpu(data),
+                    data: FrameData::Cpu(Arc::new(data)),
                     format,
                     timestamp: Duration::from_nanos(video_frame.timestamp.max(0) as u64),
                     metadata: Default::default(),

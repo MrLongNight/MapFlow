@@ -52,3 +52,7 @@
 ## 2026-06-12 - Prevent Vec allocation in UI Hot Path
 **Learning:** In UI loops run every frame, allocating an intermediate `Vec` using `.collect()` just to pass a filtered slice to rendering functions creates continuous heap churn. In `crates/mapmap/src/media_manager_ui.rs`, filtering items created a new `Vec` 60 times a second.
 **Action:** Use dynamic trait objects (`&mut dyn Iterator`) to represent variable iterator types (like `FilterMap` vs `Values`), avoiding `Box` and avoiding `collect()` entirely when passing data to UI render functions.
+
+## 2024-03-07 - Avoid O(N) copies of CPU FrameData
+**Learning:** `FrameData::Cpu(Vec<u8>)` resulted in deep copies of potentially large image/video data every time a frame was cloned (e.g. when passed to rendering pipeline or orchestration). This caused significant performance overhead and unnecessary memory allocation.
+**Action:** Use `Arc<Vec<u8>>` instead for CPU frame data so that clones only increment the reference count, making it an O(1) operation.
