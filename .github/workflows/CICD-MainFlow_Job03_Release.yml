@@ -99,14 +99,14 @@ jobs:
           Add-Content -Path $env:GITHUB_ENV -Value "FFMPEG_LIB_DIR=$UnixInstalledDir/lib"
           Add-Content -Path $env:GITHUB_ENV -Value "FFMPEG_VERSION=7.1"
           Add-Content -Path $env:GITHUB_ENV -Value "PKG_CONFIG_PATH=$PkgConfigPath"
-          
+
           # Add to PATH for both CMD and PowerShell
           Add-Content -Path $env:GITHUB_PATH -Value "$BinPath"
-          
+
           # Bindgen arguments to ensure correct headers and target
           $ClangArgs = "-I`"$IncludePath`" --target=x86_64-pc-windows-msvc"
           Add-Content -Path $env:GITHUB_ENV -Value "BINDGEN_EXTRA_CLANG_ARGS=$ClangArgs"
-          
+
           # MSVC Include path fallback
           Add-Content -Path $env:GITHUB_ENV -Value "INCLUDE=$IncludePath"
 

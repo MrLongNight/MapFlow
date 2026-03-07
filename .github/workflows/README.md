@@ -4,18 +4,22 @@ This directory contains automated workflows for the MapFlow project, implementin
 
 ## 🤖 Workflows Overview
 
-### 1. CICD-DevFlow: Job01 Validation (`CICD-DevFlow_Job01_Validation.yml`) ⚡ OPTIMIZED
+### 1. CI/CD Pipeline (`CI-01_build-and-test.yml`) ⚡ OPTIMIZED
 
 **Purpose:** Comprehensive continuous integration and deployment pipeline
 
 **Triggers:**
 
-- Push to `main` branch
-- Pull requests to `main`
+- Push to `main` branch (with path filters)
+- Pull requests to `main` (with path filters)
 - Manual dispatch
 
 > [!TIP]
-> **Optimization:** Parallel jobs reduce runtime by ~30-50%
+> **Optimization:** Path filters + parallel jobs reduce runtime by ~30-50%
+
+**Path Filters (only runs when these change):**
+
+- `crates/**`, `Cargo.toml`, `Cargo.lock`, `scripts/**`, `deny.toml`
 
 **Jobs (PARALLEL execution after pre-checks):**
 
@@ -115,7 +119,7 @@ gh workflow run CI-04_session-trigger.yml -f issue_number=123
    - Still adds tracking comment
    - Jules GitHub App takes over (if installed)
 
-### 5. CICD-DevFlow: Job02 Auto-Merge (`CICD-DevFlow_Job02_AutoMerge.yml`) ✨ Enhanced
+### 5. Jules PR Auto-Merge (`CI-05_pr-automation.yml`) ✨ Enhanced
 
 **Purpose:** Automatically merge Jules PRs when all checks pass, with intelligent error handling
 
@@ -123,7 +127,7 @@ gh workflow run CI-04_session-trigger.yml -f issue_number=123
 
 - Pull request events (opened, synchronize, reopened, labeled)
 - Check suite completion
-- Workflow run completion (CICD-DevFlow: Job01 Validation)
+- Workflow run completion (CI-01)
 - Manual dispatch
 
 **Features:**
@@ -288,7 +292,7 @@ The workflows require the following GitHub permissions:
    - Notifies on issue
 
 **🧪 Phase 3: Automated Testing**
-5. **CI/CD Pipeline (CICD-DevFlow_Job01_Validation):**
+5. **CI/CD Pipeline (CI-01):**
 
 - Triggered automatically on PR
 - Code quality checks (format, lint)
@@ -296,7 +300,7 @@ The workflows require the following GitHub permissions:
 - Security scanning
 
 **✅ Phase 4: Merge Decision**
-6. **Success Path (CICD-DevFlow_Job02_AutoMerge):**
+6. **Success Path (CI-05):**
 
 - All checks pass → automatic merge
 - Success comment added
@@ -429,5 +433,155 @@ For issues with workflows:
 
 ---
 
-**Last Updated:** 2026-03-07 (PR-Check Konfiguration validiert - paths-ignore entfernt)
+## 🔄 Aktuelle CICD-DevFlow Workflows
+
+### CICD-DevFlow_Job01_Validation.yml
+
+**Trigger:**
+
+- Push zu `main` Branch
+- **Pull Requests zu `main` Branch** ✅ (automatisch)
+- Manual Dispatch
+
+**Jobs bei Pull Requests:**
+
+1. **Quality Gate** (Format & Lint)
+   - Formatierung prüfen (`cargo fmt`)
+   - Clippy Linting (`cargo clippy`)
+   - Dependency Sortierung (`cargo sort`)
+
+2. **Security Scan**
+   - Vulnerability Scan (`cargo audit`)
+   - Dependency Review (`cargo deny`)
+
+3. **Build & Test (Linux)**
+   - Release Build mit CI-Features
+   - Integration Tests (`cargo nextest`)
+
+4. **Build & Test (Windows)** - Optional
+   - Nur bei `test-windows` Label oder auf `main`
+   - Audio-only Build
+
+5. **Validation Success** - Final Gate
+   - Sammelt alle Check-Results
+   - Benachrichtigt bei Fehlern mit detaillierter Anleitung
+
+**Status:** ✅ Alle Checks laufen automatisch bei jedem Pull Request
+
+> [!IMPORTANT]
+> **Troubleshooting:** Falls die Checks im GitHub UI nicht als "Expected" erscheinen:
+>
+> 1. Stelle sicher, dass die Workflows im Repository aktiviert sind (Settings → Actions → General → "Allow all actions")
+> 2. Markiere die Jobs in den Branch Protection Rules als "required" (Settings → Branches → main → "Require status checks to pass before merging")
+> 3. Empfohlene required checks:
+>    - `Quality Gate (Format & Lint)`
+>    - `Security Scan`
+>    - `Build & Test (Linux)`
+>    - `Validation Success`
+
+### CICD-DevFlow_Job02_AutoMerge.yml
+
+**Trigger:**
+
+- Pull Request Events (labeled, synchronize, opened, reopened)
+- Check Suite Completion
+- Workflow Run Completion
+
+**Funktion:**
+
+- Wartet auf erfolgreichen Abschluss aller Checks
+- Merged automatisch bei grünen Checks
+- Erstellt hilfreiche Fehler-Comments bei fehlgeschlagenen Checks
+
+---
+
+## 🔧 Branch Protection Rules Konfiguration
+
+Um die PR-Checks als "required" zu markieren, folge diesen Schritten:
+
+1. Gehe zu **Settings** → **Branches** → **main**
+2. Aktiviere "Require status checks to pass before merging"
+3. Wähle folgende Checks als required aus:
+   - `Quality Gate (Format & Lint)`
+   - `Security Scan`
+   - `Build & Test (Linux)`
+   - `Validation Success`
+4. Optional: Aktiviere "Require branches to be up to date before merging"
+
+Die Checks werden dann als "Expected" im PR angezeigt und müssen vor dem Merge grün sein.
+
+---
+
+📋 New PR-Check Flow:
+┌─────────────────────────────────────────────────────────┐
+│                    PR erstellt                          │
+└────────────────────┬────────────────────────────────────┘
+                     │
+         ┌───────────┴───────────┐
+         │                       │
+         ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐
+│ pre-commit.ci   │    │ GitHub Actions  │
+│                 │    │ Validation      │
+│ • cargo fmt     │    │                 │
+│ • trailing ws   │    │ • Build & Test  │
+│ • YAML/TOML     │    │ • Security      │
+│ • Markdown      │    │ • Clippy        │
+│                 │    │                 │
+│ ⚡ ~30s         │    │ ⏰ ~10min       │
+│ ✅ Auto-Push   │    │ ❌ Report only │
+└────────┬────────┘    └────────┬────────┘
+         │                      │
+         └──────────┬───────────┘
+                    │
+                    ▼
+         ┌──────────────────┐
+         │ Copilot Review   │
+         │ ~1-2 min         │
+         └────────┬─────────┘
+                  │
+                  ▼
+         ┌──────────────────┐
+         │ Auto-Merge       │
+         │ • Check Status   │
+         │ • Merge if OK    │
+         │ • Or @jules      │
+         └──────────────────┘
+
+✅ Zusammenfassung der Dateipfade:
+Datei Pfad Grund
+.markdownlint.json Root Wird von markdownlint-cli im Root gesucht
+.secrets.baseline Root Wird von detect-secrets im Root gesucht
+.pre-commit-config.yaml Root Standard für pre-commit
+copilot-instructions.md .github/ GitHub-spezifische Config
+Workflows .github/workflows/ GitHub Actions Standard
+
+✅ Vollständige Commit-Reihenfolge:
+
+# Schritt 1: Root-Config-Dateien
+
+git add .markdownlint.json
+git add .secrets.baseline
+git commit -m "config: add markdownlint and secrets baseline"
+
+# Schritt 2: Pre-Commit erweitern
+
+git add .pre-commit-config.yaml
+git commit -m "ci: enhance pre-commit with Rust, markdown, and security checks"
+
+# Schritt 3: Copilot Instructions
+
+git add .github/copilot-instructions.md
+git commit -m "docs: add Copilot review instructions"
+
+# Schritt 4: Workflows
+
+git add .github/workflows/CICD-DevFlow_Job01_Validation.yml
+git add .github/workflows/CICD-DevFlow_Job02_AutoMerge.yml
+git commit -m "ci: implement validation and auto-merge with Jules feedback"
+
+# Push alles
+
+git push
+**Last Updated:** 2026-02-09 (PR-Check Konfiguration validiert)
 **Maintained By:** MapFlow Team

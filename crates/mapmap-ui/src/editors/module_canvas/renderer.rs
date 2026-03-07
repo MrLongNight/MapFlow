@@ -382,37 +382,47 @@ pub fn render_canvas(
 
     // 3. Global Connection Release
     if ui.input(|i| i.pointer.any_released()) {
-        if let Some((from_part, from_idx, is_output, _, _)) = canvas.creating_connection.take() {
+        if let Some((from_part, from_idx, is_output, from_type, _)) = canvas.creating_connection.take() {
             if let Some(pointer_pos) = ui.input(|i| i.pointer.hover_pos()) {
+                let mut closest_socket = None;
+                let mut min_dist = 30.0 * canvas.zoom;
+
                 for target in &all_sockets {
-                    if target.position.distance(pointer_pos) < 30.0 * canvas.zoom
+                    let dist = target.position.distance(pointer_pos);
+                    if dist < min_dist
                         && target.part_id != from_part
                         && target.is_output != is_output
+                        && target.socket_type == from_type
                     {
-                        let (out_part, out_idx, in_part, in_idx) = if is_output {
-                            (from_part, from_idx, target.part_id, target.socket_idx)
-                        } else {
-                            (target.part_id, target.socket_idx, from_part, from_idx)
-                        };
+                        min_dist = dist;
+                        closest_socket = Some(target);
+                    }
+                }
 
-                        let exists = module.connections.iter().any(|c| {
-                            c.from_part == out_part
-                                && c.from_socket == out_idx
-                                && c.to_part == in_part
-                                && c.to_socket == in_idx
-                        });
+                if let Some(target) = closest_socket {
+                    let (out_part, out_idx, in_part, in_idx) = if is_output {
+                        (from_part, from_idx, target.part_id, target.socket_idx)
+                    } else {
+                        (target.part_id, target.socket_idx, from_part, from_idx)
+                    };
 
-                        if !exists {
-                            module
-                                .connections
-                                .push(mapmap_core::module::ModuleConnection {
-                                    from_part: out_part,
-                                    from_socket: out_idx,
-                                    to_part: in_part,
-                                    to_socket: in_idx,
-                                });
-                            ui.ctx().request_repaint();
-                        }
+                    let exists = module.connections.iter().any(|c| {
+                        c.from_part == out_part
+                            && c.from_socket == out_idx
+                            && c.to_part == in_part
+                            && c.to_socket == in_idx
+                    });
+
+                    if !exists {
+                        module
+                            .connections
+                            .push(mapmap_core::module::ModuleConnection {
+                                from_part: out_part,
+                                from_socket: out_idx,
+                                to_part: in_part,
+                                to_socket: in_idx,
+                            });
+                        ui.ctx().request_repaint();
                     }
                 }
             }

@@ -250,7 +250,7 @@ impl FrameMetadata {
 #[derive(Debug)]
 pub enum FrameData {
     /// CPU-side pixel data stored in a byte vector.
-    Cpu(Arc<Vec<u8>>),
+    Cpu(Vec<u8>),
     /// GPU-side texture data stored as a shared reference.
     Gpu(Arc<Texture>),
 }
@@ -258,7 +258,7 @@ pub enum FrameData {
 impl Clone for FrameData {
     fn clone(&self) -> Self {
         match self {
-            FrameData::Cpu(data) => FrameData::Cpu(Arc::clone(data)),
+            FrameData::Cpu(data) => FrameData::Cpu(data.clone()),
             FrameData::Gpu(texture) => FrameData::Gpu(Arc::clone(texture)),
         }
     }
@@ -279,20 +279,9 @@ pub struct VideoFrame {
 
 impl VideoFrame {
     /// Creates a new video frame from a CPU buffer.
-    /// Creates a new video frame from an Arc-wrapped CPU buffer to avoid copying.
-    pub fn from_arc(data: Arc<Vec<u8>>, format: VideoFormat, timestamp: Duration) -> Self {
-        Self {
-            data: FrameData::Cpu(data),
-            format,
-            timestamp,
-            metadata: FrameMetadata::default(),
-        }
-    }
-
-    /// Creates a new video frame from a CPU buffer.
     pub fn new(data: Vec<u8>, format: VideoFormat, timestamp: Duration) -> Self {
         Self {
-            data: FrameData::Cpu(Arc::new(data)),
+            data: FrameData::Cpu(data),
             format,
             timestamp,
             metadata: FrameMetadata::default(),
@@ -307,7 +296,7 @@ impl VideoFrame {
         metadata: FrameMetadata,
     ) -> Self {
         Self {
-            data: FrameData::Cpu(Arc::new(data)),
+            data: FrameData::Cpu(data),
             format,
             timestamp,
             metadata,
@@ -318,7 +307,7 @@ impl VideoFrame {
     pub fn empty(format: VideoFormat) -> Self {
         let size = format.buffer_size();
         Self {
-            data: FrameData::Cpu(Arc::new(vec![0; size])),
+            data: FrameData::Cpu(vec![0; size]),
             format,
             timestamp: Duration::ZERO,
             metadata: FrameMetadata::default(),

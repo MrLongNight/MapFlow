@@ -70,11 +70,7 @@ impl ModuleSidebar {
                             duplicate_req = Some(id);
                             ui.close();
                         }
-                        if crate::widgets::custom::hold_to_action_button(
-                            ui,
-                            &locale.t("menu-delete"),
-                            crate::theme::colors::WARN_COLOR,
-                        ) {
+                        if ui.button(locale.t("menu-delete")).clicked() {
                             action = Some(ModuleSidebarAction::DeleteModule(id));
                             ui.close();
                         }
