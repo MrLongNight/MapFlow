@@ -499,6 +499,9 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                     .pending_playback_commands
                     .push((part_id, command));
             }
+            UIAction::ManualTrigger(_module_id, part_id) => {
+                app.module_evaluator.trigger_node(part_id);
+            }
             UIAction::TimelineAction(timeline_action) => {
                 use mapmap_ui::TimelineAction;
                 match timeline_action {

@@ -46,6 +46,11 @@ pub struct ControlManager {
     /// Map of keyboard shortcuts to application actions.
     pub key_bindings: KeyBindings,
 
+    /// Raw MIDI events received this frame (channel, note/cc)
+    pub raw_midi_events: Vec<(u8, u8)>,
+    /// Raw OSC addresses received this frame
+    pub raw_osc_events: Vec<String>,
+
     /// Event callback for control changes
     #[allow(clippy::type_complexity)]
     /// Optional callback function triggered on every control value change.
@@ -75,6 +80,9 @@ impl ControlManager {
 
             cue_list: CueList::new(),
             key_bindings: KeyBindings::new(),
+
+            raw_midi_events: Vec::new(),
+            raw_osc_events: Vec::new(),
 
             control_callback: None,
         }
@@ -173,6 +181,10 @@ impl ControlManager {
 
     /// Update all control systems (call every frame)
     pub fn update(&mut self) {
+        // Clear raw events for the new frame
+        self.raw_midi_events.clear();
+        self.raw_osc_events.clear();
+
         // Process MIDI messages
         #[cfg(feature = "midi")]
         self.process_midi_messages();
@@ -193,6 +205,21 @@ impl ControlManager {
 
         if let Some(midi_input) = &self.midi_input {
             while let Some(message) = midi_input.poll_message() {
+                // Record raw event
+                match &message {
+                    crate::midi::MidiMessage::NoteOn { channel, note, .. } => {
+                        self.raw_midi_events.push((*channel, *note));
+                    }
+                    crate::midi::MidiMessage::ControlChange {
+                        channel,
+                        controller,
+                        ..
+                    } => {
+                        self.raw_midi_events.push((*channel, *controller));
+                    }
+                    _ => {}
+                }
+
                 // Get mapping and collect control values
                 if let Some(mapping) = midi_input.get_mapping() {
                     if let Some((target, value)) = mapping.get_control_value(&message) {
@@ -215,6 +242,11 @@ impl ControlManager {
 
         if let Some(osc_server) = &mut self.osc_server {
             while let Some(packet) = osc_server.poll_packet() {
+                // Record raw event
+                if let rosc::OscPacket::Message(msg) = &packet {
+                    self.raw_osc_events.push(msg.addr.clone());
+                }
+
                 // Try to map and apply the control
                 if let rosc::OscPacket::Message(msg) = packet {
                     if let Some(target) = self.osc_mapping.get(&msg.addr) {

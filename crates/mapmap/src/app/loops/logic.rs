@@ -19,6 +19,20 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
         app.ui_state.user_config.theme.apply(&app.egui_context);
     }
 
+    // Update evaluator with active keys for Shortcut triggers
+    let active_keys: HashSet<String> = app.egui_context.input(|i| {
+        i.keys_down.iter().map(|k| format!("{:?}", k)).collect()
+    });
+    app.module_evaluator.update_keys(&active_keys);
+
+    // Update evaluator with raw MIDI/OSC events
+    for (channel, note) in &app.control_manager.raw_midi_events {
+        app.module_evaluator.record_midi(*channel, *note);
+    }
+    for addr in &app.control_manager.raw_osc_events {
+        app.module_evaluator.record_osc(addr);
+    }
+
     // --- Media Player Update ---
     sync_media_players(app);
     update_media_players(app, dt);
@@ -60,9 +74,9 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     app.render_ops.clear();
 
     // --- Bevy Runner Update ---
+    let mut node_triggers = std::collections::HashMap::new();
     if let Some(runner) = &mut app.bevy_runner {
         let runner: &mut mapmap_bevy::BevyRunner = runner;
-        let mut node_triggers = std::collections::HashMap::new();
 
         for module_id in &modules_for_eval {
             if let Some(module_ref) = app.state.module_manager.get_module(*module_id) {
@@ -78,9 +92,8 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
                 );
 
                 for (part_id, values) in &eval_result.trigger_values {
-                    if let Some(last_val) = values.last() {
-                        node_triggers.insert((*module_id, *part_id), *last_val);
-                    }
+                    let max_val = values.iter().cloned().fold(0.0, f32::max);
+                    node_triggers.insert((*module_id, *part_id), max_val);
                 }
 
                 // Collect render ops while we are already evaluating for triggers
@@ -127,6 +140,13 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
                     &app.state.module_manager.shared_media,
                     app.state.module_manager.graph_revision,
                 );
+
+                for (part_id, values) in &eval_result.trigger_values {
+                    let max_val = values.iter().cloned().fold(0.0, f32::max);
+                    node_triggers.insert((*module_id, *part_id), max_val);
+                }
+
+                // Collect render ops while we are already evaluating for triggers
                 app.render_ops.extend(
                     eval_result
                         .render_ops
@@ -138,37 +158,13 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
         }
     }
 
-    // --- Rebuild output_assignments from render_ops ---
-    // Maps each Projector output ID to the source texture names that feed into it.
-    // Without this, prepare_texture_previews cannot find textures and no video is shown.
-    app.output_assignments.clear();
-    for (module_id, op) in &app.render_ops {
-        if let OutputType::Projector { id, .. } = &op.output_type {
-            if let Some(src_id) = op.source_part_id {
-                let tex_name = format!("part_{}_{}", module_id, src_id);
-                app.output_assignments
-                    .entry(*id)
-                    .or_default()
-                    .push(tex_name);
-            }
-        }
-    }
-
-    // --- Output Window Sync (Optimized) ---
-    if ui_needs_sync || graph_dirty {
+    // --- Output Processing ---
+    {
         let current_output_ids: HashSet<u64> = app
-            .state
-            .module_manager
-            .list_modules()
+            .window_manager
             .iter()
-            .flat_map(|m| m.parts.iter())
-            .filter_map(|part| {
-                if let ModulePartType::Output(OutputType::Projector { id, .. }) = &part.part_type {
-                    Some(*id)
-                } else {
-                    None
-                }
-            })
+            .filter(|wc| wc.output_id != 0)
+            .map(|wc| wc.output_id)
             .collect();
 
         let prev_output_ids: HashSet<u64> = app

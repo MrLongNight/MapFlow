@@ -305,8 +305,12 @@ pub fn render_canvas(
                 let socket_resp = ui.interact(
                     socket_rect,
                     egui::Id::new((part_id, socket_info.is_output, socket_info.socket_idx)),
-                    Sense::drag(),
+                    Sense::click_and_drag(),
                 );
+
+                if socket_resp.clicked() && socket_info.is_output && socket_info.socket_type == mapmap_core::module::ModuleSocketType::Trigger {
+                    actions.push(UIAction::ManualTrigger(module_id, part_id));
+                }
 
                 if socket_resp.drag_started() {
                     canvas.creating_connection = Some((

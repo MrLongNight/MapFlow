@@ -550,6 +550,15 @@ pub struct ModuleEvaluator {
     /// State for smoothed trigger inputs: (PartId, SocketIdx) -> (Current Value, Last Updated Frame)
     trigger_smoothing_state: RefCell<HashMap<(ModulePartId, usize), (f32, u64)>>,
 
+    /// Manually fired triggers for the current frame
+    manual_triggers: std::collections::HashSet<ModulePartId>,
+
+    /// MIDI notes/CCs received this frame: (channel, note/cc)
+    midi_triggers: std::collections::HashSet<(u8, u8)>,
+
+    /// OSC addresses received this frame
+    osc_triggers: std::collections::HashSet<String>,
+
     /// Current evaluation frame count (used to prevent smoothing multiple times per frame)
     current_frame: u64,
 
@@ -577,10 +586,28 @@ impl ModuleEvaluator {
             indices_cache: HashMap::new(),
             active_keys: std::collections::HashSet::new(),
             trigger_smoothing_state: RefCell::new(HashMap::new()),
+            manual_triggers: std::collections::HashSet::new(),
+            midi_triggers: std::collections::HashSet::new(),
+            osc_triggers: std::collections::HashSet::new(),
             current_frame: 0,
             last_eval_time: Instant::now(),
             current_dt: 0.0,
         }
+    }
+
+    /// Manually fire a trigger node for the next evaluation frame
+    pub fn trigger_node(&mut self, part_id: ModulePartId) {
+        self.manual_triggers.insert(part_id);
+    }
+
+    /// Record a MIDI event for the next evaluation frame
+    pub fn record_midi(&mut self, channel: u8, note_or_cc: u8) {
+        self.midi_triggers.insert((channel, note_or_cc));
+    }
+
+    /// Record an OSC message for the next evaluation frame
+    pub fn record_osc(&mut self, address: &str) {
+        self.osc_triggers.insert(address.to_string());
     }
 
     /// Update audio trigger data from analysis
@@ -740,11 +767,16 @@ impl ModuleEvaluator {
                     .or_default();
                 values.clear();
 
+                let manual_fired = self.manual_triggers.contains(&part.id);
+
                 Self::compute_trigger_output(
                     trigger_type,
                     &self.audio_trigger_data,
                     self.start_time,
                     &self.active_keys,
+                    &self.midi_triggers,
+                    &self.osc_triggers,
+                    manual_fired,
                     values,
                     &mut rng,
                 );
@@ -1033,6 +1065,11 @@ impl ModuleEvaluator {
                 }
             }
         }
+
+        // Final step: Clear triggers for next frame
+        self.manual_triggers.clear();
+        self.midi_triggers.clear();
+        self.osc_triggers.clear();
 
         &self.cached_result
     }
@@ -1430,26 +1467,29 @@ impl ModuleEvaluator {
         audio_data: &AudioTriggerData,
         start_time: Instant,
         active_keys: &std::collections::HashSet<String>,
+        midi_triggers: &std::collections::HashSet<(u8, u8)>,
+        osc_triggers: &std::collections::HashSet<String>,
+        manual_fired: bool,
         output: &mut Vec<f32>,
         rng: &mut impl rand::Rng,
     ) {
+        // Helper to push and optionally invert/manual override value
+        let push_val_internal = |val: f32, out: &mut Vec<f32>, invert: bool| {
+            let base_val = if manual_fired { 1.0 } else { val };
+            let final_val = if invert {
+                1.0 - base_val.clamp(0.0, 1.0)
+            } else {
+                base_val
+            };
+            out.push(final_val);
+        };
+
         match trigger_type {
             TriggerType::AudioFFT {
                 band: _band,
                 threshold: _threshold,
                 output_config,
             } => {
-                // Helper to push and optionally invert value
-                let push_val = |name: &str, val: f32, out: &mut Vec<f32>| {
-                    let inverted = output_config.inverted_outputs.contains(name);
-                    let final_val = if inverted {
-                        1.0 - val.clamp(0.0, 1.0)
-                    } else {
-                        val
-                    };
-                    out.push(final_val);
-                };
-
                 // Generate values based on config
                 if output_config.frequency_bands {
                     let bands = [
@@ -1464,44 +1504,56 @@ impl ModuleEvaluator {
                         "Air Out",
                     ];
                     for (i, name) in bands.iter().enumerate() {
+                        let inverted = output_config.inverted_outputs.contains(*name);
                         if i < audio_data.band_energies.len() {
-                            push_val(name, audio_data.band_energies[i], output);
+                            push_val_internal(audio_data.band_energies[i], output, inverted);
                         } else {
-                            push_val(name, 0.0, output);
+                            push_val_internal(0.0, output, inverted);
                         }
                     }
                 }
                 if output_config.volume_outputs {
-                    push_val("RMS Volume", audio_data.rms_volume, output);
-                    push_val("Peak Volume", audio_data.peak_volume, output);
+                    push_val_internal(
+                        audio_data.rms_volume,
+                        output,
+                        output_config.inverted_outputs.contains("RMS Volume"),
+                    );
+                    push_val_internal(
+                        audio_data.peak_volume,
+                        output,
+                        output_config.inverted_outputs.contains("Peak Volume"),
+                    );
                 }
                 if output_config.beat_output {
                     let val = if audio_data.beat_detected { 1.0 } else { 0.0 };
-                    push_val("Beat Out", val, output);
+                    push_val_internal(
+                        val,
+                        output,
+                        output_config.inverted_outputs.contains("Beat Out"),
+                    );
                 }
                 if output_config.bpm_output {
                     let val = audio_data.bpm.unwrap_or(0.0) / 200.0;
-                    push_val("BPM Out", val, output);
+                    push_val_internal(
+                        val,
+                        output,
+                        output_config.inverted_outputs.contains("BPM Out"),
+                    );
                 }
 
                 // Fallback
                 if output.is_empty() {
                     let val = if audio_data.beat_detected { 1.0 } else { 0.0 };
                     let inverted = output_config.inverted_outputs.contains("Beat Out");
-                    let final_val = if inverted { 1.0 - val } else { val };
-                    output.push(final_val);
+                    push_val_internal(val, output, inverted);
                 }
             }
             TriggerType::Beat => {
-                output.push(if audio_data.beat_detected { 1.0 } else { 0.0 });
+                push_val_internal(if audio_data.beat_detected { 1.0 } else { 0.0 }, output, false);
             }
             TriggerType::Random { probability, .. } => {
                 let random_value: f32 = rng.random();
-                output.push(if random_value < *probability {
-                    1.0
-                } else {
-                    0.0
-                });
+                push_val_internal(if random_value < *probability { 1.0 } else { 0.0 }, output, false);
             }
             TriggerType::Fixed {
                 interval_ms,
@@ -1510,19 +1562,26 @@ impl ModuleEvaluator {
                 let elapsed_ms = start_time.elapsed().as_millis() as u64;
                 let adjusted_time = elapsed_ms.saturating_sub(*offset_ms as u64);
                 let interval = *interval_ms as u64;
-                if interval == 0 {
-                    output.push(1.0);
+                let val = if interval == 0 {
+                    1.0
                 } else {
                     let pulse_duration = (interval / 10).max(16);
                     let phase = adjusted_time % interval;
-                    output.push(if phase < pulse_duration { 1.0 } else { 0.0 });
-                }
+                    if phase < pulse_duration {
+                        1.0
+                    } else {
+                        0.0
+                    }
+                };
+                push_val_internal(val, output, false);
             }
-            TriggerType::Midi { .. } => {
-                output.push(0.0);
+            TriggerType::Midi { channel, note, .. } => {
+                let is_triggered = midi_triggers.contains(&(*channel, *note));
+                push_val_internal(if is_triggered { 1.0 } else { 0.0 }, output, false);
             }
-            TriggerType::Osc { .. } => {
-                output.push(0.0);
+            TriggerType::Osc { address } => {
+                let is_triggered = osc_triggers.contains(address);
+                push_val_internal(if is_triggered { 1.0 } else { 0.0 }, output, false);
             }
             TriggerType::Shortcut {
                 key_code,
@@ -1543,11 +1602,7 @@ impl ModuleEvaluator {
                     modifiers_match = false;
                 }
 
-                output.push(if is_pressed && modifiers_match {
-                    1.0
-                } else {
-                    0.0
-                });
+                push_val_internal(if is_pressed && modifiers_match { 1.0 } else { 0.0 }, output, false);
             }
         }
     }

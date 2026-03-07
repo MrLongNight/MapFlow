@@ -286,6 +286,12 @@ pub enum UIAction {
         crate::editors::module_canvas::types::MediaPlaybackCommand,
     ),
 
+    /// Manually fire a trigger node
+    ManualTrigger(
+        mapmap_core::module::ModuleId,
+        mapmap_core::module::ModulePartId,
+    ),
+
     // Module Connection Deletion
     /// Delete a connection between two module parts
     DeleteConnection(
