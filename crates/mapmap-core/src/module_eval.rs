@@ -743,6 +743,7 @@ impl ModuleEvaluator {
                 Self::compute_trigger_output(
                     trigger_type,
                     &self.audio_trigger_data,
+                    shared_state,
                     self.start_time,
                     &self.active_keys,
                     values,
@@ -1428,6 +1429,7 @@ impl ModuleEvaluator {
     fn compute_trigger_output(
         trigger_type: &TriggerType,
         audio_data: &AudioTriggerData,
+        shared_state: &SharedMediaState,
         start_time: Instant,
         active_keys: &std::collections::HashSet<String>,
         output: &mut Vec<f32>,
@@ -1518,11 +1520,37 @@ impl ModuleEvaluator {
                     output.push(if phase < pulse_duration { 1.0 } else { 0.0 });
                 }
             }
-            TriggerType::Midi { .. } => {
-                output.push(0.0);
+            TriggerType::Midi {
+                device: _, // Currently device check is omitted, all mapped inputs combined
+                channel,
+                note,
+            } => {
+                // First check if there's a CC value mapping (continuous)
+                if let Some(&value) = shared_state.active_midi_cc.get(&(*channel, *note)) {
+                    output.push(value as f32 / 127.0);
+                } else {
+                    // Check if there is an active note event
+                    let mut active_val = 0.0;
+                    for (ev_ch, ev_note, velocity) in &shared_state.active_midi_events {
+                        if ev_ch == channel && ev_note == note {
+                            active_val = *velocity as f32 / 127.0;
+                            break;
+                        }
+                    }
+                    output.push(active_val);
+                }
             }
-            TriggerType::Osc { .. } => {
-                output.push(0.0);
+            TriggerType::Osc { address } => {
+                let mut active_val = 0.0;
+                if let Some(values) = shared_state.active_osc_messages.get(address) {
+                    if let Some(v) = values.first() {
+                        active_val = *v;
+                    } else {
+                        // Received message without args, interpret as trigger
+                        active_val = 1.0;
+                    }
+                }
+                output.push(active_val);
             }
             TriggerType::Shortcut {
                 key_code,
@@ -1708,11 +1736,13 @@ mod tests_logic {
         let mut output = Vec::new();
         let data_true = create_audio_data(true);
         let keys = std::collections::HashSet::new();
+        let shared = crate::module::SharedMediaState::default();
         let mut rng = rand::rng();
 
         ModuleEvaluator::compute_trigger_output(
             &TriggerType::Beat,
             &data_true,
+            &shared,
             Instant::now(),
             &keys,
             &mut output,
@@ -1725,6 +1755,7 @@ mod tests_logic {
         ModuleEvaluator::compute_trigger_output(
             &TriggerType::Beat,
             &data_false,
+            &shared,
             Instant::now(),
             &keys,
             &mut output,
@@ -1735,9 +1766,10 @@ mod tests_logic {
 
     #[test]
     fn test_compute_trigger_output_audio_fft() {
-        let mut output = Vec::new();
+        let mut output: Vec<f32> = Vec::new();
         let data = create_audio_data(true);
         let keys = std::collections::HashSet::new();
+        let shared = crate::module::SharedMediaState::default();
         let mut rng = rand::rng();
 
         let config = AudioTriggerOutputConfig {
@@ -1755,6 +1787,7 @@ mod tests_logic {
                 output_config: config,
             },
             &data,
+            &shared,
             Instant::now(),
             &keys,
             &mut output,
@@ -1782,6 +1815,7 @@ mod tests_logic {
         let mut output = Vec::new();
         let data = create_audio_data(false);
         let keys = std::collections::HashSet::new();
+        let shared = crate::module::SharedMediaState::default();
         let mut rng = rand::rng();
 
         // Interval 1000ms. Pulse duration 100ms.
@@ -1797,6 +1831,7 @@ mod tests_logic {
                 offset_ms: 0,
             },
             &data,
+            &shared,
             start_past_50,
             &keys,
             &mut output,
@@ -1813,6 +1848,7 @@ mod tests_logic {
                 offset_ms: 0,
             },
             &data,
+            &shared,
             start_past_150,
             &keys,
             &mut output,

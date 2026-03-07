@@ -25,11 +25,23 @@ pub struct SharedMediaItem {
     pub media_type: SharedMediaType,
 }
 
-/// Registry for shared media resources
+/// Registry for shared media resources and active external triggers
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct SharedMediaState {
     /// Component property or field.
     pub items: HashMap<String, SharedMediaItem>,
+
+    /// Currently active MIDI events: list of (channel, note, velocity)
+    #[serde(skip)]
+    pub active_midi_events: Vec<(u8, u8, u8)>,
+
+    /// Currently active MIDI Control Changes: map of (channel, controller) -> value
+    #[serde(skip)]
+    pub active_midi_cc: HashMap<(u8, u8), u8>,
+
+    /// Currently active OSC messages: map of address -> values
+    #[serde(skip)]
+    pub active_osc_messages: HashMap<String, Vec<f32>>,
 }
 
 impl SharedMediaState {
@@ -37,6 +49,9 @@ impl SharedMediaState {
     pub fn new() -> Self {
         Self {
             items: HashMap::new(),
+            active_midi_events: Vec::new(),
+            active_midi_cc: HashMap::new(),
+            active_osc_messages: HashMap::new(),
         }
     }
 

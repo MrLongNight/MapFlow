@@ -52,6 +52,46 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
         all_module_ids.clone()
     };
 
+    // --- Control System Update ---
+    let (midi_events, osc_events) = app.control_manager.update();
+
+    // Update shared media state with active events
+    {
+        let shared_media = &mut app.state.module_manager_mut().shared_media;
+
+        // Clear previous frame's events
+        shared_media.active_midi_events.clear();
+        shared_media.active_osc_messages.clear();
+
+        // Process MIDI events
+        for event in midi_events {
+            match event {
+                mapmap_control::midi::MidiMessage::NoteOn { channel, note, velocity } => {
+                    shared_media.active_midi_events.push((channel, note, velocity));
+                }
+                mapmap_control::midi::MidiMessage::ControlChange { channel, controller, value } => {
+                    shared_media.active_midi_cc.insert((channel, controller), value);
+                }
+                _ => {}
+            }
+        }
+
+        // Process OSC events
+        for packet in osc_events {
+            if let rosc::OscPacket::Message(msg) = packet {
+                let floats: Vec<f32> = msg.args.into_iter()
+                    .filter_map(|arg| match arg {
+                        rosc::OscType::Float(f) => Some(f),
+                        rosc::OscType::Double(d) => Some(d as f32),
+                        rosc::OscType::Int(i) => Some(i as f32),
+                        _ => None,
+                    })
+                    .collect();
+                shared_media.active_osc_messages.insert(msg.addr, floats);
+            }
+        }
+    }
+
     // --- Graph & Renderer Evaluation ---
     let graph_dirty = app.state.module_manager.graph_revision != app.last_graph_revision;
 
