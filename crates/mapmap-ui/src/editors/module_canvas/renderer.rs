@@ -6,7 +6,7 @@ use super::types::*;
 use super::utils;
 use crate::i18n::LocaleManager;
 use crate::UIAction;
-use egui::{Color32, Pos2, Rect, Sense, Stroke, Ui, Vec2};
+use egui::{Color32, Pos2, Rect, RichText, Sense, Stroke, Ui, Vec2};
 use mapmap_core::module::{ModuleId, ModuleManager, TriggerType};
 
 pub fn show(
