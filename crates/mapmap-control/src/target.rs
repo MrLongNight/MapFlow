@@ -191,7 +191,8 @@ impl ControlValue {
                     ));
                 }
                 // Path traversal check
-                if Path::new(s)
+                let normalized_s = s.replace("\\", "/");
+                if Path::new(&normalized_s)
                     .components()
                     .any(|c| matches!(c, Component::ParentDir))
                 {
@@ -321,6 +322,9 @@ mod tests {
 
         let traversal2 = ControlValue::String("foo/../bar".to_string());
         assert!(traversal2.validate().is_err());
+
+        let traversal3 = ControlValue::String("..\\secret".to_string());
+        assert!(traversal3.validate().is_err());
 
         let valid_dots = ControlValue::String("Loading...".to_string());
         assert!(valid_dots.validate().is_ok());
