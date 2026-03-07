@@ -65,7 +65,10 @@ struct StreamAction {
     action: String,
 }
 
-// Helper to build a client that accepts self-signed Hue Bridge certificates
+// Helper to build a client that accepts self-signed Hue Bridge certificates.
+// NOTE: danger_accept_invalid_certs(true) is required because Philips Hue Bridges use
+// self-signed certificates that cannot be verified against a standard CA.
+// This introduces a risk of MITM attacks (CWE-295) in untrusted networks.
 fn build_client() -> Result<reqwest::Client, HueError> {
     reqwest::Client::builder()
         .danger_accept_invalid_certs(true) // Hue bridges use self-signed certs

@@ -148,6 +148,19 @@ impl WgpuBackend {
         &self.adapter_info
     }
 
+    /// Enumerate all available adapters on the system
+    pub fn get_available_adapters(backends: wgpu::Backends) -> Vec<String> {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+            backends,
+            ..Default::default()
+        });
+        instance
+            .enumerate_adapters(backends)
+            .iter()
+            .map(|a| a.get_info().name)
+            .collect()
+    }
+
     /// Set surface format
     pub fn surface_format(&self) -> wgpu::TextureFormat {
         wgpu::TextureFormat::Bgra8UnormSrgb
