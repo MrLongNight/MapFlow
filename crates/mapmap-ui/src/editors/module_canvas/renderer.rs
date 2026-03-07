@@ -172,6 +172,20 @@ pub fn render_canvas(
     // Draw grid
     draw::draw_grid(canvas, &painter, canvas_rect);
 
+    // Handle Zoom (Mouse Wheel)
+    if response.hovered() {
+        let scroll = ui.input(|i| i.smooth_scroll_delta.y);
+        if scroll != 0.0 {
+            let old_zoom = canvas.zoom;
+            canvas.zoom = (canvas.zoom * (1.0 + scroll * 0.001)).clamp(0.1, 5.0);
+            
+            if let Some(mouse_pos) = ui.input(|i| i.pointer.hover_pos()) {
+                let zoom_factor = canvas.zoom / old_zoom;
+                canvas.pan_offset = mouse_pos - (mouse_pos - canvas.pan_offset) * zoom_factor;
+            }
+        }
+    }
+
     let zoom = canvas.zoom;
     let pan_offset = canvas.pan_offset;
     let canvas_min = canvas_rect.min.to_vec2();
@@ -185,6 +199,23 @@ pub fn render_canvas(
             module.connections.remove(idx);
         }
     }
+
+    // --- ZOOM UI ---
+    let zoom_ui_rect = Rect::from_min_size(
+        Pos2::new(canvas_rect.max.x - 120.0, canvas_rect.max.y - 140.0),
+        Vec2::new(100.0, 30.0)
+    );
+    ui.scope_builder(egui::UiBuilder::new().max_rect(zoom_ui_rect), |ui| {
+        ui.horizontal(|ui| {
+            if ui.button("-").clicked() {
+                canvas.zoom = (canvas.zoom - 0.1).max(0.1);
+            }
+            ui.add(egui::Slider::new(&mut canvas.zoom, 0.1..=5.0).show_value(false));
+            if ui.button("+").clicked() {
+                canvas.zoom = (canvas.zoom + 0.1).min(5.0);
+            }
+        });
+    });
 
     // 1. Collect ALL socket positions first
     let mut all_sockets = Vec::new();
@@ -384,8 +415,8 @@ pub fn render_canvas(
     if ui.input(|i| i.pointer.any_released()) {
         if let Some((from_part, from_idx, is_output, from_type, _)) = canvas.creating_connection.take() {
             if let Some(pointer_pos) = ui.input(|i| i.pointer.hover_pos()) {
-                let mut closest_socket = None;
-                let mut min_dist = 30.0 * canvas.zoom;
+                let mut best_target = None;
+                let mut min_dist = 25.0 * canvas.zoom; // Slightly tighter radius
 
                 for target in &all_sockets {
                     let dist = target.position.distance(pointer_pos);
@@ -395,34 +426,30 @@ pub fn render_canvas(
                         && target.socket_type == from_type
                     {
                         min_dist = dist;
-                        closest_socket = Some(target);
+                        best_target = Some(target.clone());
                     }
                 }
 
-                if let Some(target) = closest_socket {
+                if let Some(target) = best_target {
                     let (out_part, out_idx, in_part, in_idx) = if is_output {
                         (from_part, from_idx, target.part_id, target.socket_idx)
                     } else {
                         (target.part_id, target.socket_idx, from_part, from_idx)
                     };
 
-                    let exists = module.connections.iter().any(|c| {
-                        c.from_part == out_part
-                            && c.from_socket == out_idx
-                            && c.to_part == in_part
-                            && c.to_socket == in_idx
-                    });
+                    // Final safety check: no self-connection (redundant but safe)
+                    if out_part != in_part {
+                        let exists = module.connections.iter().any(|c| {
+                            c.from_part == out_part
+                                && c.from_socket == out_idx
+                                && c.to_part == in_part
+                                && c.to_socket == in_idx
+                        });
 
-                    if !exists {
-                        module
-                            .connections
-                            .push(mapmap_core::module::ModuleConnection {
-                                from_part: out_part,
-                                from_socket: out_idx,
-                                to_part: in_part,
-                                to_socket: in_idx,
-                            });
-                        ui.ctx().request_repaint();
+                        if !exists {
+                            module.add_connection(out_part, out_idx, in_part, in_idx);
+                            ui.ctx().request_repaint();
+                        }
                     }
                 }
             }
