@@ -14,6 +14,10 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 
 ---
 
+## 2026-03-06 - Missing Documentation for PR #929
+**Erkenntnis:** PR #929 (Sentinel Fix Information Disclosure) was merged but missing from `CHANGELOG.md` and `ROADMAP.md`.
+**Aktion:** Added entry to `CHANGELOG.md` and updated `ROADMAP.md` timestamp and review status.
+
 ## 2026-01-18 - Missing Documentation for PR #286
 **Erkenntnis:** PR #286 (Archivist Cleanup) was merged and effective (audit reports moved), but missing from `CHANGELOG.md`.
 **Aktion:** Added entry to `CHANGELOG.md` and updated `ROADMAP.md` timestamp.
