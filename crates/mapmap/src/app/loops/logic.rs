@@ -114,15 +114,13 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
 
         // SYNC WITH UI
         if let Some(active_mod) = app.ui_state.module_canvas.active_module_id() {
-            app.ui_state
-                .module_canvas
-                .set_trigger_data(
-                    node_triggers
-                        .iter()
-                        .filter(|((mod_id, _), _)| *mod_id == active_mod)
-                        .map(|((_, part), val)| (*part, *val))
-                        .collect()
-                );
+            app.ui_state.module_canvas.set_trigger_data(
+                node_triggers
+                    .iter()
+                    .filter(|((mod_id, _), _)| *mod_id == active_mod)
+                    .map(|((_, part), val)| (*part, *val))
+                    .collect(),
+            );
         }
         app.ui_state
             .module_canvas
@@ -156,15 +154,13 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
 
         // SYNC WITH UI EVEN WITHOUT BEVY
         if let Some(active_mod) = app.ui_state.module_canvas.active_module_id() {
-            app.ui_state
-                .module_canvas
-                .set_trigger_data(
-                    node_triggers
-                        .iter()
-                        .filter(|((mod_id, _), _)| *mod_id == active_mod)
-                        .map(|((_, part), val)| (*part, *val))
-                        .collect()
-                );
+            app.ui_state.module_canvas.set_trigger_data(
+                node_triggers
+                    .iter()
+                    .filter(|((mod_id, _), _)| *mod_id == active_mod)
+                    .map(|((_, part), val)| (*part, *val))
+                    .collect(),
+            );
         }
     }
 
