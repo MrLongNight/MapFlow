@@ -505,7 +505,7 @@ impl TimelineV2 {
             ui.label("Module Arrangement");
             ui.horizontal(|ui| {
                 if modules.is_empty() {
-                    ui.label("No modules available");
+                    ui.label(egui::RichText::new("No modules available").weak().italics());
                 } else {
                     let selected = self.selected_module_id.unwrap_or(modules[0].id);
                     let selected_label = Self::module_name(&module_names, selected);
@@ -533,7 +533,11 @@ impl TimelineV2 {
                         a.start_time.total_cmp(&b.start_time).then(a.id.cmp(&b.id))
                     });
                 }
-                if ui.button("Clear").clicked() {
+                if crate::widgets::custom::hold_to_action_button(
+                    ui,
+                    "Clear",
+                    crate::theme::colors::WARN_COLOR,
+                ) {
                     self.module_arrangement.clear();
                     self.reset_runtime_selection();
                 }

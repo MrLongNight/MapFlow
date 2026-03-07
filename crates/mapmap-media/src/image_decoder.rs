@@ -8,6 +8,7 @@ use crate::{MediaError, Result, VideoDecoder};
 use image::{AnimationDecoder, DynamicImage};
 use mapmap_io::{PixelFormat, VideoFrame};
 use std::path::Path;
+use std::sync::Arc;
 use std::time::Duration;
 use tracing::info;
 
@@ -23,7 +24,7 @@ use tracing::info;
 pub struct StillImageDecoder {
     width: u32,
     height: u32,
-    frame_data: Vec<u8>,
+    frame_data: Arc<Vec<u8>>,
     has_been_read: bool,
 }
 
@@ -60,7 +61,7 @@ impl StillImageDecoder {
         Ok(Self {
             width,
             height,
-            frame_data,
+            frame_data: Arc::new(frame_data),
             has_been_read: false,
         })
     }
@@ -90,8 +91,8 @@ impl VideoDecoder for StillImageDecoder {
 
         self.has_been_read = true;
 
-        Ok(VideoFrame::new(
-            self.frame_data.clone(),
+        Ok(VideoFrame::from_arc(
+            Arc::clone(&self.frame_data),
             mapmap_io::VideoFormat {
                 width: self.width,
                 height: self.height,
@@ -136,7 +137,7 @@ impl VideoDecoder for StillImageDecoder {
 /// Supports frame-by-frame playback with proper timing based on GIF delays.
 #[derive(Clone)]
 pub struct GifDecoder {
-    frames: Vec<(Vec<u8>, Duration)>, // (frame_data, delay)
+    frames: Vec<(Arc<Vec<u8>>, Duration)>, // (frame_data, delay)
     width: u32,
     height: u32,
     current_frame: usize,
@@ -180,7 +181,7 @@ impl GifDecoder {
             );
 
             let image = DynamicImage::ImageRgba8(frame.into_buffer());
-            frames.push((image.to_rgba8().into_raw(), delay_duration));
+            frames.push((Arc::new(image.to_rgba8().into_raw()), delay_duration));
             total_duration += delay_duration;
         }
 
@@ -241,7 +242,7 @@ impl VideoDecoder for GifDecoder {
         self.current_time += delay;
         self.current_frame = (self.current_frame + 1) % self.frames.len();
 
-        Ok(VideoFrame::new(
+        Ok(VideoFrame::from_arc(
             frame_data,
             mapmap_io::VideoFormat {
                 width: self.width,
