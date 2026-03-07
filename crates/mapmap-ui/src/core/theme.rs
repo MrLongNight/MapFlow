@@ -439,12 +439,18 @@ impl ThemeConfig {
     fn purple_visuals() -> Visuals {
         let purple = Color32::from_rgb(191, 64, 255); // Electric Neon Purple
         let mut visuals = Self::resolume_visuals();
-        visuals.widgets.hovered.bg_stroke = egui::Stroke::new(1.5 * 1.0, purple);
+        
+        // Comprehensive override of all accent-related fields
+        visuals.widgets.hovered.bg_stroke = egui::Stroke::new(1.5, purple);
         visuals.widgets.active.bg_fill = purple;
         visuals.widgets.active.bg_stroke = egui::Stroke::new(1.0, purple);
+        visuals.widgets.inactive.bg_stroke = egui::Stroke::new(1.0, purple.linear_multiply(0.4));
+        
         visuals.selection.bg_fill = purple.linear_multiply(0.2);
         visuals.selection.stroke = egui::Stroke::new(1.0, purple);
         visuals.hyperlink_color = purple;
+        visuals.window_stroke = egui::Stroke::new(1.0, purple.linear_multiply(0.5));
+        
         visuals
     }
 
@@ -452,12 +458,18 @@ impl ThemeConfig {
     fn pink_visuals() -> Visuals {
         let pink = Color32::from_rgb(255, 0, 127); // Vibrant Neon Pink (Rose)
         let mut visuals = Self::resolume_visuals();
-        visuals.widgets.hovered.bg_stroke = egui::Stroke::new(1.5 * 1.0, pink);
+        
+        // Comprehensive override of all accent-related fields
+        visuals.widgets.hovered.bg_stroke = egui::Stroke::new(1.5, pink);
         visuals.widgets.active.bg_fill = pink;
         visuals.widgets.active.bg_stroke = egui::Stroke::new(1.0, pink);
+        visuals.widgets.inactive.bg_stroke = egui::Stroke::new(1.0, pink.linear_multiply(0.4));
+        
         visuals.selection.bg_fill = pink.linear_multiply(0.2);
         visuals.selection.stroke = egui::Stroke::new(1.0, pink);
         visuals.hyperlink_color = pink;
+        visuals.window_stroke = egui::Stroke::new(1.0, pink.linear_multiply(0.5));
+        
         visuals
     }
 }

@@ -350,18 +350,18 @@ where
                     painter.add(mesh);
                 };
 
-                // Source Plug at OUTPUT socket - points LEFT (PI). 45 deg CCW is 3*PI/4
+                // Source Plug at OUTPUT socket - points LEFT (PI). 45 deg CCW is 5*PI/4
                 draw_rotated(
                     start_pos,
-                    3.0 * PI / 4.0,
+                    5.0 * PI / 4.0,
                     current_plug_size,
                     Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
                 );
 
-                // Target Plug at INPUT socket - points RIGHT (0). 45 deg CCW is -PI/4
+                // Target Plug at INPUT socket - points RIGHT (0). 45 deg CCW is PI/4
                 draw_rotated(
                     end_pos,
-                    -PI / 4.0,
+                    PI / 4.0,
                     current_plug_size,
                     Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
                 );
