@@ -35,30 +35,38 @@ jobs:
             }
 
             // ═══════════════════════════════════════════════════════════════
-            // 1. IDENTIFY PR
+            // 1. IDENTIFY PR (Hardened)
             // ═══════════════════════════════════════════════════════════════
             let prNumber = context.payload.pull_request?.number;
 
-            // If triggered by workflow_run, find PR associated with commit
+            // If triggered by workflow_run, find PR associated with the run's branch
             if (!prNumber && context.payload.workflow_run) {
+              const headBranch = context.payload.workflow_run.head_branch;
+              const headSha = context.payload.workflow_run.head_sha;
+              console.log(`🔍 Searching for PRs with head branch "${headBranch}" and SHA ${headSha}...`);
+              
               const prs = await github.rest.pulls.list({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 state: 'open',
-                head: `${context.repo.owner}:${context.payload.workflow_run.head_branch}`
+                head: `${context.repo.owner}:${headBranch}`
               });
-              if (prs.data.length > 0) prNumber = prs.data[0].number;
+
+              // Match by SHA for extra precision if multiple PRs exist for a branch
+              const match = prs.data.find(p => p.head.sha === headSha);
+              if (match) prNumber = match.number;
+              else if (prs.data.length > 0) prNumber = prs.data[0].number;
             }
 
             // If triggered by check_suite
             if (!prNumber && context.payload.check_suite) {
+              const headSha = context.payload.check_suite.head_sha;
               const prs = await github.rest.pulls.list({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 state: 'open'
               });
-              // Filter by SHA
-              const match = prs.data.find(p => p.head.sha === context.payload.check_suite.head_sha);
+              const match = prs.data.find(p => p.head.sha === headSha);
               if (match) prNumber = match.number;
             }
 
@@ -79,41 +87,48 @@ jobs:
             });
 
             // ═══════════════════════════════════════════════════════════════
-            // 3. PRE-CHECKS
+            // 3. PRE-CHECKS (Hardened)
             // ═══════════════════════════════════════════════════════════════
 
-            // Check: Draft PR
             if (pr.data.draft) {
               console.log("❌ PR is a draft. Skipping auto-merge.");
               return;
             }
 
-            // Check: Mergeable state
+            if (pr.data.state === 'closed') {
+              console.log("ℹ️ PR is already closed.");
+              return;
+            }
+
+            console.log(`📊 Mergeable: ${pr.data.mergeable}, State: ${pr.data.mergeable_state}`);
+
             if (pr.data.mergeable === false) {
               console.log("❌ PR has merge conflicts. Cannot auto-merge.");
               return;
             }
 
-            if (pr.data.mergeable_state === 'dirty') {
-              console.log("❌ PR mergeable_state is 'dirty'. Skipping auto-merge.");
-              return;
-            }
-
-            // Check: Already merged
-            if (pr.data.merged) {
-              console.log("ℹ️ PR is already merged.");
-              return;
-            }
-
-            // Check: Closed
-            if (pr.data.state === 'closed') {
-              console.log("ℹ️ PR is closed.");
-              return;
+            // Handle "Behind" status
+            if (pr.data.mergeable_state === 'behind') {
+              console.log("⚠️ PR is behind the base branch. Attempting to update...");
+              try {
+                await github.rest.pulls.updateBranch({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: prNumber
+                });
+                console.log("✅ Update request sent. Waiting for next event.");
+                return;
+              } catch (e) {
+                console.log(`❌ Failed to update branch: ${e.message}`);
+              }
             }
 
             // ═══════════════════════════════════════════════════════════════
             // 4. CHECK STATUS CHECKS (Hardened Logic)
             // ═══════════════════════════════════════════════════════════════
+
+            // Brief delay to ensure API consistency
+            await new Promise(resolve => setTimeout(resolve, 2000));
 
             console.log(`📊 Fetching check runs for commit ${pr.data.head.sha}...`);
 
@@ -125,29 +140,23 @@ jobs:
 
             console.log(`Found ${checks.data.total_count} check run(s)`);
 
-            // Required Check Names (müssen erfolgreich sein)
             const REQUIRED_CHECKS = [
+              'pre-commit.ci - pr',
               'Quality Gate (Format & Lint)',
               'Security Scan',
               'Build & Test (Linux)',
               'Validation Success'
             ];
 
-            const runName = context.workflow;
             const ownRunId = process.env.GITHUB_RUN_ID;
 
-            // Filtere Runs
             const externalRuns = checks.data.check_runs.filter(r => {
-              // Eigenen Run ignorieren (vermeidet Deadlock)
               if (r.name.includes('Auto-Merge') || (ownRunId && r.details_url?.includes(ownRunId))) {
                 return false;
               }
               return true;
             });
 
-            console.log(`📊 Evaluating ${externalRuns.length} external check run(s)`);
-
-            // Detaillierte Prüfung der erforderlichen Checks
             let allRequiredPassed = true;
             const missingOrFailed = [];
 
@@ -177,7 +186,7 @@ jobs:
               return;
             }
 
-            // check if there are other FAILED checks that are not in the required list
+            // check if there are other FAILED checks
             const otherFailed = externalRuns.filter(r =>
               !REQUIRED_CHECKS.includes(r.name) &&
               r.status === 'completed' &&
@@ -187,12 +196,17 @@ jobs:
             if (otherFailed.length > 0) {
               console.log(`❌ Non-required check(s) failed:`);
               otherFailed.forEach(r => console.log(`  - ${r.name}: ${r.conclusion}`));
-              // We still allow merge if they are not required, but logging is good
             }
 
             // ═══════════════════════════════════════════════════════════════
             // 5. EXECUTE MERGE
             // ═══════════════════════════════════════════════════════════════
+
+            if (pr.data.mergeable_state === 'blocked') {
+              console.log("❌ PR mergeable_state is 'blocked'. This might be due to required reviews or other policies.");
+              // We could add a comment here if it's the first time
+              return;
+            }
 
             console.log("✅ All conditions met. Initiating auto-merge...");
 
@@ -208,7 +222,6 @@ jobs:
 
               console.log("🎉 PR merged successfully!");
 
-              // Optional: Add a comment to the PR
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -219,7 +232,6 @@ jobs:
             } catch (e) {
               console.log(`❌ Merge failed: ${e.message}`);
 
-              // Add error comment to PR
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,

@@ -1,0 +1,60 @@
+2026-03-07T00:16:25.441134Z  INFO MapFlow: Starting MapFlow...
+2026-03-07T00:16:25.462635Z  INFO MapFlow: Initializing MapFlow...
+2026-03-07T00:16:26.179943Z  INFO mapmap_render::backend: Using GPU: AMD Radeon R5 430 (Vulkan)
+2026-03-07T00:16:26.181181Z  WARN mapmap_render::backend: Current GPU 'AMD Radeon R5 430' does not match preferred 'Microsoft Basic Render Driver'. This might be a secondary adapter.
+2026-03-07T00:16:26.231197Z  INFO MapFlow::app::core::init: >>> BUILD VERSION: 2026-02-16-FIX-BEVY-HEADLESS <<<
+2026-03-07T00:16:26.279570Z  INFO mapmap_render::edge_blend_renderer: Creating edge blend renderer
+2026-03-07T00:16:26.280872Z  INFO mapmap_render::color_calibration_renderer: Creating color calibration renderer
+2026-03-07T00:16:26.301322Z  INFO MapFlow::window_manager: Found icon at "../resources/app_icons/MapFlow_Logo_HQ-Full-M.png" (1024x736)
+2026-03-07T00:16:26.310615Z  INFO MapFlow::window_manager: Successfully created winit icon from "../resources/app_icons/MapFlow_Logo_HQ-Full-M.png"
+2026-03-07T00:16:26.421494Z  INFO MapFlow::window_manager: Found icon at "../resources/app_icons/MapFlow_Logo_HQ-Full-M.png" (1024x736)
+2026-03-07T00:16:26.427837Z  INFO MapFlow::window_manager: Successfully created winit icon from "../resources/app_icons/MapFlow_Logo_HQ-Full-M.png"
+2026-03-07T00:16:28.110287Z  INFO MapFlow::app::core::init: Found autosave at "C:\\Users\\Vinyl\\AppData\\Local\\MapFlow\\autosave.mflow", attempting to load...
+2026-03-07T00:16:28.123817Z  INFO MapFlow::app::core::init: Successfully loaded autosave.
+2026-03-07T00:16:28.124186Z  WARN MapFlow::app::core::init: Self-Heal: Output 'Projector 1' (ID 1) has no matching Output Window.
+2026-03-07T00:16:28.124325Z  INFO MapFlow::app::core::init: Self-Heal: Creating missing Output Window 'Projector 1' (ID 1)
+2026-03-07T00:16:28.124538Z  INFO MapFlow::app::core::init: Self-Heal: Module 'New Module' has nodes: {2, 4, 1, 3}
+2026-03-07T00:16:28.147493Z  INFO MapFlow::app::core::init: Saved audio device 'Line (Steinberg UR22mkII )' no longer available, using default
+2026-03-07T00:16:28.153339Z  INFO mapmap_core::audio::backend::cpal_backend: Audio: Using device 'Mikrofon [Microphone] via USB', format=F32, sample_rate=48000, channels=1
+2026-03-07T00:16:28.212170Z  INFO mapmap_control::osc::client: OSC client created, sending to 127.0.0.1:8000
+2026-03-07T00:16:28.213728Z  INFO mapmap_mcp::server: MCP Server connected to OSC at 127.0.0.1:8000
+2026-03-07T00:16:28.214099Z  INFO mapmap_render::oscillator_renderer: Creating oscillator renderer
+2026-03-07T00:16:28.243646Z  INFO mapmap_ui::widgets::icons: Loaded 35 icons
+2026-03-07T00:16:28.245143Z  INFO MapFlow::app::core::init: Initializing Hue Controller...
+2026-03-07T00:16:28.245608Z  INFO mapmap_control::hue::controller: Fetching application ID...
+2026-03-07T00:16:28.358299Z  INFO mapmap_control::hue::controller: Fetching entertainment configuration...
+2026-03-07T00:16:28.484429Z  INFO mapmap_control::hue::controller: Loaded 10 lights for entertainment group 'LivestreamEnterGroup'
+2026-03-07T00:16:28.485761Z  INFO mapmap_control::hue::controller: Activating stream mode...
+2026-03-07T00:16:28.771762Z ERROR mapmap_control::hue::controller: Failed to connect to Hue Bridge DTLS: Hue Entertainment streaming is currently disabled because OpenSSL support is not compiled in (build hang avoidance).. Check if Windows Firewall blocks UDP port 2100.
+2026-03-07T00:16:28.772566Z  WARN MapFlow::app::core::init: Hue Controller initial connection failed: Failed to establish DTLS connection: Hue Entertainment streaming is currently disabled because OpenSSL support is not compiled in (build hang avoidance).
+2026-03-07T00:16:28.848460Z  INFO mapmap_bevy: Initializing Bevy integration (Safe Logic Mode)...
+2026-03-07T00:16:28.850528Z  INFO MapFlow::app::core::init: ==========================================
+2026-03-07T00:16:28.850721Z  INFO MapFlow::app::core::init:    MapFlow Initialization Status Report   
+2026-03-07T00:16:28.851155Z  INFO MapFlow::app::core::init: ------------------------------------------
+2026-03-07T00:16:28.851324Z  INFO MapFlow::app::core::init: - Render Backend: AMD Radeon R5 430 (Vulkan)
+2026-03-07T00:16:28.851595Z  INFO MapFlow::app::core::init: - Edge Blend:     ENABLED
+2026-03-07T00:16:28.851724Z  INFO MapFlow::app::core::init: - Color Calib:    ENABLED
+2026-03-07T00:16:28.852197Z  INFO MapFlow::app::core::init: - Bevy Engine:    INITIALIZED
+2026-03-07T00:16:28.852336Z  INFO MapFlow::app::core::init: - Hue System:     CONFIGURED
+2026-03-07T00:16:28.852490Z  INFO MapFlow::app::core::init: - Media Library:  0 items
+2026-03-07T00:16:28.852883Z  INFO MapFlow::app::core::init: ==========================================
+2026-03-07T00:16:28.979813Z  INFO mapmap_media::decoder::ffmpeg_impl: Video info: FPS=30.00, RawDuration=-9223372036854775808, TimeBase=1/1000, CalcDuration=-9223372036854776
+2026-03-07T00:16:28.980927Z  WARN mapmap_media::decoder::ffmpeg_impl: Invalid video duration: -9223372036854776 seconds (raw: -9223372036854775808). Treating as live stream or unknown duration
+2026-03-07T00:16:29.018303Z  INFO mapmap_media::decoder::ffmpeg_impl: D3D11VA hardware acceleration initialized
+2026-03-07T00:16:29.019583Z  INFO mapmap_media::decoder::ffmpeg_impl: Decoder initialized successfully: 1280x720 @ 30.00 fps, duration: 0.00s, hw_accel: D3D11VA
+2026-03-07T00:16:29.019940Z  INFO mapmap_media: Opened with FFmpeg decoder: "C:\\Daten\\VJ Media Content\\WEBm  #  HD  # 30 fps\\VLC-Scene_12   #  VJ-Visuals  #  Art-Comic-Style - Color\\pexels-deconjon-12498625 (720p).webm"
+2026-03-07T00:16:29.020071Z  INFO mapmap_media::player: State transition: Idle -> Playing
+2026-03-07T00:16:29.020426Z  INFO MapFlow::orchestration::media: Created media player for module=1 part=2 path='C:\Daten\VJ Media Content\WEBm  #  HD  # 30 fps\VLC-Scene_12   #  VJ-Visuals  #  Art-Comic-Style - Color\pexels-deconjon-12498625 (720p).webm'
+2026-03-07T00:16:29.020753Z  INFO mapmap_media::pipeline: Decode thread started
+2026-03-07T00:16:29.020881Z  INFO mapmap_media::pipeline: Upload thread started
+2026-03-07T00:16:29.028850Z  INFO MapFlow::app::loops::logic: [PERF] FPS: 23.4, Frame: 42.66ms, RAM: 232.6MB, Modules: 1
+2026-03-07T00:16:29.054826Z  INFO mapmap_media::decoder::ffmpeg_impl: Input changed: 1280x720 YUV420P -> 1280x720 NV12
+2026-03-07T00:16:29.118401Z  INFO mapmap_ui::panels::controller_overlay_panel: Loaded mixer background
+2026-03-07T00:16:29.131014Z  INFO MapFlow::app::loops::logic: Output set changed: {} -> {1}
+2026-03-07T00:16:29.131483Z  INFO MapFlow::window_manager: Creating projector window 'Projector 1' (ID: 1, Screen: 0)
+2026-03-07T00:16:29.155857Z  INFO MapFlow::window_manager: Found icon at "../resources/app_icons/MapFlow_Logo_HQ-Full-M.png" (1024x736)
+2026-03-07T00:16:29.163057Z  INFO MapFlow::window_manager: Successfully created winit icon from "../resources/app_icons/MapFlow_Logo_HQ-Full-M.png"
+2026-03-07T00:16:29.216408Z  INFO MapFlow::window_manager: Found icon at "../resources/app_icons/MapFlow_Logo_HQ-Full-M.png" (1024x736)
+2026-03-07T00:16:29.225495Z  INFO MapFlow::window_manager: Successfully created winit icon from "../resources/app_icons/MapFlow_Logo_HQ-Full-M.png"
+2026-03-07T00:16:29.240200Z  INFO MapFlow::window_manager: Created projector window 'Projector 1' at 1920x1080
+2026-03-07T00:16:29.240499Z  INFO MapFlow::orchestration::outputs: Created projector window for output 1
