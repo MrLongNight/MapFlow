@@ -26,23 +26,6 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 }
             }
 
-            // Settings
-            UIAction::SetTargetFps(fps) => {
-                app.ui_state.user_config.target_fps = Some(fps);
-                let _ = app.ui_state.user_config.save();
-                app.ui_state.target_fps = fps; // Keep runtime variable updated if necessary
-            }
-            UIAction::SetVsyncMode(mode) => {
-                app.ui_state.user_config.vsync_mode = mode;
-                let _ = app.ui_state.user_config.save();
-                // Apply vsync right away
-                app.window_manager.update_vsync_mode(&app.backend, mode);
-            }
-            UIAction::SetPreferredGpu(gpu) => {
-                app.ui_state.user_config.preferred_gpu = gpu;
-                let _ = app.ui_state.user_config.save();
-            }
-
             // Global Fullscreen Setting
             UIAction::SetGlobalFullscreen(is_fullscreen) => {
                 needs_sync = true;
@@ -189,13 +172,6 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
             UIAction::LoadRecentProject(path_str) => {
                 let path = PathBuf::from(path_str);
                 load_project_file(app, &path);
-            }
-            UIAction::SetTheme(theme) => {
-                app.ui_state.user_config.theme.theme = theme;
-
-                app.state.dirty = true;
-
-                info!("Theme switched to: {:?}", theme);
             }
             UIAction::SetLanguage(lang_code) => {
                 app.state.settings_mut().language = lang_code.clone();
@@ -369,6 +345,14 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                     .layer_manager_mut()
                     .create_layer(format!("Layer {}", count + 1));
                 app.state.dirty = true;
+            }
+            UIAction::UpdateMappingMesh(id, mesh) => {
+                if let Some(mapping) =
+                    std::sync::Arc::make_mut(&mut app.state.mapping_manager).get_mapping_mut(id)
+                {
+                    mapping.mesh = mesh;
+                    app.state.dirty = true;
+                }
             }
             UIAction::CreateGroup => {
                 let count = app.state.layer_manager.len();

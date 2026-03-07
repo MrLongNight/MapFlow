@@ -1,8 +1,11 @@
-use super::state::ModuleCanvas;
 use egui::{Color32, Pos2, Sense, Stroke, Ui, Vec2};
 use mapmap_core::module::{LayerType, MeshType, ModulePart, ModulePartId, ModulePartType};
 
-pub fn sync_mesh_editor_to_current_selection(canvas: &mut ModuleCanvas, part: &ModulePart) {
+pub fn sync_mesh_editor_to_current_selection(
+    mesh_editor: &mut crate::editors::mesh_editor::MeshEditor,
+    last_mesh_edit_id: &mut Option<u64>,
+    part: &ModulePart,
+) {
     // Extract MeshType from part
     let mesh = match &part.part_type {
         ModulePartType::Layer(LayerType::Single { mesh, .. }) => mesh,
@@ -12,19 +15,19 @@ pub fn sync_mesh_editor_to_current_selection(canvas: &mut ModuleCanvas, part: &M
     };
 
     // Only reset if it's a different part
-    if canvas.last_mesh_edit_id == Some(part.id) {
+    if *last_mesh_edit_id == Some(part.id) {
         return;
     }
 
-    canvas.last_mesh_edit_id = Some(part.id);
-    canvas.mesh_editor.mode = crate::editors::mesh_editor::EditMode::Select;
+    *last_mesh_edit_id = Some(part.id);
+    mesh_editor.mode = crate::editors::mesh_editor::EditMode::Select;
 
     // Visual scale for editor (0-1 -> 0-200)
     let scale = 200.0;
 
     match mesh {
         MeshType::Quad { tl, tr, br, bl } => {
-            canvas.mesh_editor.set_from_quad(
+            mesh_editor.set_from_quad(
                 egui::Pos2::new(tl.0 * scale, tl.1 * scale),
                 egui::Pos2::new(tr.0 * scale, tr.1 * scale),
                 egui::Pos2::new(br.0 * scale, br.1 * scale),
@@ -37,18 +40,19 @@ pub fn sync_mesh_editor_to_current_selection(canvas: &mut ModuleCanvas, part: &M
                 .iter()
                 .map(|(x, y)| (x * scale, y * scale))
                 .collect();
-            canvas.mesh_editor.set_from_bezier_points(&points);
+            mesh_editor.set_from_bezier_points(&points);
         }
         // Fallback for unsupported types - reset to default quad for now
         _ => {
-            canvas
-                .mesh_editor
-                .create_quad(egui::Pos2::new(100.0, 100.0), 200.0);
+            mesh_editor.create_quad(egui::Pos2::new(100.0, 100.0), 200.0);
         }
     }
 }
 
-pub fn apply_mesh_editor_to_selection(canvas: &mut ModuleCanvas, part: &mut ModulePart) {
+pub fn apply_mesh_editor_to_selection(
+    mesh_editor: &crate::editors::mesh_editor::MeshEditor,
+    part: &mut ModulePart,
+) {
     // Get mutable reference to mesh
     let mesh = match &mut part.part_type {
         ModulePartType::Layer(LayerType::Single { mesh, .. }) => mesh,
@@ -62,7 +66,7 @@ pub fn apply_mesh_editor_to_selection(canvas: &mut ModuleCanvas, part: &mut Modu
     // Try to update current mesh type
     match mesh {
         MeshType::Quad { tl, tr, br, bl } => {
-            if let Some((p_tl, p_tr, p_br, p_bl)) = canvas.mesh_editor.get_quad_corners() {
+            if let Some((p_tl, p_tr, p_br, p_bl)) = mesh_editor.get_quad_corners() {
                 *tl = (p_tl.x / scale, p_tl.y / scale);
                 *tr = (p_tr.x / scale, p_tr.y / scale);
                 *br = (p_br.x / scale, p_br.y / scale);
@@ -70,7 +74,7 @@ pub fn apply_mesh_editor_to_selection(canvas: &mut ModuleCanvas, part: &mut Modu
             }
         }
         MeshType::BezierSurface { control_points } => {
-            let points = canvas.mesh_editor.get_bezier_points();
+            let points = mesh_editor.get_bezier_points();
             *control_points = points.iter().map(|(x, y)| (x / scale, y / scale)).collect();
         }
         _ => {
@@ -80,7 +84,8 @@ pub fn apply_mesh_editor_to_selection(canvas: &mut ModuleCanvas, part: &mut Modu
 }
 
 pub fn render_mesh_editor_ui(
-    canvas: &mut ModuleCanvas,
+    mesh_editor: &mut crate::editors::mesh_editor::MeshEditor,
+    last_mesh_edit_id: &mut Option<u64>,
     ui: &mut Ui,
     mesh: &mut MeshType,
     part_id: ModulePartId,
@@ -114,14 +119,14 @@ pub fn render_mesh_editor_ui(
                         br: (1.0, 1.0),
                         bl: (0.0, 1.0),
                     };
-                    canvas.last_mesh_edit_id = None; // Trigger resync
+                    *last_mesh_edit_id = None; // Trigger resync
                 }
                 if ui
                     .selectable_label(matches!(mesh, MeshType::Grid { .. }), "Grid")
                     .clicked()
                 {
                     *mesh = MeshType::Grid { rows: 4, cols: 4 };
-                    canvas.last_mesh_edit_id = None; // Trigger resync
+                    *last_mesh_edit_id = None; // Trigger resync
                 }
                 if ui
                     .selectable_label(matches!(mesh, MeshType::BezierSurface { .. }), "Bezier")
@@ -131,22 +136,22 @@ pub fn render_mesh_editor_ui(
                     *mesh = MeshType::BezierSurface {
                         control_points: vec![],
                     };
-                    canvas.last_mesh_edit_id = None;
+                    *last_mesh_edit_id = None;
                 }
             });
 
         // Resync logic if type changed (handled by caller passing part, but here we just have mesh)
-        if canvas.last_mesh_edit_id.is_none() {
+        if last_mesh_edit_id.is_none() {
             let scale = 200.0;
             match mesh {
                 MeshType::Quad { tl, tr, br, bl } => {
-                    canvas.mesh_editor.set_from_quad(
+                    mesh_editor.set_from_quad(
                         egui::Pos2::new(tl.0 * scale, tl.1 * scale),
                         egui::Pos2::new(tr.0 * scale, tr.1 * scale),
                         egui::Pos2::new(br.0 * scale, br.1 * scale),
                         egui::Pos2::new(bl.0 * scale, bl.1 * scale),
                     );
-                    canvas.last_mesh_edit_id = Some(part_id);
+                    *last_mesh_edit_id = Some(part_id);
                 }
                 MeshType::BezierSurface { control_points } => {
                     // Deserialize scaled points
@@ -154,15 +159,13 @@ pub fn render_mesh_editor_ui(
                         .iter()
                         .map(|(x, y)| (x * scale, y * scale))
                         .collect();
-                    canvas.mesh_editor.set_from_bezier_points(&points);
-                    canvas.last_mesh_edit_id = Some(part_id);
+                    mesh_editor.set_from_bezier_points(&points);
+                    *last_mesh_edit_id = Some(part_id);
                 }
                 _ => {
                     // Fallback
-                    canvas
-                        .mesh_editor
-                        .create_quad(egui::Pos2::new(100.0, 100.0), 200.0);
-                    canvas.last_mesh_edit_id = Some(part_id);
+                    mesh_editor.create_quad(egui::Pos2::new(100.0, 100.0), 200.0);
+                    *last_mesh_edit_id = Some(part_id);
                 }
             }
         }
@@ -170,12 +173,12 @@ pub fn render_mesh_editor_ui(
         ui.separator();
         ui.label("Visual Editor:");
 
-        if let Some(_action) = canvas.mesh_editor.ui(ui) {
+        if let Some(_action) = mesh_editor.ui(ui) {
             // Sync back
             let scale = 200.0;
             match mesh {
                 MeshType::Quad { tl, tr, br, bl } => {
-                    if let Some((p_tl, p_tr, p_br, p_bl)) = canvas.mesh_editor.get_quad_corners() {
+                    if let Some((p_tl, p_tr, p_br, p_bl)) = mesh_editor.get_quad_corners() {
                         *tl = (p_tl.x / scale, p_tl.y / scale);
                         *tr = (p_tr.x / scale, p_tr.y / scale);
                         *br = (p_br.x / scale, p_br.y / scale);
@@ -183,7 +186,7 @@ pub fn render_mesh_editor_ui(
                     }
                 }
                 MeshType::BezierSurface { control_points } => {
-                    let points = canvas.mesh_editor.get_bezier_points();
+                    let points = mesh_editor.get_bezier_points();
                     *control_points = points.iter().map(|(x, y)| (x / scale, y / scale)).collect();
                 }
                 _ => {}

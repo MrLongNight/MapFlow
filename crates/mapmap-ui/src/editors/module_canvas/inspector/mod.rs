@@ -48,8 +48,11 @@ pub fn set_default_effect_params(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn render_inspector_for_part(
     canvas: &mut ModuleCanvas,
+    mesh_editor: &mut crate::editors::mesh_editor::MeshEditor,
+    last_mesh_edit_id: &mut Option<u64>,
     ui: &mut Ui,
     part: &mut ModulePart,
     actions: &mut Vec<UIAction>,
@@ -57,7 +60,7 @@ pub fn render_inspector_for_part(
     shared_media_ids: &[String],
 ) {
     // Sync mesh editor state if needed
-    mesh::sync_mesh_editor_to_current_selection(canvas, part);
+    mesh::sync_mesh_editor_to_current_selection(mesh_editor, last_mesh_edit_id, part);
 
     let part_id = part.id;
 
@@ -1398,7 +1401,7 @@ pub fn render_inspector_for_part(
 
                     // Helper to render mesh UI
                     let mut render_mesh_ui = |ui: &mut Ui, mesh: &mut mapmap_core::module::MeshType, id_salt: u64| {
-                        mesh::render_mesh_editor_ui(canvas, ui, mesh, part_id, id_salt);
+                        mesh::render_mesh_editor_ui(mesh_editor, last_mesh_edit_id, ui, mesh, part_id, id_salt);
                     };
 
                     match layer {
@@ -1438,7 +1441,7 @@ pub fn render_inspector_for_part(
                     ui.label("🕸️ Mesh Node");
                     ui.separator();
 
-                    mesh::render_mesh_editor_ui(canvas, ui, mesh, part_id, part_id);
+                    mesh::render_mesh_editor_ui(mesh_editor, last_mesh_edit_id, ui, mesh, part_id, part_id);
                 }
                 ModulePartType::Output(output) => {
                     ui.label("Output:");

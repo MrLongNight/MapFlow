@@ -937,11 +937,7 @@ pub fn draw_part_with_delete(
 
         // Socket label
         let type_name = socket.socket_type.name();
-        let display_name = if socket
-            .name
-            .to_lowercase()
-            .contains(&type_name.to_lowercase())
-        {
+        let display_name = if socket.name.to_lowercase().contains(&type_name.to_lowercase()) {
             socket.name.clone()
         } else {
             format!("{} ({})", socket.name, type_name)
@@ -950,7 +946,7 @@ pub fn draw_part_with_delete(
         painter.text(
             Pos2::new(rect.min.x + 14.0 * canvas.zoom, socket_y),
             egui::Align2::LEFT_CENTER,
-            display_name,
+            &display_name,
             egui::FontId::proportional(11.0 * canvas.zoom),
             Color32::from_gray(230),
         );
@@ -999,11 +995,7 @@ pub fn draw_part_with_delete(
 
         // Socket label
         let type_name = socket.socket_type.name();
-        let display_name = if socket
-            .name
-            .to_lowercase()
-            .contains(&type_name.to_lowercase())
-        {
+        let display_name = if socket.name.to_lowercase().contains(&type_name.to_lowercase()) {
             socket.name.clone()
         } else {
             format!("{} ({})", socket.name, type_name)
@@ -1012,7 +1004,7 @@ pub fn draw_part_with_delete(
         painter.text(
             Pos2::new(rect.max.x - 14.0 * canvas.zoom, socket_y),
             egui::Align2::RIGHT_CENTER,
-            display_name,
+            &display_name,
             egui::FontId::proportional(11.0 * canvas.zoom),
             Color32::from_gray(230),
         );

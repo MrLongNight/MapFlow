@@ -397,7 +397,7 @@ pub fn render_canvas(
 
     // 3. Global Connection Release
     if ui.input(|i| i.pointer.any_released()) {
-        if let Some((from_part, from_idx, is_output, from_type, _)) =
+        if let Some((from_part, from_idx, is_output, _from_type, _)) =
             canvas.creating_connection.take()
         {
             if let Some(pointer_pos) = ui.input(|i| i.pointer.hover_pos()) {
@@ -409,7 +409,6 @@ pub fn render_canvas(
                     if dist < min_dist
                         && target.part_id != from_part
                         && target.is_output != is_output
-                        && target.socket_type == from_type
                     {
                         min_dist = dist;
                         closest_socket = Some(target);
