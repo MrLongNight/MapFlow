@@ -59,82 +59,75 @@ jobs:
         id: cache-vcpkg
         uses: actions/cache@v4
         with:
-          path: vcpkg
+          path: |
+            ${{ github.workspace }}/vcpkg_installed
+            ${{ env.VCPKG_ROOT }}
           key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json') }}
           restore-keys: |
             ${{ runner.os }}-vcpkg-
 
-      - name: vcpkg installieren
+      - name: Set up vcpkg
         shell: pwsh
         run: |
-          if (-not (Test-Path "vcpkg")) {
-            git clone --depth 1 https://github.com/microsoft/vcpkg.git
-            .\vcpkg\bootstrap-vcpkg.bat
+          if ($null -eq $env:VCPKG_ROOT) {
+            $vcpkgPath = "${{ runner.workspace }}\vcpkg"
+            if (-not (Test-Path $vcpkgPath)) {
+              git clone --depth 1 https://github.com/microsoft/vcpkg.git $vcpkgPath
+              & "$vcpkgPath\bootstrap-vcpkg.bat"
+            }
+            Add-Content -Path $env:GITHUB_ENV -Value "VCPKG_ROOT=$vcpkgPath"
           }
-          .\vcpkg\vcpkg integrate install
 
-      - name: Cache vcpkg installed libs
-        id: cache-vcpkg-installed
-        uses: actions/cache@v4
-        with:
-          path: vcpkg_installed
-          key: ${{ runner.os }}-vcpkg-installed-${{ hashFiles('vcpkg.json') }}
-          restore-keys: |
-            ${{ runner.os }}-vcpkg-installed-
-
-      - name: VCPKG_ROOT-Variable setzen
+      - name: ffmpeg mit vcpkg installieren (Manifest Mode)
         shell: pwsh
         run: |
-          $vcpkgRoot = "$(Get-Location)\vcpkg"
-          $installedDir = "$(Get-Location)\vcpkg_installed"
-          Add-Content -Path $env:GITHUB_ENV -Value "VCPKG_ROOT=$vcpkgRoot"
-          Add-Content -Path $env:GITHUB_ENV -Value "VCPKG_DEFAULT_TRIPLET=x64-windows"
-          Add-Content -Path $env:GITHUB_ENV -Value "VCPKG_INSTALLED_DIR=$installedDir"
-
-      - name: ffmpeg mit vcpkg installieren
-        if: steps.cache-vcpkg-installed.outputs.cache-hit != 'true'
-        shell: pwsh
-        run: .\vcpkg\vcpkg install ffmpeg:x64-windows
+          $vcpkgExe = "$env:VCPKG_ROOT\vcpkg.exe"
+          & $vcpkgExe install --triplet x64-windows --x-install-root="${{ github.workspace }}\vcpkg_installed"
 
       - name: Set FFmpeg environment for ffmpeg-sys-next
         shell: pwsh
         run: |
-          $RawInstalledDir = "$(Get-Location)/vcpkg_installed/x64-windows"
-          $InstalledDir = $RawInstalledDir.Replace('\', '/')
-          $IncludePath = "$InstalledDir/include"
-          $LibPath = "$InstalledDir/lib"
-          $BinPath = "$InstalledDir/bin"
-          $PkgConfigPath = "$InstalledDir/lib/pkgconfig"
+          $InstalledDir = "${{ github.workspace }}\vcpkg_installed\x64-windows"
+          $UnixInstalledDir = $InstalledDir.Replace('\', '/')
+          $IncludePath = "$InstalledDir\include"
+          $LibPath = "$InstalledDir\lib"
+          $BinPath = "$InstalledDir\bin"
+          $PkgConfigPath = "$UnixInstalledDir/lib/pkgconfig"
 
-          Add-Content -Path $env:GITHUB_ENV -Value "FFMPEG_DIR=$InstalledDir"
-          Add-Content -Path $env:GITHUB_ENV -Value "FFMPEG_INCLUDE_DIR=$IncludePath"
-          Add-Content -Path $env:GITHUB_ENV -Value "FFMPEG_LIB_DIR=$LibPath"
+          Add-Content -Path $env:GITHUB_ENV -Value "FFMPEG_DIR=$UnixInstalledDir"
+          Add-Content -Path $env:GITHUB_ENV -Value "FFMPEG_INCLUDE_DIR=$UnixInstalledDir/include"
+          Add-Content -Path $env:GITHUB_ENV -Value "FFMPEG_LIB_DIR=$UnixInstalledDir/lib"
           Add-Content -Path $env:GITHUB_ENV -Value "FFMPEG_VERSION=7.1"
           Add-Content -Path $env:GITHUB_ENV -Value "PKG_CONFIG_PATH=$PkgConfigPath"
-
-          # Force bindgen/clang to use vcpkg headers on Windows MSVC and avoid Linux path leakage
-          $ClangArgs = "--target=x86_64-pc-windows-msvc -I`"$IncludePath`""
-          Add-Content -Path $env:GITHUB_ENV -Value "BINDGEN_EXTRA_CLANG_ARGS=$ClangArgs"
+          
+          # Add to PATH for both CMD and PowerShell
           Add-Content -Path $env:GITHUB_PATH -Value "$BinPath"
+          
+          # Bindgen arguments to ensure correct headers and target
+          $ClangArgs = "-I`"$IncludePath`" --target=x86_64-pc-windows-msvc"
+          Add-Content -Path $env:GITHUB_ENV -Value "BINDGEN_EXTRA_CLANG_ARGS=$ClangArgs"
+          
+          # MSVC Include path fallback
+          Add-Content -Path $env:GITHUB_ENV -Value "INCLUDE=$IncludePath"
 
       - name: Verify FFmpeg Headers
         shell: pwsh
         run: |
-          if (Test-Path "$env:FFMPEG_INCLUDE_DIR/libavcodec/avfft.h") {
-            Write-Host "✅ avfft.h found at $env:FFMPEG_INCLUDE_DIR/libavcodec/avfft.h"
+          $HeaderFile = "${{ github.workspace }}\vcpkg_installed\x64-windows\include\libavcodec\avfft.h"
+          if (Test-Path $HeaderFile) {
+            Write-Host "✅ avfft.h found at $HeaderFile"
           } else {
-            Write-Error "❌ avfft.h NOT found! Check vcpkg installation."
+            Write-Error "❌ avfft.h NOT found! Check vcpkg installation at: $HeaderFile"
             exit 1
           }
 
       - name: Install cargo-wix
-        run: |
-          # Use binstall if available or cargo install
-          cargo install cargo-wix --locked || true
+        run: cargo install cargo-wix --locked || true
 
       - name: Build (Release)
         shell: pwsh
         run: |
+          $env:LIBCLANG_PATH = "${{ runner.temp }}\llvm\bin"
           cargo build --release -p mapmap --features "audio,ffmpeg" --verbose
 
       - name: Prepare Release Folder & Copy DLLs
@@ -142,6 +135,7 @@ jobs:
         run: |
           $ReleaseDir = "target/release"
           $VcpkgBin = "vcpkg_installed/x64-windows/bin"
+          if (-not (Test-Path $ReleaseDir)) { New-Item -ItemType Directory -Path $ReleaseDir -Force }
           Copy-Item "$VcpkgBin/*.dll" "$ReleaseDir/" -Force
 
       - name: Create ZIP Artifact
@@ -155,6 +149,7 @@ jobs:
       - name: Build MSI Installer
         shell: pwsh
         run: |
+          $env:LIBCLANG_PATH = "${{ runner.temp }}\llvm\bin"
           cargo wix --release -p mapmap --no-check-includes
           $MsiPath = Get-ChildItem -Path "target/wix/*.msi" | Select-Object -First 1 -ExpandProperty FullName
           Move-Item -Path $MsiPath -Destination "MapFlow-${{ inputs.version }}-x64.msi"
@@ -198,7 +193,9 @@ jobs:
             libxinerama-dev libwayland-dev libxkbcommon-dev libssl-dev \
             ffmpeg
       - name: Build (Release)
-        run: cargo build --release -p mapmap --features "audio,ffmpeg"
+        run: |
+          export LIBCLANG_PATH=/usr/lib/llvm-14/lib
+          cargo build --release -p mapmap --features "audio,ffmpeg"
       - name: Create Tarball
         run: |
           VERSION="${{ inputs.version }}"

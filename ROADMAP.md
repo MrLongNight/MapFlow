@@ -1,4 +1,4 @@
-# MapFlow ROADMAP (MF-ID gesteuert)
+﻿# MapFlow ROADMAP (MF-ID gesteuert)
 
 > **Stand:** 2026-03-06 23:35
 Operatives Hauptdokument: `ROADMAP.md`
@@ -38,7 +38,7 @@ Sprache: Deutsch
 | MF-006-TRIGGER-FEEDBACK-RESTORE | Module Canvas | Bug | Trigger-Feedback visuell wieder belastbar machen. | SRC-041, SRC-064 | 🟠 In Analyse | 🔴 Offen | - | `MF-006-trigger-feedback-restore` | - | 2026-03-06 |
 | MF-010-HUE-CONFIG-REUSE | Control/Hue | Bug | Gespeicherte Bridge-Daten robust nutzen (Init + Reconnect + Actions). | SRC-030, SRC-068 | 🟠 In Analyse | 🔴 Offen | - | `MF-010-hue-config-reuse` | - | 2026-03-06 |
 | MF-012-ANALOG-METER-OPTION | Audio/UI | Feature | Analoges Level-Meter als waehlbare Option reaktivieren. | SRC-042, SRC-070 | 🟠 In Analyse | 🔴 Offen | - | `MF-012-analog-meter-option` | - | 2026-03-06 |
-| MF-013-FFMPEG-BUILDMODE-CLARITY | Media/Build | Bug | FFmpeg-Buildmodus und Fallback-Verhalten eindeutig and testbar machen. | SRC-070 | 🟠 In Analyse | 🔴 Offen | - | `MF-013-ffmpeg-buildmode-clarity` | - | 2026-03-06 |
+| MF-013-FFMPEG-BUILDMODE-CLARITY | Media/Build | Bug | FFmpeg-Buildmodus und Fallback-Verhalten eindeutig and testbar machen. | SRC-070 | 🟢 Bereit fuer QA | 🔴 Offen | - | `main` | - | 2026-03-07 |
 | MF-016-FEATURE-STATUS-BASELINE | Docs/QA | Feature | Vollstaendige Feature-Status-Uebersicht mit Dev- und User-QA-Status. | SRC-032, SRC-035, SRC-036, SRC-037 | 🔵 In Umsetzung | 🔴 Offen | - | `MF-016-feature-status-baseline` | - | 2026-03-06 |
 | MF-017-TEST-MATRIX-ROLL-OUT | QA/Process | Feature | Feste, gruppierte Testmatrix fuer Regression und Freigaben. | SRC-038, SRC-039 | 🔵 In Umsetzung | 🔴 Offen | - | `MF-017-test-matrix-rollout` | - | 2026-03-06 |
 | MF-018-SCOPE-PRIORITY-GOVERNANCE | Process | Refactor | Scope-Steuerung statt eigener "Wird das benoetigt?"-Sektion. | SRC-034 | 🔵 In Umsetzung | 🔴 Offen | - | `MF-018-scope-priority-governance` | - | 2026-03-06 |
