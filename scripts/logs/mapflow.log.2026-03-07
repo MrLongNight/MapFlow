@@ -29,7 +29,7 @@
 2026-03-07T00:16:28.772566Z  WARN MapFlow::app::core::init: Hue Controller initial connection failed: Failed to establish DTLS connection: Hue Entertainment streaming is currently disabled because OpenSSL support is not compiled in (build hang avoidance).
 2026-03-07T00:16:28.848460Z  INFO mapmap_bevy: Initializing Bevy integration (Safe Logic Mode)...
 2026-03-07T00:16:28.850528Z  INFO MapFlow::app::core::init: ==========================================
-2026-03-07T00:16:28.850721Z  INFO MapFlow::app::core::init:    MapFlow Initialization Status Report   
+2026-03-07T00:16:28.850721Z  INFO MapFlow::app::core::init:    MapFlow Initialization Status Report
 2026-03-07T00:16:28.851155Z  INFO MapFlow::app::core::init: ------------------------------------------
 2026-03-07T00:16:28.851324Z  INFO MapFlow::app::core::init: - Render Backend: AMD Radeon R5 430 (Vulkan)
 2026-03-07T00:16:28.851595Z  INFO MapFlow::app::core::init: - Edge Blend:     ENABLED
