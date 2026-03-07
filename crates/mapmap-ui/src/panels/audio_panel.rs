@@ -14,6 +14,7 @@ use mapmap_core::audio::{AudioAnalysis, AudioConfig};
 pub enum AudioPanelAction {
     DeviceChanged(String),
     ConfigChanged(AudioConfig),
+    MeterStyleChanged(crate::config::AudioMeterStyle),
 }
 
 #[derive(Debug)]
@@ -34,6 +35,7 @@ impl AudioPanel {
     }
 
     /// Render the Audio Panel UI
+    #[allow(clippy::too_many_arguments)]
     pub fn ui(
         &mut self,
         ui: &mut Ui,
@@ -42,6 +44,7 @@ impl AudioPanel {
         config: &AudioConfig,
         available_devices: &[String],
         selected_device: &mut Option<String>,
+        meter_style: crate::config::AudioMeterStyle,
     ) -> Option<AudioPanelAction> {
         let mut action = None;
 
@@ -159,6 +162,25 @@ impl AudioPanel {
                         new_cfg.smoothing = smoothing;
                         action = Some(AudioPanelAction::ConfigChanged(new_cfg));
                     }
+                    ui.end_row();
+
+                    // Meter Style
+                    ui.label("Meter Style"); // Fallback, could add translation
+                    egui::ComboBox::from_id_salt("audio_meter_style_combo")
+                        .selected_text(meter_style.to_string())
+                        .show_ui(ui, |ui| {
+                            for style in [
+                                crate::config::AudioMeterStyle::Retro,
+                                crate::config::AudioMeterStyle::Digital,
+                            ] {
+                                if ui
+                                    .selectable_label(meter_style == style, style.to_string())
+                                    .clicked()
+                                {
+                                    action = Some(AudioPanelAction::MeterStyleChanged(style));
+                                }
+                            }
+                        });
                     ui.end_row();
                 });
         });

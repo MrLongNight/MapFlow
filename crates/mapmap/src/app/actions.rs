@@ -203,6 +203,12 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 app.ui_state.i18n.set_locale(&lang_code);
                 info!("Language switched to: {}", lang_code);
             }
+            UIAction::SetMeterStyle(style) => {
+                app.ui_state.user_config.meter_style = style;
+                app.state.dirty = true;
+                let _ = app.ui_state.user_config.save();
+                info!("Audio meter style switched to: {:?}", style);
+            }
             UIAction::Exit => {
                 info!("Exit requested via menu");
                 app.exit_requested = true;

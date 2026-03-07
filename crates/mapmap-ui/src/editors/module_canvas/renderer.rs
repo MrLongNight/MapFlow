@@ -15,6 +15,7 @@ pub fn show(
     manager: &mut ModuleManager,
     locale: &LocaleManager,
     actions: &mut Vec<UIAction>,
+    meter_style: crate::config::AudioMeterStyle,
 ) {
     if !canvas.selected_parts.is_empty()
         && !ui.memory(|m| m.focused().is_some())
@@ -72,7 +73,7 @@ pub fn show(
     }
 
     if let Some(module_id) = canvas.active_module_id {
-        render_canvas(canvas, ui, manager, module_id, locale, actions);
+        render_canvas(canvas, ui, manager, module_id, locale, actions, meter_style);
     } else {
         ui.centered_and_justified(|ui| {
             ui.vertical_centered(|ui| {
@@ -93,6 +94,7 @@ pub fn render_canvas(
     module_id: ModuleId,
     _locale: &LocaleManager,
     actions: &mut Vec<UIAction>,
+    meter_style: crate::config::AudioMeterStyle,
 ) {
     let module = if let Some(m) = manager.get_module_mut(module_id) {
         m
@@ -282,7 +284,16 @@ pub fn render_canvas(
             }
         }
 
-        draw::draw_part_with_delete(canvas, ui, &painter, part, part_rect, actions, module.id);
+        draw::draw_part_with_delete(
+            canvas,
+            ui,
+            &painter,
+            part,
+            part_rect,
+            actions,
+            module.id,
+            meter_style,
+        );
 
         let part_id = part.id;
 

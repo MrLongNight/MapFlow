@@ -213,6 +213,8 @@ pub enum UIAction {
     SetTheme(crate::theme::Theme),
     /// Set UI language
     SetLanguage(String),
+    /// Set audio meter style
+    SetMeterStyle(crate::config::AudioMeterStyle),
     /// Connect to Philips Hue bridge
     ConnectHue,
     /// Disconnect from Philips Hue bridge

@@ -28,5 +28,6 @@ pub fn show(ui: &mut Ui, context: ModuleCanvasContext) {
         context.state.module_manager_mut(),
         &context.ui_state.i18n,
         &mut context.ui_state.actions,
+        context.ui_state.user_config.meter_style,
     );
 }

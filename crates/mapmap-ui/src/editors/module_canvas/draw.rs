@@ -383,6 +383,7 @@ where
     remove_idx
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn draw_part_with_delete(
     canvas: &ModuleCanvas,
     ui: &Ui,
@@ -391,6 +392,7 @@ pub fn draw_part_with_delete(
     rect: Rect,
     actions: &mut Vec<UIAction>,
     module_id: ModuleId,
+    meter_style: crate::config::AudioMeterStyle,
 ) {
     // Get part color and name based on type
     let (_bg_color, title_color, icon, name) = utils::get_part_style(&part.part_type);
@@ -728,56 +730,120 @@ pub fn draw_part_with_delete(
     // Draw audio trigger VU meter and live value display
     if is_audio_trigger {
         let offset_from_bottom = if has_property_text { 28.0 } else { 12.0 };
-        let meter_height = 4.0 * canvas.zoom; // Thinner meter
+
+        let meter_height = match meter_style {
+            crate::config::AudioMeterStyle::Retro => 12.0 * canvas.zoom, // Needs more height for analog look
+            crate::config::AudioMeterStyle::Digital => 4.0 * canvas.zoom,
+        };
+
         let meter_y = rect.max.y - (offset_from_bottom * canvas.zoom) - meter_height;
         let meter_width = rect.width() - 20.0 * canvas.zoom;
         let meter_x = rect.min.x + 10.0 * canvas.zoom;
 
-        // Background bar
-        let meter_bg = Rect::from_min_size(
-            Pos2::new(meter_x, meter_y),
-            Vec2::new(meter_width, meter_height),
-        );
-        painter.rect_filled(meter_bg, 2.0, Color32::from_gray(20));
+        match meter_style {
+            crate::config::AudioMeterStyle::Retro => {
+                // Background
+                let meter_bg = Rect::from_min_size(
+                    Pos2::new(meter_x, meter_y),
+                    Vec2::new(meter_width, meter_height),
+                );
+                painter.rect_filled(meter_bg, 2.0, Color32::from_rgb(230, 225, 210)); // Cream
 
-        // Value bar with Hardware-Segments
-        let num_segments = 20;
-        let segment_spacing = 1.0 * canvas.zoom;
-        let segment_width =
-            (meter_width - (num_segments as f32 - 1.0) * segment_spacing) / num_segments as f32;
+                // Draw scale background (darker rect in center)
+                let arc_rect = meter_bg.shrink(2.0 * canvas.zoom);
 
-        for i in 0..num_segments {
-            let t = i as f32 / num_segments as f32;
-            if t > trigger_value {
-                break;
+                // Needle calculation
+                let clamped_val = trigger_value.clamp(0.0, 1.0);
+
+                // Pivot at bottom center
+                let pivot = Pos2::new(meter_bg.center().x, meter_bg.max.y + meter_height * 0.5);
+                let radius = meter_height * 1.5;
+
+                let start_angle = -40.0_f32.to_radians();
+                let end_angle = 40.0_f32.to_radians();
+                let needle_angle = start_angle + (end_angle - start_angle) * clamped_val;
+
+                let needle_tip =
+                    pivot + Vec2::new(needle_angle.sin() * radius, -needle_angle.cos() * radius);
+
+                // Ensure tip stays within bounds roughly
+                let bounded_tip = Pos2::new(
+                    needle_tip.x.clamp(arc_rect.min.x, arc_rect.max.x),
+                    needle_tip.y.max(arc_rect.min.y),
+                );
+
+                // Draw scale marks
+                painter.line_segment(
+                    [
+                        Pos2::new(meter_x + meter_width * 0.8, meter_y + meter_height * 0.5),
+                        Pos2::new(meter_x + meter_width * 0.95, meter_y + meter_height * 0.5),
+                    ],
+                    Stroke::new(1.0 * canvas.zoom, Color32::from_rgb(200, 50, 50)),
+                );
+
+                // Draw needle
+                let visible_base = Pos2::new(pivot.x, meter_bg.max.y);
+                painter.line_segment(
+                    [visible_base, bounded_tip],
+                    Stroke::new(1.5 * canvas.zoom, Color32::from_rgb(180, 40, 40)),
+                );
+
+                // Glass effect
+                painter.rect_stroke(
+                    meter_bg,
+                    2.0,
+                    Stroke::new(1.0, Color32::from_white_alpha(40)),
+                    egui::StrokeKind::Inside,
+                );
             }
+            crate::config::AudioMeterStyle::Digital => {
+                // Background bar
+                let meter_bg = Rect::from_min_size(
+                    Pos2::new(meter_x, meter_y),
+                    Vec2::new(meter_width, meter_height),
+                );
+                painter.rect_filled(meter_bg, 2.0, Color32::from_gray(20));
 
-            let seg_x = meter_x + i as f32 * (segment_width + segment_spacing);
-            let seg_rect = Rect::from_min_size(
-                Pos2::new(seg_x, meter_y),
-                Vec2::new(segment_width, meter_height),
-            );
+                // Value bar with Hardware-Segments
+                let num_segments = 20;
+                let segment_spacing = 1.0 * canvas.zoom;
+                let segment_width = (meter_width - (num_segments as f32 - 1.0) * segment_spacing)
+                    / num_segments as f32;
 
-            let seg_color = if t < 0.6 {
-                Color32::from_rgb(0, 255, 100) // Green
-            } else if t < 0.85 {
-                Color32::from_rgb(255, 180, 0) // Orange
-            } else {
-                Color32::from_rgb(255, 50, 50) // Red
-            };
+                for i in 0..num_segments {
+                    let t = i as f32 / num_segments as f32;
+                    if t > trigger_value {
+                        break;
+                    }
 
-            painter.rect_filled(seg_rect, 1.0, seg_color);
+                    let seg_x = meter_x + i as f32 * (segment_width + segment_spacing);
+                    let seg_rect = Rect::from_min_size(
+                        Pos2::new(seg_x, meter_y),
+                        Vec2::new(segment_width, meter_height),
+                    );
+
+                    let seg_color = if t < 0.6 {
+                        Color32::from_rgb(0, 255, 100) // Green
+                    } else if t < 0.85 {
+                        Color32::from_rgb(255, 180, 0) // Orange
+                    } else {
+                        Color32::from_rgb(255, 50, 50) // Red
+                    };
+
+                    painter.rect_filled(seg_rect, 1.0, seg_color);
+                }
+
+                // Threshold line
+                let threshold_x = meter_x + threshold * meter_width;
+                painter.line_segment(
+                    [
+                        Pos2::new(threshold_x, meter_y - 2.0),
+                        Pos2::new(threshold_x, meter_y + meter_height + 2.0),
+                    ],
+                    Stroke::new(1.5, Color32::from_rgba_unmultiplied(255, 50, 50, 200)),
+                );
+            }
         }
-
-        // Threshold line
-        let threshold_x = meter_x + threshold * meter_width;
-        painter.line_segment(
-            [
-                Pos2::new(threshold_x, meter_y - 2.0),
-                Pos2::new(threshold_x, meter_y + meter_height + 2.0),
-            ],
-            Stroke::new(1.5, Color32::from_rgba_unmultiplied(255, 50, 50, 200)),
-        );
     }
 
     // Draw input sockets (left side)

@@ -74,6 +74,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
                                 &app.state.audio_config,
                                 &app.ui_state.audio_devices,
                                 &mut app.ui_state.selected_audio_device,
+                                app.ui_state.user_config.meter_style,
                             ) {
                                 match audio_action {
                                     ui::panels::audio_panel::AudioPanelAction::DeviceChanged(
@@ -87,6 +88,13 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
                                         cfg,
                                     ) => {
                                         app.state.audio_config = cfg;
+                                    }
+                                    ui::panels::audio_panel::AudioPanelAction::MeterStyleChanged(
+                                        style,
+                                    ) => {
+                                        app.ui_state
+                                            .actions
+                                            .push(ui::UIAction::SetMeterStyle(style));
                                     }
                                 }
                             }
@@ -299,6 +307,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
                     std::sync::Arc::make_mut(&mut app.state.module_manager),
                     &app.ui_state.i18n,
                     &mut app.ui_state.actions,
+                    app.ui_state.user_config.meter_style,
                 );
             } else {
                 ui_obj.centered_and_justified(|ui_obj| {
