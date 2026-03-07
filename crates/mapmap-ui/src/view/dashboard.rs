@@ -214,14 +214,6 @@ impl Dashboard {
 
         ui.add_space(8.0);
 
-        // Audio controls
-        ui.group(|ui| {
-            ui.label(locale.t("dashboard-audio-section"));
-            if ui.button(locale.t("dashboard-open-audio-panel")).clicked() {
-                action = Some(DashboardAction::ToggleAudioPanel);
-            }
-        });
-
         action
     }
 
@@ -239,5 +231,4 @@ impl Dashboard {
 pub enum DashboardAction {
     SendCommand(MediaPlaybackCommand),
     AudioDeviceChanged(String),
-    ToggleAudioPanel,
 }

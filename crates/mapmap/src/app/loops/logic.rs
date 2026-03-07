@@ -3,7 +3,6 @@ use crate::app::core::app_struct::App;
 use crate::orchestration::media::{sync_media_players, update_media_players};
 use crate::orchestration::outputs::sync_output_windows;
 use anyhow::Result;
-use mapmap_core::audio::backend::AudioBackend;
 use mapmap_core::module::{ModulePartType, OutputType};
 use mapmap_io::save_project;
 use std::collections::HashSet;
@@ -14,7 +13,11 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     // Process internal MCP actions first
     handle_mcp_actions(app);
 
+    let current_theme = app.ui_state.user_config.theme.theme;
     let ui_needs_sync = handle_ui_actions(app).unwrap_or(false);
+    if app.ui_state.user_config.theme.theme != current_theme {
+        app.ui_state.user_config.theme.apply(&app.egui_context);
+    }
 
     // --- Media Player Update ---
     sync_media_players(app);
@@ -88,15 +91,6 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
                         .cloned()
                         .map(|op| (*module_id, op)),
                 );
-            }
-        }
-
-        // --- Audio Pipeline Update ---
-        if let Some(backend) = &mut app.audio_backend {
-            let samples = backend.get_samples();
-            if !samples.is_empty() {
-                let current_time = app.state.effect_animator.get_current_time();
-                app.audio_analyzer.process_samples(&samples, current_time);
             }
         }
 

@@ -1,4 +1,4 @@
-# MapFlow ROADMAP (MF-ID gesteuert)
+﻿# MapFlow ROADMAP (MF-ID gesteuert)
 
 > **Stand:** 2026-03-06 23:35
 Operatives Hauptdokument: `ROADMAP.md`

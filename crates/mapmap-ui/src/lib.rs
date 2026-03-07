@@ -200,10 +200,17 @@ pub enum UIAction {
     SelectAudioDevice(String),
     /// Update audio configuration
     UpdateAudioConfig(mapmap_core::audio::AudioConfig),
-    /// Toggle audio panel visibility
-    ToggleAudioPanel,
 
     // Settings
+    /// Set target frames per second
+    SetTargetFps(f32),
+    /// Set VSync mode
+    SetVsyncMode(crate::config::VSyncMode),
+    /// Set preferred GPU
+    SetPreferredGpu(Option<String>),
+    /// Set UI language
+    /// Set UI theme
+    SetTheme(crate::theme::Theme),
     /// Set UI language
     SetLanguage(String),
     /// Connect to Philips Hue bridge
@@ -336,8 +343,6 @@ pub struct AppUI {
     pub edge_blend_panel: EdgeBlendPanel,
     /// Oscillator control panel
     pub oscillator_panel: OscillatorPanel,
-    /// Show audio panel
-    pub show_audio: bool,
     /// Audio panel state
     pub audio_panel: AudioPanel,
     /// Show cue list panel
@@ -494,7 +499,6 @@ impl Default for AppUI {
             },
             edge_blend_panel: EdgeBlendPanel::default(),
             oscillator_panel: OscillatorPanel::default(), // Hide by default
-            show_audio: false,                            // Hide by default - use Dashboard toggle
             audio_panel: AudioPanel::default(),
             show_cue_panel: false, // Hide by default
             assignment_panel: AssignmentPanel::default(),

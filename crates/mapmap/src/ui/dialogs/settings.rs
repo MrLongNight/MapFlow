@@ -94,22 +94,13 @@ pub fn show(ctx: &Context, context: SettingsContext) {
             ui.heading(RichText::new(i18n.t("appearance")).color(Color32::WHITE));
             ui.add_space(4.0);
 
-            ui.horizontal(|ui| {
-                ui.label(format!("{}:", i18n.t("theme")));
-                let is_dark = ctx.style().visuals.dark_mode;
-                if ui
-                    .selectable_label(is_dark, format!("🌙 {}", i18n.t("theme-dark")))
-                    .clicked()
-                {
-                    ctx.set_visuals(egui::Visuals::dark());
-                }
-                if ui
-                    .selectable_label(!is_dark, format!("☀ {}", i18n.t("theme-light")))
-                    .clicked()
-                {
-                    ctx.set_visuals(egui::Visuals::light());
-                }
-            });
+            let mut current_theme = context.ui_state.user_config.theme.theme;
+            if mapmap_ui::theme::theme_picker(ui, &mut current_theme) {
+                context
+                    .ui_state
+                    .actions
+                    .push(UIAction::SetTheme(current_theme));
+            }
 
             ui.add_space(4.0);
             ui.horizontal(|ui| {
@@ -140,18 +131,68 @@ pub fn show(ctx: &Context, context: SettingsContext) {
                     ui.end_row();
 
                     ui.label(format!("{}:", i18n.t("target-fps")));
-                    let mut fps = 60;
-                    ui.add(egui::Slider::new(&mut fps, 24..=144).suffix(" FPS"));
+                    let mut fps = context.ui_state.user_config.target_fps.unwrap_or(60.0);
+                    if ui
+                        .add(egui::Slider::new(&mut fps, 24.0..=144.0).suffix(" FPS"))
+                        .changed()
+                    {
+                        context.ui_state.actions.push(UIAction::SetTargetFps(fps));
+                    }
                     ui.end_row();
 
-                    ui.label(format!("{}:", i18n.t("texture-quality")));
-                    let mut quality = 1; // High
-                    egui::ComboBox::from_id_salt("quality_picker")
-                        .selected_text(i18n.t("quality"))
+                    ui.label("VSync Mode:");
+                    let current_vsync = context.ui_state.user_config.vsync_mode;
+                    egui::ComboBox::from_id_salt("vsync_picker")
+                        .selected_text(current_vsync.to_string())
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut quality, 0, "Low");
-                            ui.selectable_value(&mut quality, 1, "High");
+                            let mut vsync = current_vsync;
+                            ui.selectable_value(
+                                &mut vsync,
+                                mapmap_ui::config::VSyncMode::Auto,
+                                "Auto",
+                            );
+                            ui.selectable_value(
+                                &mut vsync,
+                                mapmap_ui::config::VSyncMode::On,
+                                "On (VSync)",
+                            );
+                            ui.selectable_value(
+                                &mut vsync,
+                                mapmap_ui::config::VSyncMode::Off,
+                                "Off (No Limit)",
+                            );
+                            if vsync != current_vsync {
+                                context.ui_state.actions.push(UIAction::SetVsyncMode(vsync));
+                            }
                         });
+                    ui.end_row();
+
+                    ui.label("Preferred GPU:");
+                    let current_gpu = context.ui_state.user_config.preferred_gpu.clone();
+                    let gpu_text = current_gpu.unwrap_or_else(|| "Default".to_string());
+                    // In a real scenario, you'd list available GPUs. Here we let the user enter one or select Default.
+                    ui.horizontal(|ui| {
+                        let mut temp_gpu = gpu_text.clone();
+                        if ui.text_edit_singleline(&mut temp_gpu).changed() {
+                            let new_val = if temp_gpu.trim().is_empty()
+                                || temp_gpu.trim().eq_ignore_ascii_case("default")
+                            {
+                                None
+                            } else {
+                                Some(temp_gpu.trim().to_string())
+                            };
+                            context
+                                .ui_state
+                                .actions
+                                .push(UIAction::SetPreferredGpu(new_val));
+                        }
+                        if ui.button("Clear").clicked() {
+                            context
+                                .ui_state
+                                .actions
+                                .push(UIAction::SetPreferredGpu(None));
+                        }
+                    });
                     ui.end_row();
                 });
 

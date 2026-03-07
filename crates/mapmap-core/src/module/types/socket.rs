@@ -30,6 +30,20 @@ pub enum ModuleSocketType {
     Link,
 }
 
+impl ModuleSocketType {
+    /// Human-readable display name.
+    pub fn name(&self) -> &'static str {
+        match self {
+            ModuleSocketType::Trigger => "Trigger",
+            ModuleSocketType::Media => "Media",
+            ModuleSocketType::Effect => "Effect",
+            ModuleSocketType::Layer => "Layer",
+            ModuleSocketType::Output => "Output",
+            ModuleSocketType::Link => "Link",
+        }
+    }
+}
+
 /// Blend mode types
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum BlendModeType {

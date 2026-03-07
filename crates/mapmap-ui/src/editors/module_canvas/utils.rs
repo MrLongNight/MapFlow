@@ -252,7 +252,8 @@ pub fn ensure_icons_loaded(
     let paths = ["resources/stecker_icons", "../resources/stecker_icons"];
 
     let files = [
-        "audio-jack.svg",
+        "audio-jack1.1.svg",
+        "audio-jack_1.2.svg",
         "audio-jack_2.svg",
         "plug.svg",
         "power-plug.svg",
@@ -540,12 +541,12 @@ pub fn get_part_category(part_type: &ModulePartType) -> &'static str {
 
 pub fn get_socket_color(socket_type: &ModuleSocketType) -> Color32 {
     match socket_type {
-        ModuleSocketType::Trigger => Color32::from_rgb(180, 100, 220),
-        ModuleSocketType::Media => Color32::from_rgb(100, 180, 220),
-        ModuleSocketType::Effect => Color32::from_rgb(220, 180, 100),
-        ModuleSocketType::Layer => Color32::from_rgb(100, 220, 140),
-        ModuleSocketType::Output => Color32::from_rgb(220, 100, 100),
-        ModuleSocketType::Link => Color32::from_rgb(200, 200, 200),
+        ModuleSocketType::Trigger => Color32::from_rgb(200, 50, 255), // Vibrant Purple
+        ModuleSocketType::Media => Color32::from_rgb(50, 150, 255),   // Bright Blue
+        ModuleSocketType::Effect => Color32::from_rgb(255, 160, 0),   // Vivid Orange
+        ModuleSocketType::Layer => Color32::from_rgb(0, 230, 120),    // Emerald Green
+        ModuleSocketType::Output => Color32::from_rgb(255, 60, 60),   // Bright Red
+        ModuleSocketType::Link => Color32::from_rgb(180, 180, 180),   // Silver
     }
 }
 
