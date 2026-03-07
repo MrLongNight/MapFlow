@@ -421,6 +421,7 @@ where
     remove_idx
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn draw_part_with_delete(
     canvas: &ModuleCanvas,
     ui: &Ui,

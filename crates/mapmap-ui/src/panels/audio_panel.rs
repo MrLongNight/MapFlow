@@ -35,6 +35,7 @@ impl AudioPanel {
     }
 
     /// Render the Audio Panel UI
+    #[allow(clippy::too_many_arguments)]
     pub fn ui(
         &mut self,
         ui: &mut Ui,
