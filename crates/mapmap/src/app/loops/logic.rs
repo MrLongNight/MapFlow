@@ -226,30 +226,9 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     app.ui_state.current_audio_level = analysis.rms_volume;
     app.ui_state.current_bpm = analysis.tempo_bpm;
 
-    // Convert AudioAnalysisV2 to AudioAnalysis for Dashboard
-    let dashboard_analysis = mapmap_core::AudioAnalysis {
-        timestamp: analysis.timestamp,
-        fft_magnitudes: analysis.fft_magnitudes,
-        band_energies: [
-            analysis.band_energies[0], // SubBass
-            analysis.band_energies[1], // Bass
-            analysis.band_energies[2], // LowMid
-            analysis.band_energies[3], // Mid
-            analysis.band_energies[4], // HighMid
-            analysis.band_energies[6], // Presence (Skip UpperMid)
-            analysis.band_energies[7], // Brilliance (Skip Air)
-        ],
-        rms_volume: analysis.rms_volume,
-        peak_volume: analysis.peak_volume,
-        beat_detected: analysis.beat_detected,
-        beat_strength: analysis.beat_strength,
-        onset_detected: false, // V2 doesn't have onset
-        tempo_bpm: analysis.tempo_bpm,
-        waveform: analysis.waveform,
-    };
     app.ui_state
         .dashboard
-        .set_audio_analysis(dashboard_analysis);
+        .set_audio_analysis(analysis.clone());
     app.ui_state
         .dashboard
         .set_audio_devices(app.audio_devices.clone());
