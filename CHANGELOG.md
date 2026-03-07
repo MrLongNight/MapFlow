@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2026-03-07: fix: Nur typgleiche Ein-/Ausgaenge verbindbar machen. (#947)
+- 2026-03-07: fix: Merge Konflikte in PR #933 auflösen. (#951)
+- 2026-03-07: fix: Grafik/Performance Controls wirksam, persistiert und runtime-wirksam (#948)
+- 2026-03-07: fix: Doppelte Audio-Analyse entfernen, Floating-Panel abbauen. (#949)
+- 2026-03-07: fix: Automatische Fehlverbindung Media-Out -> Trigger bei Layer-Input (#947)
+- 2026-03-07: feat: Theme-Switcher inkl. Auswahlmenue und Persistenz integrieren. (#950)
+- 2026-03-07: feat: Task-ID-only Delegation + AUTO_CREATE_PR als Standardprozess. (MF-026-TASKID-DISPATCH-AUTO-PR)
+- 2026-03-07: feat: Statusfluss Jules -> Review -> Abnahme -> Abgeschlossen vereinheitlichen. (MF-027-STATUS-WORKFLOW-STANDARD)
+- 2026-03-07: feat: Roadmap-Status nur mit PR/CI-Gate fortschreiben. (MF-025-ROADMAP-GITHUB-SYNC-GATE)
+- 2026-03-07: feat: MF-ID Naming Pflicht fuer Branch/PR durchsetzen. (MF-028-MF-ID-NAMING-COMPLIANCE)
+- 2026-03-06: fix: Audioanalyse funktional wiederherstellen (Input -> Analyzer -> Evaluator -> UI). (#945)
+- 2026-03-06: chore: Historisch als erledigt markierte Rescue-Lieferungen abschließen. (MF-029-ARCHIVE-RESCUE-DELIVERABLES)
+
 - 2026-03-03: docs: Repariere veraltete Links und Ordner-Referenzen in der Dokumentation (0[1-9]-* -> neue Struktur).
 
 - 2026-03-02: fix(stability): Resolve main branch build failures, failing tests, and clippy warnings.
