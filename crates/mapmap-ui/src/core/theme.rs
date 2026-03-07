@@ -437,9 +437,9 @@ impl ThemeConfig {
 
     /// Purple accent visuals (Cyber Purple)
     fn purple_visuals() -> Visuals {
-        let purple = Color32::from_rgb(170, 50, 255);
+        let purple = Color32::from_rgb(191, 64, 255); // Electric Neon Purple
         let mut visuals = Self::resolume_visuals();
-        visuals.widgets.hovered.bg_stroke = egui::Stroke::new(1.0, purple);
+        visuals.widgets.hovered.bg_stroke = egui::Stroke::new(1.5 * 1.0, purple);
         visuals.widgets.active.bg_fill = purple;
         visuals.widgets.active.bg_stroke = egui::Stroke::new(1.0, purple);
         visuals.selection.bg_fill = purple.linear_multiply(0.2);
@@ -450,9 +450,9 @@ impl ThemeConfig {
 
     /// Pink accent visuals (Cyber Pink)
     fn pink_visuals() -> Visuals {
-        let pink = Color32::from_rgb(255, 50, 170);
+        let pink = Color32::from_rgb(255, 0, 127); // Vibrant Neon Pink (Rose)
         let mut visuals = Self::resolume_visuals();
-        visuals.widgets.hovered.bg_stroke = egui::Stroke::new(1.0, pink);
+        visuals.widgets.hovered.bg_stroke = egui::Stroke::new(1.5 * 1.0, pink);
         visuals.widgets.active.bg_fill = pink;
         visuals.widgets.active.bg_stroke = egui::Stroke::new(1.0, pink);
         visuals.selection.bg_fill = pink.linear_multiply(0.2);
