@@ -22,9 +22,7 @@ Sprache: Deutsch
 
 | Task-ID | Bereich | Typ | Beschreibung | Quellreferenz(en) | Dev-Status | QA-Status (User) | Session ID | Branch | PR | Letztes Update |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| MF-001-AUDIO-UI-CONSOLIDATION | UI/Audio | Bug | Prio A: Doppelte Audio-Analyse entfernen, Floating-Panel abbauen. | SRC-022, SRC-023, SRC-059 | 🟢 Bereit fuer QA | 🔴 Offen | 12625940356526816833 | `MF-001-audio-ui-consolidation` | #949 | 2026-03-06 |
-| MF-002-AUDIO-PIPELINE-RECOVERY | Core/Audio | Bug | Prio A: Audioanalyse funktional wiederherstellen (Input -> Analyzer -> Evaluator -> UI). | SRC-004, SRC-024, SRC-060, SRC-061, SRC-062 | ✅ Abgeschlossen | 🟢 QA Erfolgreich | 3614160160212922544 | `MF-002-audio-pipeline-recovery` | #945 | 2026-03-06 |
-| MF-004-CONNECTION-TYPE-SAFETY | Module Canvas | Bug | Prio A: Nur typgleiche Ein-/Ausgaenge verbindbar machen. | SRC-026, SRC-063 | 🟢 Bereit fuer QA | 🔴 Offen | 7230266295377882773 | `MF-004-connection-type-safety` | #947 | 2026-03-06 |
+| MF-004-CONNECTION-TYPE-SAFETY | Module Canvas | Bug | Prio A: Nur typgleiche Ein-/Ausgaenge verbindbar machen. | SRC-026, SRC-063 | ✅ Abgeschlossen | 🟢 QA Erfolgreich | 7230266295377882773 | `MF-004-connection-type-safety` | #947 | 2026-03-06 |
 | MF-005-LAYER-MESH-EDITOR-RESTORE | Inspector/Layer | Bug | Prio A: Grafischen Mesh-Editor im Layer-Inspector sicher verfuegbar machen. | SRC-031, SRC-040 | 🔵 In Umsetzung | 🔴 Offen | 11200614113557340110 | `MF-005-layer-mesh-editor-restore` | - | 2026-03-06 |
 | MF-007-SETTINGS-GFX-PERF-WIRING | Settings | Bug | Prio A: Grafik/Performance Controls wirksam, persistiert und runtime-wirksam machen. | SRC-027, SRC-065 | 🟢 Bereit fuer QA | 🔴 Offen | 14675983253663977133 | `MF-007-settings-gfx-perf-wiring` | #948 | 2026-03-06 |
 | MF-008-THEME-SWITCHER-INTEGRATION | Settings/UI | Feature | Prio A: Theme-Switcher inkl. Auswahlmenue und Persistenz integrieren. | SRC-028, SRC-044, SRC-066 | 🟢 Bereit fuer QA | 🔴 Offen | 17474352207017899925 | `MF-008-theme-switcher-integration` | #950 | 2026-03-06 |
@@ -52,10 +50,10 @@ Sprache: Deutsch
 | MF-028-MF-ID-NAMING-COMPLIANCE | Process | Feature | MF-ID Naming Pflicht fuer Branch/PR durchsetzen. | SRC-048 | 🔵 In Umsetzung | 🔴 Offen | - | `MF-028-mf-id-naming-compliance` | - | 2026-03-06 |
 | MF-033-PR-933-CONFLICT-RESOLUTION | Process | Fix | Prio A: Merge Konflikte in PR #933 auflösen. | GH-933 | 🔵 In Umsetzung | 🔴 Offen | 10832908683854701416 | `guardian-module-core-tests-14161047196552787958` | #933 | 2026-03-06 |
 | MF-034-CI-FIX-BATCH | CI/CD | Fix | Prio A: Behebe pre-commit/CI Fehler in PRs #928, #930, #936, #937, #944, #946. | GH-928, GH-930, GH-936, GH-937, GH-944, GH-946 | 🔵 In Umsetzung | 🔴 Offen | 13254202037157575175 | `main` | - | 2026-03-06 |
-| MF-035-AUDIO-UI-SLIDER-BOUNCE | Audio/UI | Bug | Prio A: Gain/Smoothing Regler springen bei Änderung sofort auf alten Wert zurück. | - | 🔴 Offen | 🔴 Offen | - | `MF-035-audio-ui-slider-bounce` | - | 2026-03-06 |
-| MF-036-AUDIO-ANALYSIS-EXT-FEATURES | Audio/UI | Feature | Prio B: Zusätzliche visuelle Darstellungen & unabhängige L/M/H Analyseanpassung. | - | 🔴 Offen | 🔴 Offen | - | `MF-036-audio-analysis-ext-features` | - | 2026-03-06 |
-| MF-037-CANVAS-AUTO-TRIGGER-BUG | Module Canvas | Bug | Prio A: Automatische Fehlverbindung Media-Out -> Trigger bei Layer-Input Connect. | - | 🔴 Offen | 🔴 Offen | - | `MF-037-canvas-auto-trigger-bug` | - | 2026-03-06 |
-| MF-038-TRIGGER-FUNCTION-RECOVERY | Core/Control | Bug | Prio A: Kern-Funktion der Trigger ist defekt/funktionslos. | - | 🔴 Offen | 🔴 Offen | - | `MF-038-trigger-function-recovery` | - | 2026-03-06 |
+| MF-035-AUDIO-UI-SLIDER-BOUNCE | Audio/UI | Bug | Prio A: Gain/Smoothing Regler springen bei Änderung sofort auf alten Wert zurück. | - | 🔵 In Umsetzung | 🔴 Offen | 14876728953099369789 | `main` | - | 2026-03-06 |
+| MF-036-AUDIO-ANALYSIS-EXT-FEATURES | Audio/UI | Feature | Prio B: Zusätzliche visuelle Darstellungen & unabhängige L/M/H Analyseanpassung. | - | 🔵 In Umsetzung | 🔴 Offen | 2322034780590501110 | `main` | - | 2026-03-06 |
+| MF-037-CANVAS-AUTO-TRIGGER-BUG | Module Canvas | Bug | Prio A: Automatische Fehlverbindung Media-Out -> Trigger bei Layer-Input Connect. | - | 🟢 Bereit fuer QA | 🔴 Offen | - | `main` | #947 | 2026-03-06 |
+| MF-038-TRIGGER-FUNCTION-RECOVERY | Core/Control | Bug | Prio A: Kern-Funktion der Trigger ist defekt/funktionslos. | - | 🔵 In Umsetzung | 🔴 Offen | 15279165363656306526 | `main` | - | 2026-03-06 |
 | MF-040-SECURITY-934-VALIDATION | Security | Fix | Historischer Security-Fix, finale User-Abnahme dokumentieren. | SRC-017 | 🟢 Bereit fuer QA | 🔴 Offen | - | `MF-040-security-934-validation` | #934 | 2026-03-06 |
 | MF-041-CORE-TESTS-933 | Core | Test | Historischer Core-Test-Fix, Regressionstest nachziehen. | SRC-019 | 🟢 Bereit fuer QA | 🔴 Offen | - | `MF-041-core-tests-933` | #933 | 2026-03-06 |
 | MF-042-PERF-935 | Core/Perf | Refactor | Historische Performance-Optimierung gegen aktuelle Basis pruefen. | SRC-020 | 🟢 Bereit fuer QA | 🔴 Offen | - | `MF-042-perf-935` | #935 | 2026-03-06 |
