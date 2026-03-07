@@ -192,12 +192,12 @@ where
             let plug_size = 20.0 * canvas.zoom;
 
             let icon_name = match socket_type {
-                mapmap_core::module::ModuleSocketType::Trigger => "audio-jack1.1.svg",
+                mapmap_core::module::ModuleSocketType::Trigger => "audio-jack.svg",
                 mapmap_core::module::ModuleSocketType::Media => "plug.svg",
                 mapmap_core::module::ModuleSocketType::Effect => "usb-cable.svg",
                 mapmap_core::module::ModuleSocketType::Layer => "power-plug.svg",
-                mapmap_core::module::ModuleSocketType::Output => "audio-jack_2.svg",
-                mapmap_core::module::ModuleSocketType::Link => "audio-jack_1.2.svg",
+                mapmap_core::module::ModuleSocketType::Output => "power-plug.svg",
+                mapmap_core::module::ModuleSocketType::Link => "power-plug.svg",
             };
 
             // Draw Cable (Bezier)
@@ -823,17 +823,10 @@ pub fn draw_part_with_delete(
         );
 
         // Socket label
-        let type_name = socket.socket_type.name();
-        let display_name = if socket.name.to_lowercase().contains(&type_name.to_lowercase()) {
-            socket.name.clone()
-        } else {
-            format!("{} ({})", socket.name, type_name)
-        };
-
         painter.text(
             Pos2::new(rect.min.x + 14.0 * canvas.zoom, socket_y),
             egui::Align2::LEFT_CENTER,
-            display_name,
+            &socket.name,
             egui::FontId::proportional(11.0 * canvas.zoom),
             Color32::from_gray(230),
         );
@@ -881,17 +874,10 @@ pub fn draw_part_with_delete(
         );
 
         // Socket label
-        let type_name = socket.socket_type.name();
-        let display_name = if socket.name.to_lowercase().contains(&type_name.to_lowercase()) {
-            socket.name.clone()
-        } else {
-            format!("{} ({})", socket.name, type_name)
-        };
-
         painter.text(
             Pos2::new(rect.max.x - 14.0 * canvas.zoom, socket_y),
             egui::Align2::RIGHT_CENTER,
-            display_name,
+            &socket.name,
             egui::FontId::proportional(11.0 * canvas.zoom),
             Color32::from_gray(230),
         );

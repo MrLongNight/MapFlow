@@ -1,5 +1,5 @@
 //! Control target abstraction
-//!.
+//!
 //! This module provides a unified abstraction for all controllable parameters in MapFlow.
 
 use serde::{Deserialize, Serialize};
