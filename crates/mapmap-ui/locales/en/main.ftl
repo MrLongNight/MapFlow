@@ -433,3 +433,5 @@ hue-status = Philips Hue Status
 hue-discover = Discover Bridges
 hue-disconnect = Disconnect
 restart-app = Restart Application
+check-show-outputs = Show Outputs
+check-show-edge-blend = Show Edge Blending

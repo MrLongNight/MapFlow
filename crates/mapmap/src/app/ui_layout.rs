@@ -309,6 +309,70 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
 
     // 8. Other Overlays (Shader Graph, Audio, MIDI)
 
+    crate::ui::panels::output::show(
+        ctx,
+        crate::ui::panels::output::OutputContext {
+            ui_state: &mut app.ui_state,
+            state: &mut app.state,
+        },
+    );
+
+    crate::ui::panels::edge_blend::show(
+        ctx,
+        crate::ui::panels::edge_blend::EdgeBlendContext {
+            ui_state: &mut app.ui_state,
+        },
+    );
+
+    crate::ui::panels::mapping::show(
+        ctx,
+        crate::ui::panels::mapping::MappingContext {
+            ui_state: &mut app.ui_state,
+            state: &mut app.state,
+        },
+    );
+
+    crate::ui::panels::paint::show(
+        ctx,
+        crate::ui::panels::paint::PaintContext {
+            ui_state: &mut app.ui_state,
+            state: &mut app.state,
+        },
+    );
+
+    app.ui_state.render_controls(ctx);
+
+    mapmap_ui::panels::osc_panel::show_osc_panel(ctx, &mut app.ui_state, &mut app.control_manager);
+
+    app.ui_state.oscillator_panel.render(
+        ctx,
+        &app.ui_state.i18n,
+        &mut app.state.oscillator_config,
+        app.ui_state.icon_manager.as_ref(),
+    );
+
+    let mut actions = vec![];
+    let mut selected_layer = app.ui_state.selected_layer_id;
+    app.ui_state.layer_panel.show(
+        ctx,
+        std::sync::Arc::make_mut(&mut app.state.layer_manager),
+        &mut selected_layer,
+        &mut actions,
+        &app.ui_state.i18n,
+        app.ui_state.icon_manager.as_ref(),
+    );
+    app.ui_state.selected_layer_id = selected_layer;
+    app.ui_state.actions.extend(actions);
+
+    if app.ui_state.show_master_controls {
+        let mut layer_manager = std::sync::Arc::make_mut(&mut app.state.layer_manager).clone();
+        app.ui_state.render_master_controls(ctx, &mut layer_manager);
+        if layer_manager != *app.state.layer_manager {
+            *std::sync::Arc::make_mut(&mut app.state.layer_manager) = layer_manager;
+            app.state.dirty = true;
+        }
+    }
+
     if app.ui_state.show_shader_graph {
         app.ui_state.render_node_editor(ctx);
     }

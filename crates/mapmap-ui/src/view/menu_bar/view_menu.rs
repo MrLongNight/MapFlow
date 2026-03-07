@@ -67,6 +67,14 @@ pub fn show(ui: &mut egui::Ui, ui_state: &mut AppUI, actions: &mut Vec<UIAction>
             ui_state.i18n.t("check-show-oscillator"),
         );
         ui.checkbox(
+            &mut ui_state.output_panel.visible,
+            ui_state.i18n.t("check-show-outputs"),
+        );
+        ui.checkbox(
+            &mut ui_state.edge_blend_panel.visible,
+            ui_state.i18n.t("check-show-edge-blend"),
+        );
+        ui.checkbox(
             &mut ui_state.show_cue_panel,
             ui_state.i18n.t("check-show-cues"),
         );
