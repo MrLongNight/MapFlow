@@ -178,7 +178,7 @@ pub fn render_canvas(
         if scroll != 0.0 {
             let old_zoom = canvas.zoom;
             canvas.zoom = (canvas.zoom * (1.0 + scroll * 0.001)).clamp(0.1, 5.0);
-            
+
             if let Some(mouse_pos) = ui.input(|i| i.pointer.hover_pos()) {
                 let zoom_factor = canvas.zoom / old_zoom;
                 canvas.pan_offset = mouse_pos - (mouse_pos - canvas.pan_offset) * zoom_factor;
