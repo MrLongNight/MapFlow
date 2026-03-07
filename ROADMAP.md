@@ -1,6 +1,6 @@
 # MapFlow ROADMAP (MF-ID gesteuert)
 
-Stand: 2026-03-06
+> **Stand:** 2026-03-06 23:35
 Operatives Hauptdokument: `ROADMAP.md`
 Sprache: Deutsch
 
@@ -24,7 +24,7 @@ Sprache: Deutsch
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | MF-001-AUDIO-UI-CONSOLIDATION | UI/Audio | Bug | Prio A: Doppelte Audio-Analyse entfernen, Floating-Panel abbauen. | SRC-022, SRC-023, SRC-059 | 🟠 In Analyse | 🔴 Offen | - | `MF-001-audio-ui-consolidation` | - | 2026-03-06 |
 | MF-002-AUDIO-PIPELINE-RECOVERY | Core/Audio | Bug | Prio A: Audioanalyse funktional wiederherstellen (Input -> Analyzer -> Evaluator -> UI). | SRC-004, SRC-024, SRC-060, SRC-061, SRC-062 | 🔵 In Umsetzung | 🔴 Offen | 3614160160212922544 | `MF-002-audio-pipeline-recovery` | - | 2026-03-06 |
-| MF-004-CONNECTION-TYPE-SAFETY | Module Canvas | Bug | Prio A: Nur typgleiche Ein-/Ausgaenge verbindbar machen. | SRC-026, SRC-063 | 🟠 In Analyse | 🔴 Offen | - | `MF-004-connection-type-safety` | - | 2026-03-06 |
+| MF-004-CONNECTION-TYPE-SAFETY | Module Canvas | Bug | Prio A: Nur typgleiche Ein-/Ausgaenge verbindbar machen. | SRC-026, SRC-063 | 🟢 Bereit fuer QA | 🔴 Offen | - | `MF-004-connection-type-safety` | - | 2026-03-06 |
 | MF-005-LAYER-MESH-EDITOR-RESTORE | Inspector/Layer | Bug | Prio A: Grafischen Mesh-Editor im Layer-Inspector sicher verfuegbar machen. | SRC-031, SRC-040 | 🟠 In Analyse | 🔴 Offen | - | `MF-005-layer-mesh-editor-restore` | - | 2026-03-06 |
 | MF-007-SETTINGS-GFX-PERF-WIRING | Settings | Bug | Prio A: Grafik/Performance Controls wirksam, persistiert und runtime-wirksam machen. | SRC-027, SRC-065 | 🟠 In Analyse | 🔴 Offen | - | `MF-007-settings-gfx-perf-wiring` | - | 2026-03-06 |
 | MF-008-THEME-SWITCHER-INTEGRATION | Settings/UI | Feature | Prio A: Theme-Switcher inkl. Auswahlmenue und Persistenz integrieren. | SRC-028, SRC-044, SRC-066 | 🟠 In Analyse | 🔴 Offen | - | `MF-008-theme-switcher-integration` | - | 2026-03-06 |
