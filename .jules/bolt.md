@@ -56,3 +56,7 @@
 ## 2024-03-07 - Avoid O(N) copies of CPU FrameData
 **Learning:** `FrameData::Cpu(Vec<u8>)` resulted in deep copies of potentially large image/video data every time a frame was cloned (e.g. when passed to rendering pipeline or orchestration). This caused significant performance overhead and unnecessary memory allocation.
 **Action:** Use `Arc<Vec<u8>>` instead for CPU frame data so that clones only increment the reference count, making it an O(1) operation.
+
+## 2026-03-08 - O(N) FrameData Allocations in Video Pipelines
+**Learning:** `Vec<u8>` for `FrameData::Cpu` in `mapmap-io` resulted in large O(N) memory allocations (deep copying raw video frames) during video playback or transfer.
+**Action:** `FrameData::Cpu` now wraps pixel buffers in an `Arc<Vec<u8>>`. Reusing the `Arc` pointer entirely bypasses the O(N) duplication, enabling zero-copy frame dispatch across multi-threaded renderer contexts.

@@ -96,25 +96,28 @@ pub fn show(ctx: &Context, context: SettingsContext) {
 
             ui.horizontal(|ui| {
                 ui.label(format!("{}:", i18n.t("theme")));
-                let is_dark = ctx.style().visuals.dark_mode;
-                if ui
-                    .selectable_label(is_dark, format!("🌙 {}", i18n.t("theme-dark")))
-                    .clicked()
-                {
-                    ctx.set_visuals(egui::Visuals::dark());
-                }
-                if ui
-                    .selectable_label(!is_dark, format!("☀ {}", i18n.t("theme-light")))
-                    .clicked()
-                {
-                    ctx.set_visuals(egui::Visuals::light());
-                }
-            });
-
-            ui.add_space(4.0);
-            ui.horizontal(|ui| {
-                ui.label(format!("{}:", i18n.t("theme-accent")));
-                ui.label("Cyber Cyan (Default)");
+                let current_theme = context.ui_state.user_config.theme.theme;
+                egui::ComboBox::from_id_salt("theme_selector")
+                    .selected_text(format!("{:?}", current_theme))
+                    .show_ui(ui, |ui| {
+                        use mapmap_ui::core::theme::Theme;
+                        for theme in [
+                            Theme::Dark,
+                            Theme::Light,
+                            Theme::Resolume,
+                            Theme::Synthwave,
+                            Theme::HighContrast,
+                        ] {
+                            if ui
+                                .selectable_label(current_theme == theme, format!("{:?}", theme))
+                                .clicked()
+                            {
+                                context.ui_state.user_config.theme.theme = theme;
+                                context.ui_state.user_config.theme.apply(ctx);
+                                let _ = context.ui_state.user_config.save();
+                            }
+                        }
+                    });
             });
 
             ui.add_space(10.0);
@@ -140,18 +143,40 @@ pub fn show(ctx: &Context, context: SettingsContext) {
                     ui.end_row();
 
                     ui.label(format!("{}:", i18n.t("target-fps")));
-                    let mut fps = 60;
-                    ui.add(egui::Slider::new(&mut fps, 24..=144).suffix(" FPS"));
+                    let mut fps = context.ui_state.user_config.target_fps.unwrap_or(60.0);
+                    if ui
+                        .add(egui::Slider::new(&mut fps, 24.0..=144.0).suffix(" FPS"))
+                        .changed()
+                    {
+                        context.ui_state.actions.push(UIAction::SetTargetFps(fps));
+                    }
                     ui.end_row();
 
-                    ui.label(format!("{}:", i18n.t("texture-quality")));
-                    let mut quality = 1; // High
-                    egui::ComboBox::from_id_salt("quality_picker")
-                        .selected_text(i18n.t("quality"))
+                    ui.label("VSync Mode:");
+                    let vsync = context.ui_state.user_config.vsync_mode;
+                    egui::ComboBox::from_id_salt("vsync_select")
+                        .selected_text(vsync.to_string())
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut quality, 0, "Low");
-                            ui.selectable_value(&mut quality, 1, "High");
+                            use mapmap_ui::core::config::VSyncMode;
+                            for mode in [VSyncMode::Auto, VSyncMode::On, VSyncMode::Off] {
+                                if ui
+                                    .selectable_label(vsync == mode, mode.to_string())
+                                    .clicked()
+                                {
+                                    context.ui_state.actions.push(UIAction::SetVsyncMode(mode));
+                                }
+                            }
                         });
+                    ui.end_row();
+
+                    ui.label("Preferred GPU:");
+                    let current_gpu = context
+                        .ui_state
+                        .user_config
+                        .preferred_gpu
+                        .clone()
+                        .unwrap_or_else(|| "Default".to_string());
+                    ui.label(current_gpu);
                     ui.end_row();
                 });
 
@@ -185,6 +210,28 @@ pub fn show(ctx: &Context, context: SettingsContext) {
                     });
             });
 
+            ui.add_space(4.0);
+            ui.horizontal(|ui| {
+                ui.label("Level Meter Style:");
+                let meter = context.ui_state.user_config.meter_style;
+                egui::ComboBox::from_id_salt("meter_select")
+                    .selected_text(format!("{:?}", meter))
+                    .show_ui(ui, |ui| {
+                        use mapmap_ui::core::config::AudioMeterStyle;
+                        for style in [AudioMeterStyle::Retro, AudioMeterStyle::Digital] {
+                            if ui
+                                .selectable_label(meter == style, format!("{:?}", style))
+                                .clicked()
+                            {
+                                context
+                                    .ui_state
+                                    .actions
+                                    .push(UIAction::SetMeterStyle(style));
+                            }
+                        }
+                    });
+            });
+
             ui.add_space(10.0);
             ui.separator();
 
@@ -208,7 +255,7 @@ pub fn show(ctx: &Context, context: SettingsContext) {
                         context.ui_state.actions.push(UIAction::DiscoverHueBridges);
                     }
                 } else if ui.button(i18n.t("hue-disconnect")).clicked() {
-                    // Placeholder
+                    context.ui_state.actions.push(UIAction::DisconnectHue);
                 }
             });
 

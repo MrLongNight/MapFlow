@@ -62,7 +62,34 @@ impl AudioPanel {
             // Visualizer Section
             ui.vertical(|ui| {
                 if let Some(analysis) = analysis {
-                    self.show_visualizer(ui, analysis);
+                    match meter_style {
+                        crate::config::AudioMeterStyle::Retro => {
+                            // Convert linear to dB
+                            let db = 20.0 * analysis.rms_volume.log10().max(-60.0);
+
+                            let meter = crate::widgets::audio_meter::AudioMeter::new(
+                                crate::config::AudioMeterStyle::Retro,
+                                db,
+                                db, // Mono for now
+                            )
+                            .height(120.0);
+
+                            ui.add(meter);
+                        }
+                        crate::config::AudioMeterStyle::Digital => {
+                            let db = 20.0 * analysis.rms_volume.log10().max(-60.0);
+                            let meter = crate::widgets::audio_meter::AudioMeter::new(
+                                crate::config::AudioMeterStyle::Digital,
+                                db,
+                                db,
+                            )
+                            .height(60.0);
+                            ui.add(meter);
+
+                            ui.add_space(8.0);
+                            self.show_visualizer(ui, analysis, locale);
+                        }
+                    }
                 } else {
                     // Placeholder visualizer when no signal
                     let height = 60.0;
@@ -165,7 +192,7 @@ impl AudioPanel {
                     ui.end_row();
 
                     // Meter Style
-                    ui.label("Meter Style"); // Fallback, could add translation
+                    ui.label("Meter Style");
                     egui::ComboBox::from_id_salt("audio_meter_style_combo")
                         .selected_text(meter_style.to_string())
                         .show_ui(ui, |ui| {
@@ -188,88 +215,7 @@ impl AudioPanel {
         action
     }
 
-    fn show_visualizer(&self, ui: &mut Ui, analysis: &AudioAnalysis) {
-        // RMS and Peak Meters
-        ui.horizontal(|ui| {
-            // Volume Meter (RMS and Peak)
-            let meter_height = 12.0;
-            let meter_width = ui.available_width() - 40.0;
-
-            ui.vertical(|ui| {
-                ui.add_space(4.0);
-
-                // RMS
-                let (rms_rect, _) =
-                    ui.allocate_at_least(egui::vec2(meter_width, meter_height), Sense::hover());
-                ui.painter()
-                    .rect_filled(rms_rect, egui::CornerRadius::ZERO, colors::DARKER_GREY);
-                ui.painter().rect_stroke(
-                    rms_rect,
-                    egui::CornerRadius::ZERO,
-                    Stroke::new(1.0, colors::STROKE_GREY),
-                    egui::StrokeKind::Middle,
-                );
-
-                let rms_width = (analysis.rms_volume * meter_width).min(meter_width);
-                if rms_width > 0.0 {
-                    let rms_fill_rect = Rect::from_min_max(
-                        rms_rect.min,
-                        egui::pos2(rms_rect.min.x + rms_width, rms_rect.max.y),
-                    );
-                    ui.painter().rect_filled(
-                        rms_fill_rect,
-                        egui::CornerRadius::ZERO,
-                        colors::CYAN_ACCENT.linear_multiply(0.6),
-                    );
-                }
-
-                // Peak
-                let (peak_rect, _) =
-                    ui.allocate_at_least(egui::vec2(meter_width, meter_height), Sense::hover());
-                ui.painter()
-                    .rect_filled(peak_rect, egui::CornerRadius::ZERO, colors::DARKER_GREY);
-                ui.painter().rect_stroke(
-                    peak_rect,
-                    egui::CornerRadius::ZERO,
-                    Stroke::new(1.0, colors::STROKE_GREY),
-                    egui::StrokeKind::Middle,
-                );
-
-                let peak_width = (analysis.peak_volume * meter_width).min(meter_width);
-                if peak_width > 0.0 {
-                    let peak_fill_rect = Rect::from_min_max(
-                        peak_rect.min,
-                        egui::pos2(peak_rect.min.x + peak_width, peak_rect.max.y),
-                    );
-                    ui.painter().rect_filled(
-                        peak_fill_rect,
-                        egui::CornerRadius::ZERO,
-                        colors::WARN_COLOR.linear_multiply(0.8),
-                    );
-                }
-            });
-
-            // Beat Indicator
-            let beat_size = 24.0;
-            let (beat_rect, _) =
-                ui.allocate_exact_size(egui::vec2(beat_size, beat_size), Sense::hover());
-            let beat_color = if analysis.beat_detected {
-                colors::MINT_ACCENT
-            } else {
-                colors::DARKER_GREY
-            };
-            ui.painter()
-                .rect_filled(beat_rect, egui::CornerRadius::ZERO, beat_color);
-            ui.painter().rect_stroke(
-                beat_rect,
-                egui::CornerRadius::ZERO,
-                Stroke::new(1.0, colors::STROKE_GREY),
-                egui::StrokeKind::Middle,
-            );
-        });
-
-        ui.add_space(4.0);
-
+    fn show_visualizer(&self, ui: &mut Ui, analysis: &AudioAnalysis, _locale: &LocaleManager) {
         let height = 60.0;
         let (rect, _response) =
             ui.allocate_at_least(egui::vec2(ui.available_width(), height), Sense::hover());
@@ -291,25 +237,22 @@ impl AudioPanel {
         }
 
         let spacing = 2.0;
-        // Ensure band_width is positive
         let band_width =
             ((rect.width() - (num_bands as f32 + 1.0) * spacing) / num_bands as f32).max(1.0);
 
         for i in 0..num_bands {
             let energy = analysis.band_energies[i];
             let x = rect.min.x + spacing + i as f32 * (band_width + spacing);
-            let h = (energy * (rect.height() - 2.0 * spacing)).max(1.0); // Minimum height for visibility
+            let h = (energy * (rect.height() - 2.0 * spacing)).max(1.0);
 
             let band_rect = Rect::from_min_max(
                 egui::pos2(x, rect.max.y - spacing - h),
                 egui::pos2(x + band_width, rect.max.y - spacing),
             );
 
-            // Use Theme Colors for Bands
             let color = if analysis.beat_detected && i < 2 {
-                colors::MINT_ACCENT // Beat hit!
+                colors::MINT_ACCENT
             } else {
-                // Gradient from Cyan to Blue-ish based on intensity
                 colors::CYAN_ACCENT.linear_multiply(0.6 + (energy * 0.4))
             };
 

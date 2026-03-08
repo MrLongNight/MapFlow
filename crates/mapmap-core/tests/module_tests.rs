@@ -1,5 +1,5 @@
 use mapmap_core::module::{
-    EffectType, HueMappingMode, MapFlowModule, ModuleManager, ModulePartType, ModulePlaybackMode,
+    HueMappingMode, MapFlowModule, ModuleManager, ModulePartType, ModulePlaybackMode,
     ModuleSocketType, OutputType, PartType,
 };
 use std::collections::HashMap;
@@ -385,7 +385,7 @@ fn test_manager_next_part_id() {
 #[test]
 fn test_manager_mark_dirty() {
     let mut manager = ModuleManager::new();
-    manager.mark_dirty(); 
+    manager.mark_dirty();
 }
 
 #[test]

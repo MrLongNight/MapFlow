@@ -15,9 +15,9 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     let ui_needs_sync = handle_ui_actions(app).unwrap_or(false);
 
     // Update evaluator with active keys for Shortcut triggers
-    let active_keys: HashSet<String> = app.egui_context.input(|i| {
-        i.keys_down.iter().map(|k| format!("{:?}", k)).collect()
-    });
+    let active_keys: HashSet<String> = app
+        .egui_context
+        .input(|i| i.keys_down.iter().map(|k| format!("{:?}", k)).collect());
     app.module_evaluator.update_keys(&active_keys);
 
     // Update evaluator with raw MIDI/OSC events
@@ -34,9 +34,29 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
 
     // --- Effect Animator Update ---
     let param_updates = app.state.effect_animator_mut().update(dt as f64);
-    if !param_updates.is_empty() {
-        tracing::trace!("Effect updates: {}", param_updates.len());
+
+    // Check if we need to re-evaluate the graph
+    // We re-evaluate if:
+    // 1. Graph structure changed
+    // 2. Parameters are animating
+    // 3. UI explicitly requested sync
+    // 4. We have active modulations (Audio/MIDI/OSC)
+    let graph_dirty = app.state.module_manager.graph_revision != app.last_graph_revision;
+
+    // Check for reactive nodes or active modulations
+    let mut has_reactive_content = false;
+    for module in app.state.module_manager.modules() {
+        if !module.parts.is_empty() {
+            // If we have any parts, we check if any are triggers or have active modulations
+            // For now, if there is ANY content, we keep evaluating to ensure reactivity.
+            // In a future update, we could check specifically for ModulePartType::Trigger
+            has_reactive_content = true;
+            break;
+        }
     }
+
+    let needs_re_eval =
+        graph_dirty || !param_updates.is_empty() || ui_needs_sync || has_reactive_content;
 
     let all_module_ids: Vec<u64> = app
         .state
@@ -61,23 +81,19 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
         all_module_ids.clone()
     };
 
-    // --- Graph & Renderer Evaluation ---
-    let graph_dirty = app.state.module_manager.graph_revision != app.last_graph_revision;
+    if needs_re_eval {
+        app.render_ops.clear();
 
-    // Always clear and rebuild render_ops for now to ensure reactive triggers work,
-    // BUT we could optimize this further if we separate structural from value changes.
-    app.render_ops.clear();
-
-    // --- Bevy Runner Update ---
-    let mut node_triggers = std::collections::HashMap::new();
-    if let Some(runner) = &mut app.bevy_runner {
-        let runner: &mut mapmap_bevy::BevyRunner = runner;
+        // --- Bevy Runner Update ---
+        let mut node_triggers = std::collections::HashMap::new();
 
         for module_id in &modules_for_eval {
             if let Some(module_ref) = app.state.module_manager.get_module(*module_id) {
                 // OPTIMIZATION: Only apply structural graph state to Bevy if changed
                 if graph_dirty {
-                    runner.apply_graph_state(module_ref);
+                    if let Some(runner) = &mut app.bevy_runner {
+                        runner.apply_graph_state(module_ref);
+                    }
                 }
 
                 let eval_result = app.module_evaluator.evaluate(
@@ -102,56 +118,52 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
             }
         }
 
-        let analysis = app.audio_analyzer.get_latest_analysis();
-        let mut bands = [0.0; 9];
-        for (i, &energy) in analysis.band_energies.iter().enumerate() {
-            if i < 9 {
-                bands[i] = energy;
+        if let Some(runner) = &mut app.bevy_runner {
+            let analysis = app.audio_analyzer.get_latest_analysis();
+            let mut bands = [0.0; 9];
+            for (i, &energy) in analysis.band_energies.iter().enumerate() {
+                if i < 9 {
+                    bands[i] = energy;
+                }
             }
-        }
 
-        let trigger_data = mapmap_core::audio_reactive::AudioTriggerData {
-            band_energies: bands,
+            let trigger_data = mapmap_core::audio_reactive::AudioTriggerData {
+                band_energies: bands,
+                rms_volume: analysis.rms_volume,
+                peak_volume: analysis.peak_volume,
+                beat_detected: analysis.beat_detected,
+                beat_strength: analysis.beat_strength,
+                bpm: analysis.tempo_bpm,
+            };
+            runner.update(&trigger_data, &node_triggers);
+        }
+    }
+
+    // Always sync some UI values
+    let analysis = app.audio_analyzer.get_latest_analysis();
+    app.ui_state.current_audio_level = analysis.rms_volume;
+    app.ui_state.current_bpm = analysis.tempo_bpm;
+    app.ui_state
+        .module_canvas
+        .set_audio_data(mapmap_core::audio_reactive::AudioTriggerData {
+            band_energies: {
+                let mut b = [0.0; 9];
+                for i in 0..9.min(analysis.band_energies.len()) {
+                    b[i] = analysis.band_energies[i];
+                }
+                b
+            },
             rms_volume: analysis.rms_volume,
             peak_volume: analysis.peak_volume,
             beat_detected: analysis.beat_detected,
             beat_strength: analysis.beat_strength,
             bpm: analysis.tempo_bpm,
-        };
-        runner.update(&trigger_data, &node_triggers);
+        });
 
-        // SYNC WITH UI
-        app.ui_state
-            .module_canvas
-            .set_audio_data(trigger_data.clone());
-        app.ui_state.current_audio_level = trigger_data.rms_volume;
-        app.ui_state.current_bpm = trigger_data.bpm;
-    } else {
-        // Fallback for when Bevy is disabled: still need to evaluate for render_ops
-        for module_id in &modules_for_eval {
-            if let Some(module_ref) = app.state.module_manager.get_module(*module_id) {
-                let eval_result = app.module_evaluator.evaluate(
-                    module_ref,
-                    &app.state.module_manager.shared_media,
-                    app.state.module_manager.graph_revision,
-                );
-
-                for (part_id, values) in &eval_result.trigger_values {
-                    let max_val = values.iter().cloned().fold(0.0, f32::max);
-                    node_triggers.insert((*module_id, *part_id), max_val);
-                }
-
-                // Collect render ops while we are already evaluating for triggers
-                app.render_ops.extend(
-                    eval_result
-                        .render_ops
-                        .iter()
-                        .cloned()
-                        .map(|op| (*module_id, op)),
-                );
-            }
-        }
-    }
+    app.ui_state.dashboard.set_audio_analysis(analysis.clone());
+    app.ui_state
+        .dashboard
+        .set_audio_devices(app.audio_devices.clone());
 
     // --- Output Processing ---
     {
@@ -162,23 +174,17 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
             .map(|wc| wc.output_id)
             .collect();
 
-        let prev_output_ids: HashSet<u64> = app
-            .window_manager
-            .iter()
-            .filter(|wc| wc.output_id != 0)
-            .map(|wc| wc.output_id)
-            .collect();
-
-        if ui_needs_sync || current_output_ids != prev_output_ids {
+        if ui_needs_sync || current_output_ids != app.last_output_ids {
             info!(
                 "Output set changed: {:?} -> {:?}",
-                prev_output_ids, current_output_ids
+                app.last_output_ids, current_output_ids
             );
             let ops_only: Vec<mapmap_core::module_eval::RenderOp> =
                 app.render_ops.iter().map(|(_, op)| op.clone()).collect();
             if let Err(e) = sync_output_windows(app, elwt, &ops_only, None) {
                 tracing::error!("Failed to sync output windows: {}", e);
             }
+            app.last_output_ids = current_output_ids;
         }
 
         // Update revision after sync
@@ -221,17 +227,6 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     } else {
         0.0
     };
-
-    let analysis = app.audio_analyzer.get_latest_analysis();
-    app.ui_state.current_audio_level = analysis.rms_volume;
-    app.ui_state.current_bpm = analysis.tempo_bpm;
-
-    app.ui_state
-        .dashboard
-        .set_audio_analysis(analysis.clone());
-    app.ui_state
-        .dashboard
-        .set_audio_devices(app.audio_devices.clone());
 
     // Check auto-save (every 30s)
     if app.last_autosave.elapsed().as_secs() >= 30 {

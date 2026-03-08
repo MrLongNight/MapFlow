@@ -538,6 +538,7 @@ impl App {
             dummy_view: Some(dummy_view),
             module_evaluator: ModuleEvaluator::new(),
             last_graph_revision: 0,
+            last_output_ids: std::collections::HashSet::new(),
             cached_output_infos: Vec::new(),
             frame_counter: 0,
             media_players: HashMap::new(),
