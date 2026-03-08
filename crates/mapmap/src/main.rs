@@ -5,11 +5,15 @@
 
 #![warn(missing_docs)]
 
+/// Core application state and loop logic.
 pub mod app;
+/// UI module for managing media files and players.
 mod media_manager_ui;
+/// Core orchestration logic and evaluation pipelines.
 pub mod orchestration;
 /// UI components.
 pub mod ui;
+/// Multi-window management and output routing.
 mod window_manager;
 
 use anyhow::Result;
@@ -153,12 +157,13 @@ impl App {
                     for context in self.window_manager.iter() {
                         context.window.request_redraw();
                     }
-                    
+
                     // Immediately check again for the next frame
                     elwt.set_control_flow(winit::event_loop::ControlFlow::Poll);
                 } else {
                     // Wait until the next frame is due
-                    let wait_until = self.last_update + std::time::Duration::from_secs_f32(target_interval);
+                    let wait_until =
+                        self.last_update + std::time::Duration::from_secs_f32(target_interval);
                     elwt.set_control_flow(winit::event_loop::ControlFlow::WaitUntil(wait_until));
                 }
             }
