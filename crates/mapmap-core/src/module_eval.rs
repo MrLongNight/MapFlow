@@ -1550,11 +1550,23 @@ impl ModuleEvaluator {
                 }
             }
             TriggerType::Beat => {
-                push_val_internal(if audio_data.beat_detected { 1.0 } else { 0.0 }, output, false);
+                push_val_internal(
+                    if audio_data.beat_detected { 1.0 } else { 0.0 },
+                    output,
+                    false,
+                );
             }
             TriggerType::Random { probability, .. } => {
                 let random_value: f32 = rng.random();
-                push_val_internal(if random_value < *probability { 1.0 } else { 0.0 }, output, false);
+                push_val_internal(
+                    if random_value < *probability {
+                        1.0
+                    } else {
+                        0.0
+                    },
+                    output,
+                    false,
+                );
             }
             TriggerType::Fixed {
                 interval_ms,
@@ -1603,7 +1615,15 @@ impl ModuleEvaluator {
                     modifiers_match = false;
                 }
 
-                push_val_internal(if is_pressed && modifiers_match { 1.0 } else { 0.0 }, output, false);
+                push_val_internal(
+                    if is_pressed && modifiers_match {
+                        1.0
+                    } else {
+                        0.0
+                    },
+                    output,
+                    false,
+                );
             }
         }
     }
