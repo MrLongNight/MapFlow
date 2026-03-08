@@ -603,7 +603,6 @@ pub fn render_canvas(
     }
 
     // --- Zoom Controls UI (Bottom-Right) ---
-    let zoom_ui_size = Vec2::new(160.0, 30.0);
     egui::Area::new(egui::Id::new("canvas_zoom_area"))
         .anchor(egui::Align2::RIGHT_BOTTOM, egui::vec2(-20.0, -20.0))
         .show(ui.ctx(), |ui| {

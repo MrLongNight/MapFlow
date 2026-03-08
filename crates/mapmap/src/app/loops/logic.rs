@@ -5,7 +5,6 @@ use crate::orchestration::outputs::sync_output_windows;
 use anyhow::Result;
 use mapmap_io::save_project;
 use std::collections::HashSet;
-use tracing::info;
 
 /// Global update loop (physics/logic), independent of render rate per window.
 pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32) -> Result<()> {
@@ -15,11 +14,11 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     // 2. Handle UI actions and check if they requested a structural sync
     let ui_needs_sync = handle_ui_actions(app).unwrap_or(false);
 
-    // 3. Get all modules
-    let all_modules = app.state.module_manager.modules();
+    // 3. Get all module IDs
+    let all_module_ids: Vec<u64> = app.state.module_manager.modules().iter().map(|m| m.id).collect();
     
     // --- Performance Optimization: Early return if idle ---
-    if all_modules.is_empty() {
+    if all_module_ids.is_empty() {
         app.ui_state.current_fps = app.current_fps;
         app.ui_state.current_frame_time_ms = app.current_frame_time_ms;
         app.last_graph_revision = app.state.module_manager.graph_revision;
@@ -43,7 +42,7 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     // 5. Media & Animation Updates
     sync_media_players(app);
     update_media_players(app, dt);
-    let param_updates = app.state.effect_animator_mut().update(dt as f64);
+    let _param_updates = app.state.effect_animator_mut().update(dt as f64);
 
     // 6. Evaluation Logic
     let graph_dirty = app.state.module_manager.graph_revision != app.last_graph_revision;
@@ -56,7 +55,6 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
         app.render_ops.clear();
         let mut node_triggers = std::collections::HashMap::new();
         
-        let all_module_ids: Vec<u64> = all_modules.iter().map(|m| m.id).collect();
         let show_module_id = app.ui_state.timeline_panel.runtime_show_module(
             app.state.effect_animator.get_current_time() as f32,
             app.state.effect_animator.is_playing(),
