@@ -47,3 +47,7 @@
 **Action:** Pushed the "Hold-to-Confirm" pattern globally to all immediate resetting or deleting panel actions.
 - **Implementation:** Mass-replaced `ui.button("Reset to Default").clicked()` and similar calls (`btn-reset-defaults`, `menu-delete`, `btn-eject-all`) with `hold_to_action_button` across effect chain panels, context menus, sidebar, and edge blend panels.
 - **Consistency:** Ensured the same `WARN_COLOR` for reset actions and `ERROR_COLOR` for destructive actions are consistently used with the required `0.6s` delay to enforce user intent.
+
+## 2026-06-10 – Context Menu Interaction Speed
+**Learning:** While "Hold-to-Confirm" is essential for destructive canvas and panel actions to prevent live-performance accidents, applying it to transient context menus (like "Reset to Default" on a slider) creates friction and a poor UX. Context menus are already an intentional secondary action.
+**Action:** Use standard immediate-click buttons (`ui.button().clicked()`) for low-risk reset actions inside context menus. Preserve "Hold-to-Confirm" for high-risk deletions or top-level panel resets.
