@@ -52,7 +52,9 @@ impl MappingPanel {
                         if mapping_ids.is_empty() {
                             ui.vertical_centered(|ui| {
                                 ui.add_space(20.0);
-                                ui.label(RichText::new("No mappings created yet.").weak());
+                                ui.label(
+                                    RichText::new("No mappings created yet.").weak().italics(),
+                                );
                                 ui.add_space(20.0);
                             });
                         }
