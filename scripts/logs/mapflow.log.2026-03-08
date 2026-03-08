@@ -159,3 +159,63 @@
 2026-03-08T03:04:44.699727Z  INFO mapmap_media::pipeline: Stopping pipeline
 2026-03-08T03:04:44.727115Z  INFO mapmap_media::pipeline: Decode thread stopped
 2026-03-08T03:04:44.741058Z  INFO mapmap_media::pipeline: Upload thread stopped
+2026-03-08T04:14:09.804483Z  INFO MapFlow: Starting MapFlow...
+2026-03-08T04:14:09.815061Z  INFO MapFlow: Initializing MapFlow...
+2026-03-08T04:14:10.308535Z  INFO mapmap_render::backend: Using GPU: AMD Radeon R5 430 (Vulkan)
+2026-03-08T04:14:10.352600Z  INFO MapFlow::app::core::init: >>> BUILD VERSION: 2026-02-16-FIX-BEVY-HEADLESS <<<
+2026-03-08T04:14:10.397375Z  INFO mapmap_render::edge_blend_renderer: Creating edge blend renderer
+2026-03-08T04:14:10.398790Z  INFO mapmap_render::color_calibration_renderer: Creating color calibration renderer
+2026-03-08T04:14:10.415061Z  INFO MapFlow::window_manager: Found icon at "../resources/app_icons/MapFlow_Logo_HQ-Full-M.png" (1024x736)
+2026-03-08T04:14:10.422372Z  INFO MapFlow::window_manager: Successfully created winit icon from "../resources/app_icons/MapFlow_Logo_HQ-Full-M.png"
+2026-03-08T04:14:10.505127Z  INFO MapFlow::window_manager: Found icon at "../resources/app_icons/MapFlow_Logo_HQ-Full-M.png" (1024x736)
+2026-03-08T04:14:10.512514Z  INFO MapFlow::window_manager: Successfully created winit icon from "../resources/app_icons/MapFlow_Logo_HQ-Full-M.png"
+2026-03-08T04:14:12.082968Z  INFO MapFlow::app::core::init: Found autosave at "C:\\Users\\Vinyl\\AppData\\Local\\MapFlow\\autosave.mflow", attempting to load...
+2026-03-08T04:14:12.096911Z  INFO MapFlow::app::core::init: Successfully loaded autosave.
+2026-03-08T04:14:12.097566Z  WARN MapFlow::app::core::init: Self-Heal: Output 'Projector 1' (ID 1) has no matching Output Window.
+2026-03-08T04:14:12.098035Z  INFO MapFlow::app::core::init: Self-Heal: Creating missing Output Window 'Projector 1' (ID 1)
+2026-03-08T04:14:12.098221Z  INFO MapFlow::app::core::init: Self-Heal: Module 'New Module' has nodes: {3, 4, 1, 5}
+2026-03-08T04:14:12.116879Z  INFO mapmap_core::audio::backend::cpal_backend: Audio: Using device 'Mikrofon [Microphone] via USB', format=F32, sample_rate=48000, channels=1
+2026-03-08T04:14:12.161264Z  INFO mapmap_control::osc::client: OSC client created, sending to 127.0.0.1:8000
+2026-03-08T04:14:12.164178Z  INFO mapmap_mcp::server: MCP Server connected to OSC at 127.0.0.1:8000
+2026-03-08T04:14:12.164547Z  INFO mapmap_render::oscillator_renderer: Creating oscillator renderer
+2026-03-08T04:14:12.444619Z  INFO mapmap_ui::widgets::icons: Loaded 35 icons
+2026-03-08T04:14:12.527616Z  INFO mapmap_bevy: Initializing Bevy integration (Safe Logic Mode)...
+2026-03-08T04:14:12.530730Z  INFO MapFlow::app::core::init: ==========================================
+2026-03-08T04:14:12.530957Z  INFO MapFlow::app::core::init:    MapFlow Initialization Status Report   
+2026-03-08T04:14:12.531088Z  INFO MapFlow::app::core::init: ------------------------------------------
+2026-03-08T04:14:12.531211Z  INFO MapFlow::app::core::init: - Render Backend: AMD Radeon R5 430 (Vulkan)
+2026-03-08T04:14:12.531325Z  INFO MapFlow::app::core::init: - Edge Blend:     ENABLED
+2026-03-08T04:14:12.531441Z  INFO MapFlow::app::core::init: - Color Calib:    ENABLED
+2026-03-08T04:14:12.531564Z  INFO MapFlow::app::core::init: - Bevy Engine:    INITIALIZED
+2026-03-08T04:14:12.531677Z  INFO MapFlow::app::core::init: - Hue System:     UNCONFIGURED
+2026-03-08T04:14:12.531797Z  INFO MapFlow::app::core::init: - Media Library:  0 items
+2026-03-08T04:14:12.531914Z  INFO MapFlow::app::core::init: ==========================================
+2026-03-08T04:14:12.641839Z  INFO mapmap_media::decoder::ffmpeg_impl: Video info: FPS=30.00, RawDuration=-9223372036854775808, TimeBase=1/1000, CalcDuration=-9223372036854776
+2026-03-08T04:14:12.643210Z  WARN mapmap_media::decoder::ffmpeg_impl: Invalid video duration: -9223372036854776 seconds (raw: -9223372036854775808). Treating as live stream or unknown duration
+2026-03-08T04:14:12.679094Z  INFO mapmap_media::decoder::ffmpeg_impl: D3D11VA hardware acceleration initialized
+2026-03-08T04:14:12.681334Z  INFO mapmap_media::decoder::ffmpeg_impl: Decoder initialized successfully: 1280x720 @ 30.00 fps, duration: 0.00s, hw_accel: D3D11VA
+2026-03-08T04:14:12.681549Z  INFO mapmap_media: Opened with FFmpeg decoder: "C:\\Daten\\VJ Media Content\\WEBm  #  HD  # 30 fps\\VLC-Scene_12   #  VJ-Visuals  #  Art-Comic-Style - Color\\17393509-hd_1280_720_24fps.webm"
+2026-03-08T04:14:12.681901Z  INFO mapmap_media::player: State transition: Idle -> Playing
+2026-03-08T04:14:12.682289Z  INFO MapFlow::orchestration::media: Created media player for module=1 part=3 path='C:\Daten\VJ Media Content\WEBm  #  HD  # 30 fps\VLC-Scene_12   #  VJ-Visuals  #  Art-Comic-Style - Color\17393509-hd_1280_720_24fps.webm'
+2026-03-08T04:14:12.682507Z  INFO mapmap_media::pipeline: Decode thread started
+2026-03-08T04:14:12.682647Z  INFO mapmap_media::pipeline: Upload thread started
+2026-03-08T04:14:12.721260Z  INFO mapmap_media::decoder::ffmpeg_impl: Input changed: 1280x720 YUV420P -> 1280x720 NV12
+2026-03-08T04:26:56.518562Z  INFO mapmap_ui::panels::controller_overlay_panel: Loaded mixer background
+2026-03-08T04:26:59.720790Z  INFO MapFlow::app::actions: Settings requested
+2026-03-08T04:27:00.281756Z  INFO MapFlow::app::actions: Settings requested
+2026-03-08T04:27:46.427121Z  INFO MapFlow::app::actions: Audio meter style switched to: Digital
+2026-03-08T04:27:48.234539Z  INFO MapFlow::app::actions: Audio meter style switched to: Digital
+2026-03-08T04:27:51.504152Z  INFO MapFlow::app::actions: Audio meter style switched to: Retro
+2026-03-08T04:28:21.681006Z  INFO MapFlow::window_manager: Creating projector window 'Projector 1' (ID: 1, Screen: 0)
+2026-03-08T04:28:21.701933Z  INFO MapFlow::window_manager: Found icon at "../resources/app_icons/MapFlow_Logo_HQ-Full-M.png" (1024x736)
+2026-03-08T04:28:21.710719Z  INFO MapFlow::window_manager: Successfully created winit icon from "../resources/app_icons/MapFlow_Logo_HQ-Full-M.png"
+2026-03-08T04:28:21.755528Z  INFO MapFlow::window_manager: Found icon at "../resources/app_icons/MapFlow_Logo_HQ-Full-M.png" (1024x736)
+2026-03-08T04:28:21.764701Z  INFO MapFlow::window_manager: Successfully created winit icon from "../resources/app_icons/MapFlow_Logo_HQ-Full-M.png"
+2026-03-08T04:28:21.776107Z  INFO MapFlow::window_manager: Created projector window 'Projector 1' at 1920x1080
+2026-03-08T04:28:21.777631Z  INFO MapFlow::orchestration::outputs: Created projector window for output 1
+2026-03-08T04:30:02.587789Z  INFO MapFlow::app::actions: Settings requested
+2026-03-08T04:30:05.454758Z  INFO MapFlow::app::actions: Audio meter style switched to: Digital
+2026-03-08T04:31:23.721884Z  INFO mapmap_media::pipeline: Stopping pipeline
+2026-03-08T04:31:23.729181Z  INFO mapmap_media::pipeline: Decode thread stopped
+2026-03-08T04:31:23.743207Z  INFO mapmap_media::pipeline: Decode channel disconnected
+2026-03-08T04:31:23.744494Z  INFO mapmap_media::pipeline: Upload thread stopped
