@@ -11,13 +11,13 @@ pub fn perform_evaluation(
 ) {
     app.render_ops.clear();
     let mut node_triggers = HashMap::new();
-    
+
     let show_module_id = app.ui_state.timeline_panel.runtime_show_module(
         app.state.effect_animator.get_current_time() as f32,
         app.state.effect_animator.is_playing(),
         all_module_ids,
     );
-    
+
     let modules_for_eval: Vec<u64> = if let Some(mid) = show_module_id {
         vec![mid]
     } else {
