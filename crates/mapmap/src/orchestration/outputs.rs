@@ -21,7 +21,7 @@ pub fn sync_output_windows(
                 match output_type {
                     OutputType::Projector { id, name, target_screen, .. } => {
                         active_window_ids.insert(*id);
-                        
+
                         // Create window if it doesn't exist
                         if !app.window_manager.window_ids().any(|&wid| wid == *id) {
                             app.window_manager.create_projector_window(
