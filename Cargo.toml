@@ -109,7 +109,7 @@ thiserror = "1.0"
 tiny-skia = "0.12"
 
 # Async runtime
-tokio = { version = "1.36", features = ["full"] }
+tokio = { version = "1.50", features = ["full"] }
 toml = "1.0.1"
 tower = "0.5"
 
