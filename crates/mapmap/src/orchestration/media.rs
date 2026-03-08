@@ -6,6 +6,7 @@ use anyhow::Result;
 
 /// Handle to a background media player.
 pub struct MediaPlayerHandle {
+    /// Channel sender to dispatch playback commands to the background media player task.
     pub command_tx: Sender<mapmap_media::PlaybackCommand>,
 }
 

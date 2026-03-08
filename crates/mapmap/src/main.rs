@@ -5,11 +5,15 @@
 
 #![warn(missing_docs)]
 
+/// Core application state and loop logic.
 pub mod app;
+/// UI module for managing media files and players.
 mod media_manager_ui;
+/// Core orchestration logic and evaluation pipelines.
 pub mod orchestration;
 /// UI components.
 pub mod ui;
+/// Multi-window management and output routing.
 mod window_manager;
 
 use anyhow::Result;
