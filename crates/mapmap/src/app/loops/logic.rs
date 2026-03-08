@@ -49,7 +49,7 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     
     // Check for reactive nodes or active modulations
     let mut has_reactive_content = false;
-    for module in all_modules {
+    for module in &all_modules {
         if !module.parts.is_empty() {
             has_reactive_content = true;
             break;
