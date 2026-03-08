@@ -236,7 +236,10 @@ impl Dashboard {
 
                 let peak_x = rect.min.x + width * peak;
                 ui.painter().line_segment(
-                    [egui::pos2(peak_x, rect.min.y), egui::pos2(peak_x, rect.max.y)],
+                    [
+                        egui::pos2(peak_x, rect.min.y),
+                        egui::pos2(peak_x, rect.max.y),
+                    ],
                     egui::Stroke::new(2.0, colors::WARN_COLOR),
                 );
             }

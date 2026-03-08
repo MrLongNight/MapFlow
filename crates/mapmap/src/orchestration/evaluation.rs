@@ -1,6 +1,6 @@
 use crate::app::core::app_struct::App;
-use std::collections::HashMap;
 use mapmap_core::audio::AudioAnalysis;
+use std::collections::HashMap;
 
 /// Orchestrates the evaluation of the module graph and synchronizes with the Bevy engine.
 pub fn perform_evaluation(
@@ -45,7 +45,11 @@ pub fn perform_evaluation(
             }
 
             app.render_ops.extend(
-                eval_result.render_ops.iter().cloned().map(|op| (*module_id, op)),
+                eval_result
+                    .render_ops
+                    .iter()
+                    .cloned()
+                    .map(|op| (*module_id, op)),
             );
         }
     }
@@ -55,7 +59,9 @@ pub fn perform_evaluation(
         let trigger_data = mapmap_core::audio_reactive::AudioTriggerData {
             band_energies: {
                 let mut b = [0.0; 9];
-                for i in 0..9.min(analysis.band_energies.len()) { b[i] = analysis.band_energies[i]; }
+                for i in 0..9.min(analysis.band_energies.len()) {
+                    b[i] = analysis.band_energies[i];
+                }
                 b
             },
             rms_volume: analysis.rms_volume,

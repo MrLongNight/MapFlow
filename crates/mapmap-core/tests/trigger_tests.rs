@@ -1,5 +1,5 @@
+use mapmap_core::module::{MapFlowModule, ModulePartType, ModulePlaybackMode, TriggerType};
 use mapmap_core::module_eval::ModuleEvaluator;
-use mapmap_core::module::{MapFlowModule, ModulePartType, TriggerType, ModulePlaybackMode};
 use std::collections::HashSet;
 
 #[test]
@@ -16,26 +16,38 @@ fn test_manual_trigger() {
     };
 
     // Add a trigger node
-    let t_id = module.add_part_with_type(
-        ModulePartType::Trigger(TriggerType::Beat),
-        (0.0, 0.0)
-    );
+    let t_id = module.add_part_with_type(ModulePartType::Trigger(TriggerType::Beat), (0.0, 0.0));
 
     // Evaluate without manual trigger
     let shared = mapmap_core::module::SharedMediaState::default();
     let res = evaluator.evaluate(&module, &shared, 0);
-    let val = res.trigger_values.get(&t_id).and_then(|v| v.first()).copied().unwrap_or(0.0);
+    let val = res
+        .trigger_values
+        .get(&t_id)
+        .and_then(|v| v.first())
+        .copied()
+        .unwrap_or(0.0);
     assert_eq!(val, 0.0);
 
     // Fire manual trigger
     evaluator.trigger_node(t_id);
     let res = evaluator.evaluate(&module, &shared, 0);
-    let val = res.trigger_values.get(&t_id).and_then(|v| v.first()).copied().unwrap_or(0.0);
+    let val = res
+        .trigger_values
+        .get(&t_id)
+        .and_then(|v| v.first())
+        .copied()
+        .unwrap_or(0.0);
     assert_eq!(val, 1.0);
 
     // Verify it's cleared next frame
     let res = evaluator.evaluate(&module, &shared, 0);
-    let val = res.trigger_values.get(&t_id).and_then(|v| v.first()).copied().unwrap_or(0.0);
+    let val = res
+        .trigger_values
+        .get(&t_id)
+        .and_then(|v| v.first())
+        .copied()
+        .unwrap_or(0.0);
     assert_eq!(val, 0.0);
 }
 
@@ -58,14 +70,19 @@ fn test_shortcut_trigger() {
             key_code: "Space".to_string(),
             modifiers: 0,
         }),
-        (0.0, 0.0)
+        (0.0, 0.0),
     );
 
     let shared = mapmap_core::module::SharedMediaState::default();
 
     // No key pressed
     let res = evaluator.evaluate(&module, &shared, 0);
-    let val = res.trigger_values.get(&t_id).and_then(|v| v.first()).copied().unwrap_or(0.0);
+    let val = res
+        .trigger_values
+        .get(&t_id)
+        .and_then(|v| v.first())
+        .copied()
+        .unwrap_or(0.0);
     assert_eq!(val, 0.0);
 
     // Press Space
@@ -74,14 +91,24 @@ fn test_shortcut_trigger() {
     evaluator.update_keys(&keys);
 
     let res = evaluator.evaluate(&module, &shared, 0);
-    let val = res.trigger_values.get(&t_id).and_then(|v| v.first()).copied().unwrap_or(0.0);
+    let val = res
+        .trigger_values
+        .get(&t_id)
+        .and_then(|v| v.first())
+        .copied()
+        .unwrap_or(0.0);
     assert_eq!(val, 1.0);
 
     // Release Space
     keys.clear();
     evaluator.update_keys(&keys);
     let res = evaluator.evaluate(&module, &shared, 0);
-    let val = res.trigger_values.get(&t_id).and_then(|v| v.first()).copied().unwrap_or(0.0);
+    let val = res
+        .trigger_values
+        .get(&t_id)
+        .and_then(|v| v.first())
+        .copied()
+        .unwrap_or(0.0);
     assert_eq!(val, 0.0);
 }
 
@@ -105,25 +132,40 @@ fn test_midi_trigger() {
             channel: 1,
             note: 60,
         }),
-        (0.0, 0.0)
+        (0.0, 0.0),
     );
 
     let shared = mapmap_core::module::SharedMediaState::default();
 
     // No MIDI
     let res = evaluator.evaluate(&module, &shared, 0);
-    let val = res.trigger_values.get(&t_id).and_then(|v| v.first()).copied().unwrap_or(0.0);
+    let val = res
+        .trigger_values
+        .get(&t_id)
+        .and_then(|v| v.first())
+        .copied()
+        .unwrap_or(0.0);
     assert_eq!(val, 0.0);
 
     // Send MIDI
     evaluator.record_midi(1, 60);
     let res = evaluator.evaluate(&module, &shared, 0);
-    let val = res.trigger_values.get(&t_id).and_then(|v| v.first()).copied().unwrap_or(0.0);
+    let val = res
+        .trigger_values
+        .get(&t_id)
+        .and_then(|v| v.first())
+        .copied()
+        .unwrap_or(0.0);
     assert_eq!(val, 1.0);
 
     // Verify cleared
     let res = evaluator.evaluate(&module, &shared, 0);
-    let val = res.trigger_values.get(&t_id).and_then(|v| v.first()).copied().unwrap_or(0.0);
+    let val = res
+        .trigger_values
+        .get(&t_id)
+        .and_then(|v| v.first())
+        .copied()
+        .unwrap_or(0.0);
     assert_eq!(val, 0.0);
 }
 
@@ -145,24 +187,39 @@ fn test_osc_trigger() {
         ModulePartType::Trigger(TriggerType::Osc {
             address: "/trigger/1".to_string(),
         }),
-        (0.0, 0.0)
+        (0.0, 0.0),
     );
 
     let shared = mapmap_core::module::SharedMediaState::default();
 
     // No OSC
     let res = evaluator.evaluate(&module, &shared, 0);
-    let val = res.trigger_values.get(&t_id).and_then(|v| v.first()).copied().unwrap_or(0.0);
+    let val = res
+        .trigger_values
+        .get(&t_id)
+        .and_then(|v| v.first())
+        .copied()
+        .unwrap_or(0.0);
     assert_eq!(val, 0.0);
 
     // Send OSC
     evaluator.record_osc("/trigger/1");
     let res = evaluator.evaluate(&module, &shared, 0);
-    let val = res.trigger_values.get(&t_id).and_then(|v| v.first()).copied().unwrap_or(0.0);
+    let val = res
+        .trigger_values
+        .get(&t_id)
+        .and_then(|v| v.first())
+        .copied()
+        .unwrap_or(0.0);
     assert_eq!(val, 1.0);
 
     // Verify cleared
     let res = evaluator.evaluate(&module, &shared, 0);
-    let val = res.trigger_values.get(&t_id).and_then(|v| v.first()).copied().unwrap_or(0.0);
+    let val = res
+        .trigger_values
+        .get(&t_id)
+        .and_then(|v| v.first())
+        .copied()
+        .unwrap_or(0.0);
     assert_eq!(val, 0.0);
 }
