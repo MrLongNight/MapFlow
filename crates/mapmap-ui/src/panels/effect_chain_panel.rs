@@ -1362,11 +1362,7 @@ impl EffectChainPanel {
             let response = styled_slider(ui, &mut value, min..=max, default_value);
 
             response.context_menu(|ui| {
-                if crate::widgets::custom::hold_to_action_button(
-                    ui,
-                    "Reset to Default",
-                    crate::theme::colors::WARN_COLOR,
-                ) {
+                if ui.button("Reset to Default").clicked() {
                     value = default_value;
                     ui.close();
                 }
