@@ -601,7 +601,7 @@ impl App {
             bevy_runner: Some(mapmap_bevy::BevyRunner::new()),
         };
 
-        // Populate last_output_ids to prevent immediate double-sync, 
+        // Populate last_output_ids to prevent immediate double-sync,
         // but ensure first update triggers window creation.
         // Actually, leaving it empty is better, so the first logic::update creates the windows.
         app.last_output_ids.clear();

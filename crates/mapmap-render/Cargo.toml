@@ -28,7 +28,7 @@ winit = { workspace = true }
 criterion = { workspace = true }
 futures-channel = "0.3.30"
 pollster = { workspace = true }
-tokio = { version = "1.35.1", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.50.0", features = ["macros", "rt-multi-thread"] }
 wgpu = { workspace = true }
 
 [[bench]]
