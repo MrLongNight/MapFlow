@@ -18,7 +18,7 @@
 2026-03-08T00:24:57.301722Z  INFO mapmap_ui::widgets::icons: Loaded 35 icons
 2026-03-08T00:24:57.392351Z  INFO mapmap_bevy: Initializing Bevy integration (Safe Logic Mode)...
 2026-03-08T00:24:57.394168Z  INFO MapFlow::app::core::init: ==========================================
-2026-03-08T00:24:57.394531Z  INFO MapFlow::app::core::init:    MapFlow Initialization Status Report   
+2026-03-08T00:24:57.394531Z  INFO MapFlow::app::core::init:    MapFlow Initialization Status Report
 2026-03-08T00:24:57.394656Z  INFO MapFlow::app::core::init: ------------------------------------------
 2026-03-08T00:24:57.394786Z  INFO MapFlow::app::core::init: - Render Backend: AMD Radeon R5 430 (Vulkan)
 2026-03-08T00:24:57.395105Z  INFO MapFlow::app::core::init: - Edge Blend:     ENABLED
@@ -84,7 +84,7 @@
 2026-03-08T02:39:59.264344Z  INFO mapmap_ui::widgets::icons: Loaded 35 icons
 2026-03-08T02:39:59.462177Z  INFO mapmap_bevy: Initializing Bevy integration (Safe Logic Mode)...
 2026-03-08T02:39:59.464542Z  INFO MapFlow::app::core::init: ==========================================
-2026-03-08T02:39:59.464903Z  INFO MapFlow::app::core::init:    MapFlow Initialization Status Report   
+2026-03-08T02:39:59.464903Z  INFO MapFlow::app::core::init:    MapFlow Initialization Status Report
 2026-03-08T02:39:59.465045Z  INFO MapFlow::app::core::init: ------------------------------------------
 2026-03-08T02:39:59.465167Z  INFO MapFlow::app::core::init: - Render Backend: AMD Radeon R5 430 (Vulkan)
 2026-03-08T02:39:59.465354Z  INFO MapFlow::app::core::init: - Edge Blend:     ENABLED
@@ -181,7 +181,7 @@
 2026-03-08T04:14:12.444619Z  INFO mapmap_ui::widgets::icons: Loaded 35 icons
 2026-03-08T04:14:12.527616Z  INFO mapmap_bevy: Initializing Bevy integration (Safe Logic Mode)...
 2026-03-08T04:14:12.530730Z  INFO MapFlow::app::core::init: ==========================================
-2026-03-08T04:14:12.530957Z  INFO MapFlow::app::core::init:    MapFlow Initialization Status Report   
+2026-03-08T04:14:12.530957Z  INFO MapFlow::app::core::init:    MapFlow Initialization Status Report
 2026-03-08T04:14:12.531088Z  INFO MapFlow::app::core::init: ------------------------------------------
 2026-03-08T04:14:12.531211Z  INFO MapFlow::app::core::init: - Render Backend: AMD Radeon R5 430 (Vulkan)
 2026-03-08T04:14:12.531325Z  INFO MapFlow::app::core::init: - Edge Blend:     ENABLED

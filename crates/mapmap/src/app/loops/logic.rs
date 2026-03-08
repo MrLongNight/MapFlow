@@ -18,7 +18,7 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
 
     // 3. Get all module IDs
     let all_module_ids: Vec<u64> = app.state.module_manager.modules().iter().map(|m| m.id).collect();
-    
+
     // --- Performance Optimization: Early return if idle ---
     if all_module_ids.is_empty() {
         app.ui_state.current_fps = app.current_fps;
@@ -48,11 +48,11 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
             app.audio_analyzer.process_samples(&samples, timestamp);
         }
     }
-    
+
     // Get analysis results for different targets (UI and Evaluator)
     let analysis_v1 = app.audio_analyzer.get_latest_analysis();
     let analysis_v2 = app.audio_analyzer.v2.get_latest_analysis();
-    
+
     // Update evaluator with V2 analysis (9 bands)
     app.module_evaluator.update_audio(&analysis_v2);
 
