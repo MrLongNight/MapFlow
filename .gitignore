@@ -89,3 +89,8 @@ temp_373/
 
 .gemini/
 gha-creds-*.json
+# Ignore log files in scripts/
+scripts/logs/
+mapflow.log.*
+
+Thumbs.db

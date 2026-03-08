@@ -105,3 +105,12 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 **Aktion:**
 - Alle identifizierten Skripte (`fix_docs_pro.py`, `fix_docs_smart.py`, `fix_docs_smart_all.py`, `fix_ui_layout_10.sh`, `fix_ui_layout_3.sh`, `fix_ui_layout_4.sh`, `fix_ui_layout_5.sh`, `fix_ui_layout_6.sh`, `fix_ui_layout_7.sh`, `fix_ui_layout_8.sh`, `fix_ui_layout_9.sh`, `fix_wgpu.py`, `fix_wgpu_2.py`, `fix_wgpu_clean.py`) nach `.temp-archive/` mit aktuellem Datums-Präfix archiviert.
 - `GEMINI.md` nach `.temp-archive/` mit aktuellem Datums-Präfix archiviert.
+
+## 2026-03-08 - Repository Cleanup Logs & GEMINI.md
+
+**Erkenntnis:** Das Root-Verzeichnis enthielt erneut die Datei `GEMINI.md`, die als nicht erlaubte Markdown-Datei im Root-Verzeichnis gilt. Außerdem wurden im Verzeichnis `scripts/logs/` große, in git getrackte Log-Dateien (`mapflow.log.*`) identifiziert, die über 10MB groß waren und unnötig Speicherplatz belegten. Weiterhin fehlte `Thumbs.db` in `.gitignore`.
+
+**Aktion:**
+- `GEMINI.md` nach `.temp-archive/2026-03-08-GEMINI.md` archiviert und aus git entfernt.
+- Große Log-Dateien (`scripts/logs/mapflow.log.*`) aus git untracked und nach `.temp-archive/` verschoben.
+- `.gitignore` um `scripts/logs/`, `mapflow.log.*` und `Thumbs.db` ergänzt, um zukünftiges Tracking zu verhindern.
