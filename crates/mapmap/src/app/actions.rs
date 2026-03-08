@@ -231,12 +231,12 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 };
 
                 if !path.as_os_str().is_empty() {
-                    load_project_file(app, &path);
+                    let _ = load_project_file(app, &path);
                 }
             }
             UIAction::LoadRecentProject(path_str) => {
                 let path = PathBuf::from(path_str);
-                load_project_file(app, &path);
+                let _ = load_project_file(app, &path);
             }
             UIAction::SetLanguage(lang_code) => {
                 app.state.settings_mut().language = lang_code.clone();
