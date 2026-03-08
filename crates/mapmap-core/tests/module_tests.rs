@@ -385,7 +385,7 @@ fn test_manager_next_part_id() {
 #[test]
 fn test_manager_mark_dirty() {
     let mut manager = ModuleManager::new();
-    manager.mark_dirty(); 
+    manager.mark_dirty();
 }
 
 #[test]
