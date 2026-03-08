@@ -2,6 +2,12 @@
 
 Dieses Dokument dient als zentrale Wissensbasis für Maestro-Agenten im Mapflow-Projekt.
 
+## Prozess-Mandate (Kritisch)
+
+1.  **QA-Status**: Weder dieser Agent noch Subagenten dürfen jemals den `QA-Status` in der `ROADMAP.md` ändern. Nur der Benutzer ist berechtigt, Tasks auf `🟢 QA Erfolgreich` zu setzen.
+2.  **Task-Erhalt**: Es dürfen niemals Tasks aus der `ROADMAP.md` entfernt werden, außer der Benutzer gibt hierfür eine explizite Freigabe.
+3.  **Vorgaben-Treue**: Der Agent muss sich stets strikt an die Vorgaben und Anforderungen des Benutzers halten.
+
 ## Projektstruktur
 
 Das Projekt ist als Cargo Workspace organisiert:
