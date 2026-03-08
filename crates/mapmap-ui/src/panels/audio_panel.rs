@@ -71,7 +71,8 @@ impl AudioPanel {
                                 crate::config::AudioMeterStyle::Retro,
                                 db,
                                 db, // Mono for now
-                            ).height(120.0);
+                            )
+                            .height(120.0);
 
                             // FORCE ALLOCATION to prevent clipping in parent layouts
                             ui.add_space(4.0);
@@ -87,7 +88,8 @@ impl AudioPanel {
                                 crate::config::AudioMeterStyle::Digital,
                                 db,
                                 db,
-                            ).height(60.0);
+                            )
+                            .height(60.0);
                             ui.add(meter);
 
                             ui.add_space(8.0);

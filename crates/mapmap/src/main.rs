@@ -7,6 +7,7 @@
 
 pub mod app;
 mod media_manager_ui;
+/// Orchestration module for app logic
 pub mod orchestration;
 /// UI components.
 pub mod ui;
@@ -158,7 +159,8 @@ impl App {
                     elwt.set_control_flow(winit::event_loop::ControlFlow::Poll);
                 } else {
                     // Wait until the next frame is due
-                    let wait_until = self.last_update + std::time::Duration::from_secs_f32(target_interval);
+                    let wait_until =
+                        self.last_update + std::time::Duration::from_secs_f32(target_interval);
                     elwt.set_control_flow(winit::event_loop::ControlFlow::WaitUntil(wait_until));
                 }
             }

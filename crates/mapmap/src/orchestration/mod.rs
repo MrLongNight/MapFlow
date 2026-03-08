@@ -1,4 +1,8 @@
-pub mod media;
+/// Evaluation logic
 pub mod evaluation;
-pub mod outputs;
+/// Media logic
+pub mod media;
+/// Node logic
 pub mod node_logic;
+/// Outputs logic
+pub mod outputs;

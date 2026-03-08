@@ -450,7 +450,9 @@ impl WindowManager {
         let present_mode = vsync_mode_to_present_mode(mode);
         for context in self.windows.values_mut() {
             context.surface_config.present_mode = present_mode;
-            context.surface.configure(&backend.device, &context.surface_config);
+            context
+                .surface
+                .configure(&backend.device, &context.surface_config);
         }
     }
 }
