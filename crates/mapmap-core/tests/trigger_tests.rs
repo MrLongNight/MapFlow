@@ -72,7 +72,7 @@ fn test_shortcut_trigger() {
     let mut keys = HashSet::new();
     keys.insert("Space".to_string());
     evaluator.update_keys(&keys);
-    
+
     let res = evaluator.evaluate(&module, &shared, 0);
     let val = res.trigger_values.get(&t_id).and_then(|v| v.first()).copied().unwrap_or(0.0);
     assert_eq!(val, 1.0);
