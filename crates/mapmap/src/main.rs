@@ -153,7 +153,7 @@ impl App {
                     for context in self.window_manager.iter() {
                         context.window.request_redraw();
                     }
-                    
+
                     // Immediately check again for the next frame
                     elwt.set_control_flow(winit::event_loop::ControlFlow::Poll);
                 } else {
