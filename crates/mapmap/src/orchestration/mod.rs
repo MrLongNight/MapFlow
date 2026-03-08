@@ -1,4 +1,8 @@
-pub mod media;
+/// Module evaluation orchestration
 pub mod evaluation;
-pub mod outputs;
+/// Media player orchestration
+pub mod media;
+/// Node graph loading logic
 pub mod node_logic;
+/// Output rendering synchronization
+pub mod outputs;

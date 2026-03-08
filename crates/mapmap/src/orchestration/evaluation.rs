@@ -1,6 +1,6 @@
 use crate::app::core::app_struct::App;
-use std::collections::HashMap;
 use mapmap_core::audio::AudioAnalysis;
+use std::collections::HashMap;
 
 /// Orchestrates the evaluation of the module graph and synchronizes with the Bevy engine.
 pub fn perform_evaluation(
@@ -11,13 +11,13 @@ pub fn perform_evaluation(
 ) {
     app.render_ops.clear();
     let mut node_triggers = HashMap::new();
-    
+
     let show_module_id = app.ui_state.timeline_panel.runtime_show_module(
         app.state.effect_animator.get_current_time() as f32,
         app.state.effect_animator.is_playing(),
         all_module_ids,
     );
-    
+
     let modules_for_eval: Vec<u64> = if let Some(mid) = show_module_id {
         vec![mid]
     } else {
@@ -45,7 +45,11 @@ pub fn perform_evaluation(
             }
 
             app.render_ops.extend(
-                eval_result.render_ops.iter().cloned().map(|op| (*module_id, op)),
+                eval_result
+                    .render_ops
+                    .iter()
+                    .cloned()
+                    .map(|op| (*module_id, op)),
             );
         }
     }
@@ -55,7 +59,8 @@ pub fn perform_evaluation(
         let trigger_data = mapmap_core::audio_reactive::AudioTriggerData {
             band_energies: {
                 let mut b = [0.0; 9];
-                for i in 0..9.min(analysis.band_energies.len()) { b[i] = analysis.band_energies[i]; }
+                let len = 9.min(analysis.band_energies.len());
+                b[..len].copy_from_slice(&analysis.band_energies[..len]);
                 b
             },
             rms_volume: analysis.rms_volume,

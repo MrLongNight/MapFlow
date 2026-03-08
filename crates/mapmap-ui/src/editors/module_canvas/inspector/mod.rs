@@ -372,7 +372,7 @@ pub fn render_inspector_for_part(
                                     if ui.add(egui::Button::new("\u{1F4C2} Select Media File").min_size(egui::vec2(150.0, 30.0))).clicked() {
                                         actions.push(UIAction::PickMediaFile(module_id, part_id, "".to_string()));
                                     }
-                                    ui.label(egui::RichText::new("No media loaded").weak());
+                                    ui.label(egui::RichText::new("No media loaded").weak().italics());
                                     ui.add_space(10.0);
                                 });
                             } else {
@@ -494,7 +494,7 @@ pub fn render_inspector_for_part(
                                     if ui.add(egui::Button::new("\u{1F4C2} Select Image File").min_size(egui::vec2(150.0, 30.0))).clicked() {
                                         actions.push(crate::UIAction::PickMediaFile(module_id, part_id, "".to_string()));
                                     }
-                                    ui.label(egui::RichText::new("No image loaded").weak());
+                                    ui.label(egui::RichText::new("No image loaded").weak().italics());
                                     ui.add_space(10.0);
                                 });
                             } else {
@@ -1137,7 +1137,7 @@ pub fn render_inspector_for_part(
                                             *path = picked.display().to_string();
                                         }
                                     }
-                                    ui.label(egui::RichText::new("No mask loaded").weak());
+                                    ui.label(egui::RichText::new("No mask loaded").weak().italics());
                                     ui.add_space(10.0);
                                 });
                             } else {

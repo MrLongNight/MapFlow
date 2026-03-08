@@ -160,7 +160,9 @@ use self::analyzer_v2::{AudioAnalyzerV2, AudioAnalyzerV2Config};
 
 /// Audio analyzer - Wrapper around AudioAnalyzerV2 for backward compatibility
 pub struct AudioAnalyzer {
+    /// Audio configuration
     pub config: AudioConfig,
+    /// Underlying V2 analyzer
     pub v2: AudioAnalyzerV2,
     // Onset detection history (V2 doesn't provide onset)
     onset_history: VecDeque<f32>,

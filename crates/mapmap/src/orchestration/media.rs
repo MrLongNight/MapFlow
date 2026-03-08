@@ -1,11 +1,12 @@
 use crate::app::core::app_struct::App;
+use anyhow::Result;
+use crossbeam_channel::Sender;
 use mapmap_render::TexturePool;
 use std::sync::Arc;
-use crossbeam_channel::Sender;
-use anyhow::Result;
 
 /// Handle to a background media player.
 pub struct MediaPlayerHandle {
+    /// Command sender to playback thread
     pub command_tx: Sender<mapmap_media::PlaybackCommand>,
 }
 
@@ -19,15 +20,11 @@ pub fn create_player_handle(
 ) -> Result<MediaPlayerHandle> {
     // Placeholder until I find the correct run_player equivalent
     let (cmd_tx, _) = crossbeam_channel::unbounded();
-    Ok(MediaPlayerHandle {
-        command_tx: cmd_tx,
-    })
+    Ok(MediaPlayerHandle { command_tx: cmd_tx })
 }
 
 /// Synchronizes media players with the current module graph.
-pub fn sync_media_players(_app: &mut App) {
-}
+pub fn sync_media_players(_app: &mut App) {}
 
 /// Updates all active media players.
-pub fn update_media_players(_app: &mut App, _dt: f32) {
-}
+pub fn update_media_players(_app: &mut App, _dt: f32) {}

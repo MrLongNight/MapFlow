@@ -567,7 +567,8 @@ impl EffectChainPanel {
                         ui.label(
                             RichText::new(locale.t("effect-no-effects"))
                                 .size(16.0)
-                                .weak(),
+                                .weak()
+                                .italics(),
                         );
                         ui.label(locale.t("effect-start-tip"));
                         ui.add_space(50.0);
