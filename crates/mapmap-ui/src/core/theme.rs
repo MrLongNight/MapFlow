@@ -181,9 +181,15 @@ pub fn theme_picker(ui: &mut egui::Ui, theme: &mut Theme) -> bool {
         .selected_text(format!("{:?}", theme))
         .show_ui(ui, |ui| {
             for t in [
-                Theme::Dark, Theme::Light, Theme::HighContrast,
-                Theme::Resolume, Theme::Synthwave, Theme::Cyber,
-                Theme::Midnight, Theme::Purple, Theme::Pink
+                Theme::Dark,
+                Theme::Light,
+                Theme::HighContrast,
+                Theme::Resolume,
+                Theme::Synthwave,
+                Theme::Cyber,
+                Theme::Midnight,
+                Theme::Purple,
+                Theme::Pink,
             ] {
                 changed |= ui.selectable_value(theme, t, format!("{:?}", t)).clicked();
             }
