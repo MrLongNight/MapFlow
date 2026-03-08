@@ -55,7 +55,9 @@ pub fn perform_evaluation(
         let trigger_data = mapmap_core::audio_reactive::AudioTriggerData {
             band_energies: {
                 let mut b = [0.0; 9];
-                for i in 0..9.min(analysis.band_energies.len()) { b[i] = analysis.band_energies[i]; }
+                // ⚡ Bolt: optimized element-wise copy to block memory copy
+                let len = 9.min(analysis.band_energies.len());
+                b[..len].copy_from_slice(&analysis.band_energies[..len]);
                 b
             },
             rms_volume: analysis.rms_volume,
