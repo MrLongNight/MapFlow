@@ -85,7 +85,7 @@ pub fn show(ctx: &Context, context: SettingsContext) {
                     .show_ui(ui, |ui| {
                         use mapmap_ui::core::theme::Theme;
                         for theme in [
-                            Theme::Dark, Theme::Light, Theme::Resolume, 
+                            Theme::Dark, Theme::Light, Theme::Resolume,
                             Theme::Synthwave, Theme::Cyber, Theme::Midnight,
                             Theme::Purple, Theme::Pink, Theme::HighContrast,
                         ] {
@@ -172,7 +172,7 @@ pub fn show(ctx: &Context, context: SettingsContext) {
 
             ui.add_space(20.0);
             ui.separator();
-            
+
             ui.vertical_centered(|ui| {
                 if ui.button(RichText::new(i18n.t("restart-app")).color(Color32::RED).strong()).clicked() {
                     *context.restart_requested = true;
