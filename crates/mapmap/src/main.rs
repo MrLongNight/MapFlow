@@ -142,7 +142,8 @@ impl App {
                 // Cap dt to avoid huge jumps
                 let dt = dt.min(0.1);
 
-                if dt >= 1.0 / 60.0 {
+                let target_interval = 1.0 / 60.0;
+                if dt >= target_interval {
                     if let Err(e) = self.update(elwt, dt) {
                         error!("Update error: {}", e);
                     }
@@ -152,6 +153,13 @@ impl App {
                     for context in self.window_manager.iter() {
                         context.window.request_redraw();
                     }
+                    
+                    // Immediately check again for the next frame
+                    elwt.set_control_flow(winit::event_loop::ControlFlow::Poll);
+                } else {
+                    // Wait until the next frame is due
+                    let wait_until = self.last_update + std::time::Duration::from_secs_f32(target_interval);
+                    elwt.set_control_flow(winit::event_loop::ControlFlow::WaitUntil(wait_until));
                 }
             }
             _ => (),

@@ -40,8 +40,22 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     // 1. Graph structure changed
     // 2. Parameters are animating
     // 3. UI explicitly requested sync
+    // 4. We have active modulations (Audio/MIDI/OSC)
     let graph_dirty = app.state.module_manager.graph_revision != app.last_graph_revision;
-    let needs_re_eval = graph_dirty || !param_updates.is_empty() || ui_needs_sync;
+    
+    // Check for reactive nodes or active modulations
+    let mut has_reactive_content = false;
+    for module in app.state.module_manager.modules() {
+        if !module.parts.is_empty() {
+            // If we have any parts, we check if any are triggers or have active modulations
+            // For now, if there is ANY content, we keep evaluating to ensure reactivity.
+            // In a future update, we could check specifically for ModulePartType::Trigger
+            has_reactive_content = true;
+            break;
+        }
+    }
+
+    let needs_re_eval = graph_dirty || !param_updates.is_empty() || ui_needs_sync || has_reactive_content;
 
     let all_module_ids: Vec<u64> = app
         .state
