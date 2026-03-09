@@ -203,6 +203,15 @@ where
             let is_new_jack = icon_name == "Klinkestecker.svg" || icon_name == "Klinkestecker2.svg";
             let is_trigger = matches!(socket_type, mapmap_core::module::ModuleSocketType::Trigger);
 
+            let icon_name = match socket_type {
+                mapmap_core::module::ModuleSocketType::Trigger => "audio-jack1.1.svg",
+                mapmap_core::module::ModuleSocketType::Media => "plug.svg",
+                mapmap_core::module::ModuleSocketType::Effect => "usb-cable.svg",
+                mapmap_core::module::ModuleSocketType::Layer => "power-plug.svg",
+                mapmap_core::module::ModuleSocketType::Output => "audio-jack_2.svg",
+                mapmap_core::module::ModuleSocketType::Link => "audio-jack_1.2.svg",
+            };
+
             // Draw Cable (Bezier)
             let cable_start = start_pos;
             let cable_end = end_pos;
@@ -311,6 +320,7 @@ where
             }
             // Draw Plugs on top of cable
             if let Some(texture) = canvas.plug_icons.get(icon_name) {
+<<<<<<< HEAD
                 use std::f32::consts::PI;
 
                 // Helper to draw rotated image via Mesh
@@ -372,7 +382,26 @@ where
                     end_pos,
                     target_angle,
                     plug_size,
+=======
+                // Source Plug at OUTPUT socket - pointing LEFT (into node)
+                let start_rect = Rect::from_center_size(start_pos, Vec2::splat(plug_size));
+                // Flip horizontally so plug points left (into node)
+                painter.image(
+                    texture.id(),
+                    start_rect,
+                    Rect::from_min_max(Pos2::new(1.0, 0.0), Pos2::new(0.0, 1.0)),
+                    Color32::WHITE,
+                );
+
+                // Target Plug at INPUT socket - pointing RIGHT (into node)
+                let end_rect = Rect::from_center_size(end_pos, Vec2::splat(plug_size));
+                // Normal orientation (pointing right into node)
+                painter.image(
+                    texture.id(),
+                    end_rect,
+>>>>>>> origin/jules/ui-panel-consistency-3372896917882100483
                     Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
+                    Color32::WHITE,
                 );
             } else {
                 // Fallback circles

@@ -6,8 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+<<<<<<< HEAD
 - 2026-03-06: fix(security): Fix Information Disclosure via Hardcoded Developer Paths (#929)
 
+=======
+>>>>>>> origin/jules/ui-panel-consistency-3372896917882100483
 - 2026-03-03: docs: Repariere veraltete Links und Ordner-Referenzen in der Dokumentation (0[1-9]-* -> neue Struktur).
 
 - 2026-03-02: fix(stability): Resolve main branch build failures, failing tests, and clippy warnings.

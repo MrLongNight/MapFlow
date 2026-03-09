@@ -412,6 +412,10 @@ impl App {
         };
 
         ui_state.initialize_icons(&egui_context, &assets_path);
+<<<<<<< HEAD
+=======
+        ui_state.user_config.theme.apply(&egui_context);
+>>>>>>> origin/jules/ui-panel-consistency-3372896917882100483
 
         // Initialize preview quad buffers
         // Use manual construction to ensure -1..1 NDC range coverage for full viewport

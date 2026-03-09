@@ -188,6 +188,26 @@ pub fn render_canvas(
         }
     }
 
+<<<<<<< HEAD
+=======
+    // --- ZOOM UI ---
+    let zoom_ui_rect = Rect::from_min_size(
+        Pos2::new(canvas_rect.max.x - 120.0, canvas_rect.max.y - 140.0),
+        Vec2::new(100.0, 30.0),
+    );
+    ui.scope_builder(egui::UiBuilder::new().max_rect(zoom_ui_rect), |ui| {
+        ui.horizontal(|ui| {
+            if ui.button("-").clicked() {
+                canvas.zoom = (canvas.zoom - 0.1).max(0.1);
+            }
+            ui.add(egui::Slider::new(&mut canvas.zoom, 0.1..=5.0).show_value(false));
+            if ui.button("+").clicked() {
+                canvas.zoom = (canvas.zoom + 0.1).min(5.0);
+            }
+        });
+    });
+
+>>>>>>> origin/jules/ui-panel-consistency-3372896917882100483
     // 1. Collect ALL socket positions first
     let mut all_sockets = Vec::new();
     let node_width = 200.0;
@@ -400,8 +420,13 @@ pub fn render_canvas(
             canvas.creating_connection.take()
         {
             if let Some(pointer_pos) = ui.input(|i| i.pointer.hover_pos()) {
+<<<<<<< HEAD
                 let mut closest_socket = None;
                 let mut min_dist = 30.0 * canvas.zoom;
+=======
+                let mut best_target = None;
+                let mut min_dist = 25.0 * canvas.zoom; // Slightly tighter radius
+>>>>>>> origin/jules/ui-panel-consistency-3372896917882100483
 
                 for target in &all_sockets {
                     let dist = target.position.distance(pointer_pos);
@@ -421,12 +446,23 @@ pub fn render_canvas(
                         (target.part_id, target.socket_idx, from_part, from_idx)
                     };
 
+<<<<<<< HEAD
                     let exists = module.connections.iter().any(|c| {
                         c.from_part == out_part
                             && c.from_socket == out_idx
                             && c.to_part == in_part
                             && c.to_socket == in_idx
                     });
+=======
+                    // Final safety check: no self-connection (redundant but safe)
+                    if out_part != in_part {
+                        let exists = module.connections.iter().any(|c| {
+                            c.from_part == out_part
+                                && c.from_socket == out_idx
+                                && c.to_part == in_part
+                                && c.to_socket == in_idx
+                        });
+>>>>>>> origin/jules/ui-panel-consistency-3372896917882100483
 
                     if !exists {
                         module
@@ -601,6 +637,7 @@ pub fn render_canvas(
             }
         }
     }
+<<<<<<< HEAD
 
     // --- Zoom Controls UI (Bottom-Right) ---
     egui::Area::new(egui::Id::new("canvas_zoom_area"))
@@ -638,4 +675,6 @@ pub fn render_canvas(
                 });
             });
         });
+=======
+>>>>>>> origin/jules/ui-panel-consistency-3372896917882100483
 }

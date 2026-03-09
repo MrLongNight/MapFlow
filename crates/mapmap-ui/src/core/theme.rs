@@ -21,6 +21,7 @@ pub enum Theme {
     Resolume,
     /// Synthwave (Neon/Retro)
     Synthwave,
+<<<<<<< HEAD
     /// Cyberpunk (Black & Yellow)
     Cyber,
     /// Midnight (Deep Black)
@@ -29,6 +30,8 @@ pub enum Theme {
     Purple,
     /// Pink Paradise
     Pink,
+=======
+>>>>>>> origin/jules/ui-panel-consistency-3372896917882100483
 }
 
 /// Theme configuration
@@ -85,10 +88,13 @@ impl ThemeConfig {
             Theme::HighContrast => Self::high_contrast_visuals(),
             Theme::Resolume => Self::resolume_visuals(),
             Theme::Synthwave => Self::synthwave_visuals(),
+<<<<<<< HEAD
             Theme::Cyber => Self::cyber_visuals(),
             Theme::Midnight => Self::midnight_visuals(),
             Theme::Purple => Self::purple_visuals(),
             Theme::Pink => Self::pink_visuals(),
+=======
+>>>>>>> origin/jules/ui-panel-consistency-3372896917882100483
             Theme::Custom => self.custom_visuals(),
         };
 
@@ -111,6 +117,7 @@ impl ThemeConfig {
     }
 
     fn high_contrast_visuals() -> Visuals {
+<<<<<<< HEAD
         let mut visuals = Visuals::dark();
         visuals.window_fill = Color32::BLACK;
         visuals.panel_fill = Color32::from_rgb(10, 10, 10);
@@ -171,12 +178,248 @@ impl ThemeConfig {
         visuals.panel_fill = Color32::from_rgb(75, 0, 45);
         visuals.widgets.active.bg_fill = Color32::from_rgb(255, 0, 180);
         visuals
+=======
+        Visuals {
+            dark_mode: true,
+            override_text_color: Some(Color32::WHITE),
+            widgets: egui::style::Widgets {
+                noninteractive: egui::style::WidgetVisuals {
+                    bg_fill: Color32::BLACK,
+                    weak_bg_fill: Color32::from_rgb(10, 10, 10),
+                    bg_stroke: egui::Stroke::new(2.0, Color32::WHITE),
+                    fg_stroke: egui::Stroke::new(2.0, Color32::WHITE),
+                    corner_radius: egui::CornerRadius::ZERO,
+                    expansion: 0.0,
+                },
+                inactive: egui::style::WidgetVisuals {
+                    bg_fill: Color32::from_rgb(20, 20, 20),
+                    weak_bg_fill: Color32::from_rgb(15, 15, 15),
+                    bg_stroke: egui::Stroke::new(2.0, Color32::from_rgb(200, 200, 200)),
+                    fg_stroke: egui::Stroke::new(2.0, Color32::WHITE),
+                    corner_radius: egui::CornerRadius::ZERO,
+                    expansion: 0.0,
+                },
+                hovered: egui::style::WidgetVisuals {
+                    bg_fill: Color32::from_rgb(50, 50, 50),
+                    weak_bg_fill: Color32::from_rgb(40, 40, 40),
+                    bg_stroke: egui::Stroke::new(3.0, Color32::from_rgb(255, 255, 0)),
+                    fg_stroke: egui::Stroke::new(2.0, Color32::WHITE),
+                    corner_radius: egui::CornerRadius::ZERO,
+                    expansion: 2.0,
+                },
+                active: egui::style::WidgetVisuals {
+                    bg_fill: Color32::from_rgb(0, 200, 255),
+                    weak_bg_fill: Color32::from_rgb(0, 180, 230),
+                    bg_stroke: egui::Stroke::new(3.0, Color32::WHITE),
+                    fg_stroke: egui::Stroke::new(3.0, Color32::BLACK),
+                    corner_radius: egui::CornerRadius::ZERO,
+                    expansion: 2.0,
+                },
+                open: egui::style::WidgetVisuals {
+                    bg_fill: Color32::from_rgb(30, 30, 30),
+                    weak_bg_fill: Color32::from_rgb(25, 25, 25),
+                    bg_stroke: egui::Stroke::new(2.0, Color32::from_rgb(220, 220, 220)),
+                    fg_stroke: egui::Stroke::new(2.0, Color32::WHITE),
+                    corner_radius: egui::CornerRadius::ZERO,
+                    expansion: 0.0,
+                },
+            },
+            selection: egui::style::Selection {
+                bg_fill: Color32::from_rgb(0, 200, 255),
+                stroke: egui::Stroke::new(3.0, Color32::WHITE),
+            },
+            hyperlink_color: Color32::from_rgb(100, 200, 255),
+            faint_bg_color: Color32::BLACK,
+            extreme_bg_color: Color32::BLACK,
+            code_bg_color: Color32::from_rgb(20, 20, 20),
+            warn_fg_color: Color32::from_rgb(255, 255, 0),
+            error_fg_color: Color32::from_rgb(255, 50, 50),
+            window_fill: Color32::BLACK,
+            panel_fill: Color32::from_rgb(10, 10, 10),
+            window_stroke: egui::Stroke::new(3.0, Color32::WHITE),
+            ..Default::default()
+        }
+    }
+
+    /// Custom theme visuals
+    fn custom_visuals(&self) -> Visuals {
+        if let Some(colors) = &self.custom_colors {
+            let bg = Color32::from_rgba_premultiplied(
+                colors.background[0],
+                colors.background[1],
+                colors.background[2],
+                colors.background[3],
+            );
+            let panel = Color32::from_rgba_premultiplied(
+                colors.panel_background[0],
+                colors.panel_background[1],
+                colors.panel_background[2],
+                colors.panel_background[3],
+            );
+            let text = Color32::from_rgba_premultiplied(
+                colors.text[0],
+                colors.text[1],
+                colors.text[2],
+                colors.text[3],
+            );
+            let accent = Color32::from_rgba_premultiplied(
+                colors.accent[0],
+                colors.accent[1],
+                colors.accent[2],
+                colors.accent[3],
+            );
+
+            let mut visuals = Self::dark_visuals();
+            visuals.override_text_color = Some(text);
+            visuals.window_fill = bg;
+            visuals.panel_fill = panel;
+            visuals.widgets.active.bg_fill = accent;
+            visuals
+        } else {
+            Self::dark_visuals()
+        }
+    }
+
+    /// Resolume Arena-like theme visuals (Cyber Dark: Neutral Dark + Cyan/Mint Accents)
+    fn resolume_visuals() -> Visuals {
+        Visuals {
+            dark_mode: true,
+            override_text_color: Some(Color32::from_rgb(240, 240, 240)),
+            widgets: egui::style::Widgets {
+                noninteractive: egui::style::WidgetVisuals {
+                    bg_fill: colors::DARK_GREY,
+                    weak_bg_fill: colors::DARK_GREY,
+                    bg_stroke: egui::Stroke::new(1.0, colors::STROKE_GREY),
+                    fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(180, 180, 180)),
+                    corner_radius: egui::CornerRadius::ZERO, // Sharp corners
+                    expansion: 0.0,
+                },
+                inactive: egui::style::WidgetVisuals {
+                    bg_fill: colors::LIGHTER_GREY,
+                    weak_bg_fill: colors::LIGHTER_GREY,
+                    bg_stroke: egui::Stroke::new(1.0, colors::STROKE_GREY),
+                    fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(220, 220, 220)),
+                    corner_radius: egui::CornerRadius::ZERO,
+                    expansion: 0.0,
+                },
+                hovered: egui::style::WidgetVisuals {
+                    bg_fill: Color32::from_rgb(60, 60, 60),
+                    weak_bg_fill: Color32::from_rgb(60, 60, 60),
+                    bg_stroke: egui::Stroke::new(1.0, colors::CYAN_ACCENT), // Cyan border on hover
+                    fg_stroke: egui::Stroke::new(1.5, Color32::WHITE),
+                    corner_radius: egui::CornerRadius::ZERO,
+                    expansion: 0.0,
+                },
+                active: egui::style::WidgetVisuals {
+                    bg_fill: colors::CYAN_ACCENT,
+                    weak_bg_fill: colors::CYAN_ACCENT,
+                    bg_stroke: egui::Stroke::new(1.0, colors::CYAN_ACCENT),
+                    fg_stroke: egui::Stroke::new(2.0, Color32::BLACK), // Black text on Cyan
+                    corner_radius: egui::CornerRadius::ZERO,
+                    expansion: 0.0,
+                },
+                open: egui::style::WidgetVisuals {
+                    bg_fill: colors::DARK_GREY,
+                    weak_bg_fill: colors::DARK_GREY,
+                    bg_stroke: egui::Stroke::new(1.0, colors::STROKE_GREY),
+                    fg_stroke: egui::Stroke::new(1.0, Color32::WHITE),
+                    corner_radius: egui::CornerRadius::ZERO,
+                    expansion: 0.0,
+                },
+            },
+            selection: egui::style::Selection {
+                bg_fill: colors::CYAN_ACCENT.linear_multiply(0.2),
+                stroke: egui::Stroke::new(1.0, colors::CYAN_ACCENT),
+            },
+            hyperlink_color: colors::CYAN_ACCENT,
+            faint_bg_color: colors::DARKER_GREY,
+            extreme_bg_color: colors::DARKER_GREY,
+            code_bg_color: colors::DARK_GREY,
+            warn_fg_color: colors::WARN_COLOR,   // Orange
+            error_fg_color: colors::ERROR_COLOR, // Red
+            window_fill: colors::DARKER_GREY,    // Darker window background for hierarchy
+            panel_fill: colors::DARK_GREY,       // Lighter panel background
+            window_stroke: egui::Stroke::new(1.0, colors::STROKE_GREY),
+            ..Default::default()
+        }
+    }
+
+    /// Synthwave visuals (Neon/Retro)
+    fn synthwave_visuals() -> Visuals {
+        let neon_pink = Color32::from_rgb(255, 0, 179);
+        let neon_cyan = Color32::from_rgb(0, 243, 255);
+        let deep_purple = Color32::from_rgb(20, 13, 33);
+        let mid_purple = Color32::from_rgb(37, 22, 58);
+        let light_purple = Color32::from_rgb(58, 35, 90);
+
+        Visuals {
+            dark_mode: true,
+            override_text_color: Some(Color32::from_rgb(240, 230, 255)),
+            widgets: egui::style::Widgets {
+                noninteractive: egui::style::WidgetVisuals {
+                    bg_fill: deep_purple,
+                    weak_bg_fill: deep_purple,
+                    bg_stroke: egui::Stroke::new(1.0, light_purple),
+                    fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(180, 160, 200)),
+                    corner_radius: egui::CornerRadius::ZERO,
+                    expansion: 0.0,
+                },
+                inactive: egui::style::WidgetVisuals {
+                    bg_fill: mid_purple,
+                    weak_bg_fill: mid_purple,
+                    bg_stroke: egui::Stroke::new(1.0, light_purple),
+                    fg_stroke: egui::Stroke::new(1.0, Color32::from_rgb(200, 200, 255)),
+                    corner_radius: egui::CornerRadius::ZERO,
+                    expansion: 0.0,
+                },
+                hovered: egui::style::WidgetVisuals {
+                    bg_fill: light_purple,
+                    weak_bg_fill: light_purple,
+                    bg_stroke: egui::Stroke::new(1.0, neon_cyan),
+                    fg_stroke: egui::Stroke::new(1.5, neon_cyan),
+                    corner_radius: egui::CornerRadius::ZERO,
+                    expansion: 1.0,
+                },
+                active: egui::style::WidgetVisuals {
+                    bg_fill: neon_pink.linear_multiply(0.5),
+                    weak_bg_fill: neon_pink.linear_multiply(0.5),
+                    bg_stroke: egui::Stroke::new(1.0, neon_pink),
+                    fg_stroke: egui::Stroke::new(2.0, Color32::WHITE),
+                    corner_radius: egui::CornerRadius::ZERO,
+                    expansion: 1.0,
+                },
+                open: egui::style::WidgetVisuals {
+                    bg_fill: mid_purple,
+                    weak_bg_fill: mid_purple,
+                    bg_stroke: egui::Stroke::new(1.0, light_purple),
+                    fg_stroke: egui::Stroke::new(1.0, Color32::WHITE),
+                    corner_radius: egui::CornerRadius::ZERO,
+                    expansion: 0.0,
+                },
+            },
+            selection: egui::style::Selection {
+                bg_fill: neon_pink.linear_multiply(0.4),
+                stroke: egui::Stroke::new(1.0, neon_pink),
+            },
+            hyperlink_color: neon_cyan,
+            faint_bg_color: deep_purple,
+            extreme_bg_color: Color32::BLACK,
+            code_bg_color: mid_purple,
+            warn_fg_color: Color32::from_rgb(255, 180, 0),
+            error_fg_color: Color32::from_rgb(255, 50, 50),
+            window_fill: deep_purple.linear_multiply(0.95),
+            panel_fill: deep_purple,
+            window_stroke: egui::Stroke::new(1.0, neon_cyan.linear_multiply(0.5)),
+            ..egui::Visuals::dark()
+        }
+>>>>>>> origin/jules/ui-panel-consistency-3372896917882100483
     }
 }
 
 pub fn theme_picker(ui: &mut egui::Ui, theme: &mut Theme) -> bool {
     let mut changed = false;
     ui.label("Theme:");
+<<<<<<< HEAD
     egui::ComboBox::from_id_salt("theme_picker")
         .selected_text(format!("{:?}", theme))
         .show_ui(ui, |ui| {
@@ -188,5 +431,21 @@ pub fn theme_picker(ui: &mut egui::Ui, theme: &mut Theme) -> bool {
                 changed |= ui.selectable_value(theme, t, format!("{:?}", t)).clicked();
             }
         });
+=======
+    ui.horizontal(|ui| {
+        changed |= ui.selectable_value(theme, Theme::Dark, "Dark").clicked();
+        changed |= ui.selectable_value(theme, Theme::Light, "Light").clicked();
+        changed |= ui
+            .selectable_value(theme, Theme::HighContrast, "High Contrast")
+            .clicked();
+        changed |= ui
+            .selectable_value(theme, Theme::Resolume, "Resolume")
+            .clicked();
+        changed |= ui
+            .selectable_value(theme, Theme::Synthwave, "Synthwave")
+            .clicked();
+    });
+
+>>>>>>> origin/jules/ui-panel-consistency-3372896917882100483
     changed
 }

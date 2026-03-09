@@ -1362,11 +1362,16 @@ impl EffectChainPanel {
             let response = styled_slider(ui, &mut value, min..=max, default_value);
 
             response.context_menu(|ui| {
+<<<<<<< HEAD
                 if crate::widgets::custom::hold_to_action_button(
                     ui,
                     "Reset to Default",
                     crate::theme::colors::WARN_COLOR,
                 ) {
+=======
+                if crate::widgets::custom::hold_to_action_button(ui, "↺ Reset", colors::WARN_COLOR)
+                {
+>>>>>>> origin/jules/ui-panel-consistency-3372896917882100483
                     value = default_value;
                     ui.close();
                 }

@@ -35,30 +35,61 @@ jobs:
             }
 
             // ═══════════════════════════════════════════════════════════════
+<<<<<<< HEAD
             // 1. IDENTIFY PR
             // ═══════════════════════════════════════════════════════════════
             let prNumber = context.payload.pull_request?.number;
 
             // If triggered by workflow_run, find PR associated with commit
             if (!prNumber && context.payload.workflow_run) {
+=======
+            // 1. IDENTIFY PR (Hardened)
+            // ═══════════════════════════════════════════════════════════════
+            let prNumber = context.payload.pull_request?.number;
+
+            // If triggered by workflow_run, find PR associated with the run's branch
+            if (!prNumber && context.payload.workflow_run) {
+              const headBranch = context.payload.workflow_run.head_branch;
+              const headSha = context.payload.workflow_run.head_sha;
+              console.log(`🔍 Searching for PRs with head branch "${headBranch}" and SHA ${headSha}...`);
+
+>>>>>>> origin/jules/ui-panel-consistency-3372896917882100483
               const prs = await github.rest.pulls.list({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 state: 'open',
+<<<<<<< HEAD
                 head: `${context.repo.owner}:${context.payload.workflow_run.head_branch}`
               });
               if (prs.data.length > 0) prNumber = prs.data[0].number;
+=======
+                head: `${context.repo.owner}:${headBranch}`
+              });
+
+              // Match by SHA for extra precision if multiple PRs exist for a branch
+              const match = prs.data.find(p => p.head.sha === headSha);
+              if (match) prNumber = match.number;
+              else if (prs.data.length > 0) prNumber = prs.data[0].number;
+>>>>>>> origin/jules/ui-panel-consistency-3372896917882100483
             }
 
             // If triggered by check_suite
             if (!prNumber && context.payload.check_suite) {
+<<<<<<< HEAD
+=======
+              const headSha = context.payload.check_suite.head_sha;
+>>>>>>> origin/jules/ui-panel-consistency-3372896917882100483
               const prs = await github.rest.pulls.list({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 state: 'open'
               });
+<<<<<<< HEAD
               // Filter by SHA
               const match = prs.data.find(p => p.head.sha === context.payload.check_suite.head_sha);
+=======
+              const match = prs.data.find(p => p.head.sha === headSha);
+>>>>>>> origin/jules/ui-panel-consistency-3372896917882100483
               if (match) prNumber = match.number;
             }
 
@@ -79,21 +110,38 @@ jobs:
             });
 
             // ═══════════════════════════════════════════════════════════════
+<<<<<<< HEAD
             // 3. PRE-CHECKS
             // ═══════════════════════════════════════════════════════════════
 
             // Check: Draft PR
+=======
+            // 3. PRE-CHECKS (Hardened)
+            // ═══════════════════════════════════════════════════════════════
+
+>>>>>>> origin/jules/ui-panel-consistency-3372896917882100483
             if (pr.data.draft) {
               console.log("❌ PR is a draft. Skipping auto-merge.");
               return;
             }
 
+<<<<<<< HEAD
             // Check: Mergeable state
+=======
+            if (pr.data.state === 'closed') {
+              console.log("ℹ️ PR is already closed.");
+              return;
+            }
+
+            console.log(`📊 Mergeable: ${pr.data.mergeable}, State: ${pr.data.mergeable_state}`);
+
+>>>>>>> origin/jules/ui-panel-consistency-3372896917882100483
             if (pr.data.mergeable === false) {
               console.log("❌ PR has merge conflicts. Cannot auto-merge.");
               return;
             }
 
+<<<<<<< HEAD
             if (pr.data.mergeable_state === 'dirty') {
               console.log("❌ PR mergeable_state is 'dirty'. Skipping auto-merge.");
               return;
@@ -118,11 +166,40 @@ jobs:
             console.log(`📊 Fetching check suites for commit ${pr.data.head.sha}...`);
 
             const suites = await github.rest.checks.listSuitesForRef({
+=======
+            // Handle "Behind" status
+            if (pr.data.mergeable_state === 'behind') {
+              console.log("⚠️ PR is behind the base branch. Attempting to update...");
+              try {
+                await github.rest.pulls.updateBranch({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: prNumber
+                });
+                console.log("✅ Update request sent. Waiting for next event.");
+                return;
+              } catch (e) {
+                console.log(`❌ Failed to update branch: ${e.message}`);
+              }
+            }
+
+            // ═══════════════════════════════════════════════════════════════
+            // 4. CHECK STATUS CHECKS (Hardened Logic)
+            // ═══════════════════════════════════════════════════════════════
+
+            // Brief delay to ensure API consistency
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            console.log(`📊 Fetching check runs for commit ${pr.data.head.sha}...`);
+
+            const checks = await github.rest.checks.listForRef({
+>>>>>>> origin/jules/ui-panel-consistency-3372896917882100483
               owner: context.repo.owner,
               repo: context.repo.repo,
               ref: pr.data.head.sha
             });
 
+<<<<<<< HEAD
             console.log(`Found ${suites.data.total_count} check suite(s)`);
 
             // If no checks exist at all, this might be a docs-only change
@@ -230,10 +307,81 @@ jobs:
               }
             }
 
+=======
+            console.log(`Found ${checks.data.total_count} check run(s)`);
+
+            const REQUIRED_CHECKS = [
+              'pre-commit.ci - pr',
+              'Quality Gate (Format & Lint)',
+              'Security Scan',
+              'Build & Test (Linux)',
+              'Validation Success'
+            ];
+
+            const ownRunId = process.env.GITHUB_RUN_ID;
+
+            const externalRuns = checks.data.check_runs.filter(r => {
+              if (r.name.includes('Auto-Merge') || (ownRunId && r.details_url?.includes(ownRunId))) {
+                return false;
+              }
+              return true;
+            });
+
+            let allRequiredPassed = true;
+            const missingOrFailed = [];
+
+            for (const reqName of REQUIRED_CHECKS) {
+              const match = externalRuns.find(r => r.name === reqName);
+
+              if (!match) {
+                console.log(`⏳ Required check "${reqName}" not found yet.`);
+                allRequiredPassed = false;
+                missingOrFailed.push(`${reqName} (Missing)`);
+                continue;
+              }
+
+              console.log(`  - ${reqName}: status=${match.status}, conclusion=${match.conclusion}`);
+
+              if (match.status !== 'completed') {
+                allRequiredPassed = false;
+                missingOrFailed.push(`${reqName} (${match.status})`);
+              } else if (match.conclusion !== 'success' && match.conclusion !== 'skipped' && match.conclusion !== 'neutral') {
+                allRequiredPassed = false;
+                missingOrFailed.push(`${reqName} (${match.conclusion})`);
+              }
+            }
+
+            if (!allRequiredPassed) {
+              console.log(`⏳ Auto-Merge pending. Waiting for: ${missingOrFailed.join(', ')}`);
+              return;
+            }
+
+            // check if there are other FAILED checks
+            const otherFailed = externalRuns.filter(r =>
+              !REQUIRED_CHECKS.includes(r.name) &&
+              r.status === 'completed' &&
+              (r.conclusion === 'failure' || r.conclusion === 'timed_out' || r.conclusion === 'cancelled')
+            );
+
+            if (otherFailed.length > 0) {
+              console.log(`❌ Non-required check(s) failed:`);
+              otherFailed.forEach(r => console.log(`  - ${r.name}: ${r.conclusion}`));
+            }
+
+>>>>>>> origin/jules/ui-panel-consistency-3372896917882100483
             // ═══════════════════════════════════════════════════════════════
             // 5. EXECUTE MERGE
             // ═══════════════════════════════════════════════════════════════
 
+<<<<<<< HEAD
+=======
+            if (pr.data.mergeable_state === 'blocked') {
+              console.log("❌ PR mergeable_state is 'blocked'. This might be due to required reviews or other policies.");
+              // We could add a comment here if it's the first time
+              return;
+            }
+
+>>>>>>> origin/jules/ui-panel-consistency-3372896917882100483
             console.log("✅ All conditions met. Initiating auto-merge...");
 
             try {
@@ -248,7 +396,10 @@ jobs:
 
               console.log("🎉 PR merged successfully!");
 
+<<<<<<< HEAD
               // Optional: Add a comment to the PR
+=======
+>>>>>>> origin/jules/ui-panel-consistency-3372896917882100483
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -259,7 +410,10 @@ jobs:
             } catch (e) {
               console.log(`❌ Merge failed: ${e.message}`);
 
+<<<<<<< HEAD
               // Add error comment to PR
+=======
+>>>>>>> origin/jules/ui-panel-consistency-3372896917882100483
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,

@@ -74,11 +74,174 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     app.ui_state.current_frame_time_ms = app.current_frame_time_ms;
     app.ui_state.cpu_usage = app.sys_info.global_cpu_usage();
 
+<<<<<<< HEAD
     // 9. Output Processing (MODULARIZED)
     sync_output_windows(app, elwt, ui_needs_sync, graph_dirty)?;
     app.last_graph_revision = app.state.module_manager.graph_revision;
 
     // 10. Periodic Tasks (Auto-save)
+=======
+    // --- Bevy Runner Update ---
+    if let Some(runner) = &mut app.bevy_runner {
+        let runner: &mut mapmap_bevy::BevyRunner = runner;
+        let mut node_triggers = std::collections::HashMap::new();
+
+        for module_id in &modules_for_eval {
+            if let Some(module_ref) = app.state.module_manager.get_module(*module_id) {
+                // OPTIMIZATION: Only apply structural graph state to Bevy if changed
+                if graph_dirty {
+                    runner.apply_graph_state(module_ref);
+                }
+
+                let eval_result = app.module_evaluator.evaluate(
+                    module_ref,
+                    &app.state.module_manager.shared_media,
+                    app.state.module_manager.graph_revision,
+                );
+
+                for (part_id, values) in &eval_result.trigger_values {
+                    if let Some(last_val) = values.last() {
+                        node_triggers.insert((*module_id, *part_id), *last_val);
+                    }
+                }
+
+                // Collect render ops while we are already evaluating for triggers
+                app.render_ops.extend(
+                    eval_result
+                        .render_ops
+                        .iter()
+                        .cloned()
+                        .map(|op| (*module_id, op)),
+                );
+            }
+        }
+
+        let analysis = app.audio_analyzer.get_latest_analysis();
+        let mut bands = [0.0; 9];
+        for (i, &energy) in analysis.band_energies.iter().enumerate() {
+            if i < 9 {
+                bands[i] = energy;
+            }
+        }
+
+        let trigger_data = mapmap_core::audio_reactive::AudioTriggerData {
+            band_energies: bands,
+            rms_volume: analysis.rms_volume,
+            peak_volume: analysis.peak_volume,
+            beat_detected: analysis.beat_detected,
+            beat_strength: analysis.beat_strength,
+            bpm: analysis.tempo_bpm,
+        };
+        runner.update(&trigger_data, &node_triggers);
+
+        // SYNC WITH UI
+        app.ui_state
+            .module_canvas
+            .set_audio_data(trigger_data.clone());
+        app.ui_state.current_audio_level = trigger_data.rms_volume;
+        app.ui_state.current_bpm = trigger_data.bpm;
+    } else {
+        // Fallback for when Bevy is disabled: still need to evaluate for render_ops
+        for module_id in &modules_for_eval {
+            if let Some(module_ref) = app.state.module_manager.get_module(*module_id) {
+                let eval_result = app.module_evaluator.evaluate(
+                    module_ref,
+                    &app.state.module_manager.shared_media,
+                    app.state.module_manager.graph_revision,
+                );
+                app.render_ops.extend(
+                    eval_result
+                        .render_ops
+                        .iter()
+                        .cloned()
+                        .map(|op| (*module_id, op)),
+                );
+            }
+        }
+    }
+
+    // --- Rebuild output_assignments from render_ops ---
+    // Maps each Projector output ID to the source texture names that feed into it.
+    // Without this, prepare_texture_previews cannot find textures and no video is shown.
+    app.output_assignments.clear();
+    for (module_id, op) in &app.render_ops {
+        if let OutputType::Projector { id, .. } = &op.output_type {
+            if let Some(src_id) = op.source_part_id {
+                let tex_name = format!("part_{}_{}", module_id, src_id);
+                app.output_assignments
+                    .entry(*id)
+                    .or_default()
+                    .push(tex_name);
+            }
+        }
+    }
+
+    // --- Output Window Sync (Optimized) ---
+    if ui_needs_sync || graph_dirty {
+        let current_output_ids: HashSet<u64> = app
+            .state
+            .module_manager
+            .list_modules()
+            .iter()
+            .flat_map(|m| m.parts.iter())
+            .filter_map(|part| {
+                if let ModulePartType::Output(OutputType::Projector { id, .. }) = &part.part_type {
+                    Some(*id)
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        let prev_output_ids: HashSet<u64> = app
+            .window_manager
+            .iter()
+            .filter(|wc| wc.output_id != 0)
+            .map(|wc| wc.output_id)
+            .collect();
+
+        if ui_needs_sync || current_output_ids != prev_output_ids {
+            info!(
+                "Output set changed: {:?} -> {:?}",
+                prev_output_ids, current_output_ids
+            );
+            let ops_only: Vec<mapmap_core::module_eval::RenderOp> =
+                app.render_ops.iter().map(|(_, op)| op.clone()).collect();
+            if let Err(e) = sync_output_windows(app, elwt, &ops_only, None) {
+                tracing::error!("Failed to sync output windows: {}", e);
+            }
+        }
+
+        // Update revision after sync
+        app.last_graph_revision = app.state.module_manager.graph_revision;
+    }
+
+    // --- Oscillator Update ---
+    if let Some(renderer) = &mut app.oscillator_renderer {
+        if app.state.oscillator_config.enabled {
+            renderer.update(dt, &app.state.oscillator_config);
+        }
+    }
+
+    // --- FPS Calculation ---
+    let frame_time_ms = dt * 1000.0;
+    app.fps_samples.push_back(frame_time_ms);
+    if app.fps_samples.len() > 60 {
+        app.fps_samples.pop_front();
+    }
+    if !app.fps_samples.is_empty() {
+        let avg_frame_time: f32 =
+            app.fps_samples.iter().sum::<f32>() / app.fps_samples.len() as f32;
+        app.current_frame_time_ms = avg_frame_time;
+        app.current_fps = if avg_frame_time > 0.0 {
+            1000.0 / avg_frame_time
+        } else {
+            0.0
+        };
+    }
+
+    // Check auto-save (every 30s)
+>>>>>>> origin/jules/ui-panel-consistency-3372896917882100483
     if app.last_autosave.elapsed().as_secs() >= 30 {
         if app.state.dirty {
             if let Some(path) = dirs::data_local_dir().map(|p| p.join("MapFlow").join("autosave.mflow")) {

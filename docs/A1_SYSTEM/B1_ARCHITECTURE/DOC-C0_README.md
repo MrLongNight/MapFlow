@@ -1,0 +1,9 @@
+# DOC-C0: Architektur & Design
+
+Dokumentation der Kern-Architektur von MapFlow.
+
+## 📄 Dokumente
+
+*   [**DOC-C1_OVERVIEW.md**](./DOC-C1_OVERVIEW.md): System-Design, Crate-Hierarchie und Kern-Zuständigkeiten.
+*   [**DOC-C2_PIPELINE.md**](./DOC-C2_PIPELINE.md): Detaillierte Analyse der Render-Pipeline und des Frame-Orchestrierers.
+*   [**DOC-C3_SHADERS.md**](../../tmp-restore/dev/technical/SHADER-SYSTEM.md): Das WGSL Shader-System (Mapping aus Backup folgt).

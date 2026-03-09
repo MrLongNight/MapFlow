@@ -78,6 +78,7 @@ pub fn show(ctx: &Context, context: SettingsContext) {
             ui.add_space(4.0);
 
             ui.horizontal(|ui| {
+<<<<<<< HEAD
                 ui.label(format!("{}:", i18n.t("theme")));
                 let current_theme = context.ui_state.user_config.theme.theme;
                 egui::ComboBox::from_id_salt("theme_selector")
@@ -96,6 +97,10 @@ pub fn show(ctx: &Context, context: SettingsContext) {
                             }
                         }
                     });
+=======
+                ui.label(format!("{}:", i18n.t("theme-accent")));
+                ui.label("Cyber Cyan (Default)");
+>>>>>>> origin/jules/ui-panel-consistency-3372896917882100483
             });
 
             ui.add_space(10.0);
@@ -127,10 +132,44 @@ pub fn show(ctx: &Context, context: SettingsContext) {
                             if ui.selectable_label(vsync == mode, mode.to_string()).clicked() {
                                 context.ui_state.actions.push(UIAction::SetVsyncMode(mode));
                             }
+<<<<<<< HEAD
                         }
                     });
                 ui.end_row();
             });
+=======
+                        });
+                    ui.end_row();
+
+                    ui.label("Preferred GPU:");
+                    let current_gpu = context.ui_state.user_config.preferred_gpu.clone();
+                    let gpu_text = current_gpu.unwrap_or_else(|| "Default".to_string());
+                    // In a real scenario, you'd list available GPUs. Here we let the user enter one or select Default.
+                    ui.horizontal(|ui| {
+                        let mut temp_gpu = gpu_text.clone();
+                        if ui.text_edit_singleline(&mut temp_gpu).changed() {
+                            let new_val = if temp_gpu.trim().is_empty()
+                                || temp_gpu.trim().eq_ignore_ascii_case("default")
+                            {
+                                None
+                            } else {
+                                Some(temp_gpu.trim().to_string())
+                            };
+                            context
+                                .ui_state
+                                .actions
+                                .push(UIAction::SetPreferredGpu(new_val));
+                        }
+                        if ui.button("Clear").clicked() {
+                            context
+                                .ui_state
+                                .actions
+                                .push(UIAction::SetPreferredGpu(None));
+                        }
+                    });
+                    ui.end_row();
+                });
+>>>>>>> origin/jules/ui-panel-consistency-3372896917882100483
 
             ui.add_space(10.0);
             ui.separator();
