@@ -39,3 +39,13 @@ For professional audio users, JACK provides a powerful and flexible audio routin
 1.  **Start JACK:** Make sure your JACK server is running.
 2.  **Route Audio:** Open your JACK patchbay tool. You will see a list of audio sources and sinks.
 3.  **Connect:** Connect the output of the application you want to capture (e.g., your music player) to the input of MapFlow.
+
+## UI Notes (Audio Panel)
+
+- The **Audio** panel is now embedded in the left sidebar (no floating window).
+- **Master Controls** are also embedded in the sidebar.
+- In the Audio panel you can now:
+  - toggle **Show Level Meters** independently from the toolbar meter style,
+  - switch FFT view between **Full FFT** and **3-Band** mode (with dB grid and color split).
+- Device selection remains available in **Settings**, while the device picker was removed from the Audio panel itself.
+- Settings now include **Sample Rate** and **Buffer Size** options in the Audio section.

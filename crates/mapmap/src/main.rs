@@ -143,20 +143,41 @@ impl App {
                 // Cap dt to avoid huge jumps
                 let dt = dt.min(0.1);
 
-                let target_interval = 1.0 / 60.0;
+                let has_modules = !self.state.module_manager.modules().is_empty();
+                let is_playing = self.state.effect_animator.is_playing();
+                let configured_fps = self.ui_state.target_fps.max(1.0);
+                let tick_fps = if !has_modules {
+                    10.0
+                } else if is_playing {
+                    configured_fps
+                } else {
+                    // Editing/idle mode with modules loaded: lower tick rate to reduce CPU.
+                    configured_fps.min(30.0)
+                };
+                let target_interval = 1.0 / tick_fps;
+
                 if dt >= target_interval {
                     if let Err(e) = self.update(elwt, dt) {
                         error!("Update error: {}", e);
                     }
                     self.last_update = now;
 
-                    // Request redraw ONLY at 60Hz
-                    for context in self.window_manager.iter() {
-                        context.window.request_redraw();
+                    // Avoid expensive continuous redraws while idle.
+                    // - During playback: redraw all windows (main + projector outputs)
+                    // - While idle/editing: redraw only main window, output windows stay static
+                    if has_modules {
+                        if is_playing {
+                            for context in self.window_manager.iter() {
+                                context.window.request_redraw();
+                            }
+                        } else if let Some(main_window) = self.window_manager.get(0) {
+                            main_window.window.request_redraw();
+                        }
                     }
 
-                    // Immediately check again for the next frame
-                    elwt.set_control_flow(winit::event_loop::ControlFlow::Poll);
+                    elwt.set_control_flow(winit::event_loop::ControlFlow::WaitUntil(
+                        self.last_update + std::time::Duration::from_secs_f32(target_interval),
+                    ));
                 } else {
                     // Wait until the next frame is due
                     let wait_until = self.last_update + std::time::Duration::from_secs_f32(target_interval);

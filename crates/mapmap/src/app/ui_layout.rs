@@ -68,9 +68,25 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
                         });
                     ui_obj.separator();
 
+                    // --- Master Controls Section (in sidebar, not floating) ---
+                    if app.ui_state.show_master_controls {
+                        egui::CollapsingHeader::new(app.ui_state.i18n.t("panel-master"))
+                            .default_open(true)
+                            .show(ui_obj, |ui| {
+                                let mut layer_manager =
+                                    std::sync::Arc::make_mut(&mut app.state.layer_manager).clone();
+                                app.ui_state.render_master_controls_embedded(ui, &mut layer_manager);
+                                if layer_manager != *app.state.layer_manager {
+                                    *std::sync::Arc::make_mut(&mut app.state.layer_manager) = layer_manager;
+                                    app.state.dirty = true;
+                                }
+                            });
+                        ui_obj.separator();
+                    }
+
                     // --- Audio Analysis Section ---
                     egui::CollapsingHeader::new(app.ui_state.i18n.t("audio"))
-                        .default_open(false)
+                        .default_open(app.ui_state.show_audio)
                         .show(ui_obj, |ui| {
                             let analysis = app.audio_analyzer.get_latest_analysis();
                             if let Some(audio_action) = app.ui_state.audio_panel.ui(
@@ -78,28 +94,17 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
                                 &app.ui_state.i18n,
                                 Some(&analysis),
                                 &app.state.audio_config,
-                                &app.ui_state.audio_devices,
-                                &mut app.ui_state.selected_audio_device,
                                 app.ui_state.user_config.meter_style,
+                                &mut app.ui_state.show_audio_panel_meters,
+                                &mut app.ui_state.audio_fft_mode,
                             ) {
                                 match audio_action {
-                                    ui::panels::audio_panel::AudioPanelAction::DeviceChanged(
-                                        device,
-                                    ) => {
-                                        app.ui_state
-                                            .actions
-                                            .push(ui::UIAction::SelectAudioDevice(device));
-                                    }
-                                    ui::panels::audio_panel::AudioPanelAction::ConfigChanged(
-                                        cfg,
-                                    ) => {
+                                    ui::panels::audio_panel::AudioPanelAction::ConfigChanged(cfg) => {
                                         app.ui_state
                                             .actions
                                             .push(ui::UIAction::UpdateAudioConfig(cfg));
                                     }
-                                    ui::panels::audio_panel::AudioPanelAction::MeterStyleChanged(
-                                        style,
-                                    ) => {
+                                    ui::panels::audio_panel::AudioPanelAction::MeterStyleChanged(style) => {
                                         app.ui_state
                                             .actions
                                             .push(ui::UIAction::SetMeterStyle(style));
@@ -192,15 +197,6 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
     }
 
     // 6. Floating Windows / Overlays
-
-    // Performance Stats Overlay
-    if app.ui_state.show_stats {
-        app.ui_state.render_stats_overlay(
-            ctx,
-            app.ui_state.current_fps,
-            app.ui_state.current_frame_time_ms,
-        );
-    }
 
     // Cue Panel
     if app.ui_state.show_cue_panel {
@@ -382,34 +378,8 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
     app.ui_state.selected_layer_id = selected_layer;
     app.ui_state.actions.extend(actions);
 
-    if app.ui_state.show_master_controls {
-        let mut layer_manager = std::sync::Arc::make_mut(&mut app.state.layer_manager).clone();
-        app.ui_state.render_master_controls(ctx, &mut layer_manager);
-        if layer_manager != *app.state.layer_manager {
-            *std::sync::Arc::make_mut(&mut app.state.layer_manager) = layer_manager;
-            app.state.dirty = true;
-        }
-    }
-
     if app.ui_state.show_shader_graph {
         app.ui_state.render_node_editor(ctx);
-    }
-
-    if app.ui_state.show_audio {
-        egui::Window::new(app.ui_state.i18n.t("audio"))
-            .open(&mut app.ui_state.show_audio)
-            .show(ctx, |ui_obj| {
-                let analysis = app.audio_analyzer.get_latest_analysis();
-                app.ui_state.audio_panel.ui(
-                    ui_obj,
-                    &app.ui_state.i18n,
-                    Some(&analysis),
-                    &app.audio_analyzer.get_config(),
-                    &app.audio_devices,
-                    &mut app.ui_state.selected_audio_device,
-                    app.ui_state.user_config.meter_style,
-                );
-            });
     }
 
     app.ui_state.controller_overlay.show(
