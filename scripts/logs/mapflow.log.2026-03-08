@@ -239,7 +239,7 @@
 2026-03-08T12:18:30.547430Z  INFO mapmap_ui::widgets::icons: Loaded 35 icons
 2026-03-08T12:18:30.624345Z  INFO mapmap_bevy: Initializing Bevy integration (Safe Logic Mode)...
 2026-03-08T12:18:30.626637Z  INFO MapFlow::app::core::init: ==========================================
-2026-03-08T12:18:30.626895Z  INFO MapFlow::app::core::init:    MapFlow Initialization Status Report   
+2026-03-08T12:18:30.626895Z  INFO MapFlow::app::core::init:    MapFlow Initialization Status Report
 2026-03-08T12:18:30.627017Z  INFO MapFlow::app::core::init: ------------------------------------------
 2026-03-08T12:18:30.627132Z  INFO MapFlow::app::core::init: - Render Backend: AMD Radeon R5 430 (Vulkan)
 2026-03-08T12:18:30.627249Z  INFO MapFlow::app::core::init: - Edge Blend:     ENABLED

@@ -45,7 +45,7 @@ pub fn create_player_handle(
             // Get dt from channel
             if let Ok(dt) = upd_rx.try_recv() {
                 player.update(std::time::Duration::from_secs_f32(dt));
-                
+
                 if let Some(frame) = player.last_frame() {
                     // Extract byte slice from FrameData::Cpu
                     if let mapmap_io::format::FrameData::Cpu(ref data) = frame.data {
