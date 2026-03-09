@@ -148,8 +148,9 @@ fn test_midi_trigger() {
     assert_eq!(val, 0.0);
 
     // Send MIDI
-    evaluator.record_midi(1, 60);
-    let res = evaluator.evaluate(&module, &shared, 0);
+    let mut shared_midi = shared.clone();
+    shared_midi.active_midi_events.push((1, 60, 127));
+    let res = evaluator.evaluate(&module, &shared_midi, 0);
     let val = res
         .trigger_values
         .get(&t_id)
@@ -203,8 +204,9 @@ fn test_osc_trigger() {
     assert_eq!(val, 0.0);
 
     // Send OSC
-    evaluator.record_osc("/trigger/1");
-    let res = evaluator.evaluate(&module, &shared, 0);
+    let mut shared_osc = shared.clone();
+    shared_osc.active_osc_messages.insert("/trigger/1".to_string(), vec![1.0]);
+    let res = evaluator.evaluate(&module, &shared_osc, 0);
     let val = res
         .trigger_values
         .get(&t_id)
