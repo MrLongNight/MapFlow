@@ -267,10 +267,6 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
         app.backend.queue.submit(std::iter::once(encoder.finish()));
         window_context.window.pre_present_notify();
         surface_texture.present();
-
-        if output_id != 0 {
-            window_context.window.request_redraw();
-        }
     }
 
     Ok(())

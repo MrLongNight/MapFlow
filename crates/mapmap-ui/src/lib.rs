@@ -358,6 +358,10 @@ pub struct AppUI {
     pub show_audio: bool,
     /// Audio panel state
     pub audio_panel: AudioPanel,
+    /// Show level meters inside audio panel
+    pub show_audio_panel_meters: bool,
+    /// FFT visualization mode for audio panel
+    pub audio_fft_mode: crate::panels::audio_panel::FftVisualizationMode,
     /// Show cue list panel
     pub show_cue_panel: bool,
     /// Assignment panel state
@@ -514,6 +518,8 @@ impl Default for AppUI {
             oscillator_panel: OscillatorPanel::default(), // Hide by default
             show_audio: false,                            // Hide by default - use Dashboard toggle
             audio_panel: AudioPanel::default(),
+            show_audio_panel_meters: true,
+            audio_fft_mode: crate::panels::audio_panel::FftVisualizationMode::FullFft,
             show_cue_panel: false, // Hide by default
             assignment_panel: AssignmentPanel::default(),
             show_assignment_panel: false, // Hide by default
