@@ -77,3 +77,6 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 ## 2026-03-01 - Missing Documentation for Multiple PRs and Commits
 **Erkenntnis:** Many PRs and direct commits on main were missing from `CHANGELOG.md` (e.g., #888, #887, #882, #885, #881, #870, etc.). The sheer volume of missing entries suggests merges occurred without adhering to changelog documentation standards.
 **Aktion:** Tracker audited the recent history on the `main` branch, extracting 20+ missing commits, and appended them accurately under `[Unreleased]` in `CHANGELOG.md`. Also updated `ROADMAP.md` stand date to match the current date.
+## 2026-03-09 - Changelog Conflicts Fixed
+**Erkenntnis:** Merge conflicts inside `CHANGELOG.md` discovered and resolved manually (#970, #971, #929). Also `ROADMAP.md` missing PR numbers #970, #971 and #929.
+**Aktion:** Tracker cleaned up `CHANGELOG.md` from git conflict markers, properly formatted entries, and added missing PR labels to `ROADMAP.md`.
