@@ -23,6 +23,7 @@
 2026-03-07T23:42:50.368633Z  INFO MapFlow::app::core::init: ==========================================
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 2026-03-07T23:42:50.369043Z  INFO MapFlow::app::core::init:    MapFlow Initialization Status Report   
 =======
 2026-03-07T23:42:50.369043Z  INFO MapFlow::app::core::init:    MapFlow Initialization Status Report
@@ -30,6 +31,9 @@
 =======
 2026-03-07T23:42:50.369043Z  INFO MapFlow::app::core::init:    MapFlow Initialization Status Report
 >>>>>>> origin/mary-styleux-context-menu-speed-3360634052354042098
+=======
+2026-03-07T23:42:50.369043Z  INFO MapFlow::app::core::init:    MapFlow Initialization Status Report
+>>>>>>> origin/bolt-optimize-band-energies-memcpy-11439757901420791592
 2026-03-07T23:42:50.369203Z  INFO MapFlow::app::core::init: ------------------------------------------
 2026-03-07T23:42:50.369435Z  INFO MapFlow::app::core::init: - Render Backend: AMD Radeon R5 430 (Vulkan)
 2026-03-07T23:42:50.369738Z  INFO MapFlow::app::core::init: - Edge Blend:     ENABLED

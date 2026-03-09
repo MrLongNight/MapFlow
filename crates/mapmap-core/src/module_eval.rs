@@ -182,11 +182,6 @@ mod tests_evaluator {
         let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default(), 0);
         let values = &result.trigger_values[&part_id];
 
-        // Order in generate_outputs:
-        // if volume_outputs: RMS, Peak
-        // if beat_output: Beat Out
-        // So indices: 0: RMS, 1: Peak, 2: Beat Out
-
         assert_eq!(values.len(), 3);
         assert_eq!(values[0], 0.8); // RMS
         assert_eq!(values[2], 1.0); // Beat detected
@@ -197,22 +192,19 @@ mod tests_evaluator {
         let mut evaluator = ModuleEvaluator::new();
         let mut module = create_test_module();
 
-        // 1. Trigger (Fixed -> always 1.0 at start)
         let t_type = ModulePartType::Trigger(TriggerType::Fixed {
             interval_ms: 0,
             offset_ms: 0,
-        }); // 0 interval = always on
+        });
         let t_id = module.add_part_with_type(t_type, (0.0, 0.0));
 
-        // 2. Source (Target)
         let s_id = module.add_part(crate::module::PartType::Source, (200.0, 0.0));
-        module.add_connection(t_id, 0, s_id, 0); // Trigger Out -> Source Trigger In
+        module.add_connection(t_id, 0, s_id, 0);
 
         let shared = crate::module::SharedMediaState::default();
         evaluator.set_delta_time(0.01);
         let _result = evaluator.evaluate(&module, &shared, 0);
 
-        // Should produce a SourceCommand because trigger > 0.1
         if let Some(part) = module.parts.iter_mut().find(|p| p.id == s_id) {
             if let ModulePartType::Source(SourceType::MediaFile { path, .. }) = &mut part.part_type
             {
@@ -224,13 +216,11 @@ mod tests_evaluator {
         let result = evaluator.evaluate(&module, &shared, 0);
         assert!(result.source_commands.contains_key(&s_id));
 
-        // Now remove connection
         module.remove_connection(t_id, 0, s_id, 0);
 
         evaluator.set_delta_time(0.01);
         let result = evaluator.evaluate(&module, &shared, 1);
 
-        // A disconnected source defaults to trigger = 1.0, so it SHOULD generate a SourceCommand
         assert!(result.source_commands.contains_key(&s_id));
     }
 
@@ -239,16 +229,12 @@ mod tests_evaluator {
         let mut evaluator = ModuleEvaluator::new();
         let mut module = create_test_module();
 
-        // Graph: FixedTrigger(Always) -> Source -> Layer -> Output
-
-        // 1. Trigger
         let t_type = ModulePartType::Trigger(TriggerType::Fixed {
             interval_ms: 0,
             offset_ms: 0,
         });
         let t_id = module.add_part_with_type(t_type, (0.0, 0.0));
 
-        // 2. Source
         let s_id = module.add_part(crate::module::PartType::Source, (100.0, 0.0));
         if let Some(part) = module.parts.iter_mut().find(|p| p.id == s_id) {
             if let ModulePartType::Source(SourceType::MediaFile { path, .. }) = &mut part.part_type
@@ -257,28 +243,22 @@ mod tests_evaluator {
             }
         }
 
-        // 3. Layer
         let l_id = module.add_part(crate::module::PartType::Layer, (200.0, 0.0));
-
-        // 4. Output
         let o_id = module.add_part(crate::module::PartType::Output, (300.0, 0.0));
 
-        // Connections
-        module.add_connection(t_id, 0, s_id, 0); // Trigger -> Source Trigger
-        module.add_connection(s_id, 0, l_id, 0); // Source Media -> Layer Input
-        module.add_connection(l_id, 0, o_id, 0); // Layer Output -> Output Layer In
+        module.add_connection(t_id, 0, s_id, 0);
+        module.add_connection(s_id, 0, l_id, 0);
+        module.add_connection(l_id, 0, o_id, 0);
 
         evaluator.set_delta_time(0.01);
         let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default(), 0);
 
-        // Verify RenderOp
         assert_eq!(result.render_ops.len(), 1);
         let op = &result.render_ops[0];
         assert_eq!(op.output_part_id, o_id);
         assert_eq!(op.layer_part_id, l_id);
         assert_eq!(op.source_part_id, Some(s_id));
 
-        // Verify SourceCommand
         assert!(result.source_commands.contains_key(&s_id));
         if let Some(SourceCommand::PlayMedia { path, .. }) = result.source_commands.get(&s_id) {
             assert_eq!(path, "test.mp4");
@@ -292,29 +272,25 @@ mod tests_evaluator {
         let mut evaluator = ModuleEvaluator::new();
         let mut module = create_test_module();
 
-        // Master Node (Trigger Type for simplicity, acting as master)
         let m_type = ModulePartType::Trigger(TriggerType::Fixed {
             interval_ms: 0,
             offset_ms: 0,
         });
         let m_id = module.add_part_with_type(m_type, (0.0, 0.0));
 
-        // Configure as Master
         if let Some(part) = module.parts.iter_mut().find(|p| p.id == m_id) {
             part.link_data.mode = LinkMode::Master;
-            part.link_data.trigger_input_enabled = true; // Use trigger input to drive link
+            part.link_data.trigger_input_enabled = true;
             part.outputs.push(crate::module::ModuleSocket {
                 name: "Link Out".to_string(),
                 socket_type: crate::module::ModuleSocketType::Link,
             });
-            // Also needs Trigger In socket if enabled
             part.inputs.push(crate::module::ModuleSocket {
                 name: "Trigger In (Vis)".to_string(),
                 socket_type: crate::module::ModuleSocketType::Trigger,
             });
         }
 
-        // Driving Trigger
         let t_id = module.add_part_with_type(
             ModulePartType::Trigger(TriggerType::Fixed {
                 interval_ms: 0,
@@ -323,12 +299,9 @@ mod tests_evaluator {
             (-100.0, 0.0),
         );
 
-        // Connect Driving Trigger -> Master Trigger In (Vis)
         module.add_connection(t_id, 0, m_id, 0);
 
-        // Slave Node (Layer)
         let s_id = module.add_part(crate::module::PartType::Layer, (100.0, 0.0));
-        // Configure as Slave
         if let Some(part) = module.parts.iter_mut().find(|p| p.id == s_id) {
             part.link_data.mode = LinkMode::Slave;
             part.inputs.push(crate::module::ModuleSocket {
@@ -337,16 +310,14 @@ mod tests_evaluator {
             });
         }
 
-        // Connect Master Link Out -> Slave Link In
         module.add_connection(m_id, 1, s_id, 2);
 
         evaluator.set_delta_time(0.01);
         let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default(), 0);
 
-        // Master ID in trigger_values should have 2 values: Trigger Out (1.0) and Link Out (1.0)
         let m_values = &result.trigger_values[&m_id];
         assert!(m_values.len() >= 2);
-        assert_eq!(m_values[1], 1.0); // Link Out should be active
+        assert_eq!(m_values[1], 1.0);
     }
 
     #[test]
@@ -354,26 +325,22 @@ mod tests_evaluator {
         let mut evaluator = ModuleEvaluator::new();
         let mut module = create_test_module();
 
-        // 1. Layer -> Output
         let l_id = module.add_part(crate::module::PartType::Layer, (0.0, 0.0));
         let o_id = module.add_part(crate::module::PartType::Output, (100.0, 0.0));
         module.add_connection(l_id, 0, o_id, 0);
 
         let shared = crate::module::SharedMediaState::default();
 
-        // Pass 1: Should create one RenderOp
         evaluator.set_delta_time(0.01);
         evaluator.evaluate(&module, &shared, 0);
         assert_eq!(evaluator.cached_result.render_ops.len(), 1);
         assert_eq!(evaluator.cached_result.spare_render_ops.len(), 0);
 
-        // Pass 2: Should recycle the RenderOp
         evaluator.set_delta_time(0.01);
         evaluator.evaluate(&module, &shared, 0);
         assert_eq!(evaluator.cached_result.render_ops.len(), 1);
         assert_eq!(evaluator.cached_result.spare_render_ops.len(), 0);
 
-        // Pass 3: Reduce workload (no output connection)
         module.remove_connection(l_id, 0, o_id, 0);
         evaluator.set_delta_time(0.01);
         evaluator.evaluate(&module, &shared, 1);
@@ -386,47 +353,29 @@ mod tests_evaluator {
 /// Render operation containing all info needed to render a layer to an output
 #[derive(Debug, Clone)]
 pub struct RenderOp {
-    /// The output node ID (Part ID)
     pub output_part_id: ModulePartId,
-    /// The specific output type configuration
     pub output_type: OutputType,
-
-    /// The layer node ID calling for this render
     pub layer_part_id: ModulePartId,
-    /// The mesh geometry to use
     pub mesh: MeshType,
-    /// Layer opacity
     pub opacity: f32,
-    /// Layer blend mode
     pub blend_mode: Option<BlendModeType>,
-    /// Mapping mode active (render grid)
     pub mapping_mode: bool,
-
-    /// Source part ID (if any)
     pub source_part_id: Option<ModulePartId>,
-    /// Source-specific properties (color, transform, flip)
     pub source_props: SourceProperties,
-    /// Applied effects in order (Source -> Effect1 -> Effect2 -> ...)
     pub effects: Vec<ModulizerType>,
-    /// Applied masks
     pub masks: Vec<MaskType>,
 }
 
 /// Evaluation result for a single frame
 #[derive(Debug, Clone, Default)]
 pub struct ModuleEvalResult {
-    /// Trigger values: part_id -> (output_index -> value)
     pub trigger_values: HashMap<ModulePartId, Vec<f32>>,
-    /// Source commands: part_id -> SourceCommand
     pub source_commands: HashMap<ModulePartId, SourceCommand>,
-    /// Render operations to specific outputs
     pub render_ops: Vec<RenderOp>,
-    /// Spare render operations for reuse (object pooling)
     pub spare_render_ops: Vec<RenderOp>,
 }
 
 impl ModuleEvalResult {
-    /// Clears the result for reuse, preserving capacity where possible
     pub fn clear(&mut self) {
         for values in self.trigger_values.values_mut() {
             values.clear();
@@ -439,125 +388,37 @@ impl ModuleEvalResult {
 /// Command for a source node
 #[derive(Debug, Clone)]
 pub enum SourceCommand {
-    /// Load and play a media file
-    PlayMedia {
-        /// Path to media file
-        path: String,
-        /// Trigger value (opacity/intensity)
-        trigger_value: f32,
-    },
-    /// Play a shared media resource
-    PlaySharedMedia {
-        /// Shared ID
-        id: String,
-        /// Resolved path (from registry)
-        path: String,
-        /// Trigger value
-        trigger_value: f32,
-    },
-    /// Play a shader with parameters
-    PlayShader {
-        /// Shader name/ID
-        name: String,
-        /// Shader parameters
-        params: Vec<(String, f32)>,
-        /// Trigger value
-        trigger_value: f32,
-    },
-    /// NDI input source
-    NdiInput {
-        /// NDI source name
-        source_name: Option<String>,
-        /// Trigger value
-        trigger_value: f32,
-    },
-    /// Live camera input
-    LiveInput {
-        /// Device ID
-        device_id: u32,
-        /// Trigger value
-        trigger_value: f32,
-    },
+    PlayMedia { path: String, trigger_value: f32 },
+    PlaySharedMedia { id: String, path: String, trigger_value: f32 },
+    PlayShader { name: String, params: Vec<(String, f32)>, trigger_value: f32 },
+    NdiInput { source_name: Option<String>, trigger_value: f32 },
+    LiveInput { device_id: u32, trigger_value: f32 },
     #[cfg(target_os = "windows")]
-    /// Spout input (Windows only)
-    SpoutInput {
-        /// Sender name
-        sender_name: String,
-        /// Trigger value
-        trigger_value: f32,
-    },
-    /// Bevy Scene Input
-    BevyInput {
-        /// Trigger value
-        trigger_value: f32,
-    },
-    /// Bevy 3D Model Loading and control
-    Bevy3DModel {
-        /// Path to the model file
-        path: String,
-        /// Position in 3D space
-        position: [f32; 3],
-        /// Rotation in degrees
-        rotation: [f32; 3],
-        /// Scale multiplier
-        scale: [f32; 3],
-        /// Trigger/Intensity value
-        trigger_value: f32,
-    },
-    /// Philips Hue output (Trigger/Effect data)
-    HueOutput {
-        /// Brightness (0.0 - 1.0)
-        brightness: f32,
-        /// Hue (0.0 - 1.0)
-        hue: Option<f32>,
-        /// Saturation (0.0 - 1.0)
-        saturation: Option<f32>,
-        /// Strobe speed/intensity (0.0 - 1.0)
-        strobe: Option<f32>,
-        /// Target lamp/group IDs (for new Hue nodes)
-        ids: Option<Vec<String>>,
-    },
+    SpoutInput { sender_name: String, trigger_value: f32 },
+    BevyInput { trigger_value: f32 },
+    Bevy3DModel { path: String, position: [f32; 3], rotation: [f32; 3], scale: [f32; 3], trigger_value: f32 },
+    HueOutput { brightness: f32, hue: Option<f32>, saturation: Option<f32>, strobe: Option<f32>, ids: Option<Vec<String>> },
 }
 
 /// Module graph evaluator
 pub struct ModuleEvaluator {
-    /// Current trigger data from audio analysis
     audio_trigger_data: AudioTriggerData,
-    /// Per-node state for stateful triggers (e.g., Random)
     trigger_states: HashMap<ModulePartId, TriggerState>,
-    /// Reusable result buffer to avoid allocations
     cached_result: ModuleEvalResult,
-
-    /// Cached indices per module ID to support multi-module switching
     indices_cache: HashMap<crate::module::ModuleId, Arc<ModuleGraphIndices>>,
-
-    /// Currently active keyboard keys (for Shortcut triggers)
     active_keys: std::collections::HashSet<String>,
-
-    /// State for smoothed trigger inputs: (PartId, SocketIdx) -> (Current Value, Last Updated Frame)
     trigger_smoothing_state: RefCell<HashMap<(ModulePartId, usize), (f32, u64)>>,
-
-    /// Manually fired triggers for the current frame
     manual_triggers: std::collections::HashSet<ModulePartId>,
-
-    /// Current evaluation frame count
     current_frame: u64,
-
-    /// Time of the last evaluation
     last_eval_time: Instant,
-
-    /// The delta time calculated at the start of the current evaluation frame
     current_dt: f32,
 }
 
 impl Default for ModuleEvaluator {
-    fn default() -> Self {
-        Self::new()
-    }
+    fn default() -> Self { Self::new() }
 }
 
 impl ModuleEvaluator {
-    /// Create a new module evaluator
     pub fn new() -> Self {
         Self {
             audio_trigger_data: AudioTriggerData::default(),
@@ -573,7 +434,6 @@ impl ModuleEvaluator {
         }
     }
 
-    /// Set the delta time for the current evaluation frame.
     pub fn set_delta_time(&mut self, dt: f32) {
         self.current_dt = dt.min(0.5);
         self.current_frame += 1;
@@ -581,12 +441,8 @@ impl ModuleEvaluator {
         self.manual_triggers.clear();
     }
 
-    /// Manually fire a trigger node for the next evaluation frame
-    pub fn trigger_node(&mut self, part_id: ModulePartId) {
-        self.manual_triggers.insert(part_id);
-    }
+    pub fn trigger_node(&mut self, part_id: ModulePartId) { self.manual_triggers.insert(part_id); }
 
-    /// Update audio trigger data from analysis
     pub fn update_audio(&mut self, analysis: &AudioAnalysisV2) {
         self.audio_trigger_data.band_energies = analysis.band_energies;
         self.audio_trigger_data.rms_volume = analysis.rms_volume;
@@ -596,170 +452,74 @@ impl ModuleEvaluator {
         self.audio_trigger_data.bpm = analysis.tempo_bpm;
     }
 
-    /// Update active keyboard keys for Shortcut triggers
-    pub fn update_keys(&mut self, keys: &std::collections::HashSet<String>) {
-        self.active_keys = keys.clone();
-    }
+    pub fn update_keys(&mut self, keys: &std::collections::HashSet<String>) { self.active_keys = keys.clone(); }
 
-    /// Apply smoothing to a trigger value
-    fn apply_smoothing(
-        &self,
-        part_id: ModulePartId,
-        socket_idx: usize,
-        target_val: f32,
-        mode: &crate::module::TriggerMappingMode,
-    ) -> f32 {
+    fn apply_smoothing(&self, part_id: ModulePartId, socket_idx: usize, target_val: f32, mode: &crate::module::TriggerMappingMode) -> f32 {
         if let crate::module::TriggerMappingMode::Smoothed { attack, release } = mode {
             let state_key = (part_id, socket_idx);
             let mut cache = self.trigger_smoothing_state.borrow_mut();
-            let (mut current_val, last_frame) =
-                cache.get(&state_key).copied().unwrap_or((target_val, 0));
-
+            let (mut current_val, last_frame) = cache.get(&state_key).copied().unwrap_or((target_val, 0));
             if last_frame != self.current_frame {
-                let time_constant = if target_val > current_val {
-                    *attack
-                } else {
-                    *release
-                };
-
+                let time_constant = if target_val > current_val { *attack } else { *release };
                 if time_constant > 0.001 {
                     let alpha = 1.0 - (-self.current_dt / time_constant).exp();
                     current_val = current_val + (target_val - current_val) * alpha;
-                } else {
-                    current_val = target_val;
-                }
-
+                } else { current_val = target_val; }
                 cache.insert(state_key, (current_val, self.current_frame));
             }
             current_val
-        } else {
-            target_val
-        }
+        } else { target_val }
     }
 
     fn get_spare_render_op(&mut self) -> RenderOp {
-        self.cached_result
-            .spare_render_ops
-            .pop()
-            .unwrap_or_else(|| RenderOp {
-                output_part_id: 0,
-                output_type: OutputType::Projector {
-                    id: 0,
-                    name: String::new(),
-                    hide_cursor: false,
-                    target_screen: 0,
-                    show_in_preview_panel: true,
-                    extra_preview_window: false,
-                    output_width: 1920,
-                    output_height: 1080,
-                    output_fps: 60.0,
-                    ndi_enabled: false,
-                    ndi_stream_name: String::new(),
-                },
-                layer_part_id: 0,
-                mesh: MeshType::default(),
-                opacity: 1.0,
-                blend_mode: None,
-                mapping_mode: false,
-                source_part_id: None,
-                source_props: SourceProperties::default_identity(),
-                effects: Vec::new(),
-                masks: Vec::new(),
-            })
+        self.cached_result.spare_render_ops.pop().unwrap_or_else(|| RenderOp {
+            output_part_id: 0,
+            output_type: OutputType::Projector { id: 0, name: String::new(), hide_cursor: false, target_screen: 0, show_in_preview_panel: true, extra_preview_window: false, output_width: 1920, output_height: 1080, output_fps: 60.0, ndi_enabled: false, ndi_stream_name: String::new() },
+            layer_part_id: 0, mesh: MeshType::default(), opacity: 1.0, blend_mode: None, mapping_mode: false, source_part_id: None, source_props: SourceProperties::default_identity(), effects: Vec::new(), masks: Vec::new(),
+        })
     }
 
-    /// Evaluate a module for one frame
-    pub fn evaluate(
-        &mut self,
-        module: &MapFlowModule,
-        shared_state: &SharedMediaState,
-        graph_revision: u64,
-    ) -> &ModuleEvalResult {
+    pub fn evaluate(&mut self, module: &MapFlowModule, shared_state: &SharedMediaState, graph_revision: u64) -> &ModuleEvalResult {
         let mut rng = rand::rng();
         self.cached_result.clear();
-
-        let indices_valid = if let Some(cache) = self.indices_cache.get(&module.id) {
-            cache.last_revision == graph_revision
-        } else {
-            false
-        };
-
+        let indices_valid = if let Some(cache) = self.indices_cache.get(&module.id) { cache.last_revision == graph_revision } else { false };
         if !indices_valid {
             let mut part_index_cache = HashMap::new();
             let mut conn_index_cache = HashMap::new();
-            for (idx, part) in module.parts.iter().enumerate() {
-                part_index_cache.insert(part.id, idx);
-            }
-            for (idx, conn) in module.connections.iter().enumerate() {
-                conn_index_cache
-                    .entry(conn.to_part)
-                    .or_insert_with(Vec::new)
-                    .push(idx);
-            }
-            self.indices_cache.insert(
-                module.id,
-                Arc::new(ModuleGraphIndices {
-                    part_index_cache,
-                    conn_index_cache,
-                    last_revision: graph_revision,
-                }),
-            );
+            for (idx, part) in module.parts.iter().enumerate() { part_index_cache.insert(part.id, idx); }
+            for (idx, conn) in module.connections.iter().enumerate() { conn_index_cache.entry(conn.to_part).or_insert_with(Vec::new).push(idx); }
+            self.indices_cache.insert(module.id, Arc::new(ModuleGraphIndices { part_index_cache, conn_index_cache, last_revision: graph_revision }));
         }
-
         let indices = self.indices_cache[&module.id].clone();
-
         for part in &module.parts {
             if let ModulePartType::Trigger(trigger_type) = &part.part_type {
                 let state = self.trigger_states.entry(part.id).or_default();
                 let values = self.cached_result.trigger_values.entry(part.id).or_default();
                 values.clear();
                 let manual_fired = self.manual_triggers.contains(&part.id);
-                Self::compute_trigger_output(
-                    trigger_type,
-                    state,
-                    &self.audio_trigger_data,
-                    self.current_dt,
-                    shared_state,
-                    &self.active_keys,
-                    manual_fired,
-                    values,
-                    &mut rng,
-                );
+                Self::compute_trigger_output(trigger_type, state, &self.audio_trigger_data, self.current_dt, shared_state, &self.active_keys, manual_fired, values, &mut rng);
             }
         }
-
         let mut trigger_inputs = self.compute_trigger_inputs(module, &self.cached_result.trigger_values);
-
         for part in &module.parts {
             if part.link_data.mode == LinkMode::Master {
                 let mut activity = 1.0;
-                if part.link_data.trigger_input_enabled {
-                    activity = trigger_inputs.get(&part.id).copied().unwrap_or(0.0);
-                }
+                if part.link_data.trigger_input_enabled { activity = trigger_inputs.get(&part.id).copied().unwrap_or(0.0); }
                 if !part.outputs.is_empty() {
                     let output_count = part.outputs.len();
                     let values = self.cached_result.trigger_values.entry(part.id).or_default();
-                    values.clear();
-                    values.resize(output_count, 0.0);
+                    values.clear(); values.resize(output_count, 0.0);
                     values[output_count - 1] = activity;
                 }
             }
         }
-
         trigger_inputs = self.compute_trigger_inputs(module, &self.cached_result.trigger_values);
-
         for part in &module.parts {
             if part.link_data.mode == LinkMode::Slave {
-                if let Some(val) = trigger_inputs.get_mut(&part.id) {
-                    if part.link_data.behavior == LinkBehavior::Inverted {
-                        *val = 1.0 - (*val).clamp(0.0, 1.0);
-                    }
-                }
+                if let Some(val) = trigger_inputs.get_mut(&part.id) { if part.link_data.behavior == LinkBehavior::Inverted { *val = 1.0 - (*val).clamp(0.0, 1.0); } }
             }
         }
-
         let socket_inputs = self.compute_socket_inputs(module, &self.cached_result.trigger_values);
-
         for part in &module.parts {
             if let ModulePartType::Source(source_type) = &part.part_type {
                 let trigger_value = trigger_inputs.get(&part.id).copied().unwrap_or(1.0);
@@ -769,12 +529,8 @@ impl ModuleEvaluator {
                             if let Some(&raw_val) = socket_vals.get(socket_idx) {
                                 let val = self.apply_smoothing(part.id, *socket_idx, config.apply(raw_val), &config.mode);
                                 match (&mut cmd, &config.target) {
-                                    (SourceCommand::Bevy3DModel { position, .. }, crate::module::TriggerTarget::Position3D) => {
-                                        position[0] = val; position[1] = val; position[2] = val;
-                                    }
-                                    (SourceCommand::Bevy3DModel { scale, .. }, crate::module::TriggerTarget::Scale3D) => {
-                                        scale[0] = val; scale[1] = val; scale[2] = val;
-                                    }
+                                    (SourceCommand::Bevy3DModel { position, .. }, crate::module::TriggerTarget::Position3D) => { position[0] = val; position[1] = val; position[2] = val; }
+                                    (SourceCommand::Bevy3DModel { scale, .. }, crate::module::TriggerTarget::Scale3D) => { scale[0] = val; scale[1] = val; scale[2] = val; }
                                     _ => {}
                                 }
                             }
@@ -794,12 +550,9 @@ impl ModuleEvaluator {
                     HueNodeType::MultiLamp { ids, .. } => Some(ids.clone()),
                     HueNodeType::EntertainmentGroup { .. } => None,
                 };
-                self.cached_result.source_commands.insert(part.id, SourceCommand::HueOutput {
-                    brightness, hue, saturation: None, strobe, ids,
-                });
+                self.cached_result.source_commands.insert(part.id, SourceCommand::HueOutput { brightness, hue, saturation: None, strobe, ids });
             }
         }
-
         for part in &module.parts {
             if let ModulePartType::Output(output_type) = &part.part_type {
                 if let Some(conn_idx) = indices.conn_index_cache.get(&part.id).and_then(|v| v.first()).copied() {
@@ -814,12 +567,9 @@ impl ModuleEvaluator {
                                 _ => continue,
                             };
                             let mut op = self.get_spare_render_op();
-                            op.output_part_id = part.id;
-                            op.output_type = output_type.clone();
-                            op.layer_part_id = layer_part.id;
-                            op.opacity = *opacity * link_opacity;
-                            op.blend_mode = *blend_mode;
-                            op.mapping_mode = *mapping_mode;
+                            op.output_part_id = part.id; op.output_type = output_type.clone();
+                            op.layer_part_id = layer_part.id; op.opacity = *opacity * link_opacity;
+                            op.blend_mode = *blend_mode; op.mapping_mode = *mapping_mode;
                             self.trace_chain_into(layer_part.id, module, &mut op, mesh, &indices);
                             self.cached_result.render_ops.push(op);
                         }
@@ -827,7 +577,6 @@ impl ModuleEvaluator {
                 }
             }
         }
-
         &self.cached_result
     }
 
@@ -836,7 +585,6 @@ impl ModuleEvaluator {
         let mut override_mesh = None;
         let mut current_id = start_node_id;
         let trigger_values = &self.cached_result.trigger_values;
-
         for _ in 0..50 {
             if let Some(&part_idx) = indices.part_index_cache.get(&current_id) {
                 let part = &module.parts[part_idx];
@@ -846,9 +594,7 @@ impl ModuleEvaluator {
                         for &c_idx in conn_indices {
                             let conn = &module.connections[c_idx];
                             if conn.to_socket == *socket_idx {
-                                if let Some(vals) = trigger_values.get(&conn.from_part) {
-                                    if let Some(v) = vals.get(conn.from_socket) { trigger_val = *v; }
-                                }
+                                if let Some(vals) = trigger_values.get(&conn.from_part) { if let Some(v) = vals.get(conn.from_socket) { trigger_val = *v; } }
                                 break;
                             }
                         }
@@ -867,16 +613,11 @@ impl ModuleEvaluator {
                         crate::module::TriggerTarget::OffsetY => op.source_props.offset_y = val,
                         crate::module::TriggerTarget::FlipH => op.source_props.flip_horizontal = val > 0.5,
                         crate::module::TriggerTarget::FlipV => op.source_props.flip_vertical = val > 0.5,
-                        crate::module::TriggerTarget::Param(name) => {
-                            if let Some(ModulizerType::Effect { params, .. }) = op.effects.last_mut() {
-                                params.insert(name.clone(), val);
-                            }
-                        }
+                        crate::module::TriggerTarget::Param(name) => { if let Some(ModulizerType::Effect { params, .. }) = op.effects.last_mut() { params.insert(name.clone(), val); } }
                         _ => {}
                     }
                 }
             }
-
             if let Some(conn_idx) = indices.conn_index_cache.get(&current_id).and_then(|v| v.first()).copied() {
                 let conn = &module.connections[conn_idx];
                 if let Some(&part_idx) = indices.part_index_cache.get(&conn.from_part) {
@@ -885,14 +626,8 @@ impl ModuleEvaluator {
                         ModulePartType::Source(source_type) => {
                             op.source_part_id = Some(part.id);
                             let mut props = SourceProperties::default_identity();
-                            match source_type {
-                                SourceType::MediaFile { opacity, brightness, contrast, saturation, hue_shift, scale_x, scale_y, rotation, offset_x, offset_y, flip_horizontal, flip_vertical, .. } => {
-                                    props = SourceProperties { opacity: *opacity, brightness: *brightness, contrast: *contrast, saturation: *saturation, hue_shift: *hue_shift, scale_x: *scale_x, scale_y: *scale_y, rotation: *rotation, offset_x: *offset_x, offset_y: *offset_y, flip_horizontal: *flip_horizontal, flip_vertical: *flip_vertical };
-                                }
-                                _ => {}
-                            }
-                            op.source_props = props;
-                            break;
+                            match source_type { SourceType::MediaFile { opacity, brightness, contrast, saturation, hue_shift, scale_x, scale_y, rotation, offset_x, offset_y, flip_horizontal, flip_vertical, .. } => { props = SourceProperties { opacity: *opacity, brightness: *brightness, contrast: *contrast, saturation: *saturation, hue_shift: *hue_shift, scale_x: *scale_x, scale_y: *scale_y, rotation: *rotation, offset_x: *offset_x, offset_y: *offset_y, flip_horizontal: *flip_horizontal, flip_vertical: *flip_vertical }; } _ => {} }
+                            op.source_props = props; break;
                         }
                         ModulePartType::Modulizer(mod_type) => { op.effects.push(mod_type.clone()); current_id = part.id; }
                         ModulePartType::Mask(mask_type) => { op.masks.push(mask_type.clone()); current_id = part.id; }
@@ -902,8 +637,7 @@ impl ModuleEvaluator {
                 } else { break; }
             } else { break; }
         }
-        op.effects.reverse(); op.masks.reverse();
-        op.mesh = override_mesh.unwrap_or_else(|| default_mesh.clone());
+        op.effects.reverse(); op.masks.reverse(); op.mesh = override_mesh.unwrap_or_else(|| default_mesh.clone());
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -923,28 +657,15 @@ impl ModuleEvaluator {
             let final_val = if invert { 1.0 - base_val.clamp(0.0, 1.0) } else { base_val };
             out.push(final_val);
         };
-
         match trigger_type {
             TriggerType::AudioFFT { threshold, output_config, .. } => {
-                if output_config.frequency_bands {
-                    for i in 0..9 {
-                        let val = audio_data.band_energies[i];
-                        push_val_internal(if val > *threshold { val } else { 0.0 }, output, false);
-                    }
-                }
-                if output_config.volume_outputs {
-                    push_val_internal(audio_data.rms_volume, output, false);
-                    push_val_internal(audio_data.peak_volume, output, false);
-                }
-                if output_config.beat_output {
-                    push_val_internal(if audio_data.beat_detected { 1.0 } else { 0.0 }, output, false);
-                }
+                if output_config.frequency_bands { for i in 0..9 { let val = audio_data.band_energies[i]; push_val_internal(if val > *threshold { val } else { 0.0 }, output, false); } }
+                if output_config.volume_outputs { push_val_internal(audio_data.rms_volume, output, false); push_val_internal(audio_data.peak_volume, output, false); }
+                if output_config.beat_output { push_val_internal(if audio_data.beat_detected { 1.0 } else { 0.0 }, output, false); }
             }
             TriggerType::Beat => push_val_internal(if audio_data.beat_detected { 1.0 } else { 0.0 }, output, false),
             TriggerType::Random { min_interval_ms, max_interval_ms, probability } => {
-                if !matches!(state, TriggerState::Random { .. }) {
-                    *state = TriggerState::Random { timer: 0.0, target: rng.random_range((*min_interval_ms as f32 / 1000.0)..=(*max_interval_ms as f32 / 1000.0)) };
-                }
+                if !matches!(state, TriggerState::Random { .. }) { *state = TriggerState::Random { timer: 0.0, target: rng.random_range((*min_interval_ms as f32 / 1000.0)..=(*max_interval_ms as f32 / 1000.0)) }; }
                 if let TriggerState::Random { timer, target } = state {
                     *timer += dt;
                     let mut triggered = false;
@@ -970,21 +691,16 @@ impl ModuleEvaluator {
                 }
             }
             TriggerType::Midi { channel, note, .. } => {
-                if let Some(&value) = shared_state.active_midi_cc.get(&(*channel, *note)) {
-                    output.push(value as f32 / 127.0);
-                } else {
+                if let Some(&value) = shared_state.active_midi_cc.get(&(*channel, *note)) { output.push(value as f32 / 127.0); }
+                else {
                     let mut active_val = 0.0;
-                    for (ev_ch, ev_note, velocity) in &shared_state.active_midi_events {
-                        if ev_ch == channel && ev_note == note { active_val = *velocity as f32 / 127.0; break; }
-                    }
+                    for (ev_ch, ev_note, velocity) in &shared_state.active_midi_events { if ev_ch == channel && ev_note == note { active_val = *velocity as f32 / 127.0; break; } }
                     output.push(active_val);
                 }
             }
             TriggerType::Osc { address } => {
                 let mut active_val = 0.0;
-                if let Some(values) = shared_state.active_osc_messages.get(address) {
-                    active_val = values.first().copied().unwrap_or(1.0);
-                }
+                if let Some(values) = shared_state.active_osc_messages.get(address) { active_val = values.first().copied().unwrap_or(1.0); }
                 output.push(active_val);
             }
             TriggerType::Shortcut { key_code, modifiers } => {
@@ -1001,12 +717,7 @@ impl ModuleEvaluator {
     fn compute_trigger_inputs(&self, module: &MapFlowModule, trigger_values: &HashMap<ModulePartId, Vec<f32>>) -> HashMap<ModulePartId, f32> {
         let mut inputs = HashMap::new();
         for conn in &module.connections {
-            if let Some(values) = trigger_values.get(&conn.from_part) {
-                if let Some(&value) = values.get(conn.from_socket) {
-                    let current = inputs.entry(conn.to_part).or_insert(0.0);
-                    *current = f32::max(*current, value);
-                }
-            }
+            if let Some(values) = trigger_values.get(&conn.from_part) { if let Some(&value) = values.get(conn.from_socket) { let current = inputs.entry(conn.to_part).or_insert(0.0); *current = f32::max(*current, value); } }
         }
         inputs
     }
@@ -1014,13 +725,7 @@ impl ModuleEvaluator {
     fn compute_socket_inputs(&self, module: &MapFlowModule, trigger_values: &HashMap<ModulePartId, Vec<f32>>) -> HashMap<ModulePartId, HashMap<usize, f32>> {
         let mut inputs: HashMap<ModulePartId, HashMap<usize, f32>> = HashMap::new();
         for conn in &module.connections {
-            if let Some(values) = trigger_values.get(&conn.from_part) {
-                if let Some(&value) = values.get(conn.from_socket) {
-                    let part_inputs = inputs.entry(conn.to_part).or_default();
-                    let current = part_inputs.entry(conn.to_socket).or_insert(0.0);
-                    *current = f32::max(*current, value);
-                }
-            }
+            if let Some(values) = trigger_values.get(&conn.from_part) { if let Some(&value) = values.get(conn.from_socket) { let part_inputs = inputs.entry(conn.to_part).or_default(); let current = part_inputs.entry(conn.to_socket).or_insert(0.0); *current = f32::max(*current, value); } }
         }
         inputs
     }
@@ -1028,21 +733,13 @@ impl ModuleEvaluator {
     fn create_source_command(&self, source_type: &SourceType, trigger_value: f32, shared_state: &SharedMediaState) -> Option<SourceCommand> {
         if trigger_value < 0.1 { return None; }
         match source_type {
-            SourceType::MediaFile { path, .. } | SourceType::VideoUni { path, .. } | SourceType::ImageUni { path, .. } => {
-                if path.is_empty() { return None; }
-                Some(SourceCommand::PlayMedia { path: path.clone(), trigger_value })
-            }
-            SourceType::VideoMulti { shared_id, .. } | SourceType::ImageMulti { shared_id, .. } => {
-                shared_state.get(shared_id).map(|item| SourceCommand::PlaySharedMedia { id: shared_id.clone(), path: item.path.clone(), trigger_value })
-            }
+            SourceType::MediaFile { path, .. } | SourceType::VideoUni { path, .. } | SourceType::ImageUni { path, .. } => { if path.is_empty() { return None; } Some(SourceCommand::PlayMedia { path: path.clone(), trigger_value }) }
+            SourceType::VideoMulti { shared_id, .. } | SourceType::ImageMulti { shared_id, .. } => { shared_state.get(shared_id).map(|item| SourceCommand::PlaySharedMedia { id: shared_id.clone(), path: item.path.clone(), trigger_value }) }
             SourceType::Shader { name, params } => Some(SourceCommand::PlayShader { name: name.clone(), params: params.clone(), trigger_value }),
             SourceType::NdiInput { source_name } => Some(SourceCommand::NdiInput { source_name: source_name.clone(), trigger_value }),
             SourceType::LiveInput { device_id } => Some(SourceCommand::LiveInput { device_id: *device_id, trigger_value }),
-            #[cfg(target_os = "windows")]
-            SourceType::SpoutInput { sender_name } => Some(SourceCommand::SpoutInput { sender_name: sender_name.clone(), trigger_value }),
-            SourceType::Bevy3DModel { path, position, rotation, scale, .. } => {
-                Some(SourceCommand::Bevy3DModel { path: path.clone(), position: *position, rotation: *rotation, scale: *scale, trigger_value })
-            }
+            #[cfg(target_os = "windows")] SourceType::SpoutInput { sender_name } => Some(SourceCommand::SpoutInput { sender_name: sender_name.clone(), trigger_value }),
+            SourceType::Bevy3DModel { path, position, rotation, scale, .. } => { Some(SourceCommand::Bevy3DModel { path: path.clone(), position: *position, rotation: *rotation, scale: *scale, trigger_value }) }
             _ => Some(SourceCommand::BevyInput { trigger_value }),
         }
     }
