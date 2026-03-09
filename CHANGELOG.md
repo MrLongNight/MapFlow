@@ -7,11 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 <<<<<<< HEAD
+<<<<<<< HEAD
 - 2026-03-09: fix(ui): Standardize panel layout and resolve UI consistency gaps (MF-011).
 - 2026-03-08: feat(ui): Implement Toast Notification system for engine errors and status updates (MF-023).
 - 2026-03-08: fix(core): Refactor Trigger System logic for synchronized multi-module evaluation (MF-038).
 - 2026-03-08: fix(ci): Resolve workspace test failures by updating audio frequency band counts (7 -> 9) (MF-034).
 - 2026-03-08: fix(hue): Replace OpenSSL-disabled stub with real DTLS implementation using webrtc-dtls (ring) (MF-009).
+=======
+- 2026-03-08: ui: Fix empty states visual clarity and remove hold-to-confirm pattern for standard resets (#970)
+- 2026-03-08: docs: Fix broken documentation links to new semantic structure (#971)
+
+>>>>>>> origin/mf-049-ui-docs-repair-2294329499627827505
 - 2026-03-06: fix(security): Fix Information Disclosure via Hardcoded Developer Paths (#929)
 
 =======

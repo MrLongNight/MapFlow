@@ -196,7 +196,7 @@ pub fn styled_slider(
     });
 
     response.context_menu(|ui| {
-        if hold_to_action_button(ui, "Reset to Default", colors::WARN_COLOR) {
+        if ui.button("Reset to Default").clicked() {
             *value = default_value;
             ui.close();
         }
@@ -220,7 +220,7 @@ pub fn styled_slider_log(
     }
 
     response.context_menu(|ui| {
-        if hold_to_action_button(ui, "Reset to Default", colors::WARN_COLOR) {
+        if ui.button("Reset to Default").clicked() {
             *value = default_value;
             ui.close();
         }
@@ -264,7 +264,7 @@ pub fn styled_drag_value(
     }
 
     response.context_menu(|ui| {
-        if hold_to_action_button(ui, "Reset to Default", colors::WARN_COLOR) {
+        if ui.button("Reset to Default").clicked() {
             *value = default_value;
             ui.close();
         }
@@ -845,7 +845,7 @@ pub fn collapsing_header_with_reset(
         .show_header(ui, |ui| {
             ui.label(title);
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if hold_to_action_button(ui, "↺ Reset", colors::WARN_COLOR) {
+                if ui.button("↺ Reset").clicked() {
                     reset_clicked = true;
                 }
             });

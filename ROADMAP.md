@@ -4,6 +4,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 > **Stand:** 2026-03-08 03:30
 =======
 > **Stand:** 2026-03-06 23:35
@@ -14,6 +15,9 @@
 =======
 > **Stand:** 2026-03-07 23:30
 >>>>>>> origin/jules-mf-048-core-repair-2290194584907283660
+=======
+> **Stand:** 2026-03-08 00:30
+>>>>>>> origin/mf-049-ui-docs-repair-2294329499627827505
 Operatives Hauptdokument: `ROADMAP.md`
 Sprache: Deutsch
 =======

@@ -1,6 +1,5 @@
 use crate::i18n::LocaleManager;
 use crate::panels::transform_panel::TransformPanel;
-use crate::theme::colors;
 use crate::widgets::panel::render_panel_header;
 
 // Re-export types from the new inspector module
@@ -45,7 +44,7 @@ impl InspectorPanel {
         egui::ScrollArea::vertical().show(ui, |ui| match context {
             InspectorContext::None => {
                 ui.centered_and_justified(|ui| {
-                    ui.label(egui::RichText::new("No selection").color(colors::DARK_GREY));
+                    ui.label(egui::RichText::new("No selection").weak().italics());
                 });
             }
             InspectorContext::Layer {

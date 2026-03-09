@@ -11,10 +11,5 @@ Welcome to the MapFlow developer documentation.
 ## Setup
 
 *   [**Development Setup**](setup/DEVELOPMENT-SETUP.md)
-*   [**Troubleshooting**](setup/TROUBLESHOOTING.md)
-*   [**Rust Basics**](setup/RUST-BASICS.md)
 
 ## Features
-
-*   [**Media Player**](features/MEDIA_PLAYER.md)
-*   [**Modulizer Node System**](features/MODULIZER_NODES.md)
