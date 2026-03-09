@@ -675,11 +675,11 @@ impl ModuleEvaluator {
         op.masks.clear();
         op.source_part_id = None;
         op.source_props = SourceProperties::default_identity();
-        
+
         let mut override_mesh = None;
         let mut current_id = start_node_id;
         let trigger_values = &self.cached_result.trigger_values;
-        
+
         // Cycle detection
         let mut visited = std::collections::HashSet::with_capacity(16);
         visited.insert(start_node_id);
@@ -688,7 +688,7 @@ impl ModuleEvaluator {
             // 1. Process triggers for the CURRENT node
             if let Some(&part_idx) = indices.part_index_cache.get(&current_id) {
                 let part = &module.parts[part_idx];
-                
+
                 // If this is a source, load its base properties first
                 if let ModulePartType::Source(source_type) = &part.part_type {
                     op.source_part_id = Some(part.id);
@@ -758,7 +758,7 @@ impl ModuleEvaluator {
             // 2. Find PREVIOUS node in chain
             if let Some(conn_idx) = indices.conn_index_cache.get(&current_id).and_then(|v| v.first()).copied() {
                 let conn = &module.connections[conn_idx];
-                
+
                 // Cycle detection
                 if !visited.insert(conn.from_part) {
                     tracing::warn!("Cycle detected in module graph chain starting at node {}", start_node_id);
@@ -794,7 +794,7 @@ impl ModuleEvaluator {
                 break;
             }
         }
-        
+
         op.effects.reverse();
         op.masks.reverse();
         op.mesh = override_mesh.unwrap_or_else(|| default_mesh.clone());
