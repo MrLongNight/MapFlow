@@ -25,11 +25,15 @@ pub enum FftVisualizationMode {
 #[derive(Debug)]
 pub struct AudioPanel {
     pub is_expanded: bool,
+    last_draw_time: std::time::Instant,
 }
 
 impl Default for AudioPanel {
     fn default() -> Self {
-        Self { is_expanded: true }
+        Self {
+            is_expanded: true,
+            last_draw_time: std::time::Instant::now(),
+        }
     }
 }
 
@@ -60,6 +64,15 @@ impl AudioPanel {
         fft_mode: &mut FftVisualizationMode,
     ) -> Option<AudioPanelAction> {
         let mut action = None;
+
+        // Throttle UI updates to ~30 FPS for analysis visualization
+        let now = std::time::Instant::now();
+        let should_redraw = now.duration_since(self.last_draw_time).as_millis() >= 33;
+
+        if should_redraw {
+            self.last_draw_time = now;
+            ui.ctx().request_repaint();
+        }
 
         // Use standard Cyber Dark panel frame
         panel::cyber_panel_frame(ui.style()).show(ui, |ui| {
@@ -337,8 +350,10 @@ mod tests {
 
     #[test]
     fn three_band_grouping_averages_ranges() {
-        let mut analysis = AudioAnalysis::default();
-        analysis.band_energies = [0.0, 0.3, 0.6, 0.2, 0.5, 0.8, 0.1, 0.4, 0.7];
+        let analysis = AudioAnalysis {
+            band_energies: [0.0, 0.3, 0.6, 0.2, 0.5, 0.8, 0.1, 0.4, 0.7],
+            ..AudioAnalysis::default()
+        };
 
         let grouped = AudioPanel::grouped_three_band_energies(&analysis);
 

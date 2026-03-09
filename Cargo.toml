@@ -66,7 +66,7 @@ ffmpeg-sys-next = "=7.1.0"
 fluent = "0.17"
 fluent-langneg = "0.14"
 futures = "0.3"
-glam = { version = "0.32", features = ["serde"] }
+glam = { version = "0.32.1", features = ["serde"] }
 hex = "0.4"
 hound = "3.5"
 hyper = "1.1"
@@ -109,8 +109,8 @@ thiserror = "1.0"
 tiny-skia = "0.12"
 
 # Async runtime
-tokio = { version = "1.36", features = ["full"] }
-toml = "1.0.1"
+tokio = { version = "1.50.0", features = ["full"] }
+toml = "1.0.6"
 tower = "0.5"
 
 # Logging
@@ -120,7 +120,7 @@ unic-langid = "0.9"
 usvg = "0.47"
 # Core dependencies
 wgpu = "27.0.1"
-winit = { version = "0.30", features = ["x11", "wayland"] }
+winit = { version = "0.30.13", features = ["x11", "wayland"] }
 winres = "0.1"
 
 [profile.dev]
