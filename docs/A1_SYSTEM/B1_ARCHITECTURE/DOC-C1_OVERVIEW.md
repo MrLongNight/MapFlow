@@ -16,14 +16,14 @@ graph TD
     Main --> Media[mapmap-media]
     Main --> Control[mapmap-control]
     Main --> Render[mapmap-render]
-    
+
     UI --> Core[mapmap-core]
     Render --> Core
     Bevy --> Core
     Control --> Core
     Media --> IO[mapmap-io]
     IO --> Core
-    
+
     %% Externe Ressourcen
     Render --> Shaders[WGSL Shaders]
     Media --> FFmpeg[FFmpeg / MPV]

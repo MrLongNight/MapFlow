@@ -224,7 +224,7 @@ impl ControlManager {
         if let Some(midi_input) = &self.midi_input {
             while let Some(message) = midi_input.poll_message() {
                 events.push(message.clone());
-                
+
                 // Record raw event
                 match &message {
                     crate::midi::MidiMessage::NoteOn { channel, note, .. } => {
@@ -266,7 +266,7 @@ impl ControlManager {
         if let Some(osc_server) = &mut self.osc_server {
             while let Some(packet) = osc_server.poll_packet() {
                 events.push(packet.clone());
-                
+
                 // Record raw event
                 if let rosc::OscPacket::Message(msg) = &packet {
                     self.raw_osc_events.push(msg.addr.clone());
