@@ -19,6 +19,23 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     // 3. Get all module IDs
     let all_module_ids: Vec<u64> = app.state.module_manager.modules().iter().map(|m| m.id).collect();
     
+    // Determine which modules to evaluate based on timeline
+    let show_module_id = app.ui_state.timeline_panel.runtime_show_module(
+        app.state.effect_animator.get_current_time() as f32,
+        app.state.effect_animator.is_playing(),
+        &all_module_ids,
+    );
+    if let Some(active_module_id) = show_module_id {
+        app.ui_state
+            .module_canvas
+            .set_active_module(Some(active_module_id));
+    }
+    let modules_for_eval: Vec<u64> = if let Some(module_id) = show_module_id {
+        vec![module_id]
+    } else {
+        all_module_ids.clone()
+    };
+
     // --- Performance Optimization: Early return if idle ---
     if all_module_ids.is_empty() {
         app.ui_state.current_fps = app.current_fps;
@@ -28,16 +45,46 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     }
 
     // 4. Update evaluator with reaktive events
+    app.module_evaluator.set_delta_time(dt);
+    
     let active_keys: HashSet<String> = app.egui_context.input(|i| {
         i.keys_down.iter().map(|k| format!("{:?}", k)).collect()
     });
     app.module_evaluator.update_keys(&active_keys);
 
-    for (channel, note) in &app.control_manager.raw_midi_events {
-        app.module_evaluator.record_midi(*channel, *note);
-    }
-    for addr in &app.control_manager.raw_osc_events {
-        app.module_evaluator.record_osc(addr);
+    // --- Control System Update ---
+    let (midi_events, osc_packets) = app.control_manager.update();
+
+    // Update shared media state with active events for trigger nodes
+    {
+        let shared = &mut app.state.module_manager_mut().shared_media;
+        shared.active_midi_events.clear();
+        shared.active_midi_cc.clear();
+        shared.active_osc_messages.clear();
+        
+        for msg in &midi_events {
+            match msg {
+                mapmap_control::midi::MidiMessage::NoteOn { channel, note, velocity } => {
+                    shared.active_midi_events.push((*channel, *note, *velocity));
+                }
+                mapmap_control::midi::MidiMessage::ControlChange { channel, controller, value } => {
+                    shared.active_midi_cc.insert((*channel, *controller), *value);
+                }
+                _ => {}
+            }
+        }
+        
+        for packet in &osc_packets {
+            if let rosc::OscPacket::Message(msg) = packet {
+                let vals: Vec<f32> = msg.args.iter().filter_map(|a| match a {
+                    rosc::OscType::Float(f) => Some(*f),
+                    rosc::OscType::Double(d) => Some(*d as f32),
+                    rosc::OscType::Int(i) => Some(*i as f32),
+                    _ => None,
+                }).collect();
+                shared.active_osc_messages.insert(msg.addr.clone(), vals);
+            }
+        }
     }
 
     // 5. Audio Analysis Update
@@ -63,7 +110,7 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
 
     // 7. Graph Evaluation & Bevy Sync (MODULARIZED)
     let graph_dirty = app.state.module_manager.graph_revision != app.last_graph_revision;
-    perform_evaluation(app, &all_module_ids, &analysis_v1, graph_dirty);
+    perform_evaluation(app, &modules_for_eval, &analysis_v1, graph_dirty);
 
     // 8. UI State Sync
     app.ui_state.current_audio_level = analysis_v1.rms_volume;

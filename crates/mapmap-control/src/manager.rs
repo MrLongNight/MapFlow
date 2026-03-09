@@ -180,31 +180,51 @@ impl ControlManager {
     }
 
     /// Update all control systems (call every frame)
-    pub fn update(&mut self) {
+    pub fn update(&mut self) -> (Vec<crate::midi::MidiMessage>, Vec<rosc::OscPacket>) {
         // Clear raw events for the new frame
         self.raw_midi_events.clear();
         self.raw_osc_events.clear();
 
+        let midi_events;
+        let osc_events;
+
         // Process MIDI messages
         #[cfg(feature = "midi")]
-        self.process_midi_messages();
+        {
+            midi_events = self.process_midi_messages();
+        }
+        #[cfg(not(feature = "midi"))]
+        {
+            midi_events = Vec::new();
+        }
 
         // Process OSC messages
         #[cfg(feature = "osc")]
-        self.process_osc_messages();
+        {
+            osc_events = self.process_osc_messages();
+        }
+        #[cfg(not(feature = "osc"))]
+        {
+            osc_events = Vec::new();
+        }
 
         // Update cue system
         self.cue_list.update();
+
+        (midi_events, osc_events)
     }
 
     /// Process MIDI messages
     #[cfg(feature = "midi")]
-    fn process_midi_messages(&mut self) {
+    fn process_midi_messages(&mut self) -> Vec<crate::midi::MidiMessage> {
         // Collect messages to process to avoid borrow checker issues
         let mut controls_to_apply = Vec::new();
+        let mut events = Vec::new();
 
         if let Some(midi_input) = &self.midi_input {
             while let Some(message) = midi_input.poll_message() {
+                events.push(message.clone());
+                
                 // Record raw event
                 match &message {
                     crate::midi::MidiMessage::NoteOn { channel, note, .. } => {
@@ -233,22 +253,27 @@ impl ControlManager {
         for (target, value) in controls_to_apply {
             self.apply_control(target, value);
         }
+
+        events
     }
 
     /// Process OSC messages
     #[cfg(feature = "osc")]
-    fn process_osc_messages(&mut self) {
+    fn process_osc_messages(&mut self) -> Vec<rosc::OscPacket> {
         let mut controls_to_apply = Vec::new();
+        let mut events = Vec::new();
 
         if let Some(osc_server) = &mut self.osc_server {
             while let Some(packet) = osc_server.poll_packet() {
+                events.push(packet.clone());
+                
                 // Record raw event
                 if let rosc::OscPacket::Message(msg) = &packet {
                     self.raw_osc_events.push(msg.addr.clone());
                 }
 
                 // Try to map and apply the control
-                if let rosc::OscPacket::Message(msg) = packet {
+                if let rosc::OscPacket::Message(msg) = &packet {
                     if let Some(target) = self.osc_mapping.get(&msg.addr) {
                         let value_result = match target {
                             ControlTarget::LayerPosition(_) => {
@@ -268,6 +293,8 @@ impl ControlManager {
         for (target, value) in controls_to_apply {
             self.apply_control(target, value);
         }
+
+        events
     }
 
     /// Validate control value for security issues (e.g. path traversal)
