@@ -671,20 +671,57 @@ impl ModuleEvaluator {
     }
 
     fn trace_chain_into(&self, start_node_id: ModulePartId, module: &MapFlowModule, op: &mut RenderOp, default_mesh: &MeshType, indices: &ModuleGraphIndices) {
-        op.effects.clear(); op.masks.clear(); op.source_part_id = None; op.source_props = SourceProperties::default_identity();
+        op.effects.clear();
+        op.masks.clear();
+        op.source_part_id = None;
+        op.source_props = SourceProperties::default_identity();
+        
         let mut override_mesh = None;
         let mut current_id = start_node_id;
         let trigger_values = &self.cached_result.trigger_values;
+        
+        // Cycle detection
+        let mut visited = std::collections::HashSet::with_capacity(16);
+        visited.insert(start_node_id);
+
         for _ in 0..50 {
+            // 1. Process triggers for the CURRENT node
             if let Some(&part_idx) = indices.part_index_cache.get(&current_id) {
                 let part = &module.parts[part_idx];
+                
+                // If this is a source, load its base properties first
+                if let ModulePartType::Source(source_type) = &part.part_type {
+                    op.source_part_id = Some(part.id);
+                    if let SourceType::MediaFile { opacity, brightness, contrast, saturation, hue_shift, scale_x, scale_y, rotation, offset_x, offset_y, flip_horizontal, flip_vertical, .. } = source_type {
+                        op.source_props = SourceProperties {
+                            opacity: *opacity,
+                            brightness: *brightness,
+                            contrast: *contrast,
+                            saturation: *saturation,
+                            hue_shift: *hue_shift,
+                            scale_x: *scale_x,
+                            scale_y: *scale_y,
+                            rotation: *rotation,
+                            offset_x: *offset_x,
+                            offset_y: *offset_y,
+                            flip_horizontal: *flip_horizontal,
+                            flip_vertical: *flip_vertical
+                        };
+                    }
+                }
+
+                // Apply trigger overrides (these override the base properties)
                 for (socket_idx, config) in &part.trigger_targets {
                     let mut trigger_val = 0.0;
                     if let Some(conn_indices) = indices.conn_index_cache.get(&current_id) {
                         for &c_idx in conn_indices {
                             let conn = &module.connections[c_idx];
                             if conn.to_socket == *socket_idx {
-                                if let Some(vals) = trigger_values.get(&conn.from_part) { if let Some(v) = vals.get(conn.from_socket) { trigger_val = *v; } }
+                                if let Some(vals) = trigger_values.get(&conn.from_part) {
+                                    if let Some(v) = vals.get(conn.from_socket) {
+                                        trigger_val = *v;
+                                    }
+                                }
                                 break;
                             }
                         }
@@ -703,31 +740,64 @@ impl ModuleEvaluator {
                         crate::module::TriggerTarget::OffsetY => op.source_props.offset_y = val,
                         crate::module::TriggerTarget::FlipH => op.source_props.flip_horizontal = val > 0.5,
                         crate::module::TriggerTarget::FlipV => op.source_props.flip_vertical = val > 0.5,
-                        crate::module::TriggerTarget::Param(name) => { if let Some(ModulizerType::Effect { params, .. }) = op.effects.last_mut() { params.insert(name.clone(), val); } }
+                        crate::module::TriggerTarget::Param(name) => {
+                            if let Some(ModulizerType::Effect { params, .. }) = op.effects.last_mut() {
+                                params.insert(name.clone(), val);
+                            }
+                        }
                         _ => {}
                     }
                 }
+
+                // If we processed a source, we are done with the chain
+                if matches!(part.part_type, ModulePartType::Source(_)) {
+                    break;
+                }
             }
+
+            // 2. Find PREVIOUS node in chain
             if let Some(conn_idx) = indices.conn_index_cache.get(&current_id).and_then(|v| v.first()).copied() {
                 let conn = &module.connections[conn_idx];
+                
+                // Cycle detection
+                if !visited.insert(conn.from_part) {
+                    tracing::warn!("Cycle detected in module graph chain starting at node {}", start_node_id);
+                    break;
+                }
+
                 if let Some(&part_idx) = indices.part_index_cache.get(&conn.from_part) {
                     let part = &module.parts[part_idx];
                     match &part.part_type {
-                        ModulePartType::Source(source_type) => {
-                            op.source_part_id = Some(part.id);
-                            let mut props = SourceProperties::default_identity();
-                            if let SourceType::MediaFile { opacity, brightness, contrast, saturation, hue_shift, scale_x, scale_y, rotation, offset_x, offset_y, flip_horizontal, flip_vertical, .. } = source_type { props = SourceProperties { opacity: *opacity, brightness: *brightness, contrast: *contrast, saturation: *saturation, hue_shift: *hue_shift, scale_x: *scale_x, scale_y: *scale_y, rotation: *rotation, offset_x: *offset_x, offset_y: *offset_y, flip_horizontal: *flip_horizontal, flip_vertical: *flip_vertical }; }
-                            op.source_props = props; break;
+                        ModulePartType::Modulizer(mod_type) => {
+                            op.effects.push(mod_type.clone());
+                            current_id = part.id;
                         }
-                        ModulePartType::Modulizer(mod_type) => { op.effects.push(mod_type.clone()); current_id = part.id; }
-                        ModulePartType::Mask(mask_type) => { op.masks.push(mask_type.clone()); current_id = part.id; }
-                        ModulePartType::Mesh(mesh_type) => { if override_mesh.is_none() { override_mesh = Some(mesh_type.clone()); } current_id = part.id; }
-                        _ => break,
+                        ModulePartType::Mask(mask_type) => {
+                            op.masks.push(mask_type.clone());
+                            current_id = part.id;
+                        }
+                        ModulePartType::Mesh(mesh_type) => {
+                            if override_mesh.is_none() {
+                                override_mesh = Some(mesh_type.clone());
+                            }
+                            current_id = part.id;
+                        }
+                        ModulePartType::Source(_) => {
+                            current_id = part.id;
+                        }
+                        _ => break, // Trigger or other non-chain node
                     }
-                } else { break; }
-            } else { break; }
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
         }
-        op.effects.reverse(); op.masks.reverse(); op.mesh = override_mesh.unwrap_or_else(|| default_mesh.clone());
+        
+        op.effects.reverse();
+        op.masks.reverse();
+        op.mesh = override_mesh.unwrap_or_else(|| default_mesh.clone());
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -749,9 +819,23 @@ impl ModuleEvaluator {
         };
         match trigger_type {
             TriggerType::AudioFFT { threshold, output_config, .. } => {
-                if output_config.frequency_bands { for i in 0..9 { let val = audio_data.band_energies[i]; push_val_internal(if val > *threshold { val } else { 0.0 }, output, false); } }
-                if output_config.volume_outputs { push_val_internal(audio_data.rms_volume, output, false); push_val_internal(audio_data.peak_volume, output, false); }
-                if output_config.beat_output { push_val_internal(if audio_data.beat_detected { 1.0 } else { 0.0 }, output, false); }
+                if output_config.frequency_bands {
+                    for i in 0..9 {
+                        let val = audio_data.band_energies[i];
+                        let invert = output_config.inverted_outputs.contains(&format!("Band {}", i));
+                        push_val_internal(if val > *threshold { val } else { 0.0 }, output, invert);
+                    }
+                }
+                if output_config.volume_outputs {
+                    let invert_rms = output_config.inverted_outputs.contains("RMS Volume");
+                    let invert_peak = output_config.inverted_outputs.contains("Peak Volume");
+                    push_val_internal(audio_data.rms_volume, output, invert_rms);
+                    push_val_internal(audio_data.peak_volume, output, invert_peak);
+                }
+                if output_config.beat_output {
+                    let invert = output_config.inverted_outputs.contains("Beat Out");
+                    push_val_internal(if audio_data.beat_detected { 1.0 } else { 0.0 }, output, invert);
+                }
             }
             TriggerType::Beat => push_val_internal(if audio_data.beat_detected { 1.0 } else { 0.0 }, output, false),
             TriggerType::Random { min_interval_ms, max_interval_ms, probability } => {

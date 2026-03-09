@@ -14,13 +14,19 @@ pub struct Composition {
     /// Master opacity (M) - global opacity multiplier (Phase 1, Month 4)
     pub master_opacity: f32,
     /// Master blackout (B) - if true, everything is black (Phase 1, Month 6)
+    #[serde(default)]
     pub master_blackout: bool,
     /// Master speed (S) - global speed multiplier (Phase 1, Month 5)
+    #[serde(default = "default_master_speed")]
     pub master_speed: f32,
     /// Composition size in pixels (width, height)
     pub size: (u32, u32),
     /// Frame rate (FPS) for playback
     pub frame_rate: f32,
+}
+
+fn default_master_speed() -> f32 {
+    1.0
 }
 
 impl Default for Composition {
@@ -128,5 +134,23 @@ mod tests_guardian {
 
         comp.set_master_speed(15.0);
         assert_eq!(comp.master_speed, 10.0); // Clamped to 10.0
+    }
+
+    #[test]
+    fn test_composition_backward_compatibility() {
+        // Missing master_blackout and master_speed
+        let json = r#"{
+            "name": "Old Comp",
+            "description": "Old",
+            "master_opacity": 0.8,
+            "size": [1920, 1080],
+            "frame_rate": 60.0
+        }"#;
+
+        let comp: Composition = serde_json::from_str(json).expect("Should deserialize old composition");
+        assert_eq!(comp.name, "Old Comp");
+        assert_eq!(comp.master_opacity, 0.8);
+        assert!(!comp.master_blackout); // Defaulted
+        assert_eq!(comp.master_speed, 1.0); // Defaulted
     }
 }
