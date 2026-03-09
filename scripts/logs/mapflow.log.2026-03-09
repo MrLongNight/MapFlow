@@ -1,0 +1,40 @@
+2026-03-09T05:23:04.614495Z  INFO MapFlow: Starting MapFlow...
+2026-03-09T05:23:04.624029Z  INFO MapFlow: Initializing MapFlow...
+2026-03-09T05:23:05.183163Z  INFO mapmap_render::backend: Using GPU: AMD Radeon R5 430 (Vulkan)
+2026-03-09T05:23:05.232328Z  INFO MapFlow::app::core::init: >>> BUILD VERSION: 2026-02-16-FIX-BEVY-HEADLESS <<<
+2026-03-09T05:23:05.276783Z  INFO mapmap_render::edge_blend_renderer: Creating edge blend renderer
+2026-03-09T05:23:05.277906Z  INFO mapmap_render::color_calibration_renderer: Creating color calibration renderer
+2026-03-09T05:23:05.292631Z  INFO MapFlow::window_manager: Found icon at "../resources/app_icons/MapFlow_Logo_HQ-Full-M.png" (1024x736)
+2026-03-09T05:23:05.297771Z  INFO MapFlow::window_manager: Successfully created winit icon from "../resources/app_icons/MapFlow_Logo_HQ-Full-M.png"
+2026-03-09T05:23:05.375026Z  INFO MapFlow::window_manager: Found icon at "../resources/app_icons/MapFlow_Logo_HQ-Full-M.png" (1024x736)
+2026-03-09T05:23:05.383522Z  INFO MapFlow::window_manager: Successfully created winit icon from "../resources/app_icons/MapFlow_Logo_HQ-Full-M.png"
+2026-03-09T05:23:07.197479Z  INFO MapFlow::app::core::init: Found autosave at "C:\\Users\\Vinyl\\AppData\\Local\\MapFlow\\autosave.mflow", attempting to load...
+2026-03-09T05:23:07.208668Z  INFO MapFlow::app::core::init: Successfully loaded autosave.
+2026-03-09T05:23:07.208848Z  INFO MapFlow::app::core::init: Self-Heal: Module 'New Module' has nodes: {1, 3, 5, 4}
+2026-03-09T05:23:07.227792Z  INFO MapFlow::app::core::init: Restoring saved audio device: Mikrofon [Microphone] via USB
+2026-03-09T05:23:07.232449Z  INFO mapmap_core::audio::backend::cpal_backend: Audio: Using device 'Mikrofon [Microphone] via USB', format=F32, sample_rate=48000, channels=1
+2026-03-09T05:23:07.306783Z  INFO mapmap_control::osc::client: OSC client created, sending to 127.0.0.1:8000
+2026-03-09T05:23:07.307060Z  INFO mapmap_render::oscillator_renderer: Creating oscillator renderer
+2026-03-09T05:23:07.307317Z  INFO mapmap_mcp::server: MCP Server connected to OSC at 127.0.0.1:8000
+2026-03-09T05:23:07.650407Z  INFO mapmap_ui::widgets::icons: Loaded 35 icons
+2026-03-09T05:23:07.723477Z  INFO mapmap_bevy: Initializing Bevy integration (Safe Logic Mode)...
+2026-03-09T05:23:07.724983Z  INFO MapFlow::app::core::init: ==========================================
+2026-03-09T05:23:07.725126Z  INFO MapFlow::app::core::init:    MapFlow Initialization Status Report   
+2026-03-09T05:23:07.725254Z  INFO MapFlow::app::core::init: ------------------------------------------
+2026-03-09T05:23:07.725388Z  INFO MapFlow::app::core::init: - Render Backend: AMD Radeon R5 430 (Vulkan)
+2026-03-09T05:23:07.725519Z  INFO MapFlow::app::core::init: - Edge Blend:     ENABLED
+2026-03-09T05:23:07.725648Z  INFO MapFlow::app::core::init: - Color Calib:    ENABLED
+2026-03-09T05:23:07.725778Z  INFO MapFlow::app::core::init: - Bevy Engine:    INITIALIZED
+2026-03-09T05:23:07.725907Z  INFO MapFlow::app::core::init: - Hue System:     UNCONFIGURED
+2026-03-09T05:23:07.726031Z  INFO MapFlow::app::core::init: - Media Library:  0 items
+2026-03-09T05:23:07.726177Z  INFO MapFlow::app::core::init: ==========================================
+2026-03-09T05:23:07.768396Z  INFO MapFlow::window_manager: Creating projector window 'Projector 1' (ID: 1, Screen: 0)
+2026-03-09T05:23:07.788646Z  INFO MapFlow::window_manager: Found icon at "../resources/app_icons/MapFlow_Logo_HQ-Full-M.png" (1024x736)
+2026-03-09T05:23:07.796301Z  INFO MapFlow::window_manager: Successfully created winit icon from "../resources/app_icons/MapFlow_Logo_HQ-Full-M.png"
+2026-03-09T05:23:07.841349Z  INFO MapFlow::window_manager: Found icon at "../resources/app_icons/MapFlow_Logo_HQ-Full-M.png" (1024x736)
+2026-03-09T05:23:07.849070Z  INFO MapFlow::window_manager: Successfully created winit icon from "../resources/app_icons/MapFlow_Logo_HQ-Full-M.png"
+2026-03-09T05:23:07.864471Z  INFO MapFlow::window_manager: Created projector window 'Projector 1' at 1920x1080
+2026-03-09T05:23:59.795954Z  INFO MapFlow::app::actions: Settings requested
+2026-03-09T05:24:03.015353Z  INFO MapFlow::app::actions: Audio meter style switched to: Retro
+2026-03-09T05:32:42.461137Z  INFO MapFlow::app::actions: Audio meter style switched to: Digital
+2026-03-09T05:42:14.140682Z  INFO MapFlow::app::actions: Settings requested

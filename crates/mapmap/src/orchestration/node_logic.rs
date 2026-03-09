@@ -1,24 +1,26 @@
 use crate::app::core::app_struct::App;
 use anyhow::Result;
-use mapmap_io::load_project;
 use std::path::Path;
-use tracing::info;
 
-/// Loads a project file and updates the application state.
+/// Specialized node logic (e.g. synchronization between graph and state).
+pub fn update_node_logic(app: &mut App) {
+    // Sync audio config to analyzer
+    app.audio_analyzer.update_config(app.state.audio_config.clone());
+}
+
+/// Load a project file into the application.
 pub fn load_project_file(app: &mut App, path: &Path) -> Result<()> {
-    info!("Loading project from {:?}", path);
-    let loaded_state = load_project(path)?;
-    app.state = loaded_state;
-    app.state.dirty = false;
-
-    // Sync analyzer config
-    app.audio_analyzer
-        .update_config(app.state.audio_config.clone());
-
-    // Clear caches
-    app.render_ops.clear();
-    app.last_graph_revision = 0; // Force sync
-
-    info!("Project loaded successfully.");
+    let state = mapmap_io::load_project(path)?;
+    app.state = state;
+    app.history.clear();
+    
+    // Clear selections to avoid referencing deleted IDs
+    app.ui_state.selected_layer_id = None;
+    app.ui_state.selected_output_id = None;
+    app.ui_state.module_canvas.selected_parts.clear();
+    
+    // Notify subsystems of new state
+    app.audio_analyzer.update_config(app.state.audio_config.clone());
+    
     Ok(())
 }

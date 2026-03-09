@@ -1231,8 +1231,7 @@ pub fn draw_quick_create_popup(
     if ui.input(|i| i.key_pressed(egui::Key::ArrowDown)) { if !filtered_items.is_empty() { canvas.quick_create_selected_index = (canvas.quick_create_selected_index + 1) % filtered_items.len(); } }
     else if ui.input(|i| i.key_pressed(egui::Key::ArrowUp)) { if !filtered_items.is_empty() { if canvas.quick_create_selected_index == 0 { canvas.quick_create_selected_index = filtered_items.len() - 1; } else { canvas.quick_create_selected_index -= 1; } } }
     else if ui.input(|i| i.key_pressed(egui::Key::Enter)) { commit_creation = true; }
-    else if ui.input(|i| i.key_pressed(egui::Key::Escape)) { close_popup = true; }
-    else if ui.input(|i| i.key_pressed(egui::Key::Tab)) { close_popup = true; }
+    else if ui.input(|i| i.key_pressed(egui::Key::Escape)) || ui.input(|i| i.key_pressed(egui::Key::Tab)) { close_popup = true; }
     let area = egui::Area::new("quick_create_popup".into()).fixed_pos(popup_pos).order(egui::Order::Foreground).constrain(true);
     area.show(ui.ctx(), |ui| {
         egui::Frame::menu(ui.style()).show(ui, |ui| {

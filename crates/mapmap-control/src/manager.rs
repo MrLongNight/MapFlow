@@ -223,7 +223,7 @@ impl ControlManager {
 
         if let Some(midi_input) = &self.midi_input {
             while let Some(message) = midi_input.poll_message() {
-                events.push(message.clone());
+                events.push(message);
                 
                 // Record raw event
                 match &message {

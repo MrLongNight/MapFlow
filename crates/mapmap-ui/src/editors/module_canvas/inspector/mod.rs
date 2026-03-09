@@ -4,7 +4,7 @@ use super::types::MediaPlaybackCommand;
 use crate::theme::colors;
 use crate::widgets::{styled_drag_value, styled_slider};
 use crate::UIAction;
-use egui::{Color32, Pos2, Rect, Sense, Stroke, Ui, Vec2};
+use egui::{Color32, Sense, Stroke, Ui, Vec2};
 use mapmap_core::module::{
     BevyCameraMode, BlendModeType, EffectType, HueMappingMode, LayerType, MaskShape, MaskType,
     ModuleId, ModulePart, ModulePartId, ModulePartType, ModulizerType, OutputType, SourceType,
@@ -1064,7 +1064,7 @@ fn render_trigger_config_ui(canvas: &mut ModuleCanvas, ui: &mut Ui, part: &mut M
     });
 }
 
-fn render_transport_controls(canvas: &mut ModuleCanvas, ui: &mut Ui, part_id: ModulePartId, is_playing: bool, current_pos: f32, loop_enabled: &mut bool, reverse_playback: &mut bool) {
+fn render_transport_controls(canvas: &mut ModuleCanvas, ui: &mut Ui, part_id: ModulePartId, is_playing: bool, _current_pos: f32, loop_enabled: &mut bool, _reverse_playback: &mut bool) {
     ui.horizontal(|ui| {
         if ui.button(if is_playing { "⏸ Pause" } else { "▶ Play" }).clicked() {
             let cmd = if is_playing { MediaPlaybackCommand::Pause } else { MediaPlaybackCommand::Play };
@@ -1077,7 +1077,7 @@ fn render_transport_controls(canvas: &mut ModuleCanvas, ui: &mut Ui, part_id: Mo
     });
 }
 
-fn render_timeline(canvas: &mut ModuleCanvas, ui: &mut Ui, part_id: ModulePartId, duration: f32, current_pos: f32, start_time: &mut f32, end_time: &mut f32) {
+fn render_timeline(_canvas: &mut ModuleCanvas, ui: &mut Ui, _part_id: ModulePartId, duration: f32, current_pos: f32, _start_time: &mut f32, _end_time: &mut f32) {
     ui.label("Timeline:");
     let (rect, _) = ui.allocate_at_least(egui::vec2(ui.available_width(), 40.0), Sense::click_and_drag());
     let painter = ui.painter();

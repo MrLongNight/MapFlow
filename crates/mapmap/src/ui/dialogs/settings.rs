@@ -9,21 +9,32 @@ use mapmap_control::midi::MidiInputHandler;
 
 /// Context required to render the settings window.
 pub struct SettingsContext<'a> {
+    /// UI State
     pub ui_state: &'a mut AppUI,
+    /// App State
     pub state: &'a mut AppState,
+    /// Wgpu Backend
     pub backend: &'a WgpuBackend,
+    /// Hue Controller
     pub hue_controller: &'a mut HueController,
+    /// MIDI Handler
     #[cfg(feature = "midi")]
     pub midi_handler: &'a mut Option<MidiInputHandler>,
+    /// MIDI Ports
     #[cfg(feature = "midi")]
     pub midi_ports: &'a mut Vec<String>,
+    /// Selected MIDI Port
     #[cfg(feature = "midi")]
     pub selected_midi_port: &'a mut Option<usize>,
+    /// Restart Requested
     pub restart_requested: &'a mut bool,
+    /// Exit Requested
     pub exit_requested: &'a mut bool,
+    /// Tokio Runtime
     pub tokio_runtime: &'a tokio::runtime::Runtime,
 }
 
+/// Show settings dialog
 pub fn show(ctx: &Context, context: SettingsContext) {
     let mut show_settings = context.ui_state.show_settings;
     let i18n = &context.ui_state.i18n;

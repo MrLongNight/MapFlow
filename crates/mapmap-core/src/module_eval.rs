@@ -353,29 +353,45 @@ mod tests_evaluator {
 /// Render operation containing all info needed to render a layer to an output
 #[derive(Debug, Clone)]
 pub struct RenderOp {
+    /// ID of the output node this op belongs to.
     pub output_part_id: ModulePartId,
+    /// Type of output node.
     pub output_type: OutputType,
+    /// ID of the layer part this op represents.
     pub layer_part_id: ModulePartId,
+    /// Mesh data for geometry deformation.
     pub mesh: MeshType,
+    /// Opacity of the layer.
     pub opacity: f32,
+    /// Blend mode to use when compositing this layer.
     pub blend_mode: Option<BlendModeType>,
+    /// Whether this op is used for projection mapping mode.
     pub mapping_mode: bool,
+    /// ID of the source node providing the texture, if any.
     pub source_part_id: Option<ModulePartId>,
+    /// Properties for the source node.
     pub source_props: SourceProperties,
+    /// List of effects to apply to this layer.
     pub effects: Vec<ModulizerType>,
+    /// List of masks to apply to this layer.
     pub masks: Vec<MaskType>,
 }
 
 /// Evaluation result for a single frame
 #[derive(Debug, Clone, Default)]
 pub struct ModuleEvalResult {
+    /// Mapping from node ID to its calculated output values.
     pub trigger_values: HashMap<ModulePartId, Vec<f32>>,
+    /// Commands for source nodes to be executed by the renderer.
     pub source_commands: HashMap<ModulePartId, SourceCommand>,
+    /// List of render operations for this frame.
     pub render_ops: Vec<RenderOp>,
+    /// Spare render operations for reuse to avoid allocations.
     pub spare_render_ops: Vec<RenderOp>,
 }
 
 impl ModuleEvalResult {
+    /// Clear the result for a new frame.
     pub fn clear(&mut self) {
         for values in self.trigger_values.values_mut() {
             values.clear();
@@ -388,16 +404,84 @@ impl ModuleEvalResult {
 /// Command for a source node
 #[derive(Debug, Clone)]
 pub enum SourceCommand {
-    PlayMedia { path: String, trigger_value: f32 },
-    PlaySharedMedia { id: String, path: String, trigger_value: f32 },
-    PlayShader { name: String, params: Vec<(String, f32)>, trigger_value: f32 },
-    NdiInput { source_name: Option<String>, trigger_value: f32 },
-    LiveInput { device_id: u32, trigger_value: f32 },
+    /// Play media from a local path.
+    PlayMedia { 
+        /// Path to the media file.
+        path: String, 
+        /// Current trigger value.
+        trigger_value: f32 
+    },
+    /// Play media from the shared library.
+    PlaySharedMedia { 
+        /// Unique identifier for the shared media.
+        id: String, 
+        /// Path to the media file.
+        path: String, 
+        /// Current trigger value.
+        trigger_value: f32 
+    },
+    /// Render a shader with the given parameters.
+    PlayShader { 
+        /// Name of the shader.
+        name: String, 
+        /// List of (parameter name, value) tuples.
+        params: Vec<(String, f32)>, 
+        /// Current trigger value.
+        trigger_value: f32 
+    },
+    /// Receive frames from an NDI source.
+    NdiInput { 
+        /// Name of the NDI source.
+        source_name: Option<String>, 
+        /// Current trigger value.
+        trigger_value: f32 
+    },
+    /// Receive frames from a live video device.
+    LiveInput { 
+        /// ID of the capture device.
+        device_id: u32, 
+        /// Current trigger value.
+        trigger_value: f32 
+    },
+    /// Receive frames from a Spout sender.
     #[cfg(target_os = "windows")]
-    SpoutInput { sender_name: String, trigger_value: f32 },
-    BevyInput { trigger_value: f32 },
-    Bevy3DModel { path: String, position: [f32; 3], rotation: [f32; 3], scale: [f32; 3], trigger_value: f32 },
-    HueOutput { brightness: f32, hue: Option<f32>, saturation: Option<f32>, strobe: Option<f32>, ids: Option<Vec<String>> },
+    SpoutInput { 
+        /// Name of the Spout sender.
+        sender_name: String, 
+        /// Current trigger value.
+        trigger_value: f32 
+    },
+    /// Input from the Bevy game engine.
+    BevyInput { 
+        /// Current trigger value.
+        trigger_value: f32 
+    },
+    /// Render a 3D model via Bevy.
+    Bevy3DModel { 
+        /// Path to the 3D model.
+        path: String, 
+        /// Position in 3D space.
+        position: [f32; 3], 
+        /// Rotation in degrees.
+        rotation: [f32; 3], 
+        /// Scale factor.
+        scale: [f32; 3], 
+        /// Current trigger value.
+        trigger_value: f32 
+    },
+    /// Control Philips Hue smart lights.
+    HueOutput { 
+        /// Brightness level (0.0 - 1.0).
+        brightness: f32, 
+        /// Hue value (0.0 - 1.0, optional).
+        hue: Option<f32>, 
+        /// Saturation level (0.0 - 1.0, optional).
+        saturation: Option<f32>, 
+        /// Strobe speed (0.0 - 1.0, optional).
+        strobe: Option<f32>, 
+        /// List of light IDs to control.
+        ids: Option<Vec<String>> 
+    },
 }
 
 /// Module graph evaluator
@@ -419,6 +503,7 @@ impl Default for ModuleEvaluator {
 }
 
 impl ModuleEvaluator {
+    /// Create a new module graph evaluator.
     pub fn new() -> Self {
         Self {
             audio_trigger_data: AudioTriggerData::default(),
@@ -434,6 +519,7 @@ impl ModuleEvaluator {
         }
     }
 
+    /// Set the delta time for the current frame and advance the internal clock.
     pub fn set_delta_time(&mut self, dt: f32) {
         self.current_dt = dt.min(0.5);
         self.current_frame += 1;
@@ -441,8 +527,10 @@ impl ModuleEvaluator {
         self.manual_triggers.clear();
     }
 
+    /// Manually trigger a node for the current frame.
     pub fn trigger_node(&mut self, part_id: ModulePartId) { self.manual_triggers.insert(part_id); }
 
+    /// Update internal audio data for evaluation.
     pub fn update_audio(&mut self, analysis: &AudioAnalysisV2) {
         self.audio_trigger_data.band_energies = analysis.band_energies;
         self.audio_trigger_data.rms_volume = analysis.rms_volume;
@@ -452,6 +540,7 @@ impl ModuleEvaluator {
         self.audio_trigger_data.bpm = analysis.tempo_bpm;
     }
 
+    /// Update active keyboard keys for evaluation.
     pub fn update_keys(&mut self, keys: &std::collections::HashSet<String>) { self.active_keys = keys.clone(); }
 
     fn apply_smoothing(&self, part_id: ModulePartId, socket_idx: usize, target_val: f32, mode: &crate::module::TriggerMappingMode) -> f32 {
@@ -479,6 +568,7 @@ impl ModuleEvaluator {
         })
     }
 
+    /// Evaluate the module graph for the current frame.
     pub fn evaluate(&mut self, module: &MapFlowModule, shared_state: &SharedMediaState, graph_revision: u64) -> &ModuleEvalResult {
         let mut rng = rand::rng();
         self.cached_result.clear();
@@ -626,7 +716,7 @@ impl ModuleEvaluator {
                         ModulePartType::Source(source_type) => {
                             op.source_part_id = Some(part.id);
                             let mut props = SourceProperties::default_identity();
-                            match source_type { SourceType::MediaFile { opacity, brightness, contrast, saturation, hue_shift, scale_x, scale_y, rotation, offset_x, offset_y, flip_horizontal, flip_vertical, .. } => { props = SourceProperties { opacity: *opacity, brightness: *brightness, contrast: *contrast, saturation: *saturation, hue_shift: *hue_shift, scale_x: *scale_x, scale_y: *scale_y, rotation: *rotation, offset_x: *offset_x, offset_y: *offset_y, flip_horizontal: *flip_horizontal, flip_vertical: *flip_vertical }; } _ => {} }
+                            if let SourceType::MediaFile { opacity, brightness, contrast, saturation, hue_shift, scale_x, scale_y, rotation, offset_x, offset_y, flip_horizontal, flip_vertical, .. } = source_type { props = SourceProperties { opacity: *opacity, brightness: *brightness, contrast: *contrast, saturation: *saturation, hue_shift: *hue_shift, scale_x: *scale_x, scale_y: *scale_y, rotation: *rotation, offset_x: *offset_x, offset_y: *offset_y, flip_horizontal: *flip_horizontal, flip_vertical: *flip_vertical }; }
                             op.source_props = props; break;
                         }
                         ModulePartType::Modulizer(mod_type) => { op.effects.push(mod_type.clone()); current_id = part.id; }
