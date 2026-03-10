@@ -41,6 +41,8 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 app.state.audio_config = cfg.clone();
                 app.audio_analyzer.update_config(cfg);
                 app.state.dirty = true;
+                // Persistence fix for MF-035
+                let _ = app.ui_state.user_config.save();
             }
             // Settings
             UIAction::SetTargetFps(fps) => {
