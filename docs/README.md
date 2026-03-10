@@ -1,46 +1,31 @@
 # MapFlow Dokumentation
 
-Willkommen zur MapFlow Dokumentation. Hier finden Sie alle Informationen für Anwender, Entwickler und Projektbeteiligte.
+Zentraler Einstieg ist die **3-Ebenen-Struktur** mit Namenskonvention `DOC-A.. / DOC-B.. / DOC-C..`.
 
-## 📚 Dokumentations-Struktur
+## 📂 Hauptkategorien (Ebene 1)
 
-Die Dokumentation ist in drei Hauptbereiche unterteilt:
+### [A1_SYSTEM](./A1_SYSTEM/DOC-B0_README.md)
+Technische Interna der Engine, Architektur und Hardware-Anbindung.
 
-### 👤 [Anwender (User)](user/README.md)
-Für Visual Artists, VJs und Nutzer der Software.
-* [**Erste Schritte**](user/getting-started/README.md): Installation, Build, Quick Start.
-* [**Handbuch**](user/manual/README.md): Features, UI-Panels, Shortcuts.
-* [**Tutorials**](user/tutorials/README.md): Schritt-für-Schritt Anleitungen.
-* [**FAQ**](user/faq.md): Häufig gestellte Fragen.
-* [**Glossar**](user/glossary.md): Begriffsdefinitionen.
+### [A2_DEVELOPMENT](./A2_DEVELOPMENT/DOC-B0_README.md)
+Leitfaden für Entwickler, Agent-Regeln und Workflows.
 
-### 🛠️ [Entwickler (Dev)](dev/README.md)
-Für Coder, Contributor und technisch Interessierte.
-* [**Setup**](dev/setup/DEVELOPMENT-SETUP.md): Entwicklungsumgebung einrichten.
-* [**Architektur**](dev/architecture/README.md): Systemdesign, Konzepte, Datenfluss.
-* [**Technik**](dev/technical/README.md): Rendering-Pipeline, Audio-System, Shaders.
-* [**API**](dev/api/README.md): Schnittstellen-Referenz.
-* [**Features**](dev/features/): Technische Spezifikationen.
+### [A3_PROJECT](./A3_PROJECT/DOC-B0_README.md)
+Projektmanagement, Planung, Audits und Qualitätssicherung.
 
-### 🚀 [Projekt](project/README.md)
-Prozesse, Planung und Meta-Informationen.
-* [**Roadmap**](project/roadmap/README.md): Projektphasen und Status.
-* [**CI/CD**](project/cicd/README_CICD.md): Automatisierung und Workflows.
-* [**Audits**](project/audits/): Code- und Sicherheits-Analysen.
-* [**Allgemeines**](project/general/): Code of Conduct, Security Policy.
+### [A4_USER](./A4_USER/DOC-B0_README.md)
+Benutzerhandbuch und Tutorials.
 
 ---
 
-## 🔍 Schnellzugriff
+## Detailgrad pro Ebene
 
-| Thema | Ort | Beschreibung |
-|-------|-----|--------------|
-| **Installation** | [`user/getting-started/INSTALLATION.md`](user/getting-started/INSTALLATION.md) | Wie man MapFlow installiert. |
-| **Architektur** | [`dev/architecture/overview.md`](dev/architecture/overview.md) | Wie das System funktioniert. |
-| **Roadmap** | [`project/roadmap/PROJECT-PHASES.md`](project/roadmap/PROJECT-PHASES.md) | Was als nächstes kommt. |
-| **Contributing** | [`CONTRIBUTING.md`](../CONTRIBUTING.md) | Wie man mitmacht (im Root). |
-| **CI/CD** | [`project/cicd/README_CICD.md`](project/cicd/README_CICD.md) | Build-Prozesse verstehen. |
+- **Ebene 1 (A):** kleinster Detailgrad, Navigation/Orientierung
+- **Ebene 2 (B):** Themenblöcke je Kategorie
+- **Ebene 3 (C):** höchster Detailgrad, Fachdokumente
 
----
+## Hinweis zu `docs/dev`, `docs/project`, `docs/user`
 
-*Zuletzt aktualisiert: 15.02.2026*
+Diese Verzeichnisse enthalten noch Rest-/Übergangsdokumente aus der nicht abgeschlossenen Umstrukturierung und werden schrittweise bereinigt.
+
+Die fachliche Primärstruktur ist **A1–A4**.

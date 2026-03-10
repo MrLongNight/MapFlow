@@ -72,9 +72,9 @@ Wenn der Build in CI fehlschlägt:
 
 ## 🔗 Links
 
-- **CI/CD README:** [CI_CD_README.md](README_CICD.md)
+- **CI/CD README:** [CI_CD_README.md](DOC-C1_README_CICD.md)
 - **Workflow Details:** [workflows/README.md](../../../.github/workflows/README.md)
-- **Roadmap:** [ROADMAP.md](../../ROADMAP.md)
+- **Roadmap:** [ROADMAP.md](../B1_PLANNING/DOC-C10_PROJECT_PHASES.md)
 
 ---
 

@@ -261,7 +261,7 @@ Wenn du wirklich nur das Nötigste willst:
 ## 🆘 Support
 
 Bei Fragen oder Problemen:
-1. Siehe [INSTALLATION.md](../../user/getting-started/INSTALLATION.md)
+1. Siehe [INSTALLATION.md](../../A4_USER/B1_MANUAL/DOC-C1_INSTALLATION.md)
 2. Siehe [workflows/README.md](../../../.github/workflows/README.md)
 3. Issue öffnen mit Label `workflows`
 

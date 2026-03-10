@@ -365,7 +365,7 @@ Ensure your GPU drivers are up-to-date:
 
 ## Additional Resources
 
-- **Documentation:** See [docs/](docs/) directory
+- **Documentation:** See [docs/](../../DOC-A0_README.md) directory
 - **Architecture:** [Architecture](../../dev/architecture/README.md)
-- **Contributing:** [CONTRIBUTING.md](CONTRIBUTING.md)
+- **Contributing:** [CONTRIBUTING.md](../../../CONTRIBUTING.md)
 - **Issues:** https://github.com/MrLongNight/MapFlow/issues

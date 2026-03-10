@@ -1,7 +1,7 @@
 # Project Phases (0-7)
 
 > **⚠️ DEPRECATED:** This document is kept for historical reference only.
-> For the most up-to-date roadmap and feature status, please verify [ROADMAP.md](../../ROADMAP.md) in the project root.
+> For the most up-to-date roadmap and feature status, please verify [ROADMAP.md](./DOC-C0_README.md) in the project root.
 
 This document outlines the complete project roadmap for the MapFlow Rust rewrite, from the initial core engine development to the final polish and release.
 
@@ -76,7 +76,7 @@ The goal of this phase was to migrate the legacy ImGui interface to a profession
 
 ## Phase 8: Multi-PC Architecture (NEW)
 
-> **Detailed Documentation:** [`docs/dev/architecture/MULTI-PC-FEASIBILITY.md`](../../dev/architecture/MULTI-PC-FEASIBILITY.md)
+> **Detailed Documentation:** [`docs/dev/architecture/MULTI-PC-FEASIBILITY.md`](./DOC-C6_MULTI-PC-FEASIBILITY.md)
 
 This phase enables distributed output across multiple PCs, supporting professional multi-projector installations.
 

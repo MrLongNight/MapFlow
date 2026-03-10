@@ -7,7 +7,7 @@ This document provides guidelines for contributing to the MapFlow project.
 ---
 
 ## Build Software, Docs, and Translations
-See the [Installation Guide](../../user/getting-started/INSTALLATION.md).
+See the [Installation Guide](../../A4_USER/B1_MANUAL/DOC-C1_INSTALLATION.md).
 
 You will need to install markdown to build some of the documentation that comes with the software.
 

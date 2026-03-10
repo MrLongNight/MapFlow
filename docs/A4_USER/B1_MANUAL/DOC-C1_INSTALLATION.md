@@ -29,7 +29,7 @@ Pre-built binaries for Windows and Linux are available on the GitHub Releases pa
 
 ### 2. Build from Source
 
-For detailed build instructions, please refer to [BUILD.md](BUILD.md).
+For detailed build instructions, please refer to [../B3_SUPPORT/DOC-C1_BUILD.md](../B3_SUPPORT/DOC-C1_BUILD.md).
 
 Quick summary for Rust developers:
 
