@@ -152,7 +152,8 @@ impl App {
                     configured_fps
                 } else {
                     // Editing/idle mode with modules loaded: lower tick rate to reduce CPU.
-                    configured_fps.min(15.0)
+                    // Increased from 15 to 30 to avoid 'lagginess' reported by users.
+                    configured_fps.min(30.0)
                 };
                 let target_interval = 1.0 / tick_fps;
 

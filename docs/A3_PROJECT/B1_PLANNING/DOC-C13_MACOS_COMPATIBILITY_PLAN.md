@@ -219,7 +219,122 @@ MapFlow counts as production-ready for macOS when:
 - core workflows pass regression testing on real Macs
 - unsupported features are clearly documented
 
-## 8. Roadmap Link
+## 8. Recommended Execution Order
+
+Recommended order for implementation:
+1. `MF-062-MACOS-BUILD-BOOTSTRAP`
+2. `MF-066-MACOS-CI-VALIDATION`
+3. `MF-063-MACOS-RUNTIME-STABILIZATION`
+4. `MF-064-MACOS-MEDIA-FFMPEG-PATH`
+5. `MF-065-MACOS-AUDIO-VALIDATION`
+6. `MF-067-MACOS-PACKAGING-NOTARIZATION`
+7. `MF-068-MACOS-NATIVE-INTEROP`
+
+Rationale:
+- `MF-062` removes the biggest compile and configuration blockers first.
+- `MF-066` should follow immediately so every later macOS fix gets automated feedback.
+- `MF-063` validates whether the app is actually usable after it compiles.
+- `MF-064` and `MF-065` stabilize media and audio once the base app runs.
+- `MF-067` should start only after the beta path is technically stable.
+- `MF-068` is intentionally last because it is optional for the first macOS beta.
+
+## 9. Subtask Briefs for Agent Delegation
+
+### MF-062-MACOS-BUILD-BOOTSTRAP
+- Goal: make the workspace build cleanly on macOS with a clearly defined feature set.
+- Primary files:
+  - `Cargo.toml`
+  - `crates/mapmap/Cargo.toml`
+  - `crates/mapmap-bevy/Cargo.toml`
+  - `crates/mapmap-ui/Cargo.toml`
+- Required outputs:
+  - documented macOS build command
+  - compile blockers removed or explicitly feature-gated
+  - macOS build notes added where needed
+- Definition of done:
+  - `cargo build -p mapmap` is expected to work on macOS
+  - no unfinished macOS blockers remain hidden behind default settings
+
+### MF-066-MACOS-CI-VALIDATION
+- Goal: add automated macOS validation before deeper platform work continues.
+- Primary files:
+  - `.github/workflows/CICD-DevFlow_Job01_Validation.yml`
+  - optional supporting CI docs
+- Required outputs:
+  - macOS validation job
+  - documented feature set used by the CI job
+  - clear failure logs for macOS-specific problems
+- Definition of done:
+  - repository has a macOS validation path
+  - later tasks can rely on CI feedback instead of local-only testing
+
+### MF-063-MACOS-RUNTIME-STABILIZATION
+- Goal: make the compiled app launch and behave predictably on macOS.
+- Primary files:
+  - `crates/mapmap/src/main.rs`
+  - `crates/mapmap/src/window_manager.rs`
+  - `crates/mapmap/src/orchestration/outputs.rs`
+  - platform-relevant UI/runtime files as needed
+- Required outputs:
+  - stable startup
+  - stable window creation and redraw
+  - known unsupported runtime paths guarded with clear errors
+- Definition of done:
+  - app launches on at least one real Mac
+  - core UI and output windows are usable without critical crashes
+
+### MF-064-MACOS-MEDIA-FFMPEG-PATH
+- Goal: establish a stable macOS media path even if it starts with software decode only.
+- Primary files:
+  - `crates/mapmap-media/Cargo.toml`
+  - `crates/mapmap-media/src/decoder.rs`
+  - build and install docs if dependency handling changes
+- Required outputs:
+  - defined FFmpeg strategy for macOS
+  - reliable fallback to software decode
+  - explicit decision on `VideoToolbox` now vs later
+- Definition of done:
+  - media playback on macOS is stable enough for beta testing
+
+### MF-065-MACOS-AUDIO-VALIDATION
+- Goal: validate whether audio should ship enabled, gated, or deferred on macOS.
+- Primary files:
+  - `crates/mapmap-core/src/audio/`
+  - `crates/mapmap-ui/Cargo.toml`
+  - relevant docs around build and runtime support
+- Required outputs:
+  - clear macOS audio support decision
+  - runtime fallback if audio init fails
+  - updated docs consistent with actual behavior
+- Definition of done:
+  - no ambiguous "maybe supported" state remains for macOS audio
+
+### MF-067-MACOS-PACKAGING-NOTARIZATION
+- Goal: turn a working beta build into a deliverable release artifact.
+- Primary files:
+  - release workflows
+  - macOS bundle metadata
+  - install/build docs
+- Required outputs:
+  - `.app` bundle strategy
+  - signing and notarization checklist or implementation
+  - internal or public macOS artifact path
+- Definition of done:
+  - macOS artifact can be distributed without ad hoc manual steps
+
+### MF-068-MACOS-NATIVE-INTEROP
+- Goal: add optional macOS-native interop only after the base app is already stable.
+- Primary files:
+  - `crates/mapmap-io/src/syphon/mod.rs`
+  - `crates/mapmap-io/src/virtual_camera/mod.rs`
+  - app-level source/output model and UI wiring
+- Required outputs:
+  - explicit scope decision for Syphon and Virtual Camera
+  - no UI exposure for features that remain stubs
+- Definition of done:
+  - macOS-native interop is either real or clearly deferred
+
+## 10. Roadmap Link
 
 - Roadmap task: `MF-061-MACOS-COMPATIBILITY`
 - See root `ROADMAP.md` for status tracking

@@ -144,12 +144,32 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     app.ui_state.current_fps = app.current_fps;
     app.ui_state.current_frame_time_ms = app.current_frame_time_ms;
 
-    if app.last_sysinfo_refresh.elapsed() >= std::time::Duration::from_millis(500) {
+    if app.last_sysinfo_refresh.elapsed() >= std::time::Duration::from_millis(1000) {
+        // Only refresh CPU usage and current process to save performance
         app.sys_info.refresh_cpu_usage();
         app.sys_info.refresh_memory();
+        
+        // Refresh only the current process
+        if let Some(pid) = sysinfo::get_current_pid().ok() {
+            app.sys_info.refresh_processes(sysinfo::ProcessesToUpdate::Some(&[pid]), true);
+        }
+        
         app.last_sysinfo_refresh = std::time::Instant::now();
     }
-    app.ui_state.cpu_usage = app.sys_info.global_cpu_usage();
+
+    // Get process-specific CPU usage if available
+    if let Some(pid) = sysinfo::get_current_pid().ok() {
+        if let Some(process) = app.sys_info.process(pid) {
+            // sysinfo returns sum of all core percentages, divide by core count to match Task Manager
+            let num_cpus = app.sys_info.cpus().len() as f32;
+            app.ui_state.cpu_usage = process.cpu_usage() / num_cpus.max(1.0);
+        } else {
+            app.ui_state.cpu_usage = 0.0;
+        }
+    } else {
+        // Fallback to global if we can't get PID (unlikely)
+        app.ui_state.cpu_usage = app.sys_info.global_cpu_usage();
+    }
     app.ui_state.ram_usage_mb = app.sys_info.used_memory() as f32 / (1024.0 * 1024.0);
 
     // 9. Output Processing (MODULARIZED)
