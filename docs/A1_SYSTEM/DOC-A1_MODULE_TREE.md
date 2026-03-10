@@ -12,57 +12,57 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |   |   build.rs
 |   |   Cargo.toml
 |   |   README.md
-|   |   
+|   |  
 |   +---examples
 |   |       hello_world_projection.rs
 |   |       simple_render.rs
-|   |       
+|   |  
 |   +---src
 |   |   |   logging_setup.rs
 |   |   |   main.rs
 |   |   |   media_manager_ui.rs
 |   |   |   window_manager.rs
 |   |   |   window_manager_test.rs
-|   |   |   
+|   |   |  
 |   |   +---app
 |   |   |   |   actions.rs
 |   |   |   |   events.rs
 |   |   |   |   mod.rs
 |   |   |   |   ui_layout.rs
 |   |   |   |   update.rs
-|   |   |   |   
+|   |   |   |  
 |   |   |   +---core
 |   |   |   |       app_struct.rs
 |   |   |   |       init.rs
 |   |   |   |       mod.rs
-|   |   |   |       
+|   |   |   |  
 |   |   |   \---loops
 |   |   |           logic.rs
 |   |   |           mod.rs
 |   |   |           render.rs
-|   |   |           
+|   |   |  
 |   |   +---orchestration
 |   |   |       evaluation.rs
 |   |   |       media.rs
 |   |   |       mod.rs
 |   |   |       node_logic.rs
 |   |   |       outputs.rs
-|   |   |       
+|   |   |  
 |   |   \---ui
 |   |       |   mod.rs
-|   |       |   
+|   |       |  
 |   |       +---dialogs
 |   |       |       about.rs
 |   |       |       icon_demo.rs
 |   |       |       mod.rs
 |   |       |       settings.rs
-|   |       |       
+|   |       |  
 |   |       +---editors
 |   |       |       mod.rs
 |   |       |       module_canvas.rs
 |   |       |       node_editor.rs
 |   |       |       timeline.rs
-|   |       |       
+|   |       |  
 |   |       +---panels
 |   |       |       assignment.rs
 |   |       |       edge_blend.rs
@@ -70,19 +70,19 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |   |       |       mod.rs
 |   |       |       output.rs
 |   |       |       paint.rs
-|   |       |       
+|   |       |  
 |   |       \---view
 |   |               media_manager.rs
 |   |               mod.rs
-|   |               
+|   |  
 |   \---wix
 |           License.rtf
 |           main.wxs
-|           
+|  
 +---mapmap-bevy
 |   |   Cargo.toml
 |   |   README.md
-|   |   
+|   |  
 |   \---src
 |           build_error.txt
 |           build_error_2.txt
@@ -96,55 +96,55 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |           lib.rs
 |           resources.rs
 |           systems.rs
-|           
+|  
 +---mapmap-control
 |   |   Cargo.toml
 |   |   README.md
-|   |   
+|   |  
 |   \---src
 |       |   error.rs
 |       |   lib.rs
 |       |   link.rs
 |       |   manager.rs
 |       |   target.rs
-|       |   
+|       |  
 |       +---cue
 |       |       crossfade.rs
 |       |       cue.rs
 |       |       cue_list.rs
 |       |       mod.rs
 |       |       triggers.rs
-|       |       
+|       |  
 |       +---dmx
 |       |       artnet.rs
 |       |       channels.rs
 |       |       fixtures.rs
 |       |       mod.rs
 |       |       sacn.rs
-|       |       
+|       |  
 |       +---hue
 |       |   |   audio_interface.rs
 |       |   |   controller.rs
 |       |   |   engine.rs
 |       |   |   mod.rs
 |       |   |   models.rs
-|       |   |   
+|       |   |  
 |       |   +---api
 |       |   |       client.rs
 |       |   |       discovery.rs
 |       |   |       error.rs
 |       |   |       groups.rs
 |       |   |       mod.rs
-|       |   |       
+|       |   |  
 |       |   +---effects
 |       |   |       mod.rs
-|       |   |       
+|       |   |  
 |       |   \---stream
 |       |           dtls.rs
 |       |           manager.rs
 |       |           mod.rs
 |       |           protocol.rs
-|       |           
+|       |  
 |       +---midi
 |       |       clock.rs
 |       |       controller_element.rs
@@ -155,7 +155,7 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |       |       mod.rs
 |       |       output.rs
 |       |       profiles.rs
-|       |       
+|       |  
 |       +---osc
 |       |       address.rs
 |       |       client.rs
@@ -163,13 +163,13 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |       |       mod.rs
 |       |       server.rs
 |       |       types.rs
-|       |       
+|       |  
 |       +---shortcuts
 |       |       bindings.rs
 |       |       macros.rs
 |       |       mod.rs
 |       |       shortcuts.rs
-|       |       
+|       |  
 |       \---web
 |               auth.rs
 |               handlers.rs
@@ -177,11 +177,11 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |               routes.rs
 |               server.rs
 |               websocket.rs
-|               
+|  
 +---mapmap-core
 |   |   Cargo.toml
 |   |   README.md
-|   |   
+|   |  
 |   +---src
 |   |   |   animation.rs
 |   |   |   assignment.rs
@@ -208,12 +208,12 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |   |   |   shader_graph.rs
 |   |   |   state.rs
 |   |   |   trigger_system.rs
-|   |   |   
+|   |   |  
 |   |   +---audio
 |   |   |       analyzer_v2.rs
 |   |   |       backend.rs
 |   |   |       mod.rs
-|   |   |       
+|   |   |  
 |   |   +---layer
 |   |   |       composition.rs
 |   |   |       layer_struct.rs
@@ -221,13 +221,13 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |   |   |       mod.rs
 |   |   |       transform.rs
 |   |   |       types.rs
-|   |   |       
+|   |   |  
 |   |   \---module
 |   |       |   config.rs
 |   |       |   manager.rs
 |   |       |   manager_tests.rs
 |   |       |   mod.rs
-|   |       |   
+|   |       |  
 |   |       \---types
 |   |               connection.rs
 |   |               hue.rs
@@ -245,7 +245,7 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |   |               socket.rs
 |   |               source.rs
 |   |               trigger.rs
-|   |               
+|   |  
 |   \---tests
 |           assignment_tests.rs
 |           comprehensive_node_tests.rs
@@ -256,18 +256,18 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |           trigger_logic_tests.rs
 |           trigger_system_tests.rs
 |           trigger_tests.rs
-|           
+|  
 +---mapmap-ffi
 |   |   Cargo.toml
 |   |   README.md
-|   |   
+|   |  
 |   \---src
 |           lib.rs
-|           
+|  
 +---mapmap-io
 |   |   Cargo.toml
 |   |   README.md
-|   |   
+|   |  
 |   +---src
 |   |   |   converter.rs
 |   |   |   error.rs
@@ -277,48 +277,48 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |   |   |   project_format.rs
 |   |   |   sink.rs
 |   |   |   source.rs
-|   |   |   
+|   |   |  
 |   |   +---decklink
 |   |   |       mod.rs
-|   |   |       
+|   |   |  
 |   |   +---ndi
 |   |   |       mod.rs
-|   |   |       
+|   |   |  
 |   |   +---spout
 |   |   |       mod.rs
-|   |   |       
+|   |   |  
 |   |   +---stream
 |   |   |       encoder.rs
 |   |   |       mod.rs
 |   |   |       rtmp.rs
 |   |   |       srt.rs
-|   |   |       
+|   |   |  
 |   |   +---syphon
 |   |   |       mod.rs
-|   |   |       
+|   |   |  
 |   |   \---virtual_camera
 |   |           mod.rs
-|   |           
+|   |  
 |   \---tests
 |           project_tests.rs
-|           
+|  
 +---mapmap-mcp
 |   |   Cargo.toml
 |   |   README.md
-|   |   
+|   |  
 |   \---src
 |           lib.rs
 |           main.rs
 |           protocol.rs
 |           server.rs
-|           
+|  
 +---mapmap-media
 |   |   Cargo.toml
 |   |   README.md
-|   |   
+|   |  
 |   +---benches
 |   |       video_decode.rs
-|   |       
+|   |  
 |   \---src
 |           decoder.rs
 |           hap_decoder.rs
@@ -329,14 +329,14 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |           pipeline.rs
 |           player.rs
 |           sequence.rs
-|           
+|  
 +---mapmap-render
 |   |   Cargo.toml
 |   |   README.md
-|   |   
+|   |  
 |   +---benches
 |   |       mesh_renderer_bench.rs
-|   |       
+|   |  
 |   +---src
 |   |       backend.rs
 |   |       color_calibration_renderer.rs
@@ -358,26 +358,26 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |   |       spout.rs
 |   |       texture.rs
 |   |       uploader.rs
-|   |       
+|   |  
 |   \---tests
 |           effect_chain_integration_tests.rs
 |           effect_chain_tests.rs
 |           multi_output_tests.rs
-|           
+|  
 +---mapmap-ui
 |   |   Cargo.toml
 |   |   README.md
-|   |   
+|   |  
 |   +---locales
 |   |   +---de
 |   |   |       main.ftl
-|   |   |       
+|   |   |  
 |   |   \---en
 |   |           main.ftl
-|   |           
+|   |  
 |   +---src
 |   |   |   lib.rs
-|   |   |   
+|   |   |  
 |   |   +---core
 |   |   |       asset_manager.rs
 |   |   |       config.rs
@@ -387,7 +387,7 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |   |   |       theme.rs
 |   |   |       toast.rs
 |   |   |       undo_redo.rs
-|   |   |       
+|   |   |  
 |   |   +---editors
 |   |   |   |   mesh_editor.rs
 |   |   |   |   mod.rs
@@ -395,7 +395,7 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |   |   |   |   node_editor.rs.tmp
 |   |   |   |   shortcut_editor.rs
 |   |   |   |   timeline_v2.rs
-|   |   |   |   
+|   |   |   |  
 |   |   |   \---module_canvas
 |   |   |       |   canvas_ui.rs
 |   |   |       |   controller.rs
@@ -410,7 +410,7 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |   |   |       |   state.rs
 |   |   |       |   types.rs
 |   |   |       |   utils.rs
-|   |   |       |   
+|   |   |       |  
 |   |   |       \---inspector
 |   |   |               common.rs
 |   |   |               effect.rs
@@ -419,7 +419,7 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |   |   |               output.rs
 |   |   |               source.rs
 |   |   |               trigger.rs
-|   |   |               
+|   |   |  
 |   |   +---panels
 |   |   |   |   assignment_panel.rs
 |   |   |   |   audio_panel.rs
@@ -438,20 +438,20 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |   |   |   |   preview_panel.rs
 |   |   |   |   shortcuts_panel.rs
 |   |   |   |   transform_panel.rs
-|   |   |   |   
+|   |   |   |  
 |   |   |   \---inspector
 |   |   |           layer.rs
 |   |   |           mod.rs
 |   |   |           module.rs
 |   |   |           output.rs
-|   |   |           
+|   |   |  
 |   |   +---view
 |   |   |   |   dashboard.rs
 |   |   |   |   media_browser.rs
 |   |   |   |   media_manager_wrapper.rs
 |   |   |   |   mod.rs
 |   |   |   |   module_sidebar.rs
-|   |   |   |   
+|   |   |   |  
 |   |   |   \---menu_bar
 |   |   |           edit_menu.rs
 |   |   |           file_menu.rs
@@ -459,7 +459,7 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |   |   |           mod.rs
 |   |   |           toolbar.rs
 |   |   |           view_menu.rs
-|   |   |           
+|   |   |  
 |   |   \---widgets
 |   |           audio_meter.rs
 |   |           custom.rs
@@ -467,21 +467,21 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |   |           icon_demo_panel.rs
 |   |           mod.rs
 |   |           panel.rs
-|   |           
+|   |  
 |   \---tests
 |           timeline_automation_tests.rs
-|           
+|  
 \---vendor
     +---egui_node_editor
     |       .cargo_vcs_info.json
-    |       
+    |  
     \---imgui-wgpu
         |   Cargo.toml
-        |   
+        |  
         \---src
                 imgui.wgsl
                 lib.rs
-                
+
 ``
 
 ## 2. Workspace Crates
@@ -503,4 +503,3 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 
 > Hinweis: Installiere cargo-modules (cargo install cargo-modules), um hier einen detaillierten logischen Modul-Graph zu sehen.
 > Aktuell wird nur die Datei-Struktur oben angezeigt.
-
