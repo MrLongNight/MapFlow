@@ -124,7 +124,6 @@ jobs:
             git clone --depth 1 https://github.com/microsoft/vcpkg.git
             .\vcpkg\bootstrap-vcpkg.bat
           }
-          .\vcpkg\vcpkg integrate install
 
       - name: Cache vcpkg installed libs
         id: cache-vcpkg-installed
@@ -144,10 +143,9 @@ jobs:
           Add-Content -Path $env:GITHUB_ENV -Value "VCPKG_DEFAULT_TRIPLET=x64-windows"
           Add-Content -Path $env:GITHUB_ENV -Value "VCPKG_INSTALLED_DIR=$installedDir"
 
-      - name: vcpkg-Abhaengigkeiten installieren
-        if: steps.cache-vcpkg-installed.outputs.cache-hit != 'true'
+      - name: Install dependencies via vcpkg manifest
         shell: pwsh
-        run: .\vcpkg\vcpkg install
+        run: .\vcpkg\vcpkg install --triplet $env:VCPKG_DEFAULT_TRIPLET --x-manifest-root .
 
       - name: Set FFmpeg environment for ffmpeg-sys-next
         shell: pwsh
