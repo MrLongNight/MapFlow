@@ -120,10 +120,24 @@ jobs:
       - name: vcpkg installieren
         shell: pwsh
         run: |
+          $manifest = Get-Content "vcpkg.json" | ConvertFrom-Json
+          $baseline = $manifest.'builtin-baseline'
+          if ([string]::IsNullOrWhiteSpace($baseline)) {
+            throw "vcpkg.json is missing builtin-baseline."
+          }
+
           if (-not (Test-Path "vcpkg")) {
             git clone --depth 1 https://github.com/microsoft/vcpkg.git
-            .\vcpkg\bootstrap-vcpkg.bat
           }
+
+          if (Test-Path "vcpkg\\.git\\shallow") {
+            git -C vcpkg fetch --unshallow origin
+          } else {
+            git -C vcpkg fetch origin
+          }
+
+          git -C vcpkg checkout --force $baseline
+          .\vcpkg\bootstrap-vcpkg.bat
 
       - name: Cache vcpkg installed libs
         id: cache-vcpkg-installed
