@@ -19,6 +19,9 @@ on:
 permissions:
   contents: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   resolve-release:
     name: "Resolve Release Metadata"
@@ -70,7 +73,7 @@ jobs:
     needs: [resolve-release]
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -90,7 +93,7 @@ jobs:
           Add-Content -Path $env:GITHUB_PATH -Value "$llvmBin"
 
       - name: Cache Cargo Registry
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cargo/registry/index/
@@ -107,7 +110,7 @@ jobs:
 
       - name: Cache vcpkg
         id: cache-vcpkg
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: vcpkg
           key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json') }}
@@ -125,7 +128,7 @@ jobs:
 
       - name: Cache vcpkg installed libs
         id: cache-vcpkg-installed
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: vcpkg_installed
           key: ${{ runner.os }}-vcpkg-installed-${{ hashFiles('vcpkg.json') }}
@@ -207,7 +210,7 @@ jobs:
         run: |
           cargo wix --release -p mapmap --no-check-includes
           $MsiPath = Get-ChildItem -Path "target/wix/*.msi" | Select-Object -First 1 -ExpandProperty FullName
-          Move-Item -Path $MsiPath -Destination "MapFlow-${{ inputs.version }}-x64.msi"
+          Move-Item -Path $MsiPath -Destination "MapFlow-${{ needs.resolve-release.outputs.version }}-x64.msi"
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
@@ -223,12 +226,12 @@ jobs:
     needs: [resolve-release]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Cache Cargo Registry
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cargo/registry/index/
@@ -242,11 +245,13 @@ jobs:
         run: |
           sudo apt-get update -y
           sudo apt-get install -y \
-            build-essential pkg-config clang libclang-dev \
+            build-essential pkg-config clang libclang-dev yasm nasm \
+            libfontconfig1-dev libfreetype6-dev \
             libasound2-dev libavcodec-dev libavformat-dev libavutil-dev \
             libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev \
             libpostproc-dev libavcodec-extra \
-            libudev-dev libx11-dev libxcursor-dev libxi-dev libxrandr-dev \
+            libudev-dev libxcb1-dev libxcb-render0-dev libxcb-shape0-dev \
+            libxcb-xfixes0-dev libx11-dev libxcursor-dev libxi-dev libxrandr-dev \
             libxinerama-dev libwayland-dev libxkbcommon-dev libssl-dev \
             ffmpeg
       - name: Build (Release)
