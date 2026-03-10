@@ -345,8 +345,14 @@ fn render_content(
     }
 
     let output_config_opt = ctx.output_manager.get_output(output_id).cloned();
-    let use_edge_blend = output_config_opt.as_ref()
-        .map(|cfg| cfg.edge_blend.left.enabled || cfg.edge_blend.right.enabled || cfg.edge_blend.top.enabled || cfg.edge_blend.bottom.enabled)
+    let use_edge_blend = output_config_opt
+        .as_ref()
+        .map(|cfg| {
+            cfg.edge_blend.left.enabled
+                || cfg.edge_blend.right.enabled
+                || cfg.edge_blend.top.enabled
+                || cfg.edge_blend.bottom.enabled
+        })
         .unwrap_or(false)
         && ctx.edge_blend_renderer.is_some();
     let use_color_calib = output_config_opt.is_some() && ctx.color_calibration_renderer.is_some();
@@ -370,7 +376,7 @@ fn render_content(
     };
 
     let target_view = if needs_post_processing {
-        mesh_target_view_ref.as_ref().unwrap()
+        mesh_target_view_ref.as_deref().unwrap()
     } else {
         view
     };
@@ -560,14 +566,17 @@ fn render_content(
         let intermediate_view = mesh_target_view_ref.as_ref().unwrap();
         // If we have edge blending, render it to the final view
         if use_edge_blend {
-            if let Some(edge_blend_renderer) = ctx.edge_blend_renderer {
+            if let Some(edge_blend_renderer) = ctx.edge_blend_renderer.as_ref() {
                 if let Some(config) = &output_config_opt {
                     // PERFORMANCE NOTE: ideally we shouldn't create buffers and bind groups every frame.
                     // However, we'll keep it functional first and optimize if it becomes a bottleneck or
                     // we could cache these in a hash map inside the renderer later.
-                    let texture_bind_group = edge_blend_renderer.create_texture_bind_group(intermediate_view);
-                    let uniform_buffer = edge_blend_renderer.create_uniform_buffer(&config.edge_blend);
-                    let uniform_bind_group = edge_blend_renderer.create_uniform_bind_group(&uniform_buffer);
+                    let texture_bind_group =
+                        edge_blend_renderer.create_texture_bind_group(intermediate_view);
+                    let uniform_buffer =
+                        edge_blend_renderer.create_uniform_buffer(&config.edge_blend);
+                    let uniform_bind_group =
+                        edge_blend_renderer.create_uniform_bind_group(&uniform_buffer);
 
                     let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         label: Some("Edge Blending Pass"),
@@ -586,18 +595,24 @@ fn render_content(
                         occlusion_query_set: None,
                     });
 
-                    edge_blend_renderer.render(&mut rpass, &texture_bind_group, &uniform_bind_group);
+                    edge_blend_renderer.render(
+                        &mut rpass,
+                        &texture_bind_group,
+                        &uniform_bind_group,
+                    );
                 }
             }
         } else if use_color_calib {
             // Placeholder: if only color calib is enabled (or color calib needs to run after edge blend)
             // For now, if edge blending is off but we still used an intermediate texture,
             // we need to copy it to the final view.
-            if let Some(edge_blend_renderer) = ctx.edge_blend_renderer {
-                let texture_bind_group = edge_blend_renderer.create_texture_bind_group(intermediate_view);
+            if let Some(edge_blend_renderer) = ctx.edge_blend_renderer.as_ref() {
+                let texture_bind_group =
+                    edge_blend_renderer.create_texture_bind_group(intermediate_view);
                 let default_config = mapmap_core::EdgeBlendConfig::default();
                 let uniform_buffer = edge_blend_renderer.create_uniform_buffer(&default_config);
-                let uniform_bind_group = edge_blend_renderer.create_uniform_bind_group(&uniform_buffer);
+                let uniform_bind_group =
+                    edge_blend_renderer.create_uniform_bind_group(&uniform_buffer);
 
                 let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                     label: Some("Passthrough Pass"),
@@ -623,7 +638,6 @@ fn render_content(
             }
         }
     }
-
 
     // EgUI Overlay
     if output_id == 0 {
