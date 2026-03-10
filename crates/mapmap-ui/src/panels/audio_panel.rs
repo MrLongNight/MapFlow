@@ -12,9 +12,14 @@ use mapmap_core::audio::{AudioAnalysis, AudioConfig};
 /// Actions that can be triggered from the Audio Panel
 #[derive(Debug, Clone)]
 pub enum AudioPanelAction {
-    DeviceChanged(String),
     ConfigChanged(AudioConfig),
     MeterStyleChanged(crate::config::AudioMeterStyle),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FftVisualizationMode {
+    FullFft,
+    ThreeBand,
 }
 
 #[derive(Debug)]
@@ -29,6 +34,14 @@ impl Default for AudioPanel {
 }
 
 impl AudioPanel {
+    fn grouped_three_band_energies(analysis: &AudioAnalysis) -> [f32; 3] {
+        [
+            analysis.band_energies[0..3].iter().sum::<f32>() / 3.0,
+            analysis.band_energies[3..6].iter().sum::<f32>() / 3.0,
+            analysis.band_energies[6..9].iter().sum::<f32>() / 3.0,
+        ]
+    }
+
     /// Creates a new, uninitialized instance with default settings.
     pub fn new() -> Self {
         Self::default()
@@ -42,9 +55,9 @@ impl AudioPanel {
         locale: &LocaleManager,
         analysis: Option<&AudioAnalysis>,
         config: &AudioConfig,
-        available_devices: &[String],
-        selected_device: &mut Option<String>,
         meter_style: crate::config::AudioMeterStyle,
+        show_level_meters: &mut bool,
+        fft_mode: &mut FftVisualizationMode,
     ) -> Option<AudioPanelAction> {
         let mut action = None;
 
@@ -61,39 +74,67 @@ impl AudioPanel {
 
             // Visualizer Section
             ui.vertical(|ui| {
+                ui.horizontal(|ui| {
+                    ui.checkbox(show_level_meters, "Show Level Meters");
+                    ui.separator();
+                    ui.label("FFT View");
+                    egui::ComboBox::from_id_salt("audio_fft_mode_combo")
+                        .selected_text(match fft_mode {
+                            FftVisualizationMode::FullFft => "Full FFT",
+                            FftVisualizationMode::ThreeBand => "3-Band",
+                        })
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(
+                                fft_mode,
+                                FftVisualizationMode::FullFft,
+                                "Full FFT",
+                            );
+                            ui.selectable_value(
+                                fft_mode,
+                                FftVisualizationMode::ThreeBand,
+                                "3-Band",
+                            );
+                        });
+                });
+
+                ui.add_space(6.0);
+
                 if let Some(analysis) = analysis {
                     match meter_style {
                         crate::config::AudioMeterStyle::Retro => {
-                            // Convert linear to dB
-                            let db = 20.0 * (analysis.rms_volume.max(0.00001).log10()).max(-60.0);
+                            if *show_level_meters {
+                                // Convert linear to dB
+                                let db =
+                                    20.0 * (analysis.rms_volume.max(0.00001).log10()).max(-60.0);
 
-                            let meter = crate::widgets::audio_meter::AudioMeter::new(
-                                crate::config::AudioMeterStyle::Retro,
-                                db,
-                                db, // Mono for now
-                            )
-                            .height(120.0);
+                                let meter = crate::widgets::audio_meter::AudioMeter::new(
+                                    crate::config::AudioMeterStyle::Retro,
+                                    db,
+                                    db, // Mono for now
+                                )
+                                .height(60.0);
 
-                            // FORCE ALLOCATION to prevent clipping in parent layouts
-                            ui.add_space(4.0);
-                            let available_width = ui.available_width();
-                            ui.allocate_ui(egui::vec2(available_width, 130.0), |ui| {
                                 ui.add(meter);
-                            });
-                            ui.add_space(4.0);
+                                ui.add_space(6.0);
+                            }
+
+                            self.show_visualizer(ui, analysis, locale, *fft_mode);
                         }
                         crate::config::AudioMeterStyle::Digital => {
-                            let db = 20.0 * (analysis.rms_volume.max(0.00001).log10()).max(-60.0);
-                            let meter = crate::widgets::audio_meter::AudioMeter::new(
-                                crate::config::AudioMeterStyle::Digital,
-                                db,
-                                db,
-                            )
-                            .height(60.0);
-                            ui.add(meter);
+                            if *show_level_meters {
+                                let db =
+                                    20.0 * (analysis.rms_volume.max(0.00001).log10()).max(-60.0);
+                                let meter = crate::widgets::audio_meter::AudioMeter::new(
+                                    crate::config::AudioMeterStyle::Digital,
+                                    db,
+                                    db,
+                                )
+                                .height(30.0);
+                                ui.add(meter);
+                                ui.add_space(8.0);
+                            }
 
-                            ui.add_space(8.0);
-                            self.show_visualizer(ui, analysis, locale);
+                            self.show_visualizer(ui, analysis, locale, *fft_mode);
                         }
                     }
                 } else {
@@ -129,24 +170,6 @@ impl AudioPanel {
                 .num_columns(2)
                 .spacing([8.0, 8.0])
                 .show(ui, |ui| {
-                    // Device Selection
-                    ui.label(locale.t("dashboard-device"));
-                    let no_device_text = locale.t("no-device");
-                    let current_text = selected_device.as_deref().unwrap_or(&no_device_text);
-
-                    egui::ComboBox::from_id_salt("audio_device_combo")
-                        .selected_text(current_text)
-                        .show_ui(ui, |ui| {
-                            for device in available_devices {
-                                let is_selected = selected_device.as_ref() == Some(device);
-                                if ui.selectable_label(is_selected, device).clicked() {
-                                    *selected_device = Some(device.clone());
-                                    action = Some(AudioPanelAction::DeviceChanged(device.clone()));
-                                }
-                            }
-                        });
-                    ui.end_row();
-
                     // Gain
                     ui.label(locale.t("audio-gain"));
                     let mut gain = config.gain;
@@ -221,7 +244,13 @@ impl AudioPanel {
         action
     }
 
-    fn show_visualizer(&self, ui: &mut Ui, analysis: &AudioAnalysis, _locale: &LocaleManager) {
+    fn show_visualizer(
+        &self,
+        ui: &mut Ui,
+        analysis: &AudioAnalysis,
+        _locale: &LocaleManager,
+        mode: FftVisualizationMode,
+    ) {
         let height = 60.0;
         let (rect, _response) =
             ui.allocate_at_least(egui::vec2(ui.available_width(), height), Sense::hover());
@@ -236,18 +265,44 @@ impl AudioPanel {
             egui::StrokeKind::Middle,
         );
 
-        // Draw Bands
-        let num_bands = analysis.band_energies.len();
+        let (num_bands, mut energy_for_index): (usize, Box<dyn FnMut(usize) -> f32>) = match mode {
+            FftVisualizationMode::FullFft => {
+                let energy = analysis.band_energies;
+                (energy.len(), Box::new(move |i| energy[i]))
+            }
+            FftVisualizationMode::ThreeBand => {
+                let grouped = Self::grouped_three_band_energies(analysis);
+                (3, Box::new(move |i| grouped[i]))
+            }
+        };
+
         if num_bands == 0 {
             return;
         }
 
-        let spacing = 2.0;
+        let spacing = 4.0;
         let band_width =
             ((rect.width() - (num_bands as f32 + 1.0) * spacing) / num_bands as f32).max(1.0);
 
+        let db_ticks = [0.2_f32, 0.4_f32, 0.6_f32, 0.8_f32, 1.0_f32];
+        for tick in db_ticks {
+            let y = rect.max.y - tick * (rect.height() - spacing * 2.0) - spacing;
+            painter.line_segment(
+                [egui::pos2(rect.min.x, y), egui::pos2(rect.max.x, y)],
+                Stroke::new(1.0, colors::STROKE_GREY.linear_multiply(0.4)),
+            );
+            let db = -60.0 + tick * 60.0;
+            painter.text(
+                egui::pos2(rect.min.x + 2.0, y - 1.0),
+                egui::Align2::LEFT_BOTTOM,
+                format!("{db:.0}"),
+                egui::TextStyle::Small.resolve(ui.style()),
+                colors::STROKE_GREY,
+            );
+        }
+
         for i in 0..num_bands {
-            let energy = analysis.band_energies[i];
+            let energy = energy_for_index(i).clamp(0.0, 1.0);
             let x = rect.min.x + spacing + i as f32 * (band_width + spacing);
             let h = (energy * (rect.height() - 2.0 * spacing)).max(1.0);
 
@@ -256,13 +311,41 @@ impl AudioPanel {
                 egui::pos2(x + band_width, rect.max.y - spacing),
             );
 
-            let color = if analysis.beat_detected && i < 2 {
-                colors::MINT_ACCENT
-            } else {
-                colors::CYAN_ACCENT.linear_multiply(0.6 + (energy * 0.4))
+            let color = match mode {
+                FftVisualizationMode::ThreeBand => match i {
+                    0 => egui::Color32::from_rgb(70, 180, 255),
+                    1 => egui::Color32::from_rgb(90, 220, 150),
+                    _ => egui::Color32::from_rgb(255, 180, 80),
+                },
+                FftVisualizationMode::FullFft => {
+                    if analysis.beat_detected && i < 2 {
+                        colors::MINT_ACCENT
+                    } else {
+                        colors::CYAN_ACCENT.linear_multiply(0.6 + (energy * 0.4))
+                    }
+                }
             };
 
             painter.rect_filled(band_rect, egui::CornerRadius::ZERO, color);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn three_band_grouping_averages_ranges() {
+        let analysis = AudioAnalysis {
+            band_energies: [0.0, 0.3, 0.6, 0.2, 0.5, 0.8, 0.1, 0.4, 0.7],
+            ..AudioAnalysis::default()
+        };
+
+        let grouped = AudioPanel::grouped_three_band_energies(&analysis);
+
+        assert!((grouped[0] - 0.3).abs() < f32::EPSILON);
+        assert!((grouped[1] - 0.5).abs() < f32::EPSILON);
+        assert!((grouped[2] - 0.4).abs() < f32::EPSILON);
     }
 }

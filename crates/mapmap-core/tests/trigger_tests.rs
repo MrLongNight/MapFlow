@@ -1,4 +1,6 @@
-use mapmap_core::module::{MapFlowModule, ModulePartType, ModulePlaybackMode, TriggerType, SharedMediaState};
+use mapmap_core::module::{
+    MapFlowModule, ModulePartType, ModulePlaybackMode, SharedMediaState, TriggerType,
+};
 use mapmap_core::module_eval::ModuleEvaluator;
 use std::collections::HashSet;
 
@@ -16,10 +18,7 @@ fn test_manual_trigger() {
     };
 
     // Add a trigger node
-    let t_id = module.add_part_with_type(
-        ModulePartType::Trigger(TriggerType::Beat),
-        (0.0, 0.0)
-    );
+    let t_id = module.add_part_with_type(ModulePartType::Trigger(TriggerType::Beat), (0.0, 0.0));
 
     // Evaluate without manual trigger
     let shared = SharedMediaState::default();
@@ -74,7 +73,7 @@ fn test_shortcut_trigger() {
             key_code: "Space".to_string(),
             modifiers: 0,
         }),
-        (0.0, 0.0)
+        (0.0, 0.0),
     );
 
     let shared = SharedMediaState::default();
@@ -136,7 +135,7 @@ fn test_midi_trigger() {
             channel: 1,
             note: 60,
         }),
-        (0.0, 0.0)
+        (0.0, 0.0),
     );
 
     let mut shared = SharedMediaState::default();
@@ -192,7 +191,7 @@ fn test_osc_trigger() {
         ModulePartType::Trigger(TriggerType::Osc {
             address: "/trigger/1".to_string(),
         }),
-        (0.0, 0.0)
+        (0.0, 0.0),
     );
 
     let mut shared = SharedMediaState::default();
@@ -208,7 +207,9 @@ fn test_osc_trigger() {
     assert_eq!(val, 0.0);
 
     // Send OSC
-    shared.active_osc_messages.insert("/trigger/1".to_string(), vec![1.0]);
+    shared
+        .active_osc_messages
+        .insert("/trigger/1".to_string(), vec![1.0]);
     let res = evaluator.evaluate(&module, &shared, 0);
     let val = res
         .trigger_values

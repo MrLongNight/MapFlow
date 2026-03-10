@@ -130,7 +130,7 @@ pub fn show(ui: &mut egui::Ui, ui_state: &mut AppUI) {
 
                 ui.add(
                     AudioMeter::new(ui_state.user_config.meter_style, left_db, right_db)
-                        .height(40.0),
+                        .height(20.0),
                 );
 
                 // === SPACER - push performance to right ===
