@@ -81,3 +81,7 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 ## 2026-03-08 - Missing Documentation for Refactor Modularize app logic
 **Erkenntnis:** Commit 226202b (refactor: Modularize app logic into orchestrators and restore audio analysis functionality) was merged but missing from CHANGELOG.md.
 **Aktion:** Added entry to CHANGELOG.md and updated ROADMAP.md timestamp.
+
+## 2026-03-10 - Missing Documentation for send_to_jules.ps1 script
+**Erkenntnis:** Commit 985d7cd (feat: Add `send_to_jules.ps1` script to dispatch task details to the Jules API.) was merged but missing from CHANGELOG.md.
+**Aktion:** Added entry to CHANGELOG.md and updated ROADMAP.md timestamp.

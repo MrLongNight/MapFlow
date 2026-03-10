@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2026-03-10: feat: Add send_to_jules.ps1 script to dispatch task details to the Jules API. (985d7cd)
 - 2026-03-09: fix(ui): Standardize panel layout and resolve UI consistency gaps (MF-011).
 - 2026-03-08: feat(ui): Implement Toast Notification system for engine errors and status updates (MF-023).
 - 2026-03-08: fix(core): Refactor Trigger System logic for synchronized multi-module evaluation (MF-038).
