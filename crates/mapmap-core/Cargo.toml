@@ -41,7 +41,7 @@ thiserror = { workspace = true }
 tobj = "4.0.3"
 tracing = { workspace = true }
 usvg.workspace = true
-uuid = { version = "1.8.0", features = ["v4", "serde"] }
+uuid = { version = "1.22.0", features = ["v4", "serde"] }
 walkdir = "2.5.0"
 winit = { workspace = true, optional = true }
 
