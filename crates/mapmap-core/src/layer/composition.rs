@@ -147,7 +147,8 @@ mod tests_guardian {
             "frame_rate": 60.0
         }"#;
 
-        let comp: Composition = serde_json::from_str(json).expect("Should deserialize old composition");
+        let comp: Composition =
+            serde_json::from_str(json).expect("Should deserialize old composition");
         assert_eq!(comp.name, "Old Comp");
         assert_eq!(comp.master_opacity, 0.8);
         assert!(!comp.master_blackout); // Defaulted

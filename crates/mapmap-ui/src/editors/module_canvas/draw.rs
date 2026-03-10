@@ -293,36 +293,42 @@ where
             if let Some(texture) = canvas.plug_icons.get(icon_name) {
                 use std::f32::consts::PI;
 
-                let draw_rotated = |pos: Pos2, angle: f32, size: f32, uv: Rect, painter: &egui::Painter, texture_id: egui::TextureId| {
-                    let mut mesh = egui::Mesh::with_texture(texture_id);
-                    let rotation = egui::emath::Rot2::from_angle(angle);
-                    let half_size = size / 2.0;
+                let draw_rotated =
+                    |pos: Pos2,
+                     angle: f32,
+                     size: f32,
+                     uv: Rect,
+                     painter: &egui::Painter,
+                     texture_id: egui::TextureId| {
+                        let mut mesh = egui::Mesh::with_texture(texture_id);
+                        let rotation = egui::emath::Rot2::from_angle(angle);
+                        let half_size = size / 2.0;
 
-                    let corners = [
-                        Pos2::new(-half_size, -half_size),
-                        Pos2::new(half_size, -half_size),
-                        Pos2::new(half_size, half_size),
-                        Pos2::new(-half_size, half_size),
-                    ];
+                        let corners = [
+                            Pos2::new(-half_size, -half_size),
+                            Pos2::new(half_size, -half_size),
+                            Pos2::new(half_size, half_size),
+                            Pos2::new(-half_size, half_size),
+                        ];
 
-                    let uvs = [
-                        Pos2::new(uv.min.x, uv.min.y),
-                        Pos2::new(uv.max.x, uv.min.y),
-                        Pos2::new(uv.max.x, uv.max.y),
-                        Pos2::new(uv.min.x, uv.max.y),
-                    ];
+                        let uvs = [
+                            Pos2::new(uv.min.x, uv.min.y),
+                            Pos2::new(uv.max.x, uv.min.y),
+                            Pos2::new(uv.max.x, uv.max.y),
+                            Pos2::new(uv.min.x, uv.max.y),
+                        ];
 
-                    for i in 0..4 {
-                        mesh.vertices.push(egui::epaint::Vertex {
-                            pos: pos + rotation * corners[i].to_vec2(),
-                            uv: uvs[i],
-                            color: Color32::WHITE,
-                        });
-                    }
-                    mesh.add_triangle(0, 1, 2);
-                    mesh.add_triangle(0, 2, 3);
-                    painter.add(mesh);
-                };
+                        for i in 0..4 {
+                            mesh.vertices.push(egui::epaint::Vertex {
+                                pos: pos + rotation * corners[i].to_vec2(),
+                                uv: uvs[i],
+                                color: Color32::WHITE,
+                            });
+                        }
+                        mesh.add_triangle(0, 1, 2);
+                        mesh.add_triangle(0, 2, 3);
+                        painter.add(mesh);
+                    };
 
                 let (source_angle, target_angle) = if is_new_jack {
                     (PI, 0.0)
@@ -1164,51 +1170,229 @@ pub fn render_add_node_menu_content(
         };
 
         ui.menu_button("\u{26A1} Triggers", |ui| {
-            if ui.button("🥁 Beat").clicked() { add_node(ModulePartType::Trigger(TriggerType::Beat)); ui.close(); }
-            if ui.button("\u{1F50A} Audio FFT").clicked() { add_node(ModulePartType::Trigger(TriggerType::AudioFFT { band: mapmap_core::module::AudioBand::Bass, threshold: 0.5, output_config: mapmap_core::module::AudioTriggerOutputConfig::default() })); ui.close(); }
-            if ui.button("\u{1F3B2} Random").clicked() { add_node(ModulePartType::Trigger(TriggerType::Random { min_interval_ms: 500, max_interval_ms: 2000, probability: 0.5 })); ui.close(); }
-            if ui.button("⏱️ Fixed Timer").clicked() { add_node(ModulePartType::Trigger(TriggerType::Fixed { interval_ms: 1000, offset_ms: 0 })); ui.close(); }
-            if ui.button("\u{1F3B9} MIDI").clicked() { add_node(ModulePartType::Trigger(TriggerType::Midi { channel: 1, note: 60, device: String::new() })); ui.close(); }
-            if ui.button("\u{1F4E1} OSC").clicked() { add_node(ModulePartType::Trigger(TriggerType::Osc { address: "/trigger".to_string() })); ui.close(); }
-            if ui.button("⌨️ Shortcut").clicked() { add_node(ModulePartType::Trigger(TriggerType::Shortcut { key_code: "Space".to_string(), modifiers: 0 })); ui.close(); }
+            if ui.button("🥁 Beat").clicked() {
+                add_node(ModulePartType::Trigger(TriggerType::Beat));
+                ui.close();
+            }
+            if ui.button("\u{1F50A} Audio FFT").clicked() {
+                add_node(ModulePartType::Trigger(TriggerType::AudioFFT {
+                    band: mapmap_core::module::AudioBand::Bass,
+                    threshold: 0.5,
+                    output_config: mapmap_core::module::AudioTriggerOutputConfig::default(),
+                }));
+                ui.close();
+            }
+            if ui.button("\u{1F3B2} Random").clicked() {
+                add_node(ModulePartType::Trigger(TriggerType::Random {
+                    min_interval_ms: 500,
+                    max_interval_ms: 2000,
+                    probability: 0.5,
+                }));
+                ui.close();
+            }
+            if ui.button("⏱️ Fixed Timer").clicked() {
+                add_node(ModulePartType::Trigger(TriggerType::Fixed {
+                    interval_ms: 1000,
+                    offset_ms: 0,
+                }));
+                ui.close();
+            }
+            if ui.button("\u{1F3B9} MIDI").clicked() {
+                add_node(ModulePartType::Trigger(TriggerType::Midi {
+                    channel: 1,
+                    note: 60,
+                    device: String::new(),
+                }));
+                ui.close();
+            }
+            if ui.button("\u{1F4E1} OSC").clicked() {
+                add_node(ModulePartType::Trigger(TriggerType::Osc {
+                    address: "/trigger".to_string(),
+                }));
+                ui.close();
+            }
+            if ui.button("⌨️ Shortcut").clicked() {
+                add_node(ModulePartType::Trigger(TriggerType::Shortcut {
+                    key_code: "Space".to_string(),
+                    modifiers: 0,
+                }));
+                ui.close();
+            }
         });
 
         ui.menu_button("\u{1F4F9} Sources", |ui| {
-            if ui.button("📁 Media File").clicked() { add_node(ModulePartType::Source(SourceType::new_media_file(String::new()))); ui.close(); }
-            if ui.button("\u{1F3A8} Shader").clicked() { add_node(ModulePartType::Source(SourceType::Shader { name: "Default".to_string(), params: Vec::new() })); ui.close(); }
-            #[cfg(feature = "ndi")] if ui.button("\u{1F4E1} NDI Input").clicked() { add_node(ModulePartType::Source(SourceType::NdiInput { source_name: None })); ui.close(); }
-            #[cfg(target_os = "windows")] if ui.button("\u{1F6B0} Spout Input").clicked() { add_node(ModulePartType::Source(SourceType::SpoutInput { sender_name: String::new() })); ui.close(); }
-            ui.separator(); ui.label("Bevy 3D:");
-            if ui.button("📝 3D Text").clicked() { add_node(ModulePartType::Source(SourceType::Bevy3DText { text: "Hello 3D".to_string(), font_size: 20.0, color: [1.0, 1.0, 1.0, 1.0], position: [0.0, 0.0, 0.0], rotation: [0.0, 0.0, 0.0], alignment: "Center".to_string() })); ui.close(); }
-            if ui.button("\u{1F9CA} 3D Shape").clicked() { add_node(ModulePartType::Source(SourceType::Bevy3DShape { shape_type: mapmap_core::module::BevyShapeType::Cube, position: [0.0, 0.0, 0.0], rotation: [0.0, 0.0, 0.0], scale: [1.0, 1.0, 1.0], color: [1.0, 0.5, 0.0, 1.0], unlit: false, outline_width: 0.0, outline_color: [1.0, 1.0, 1.0, 1.0] })); ui.close(); }
-            if ui.button("\u{1F3A5} Camera").clicked() { add_node(ModulePartType::Source(SourceType::BevyCamera { mode: BevyCameraMode::Orbit { radius: 10.0, speed: 10.0, target: [0.0, 0.0, 0.0], height: 5.0 }, fov: 60.0, active: true })); ui.close(); }
+            if ui.button("📁 Media File").clicked() {
+                add_node(ModulePartType::Source(SourceType::new_media_file(
+                    String::new(),
+                )));
+                ui.close();
+            }
+            if ui.button("\u{1F3A8} Shader").clicked() {
+                add_node(ModulePartType::Source(SourceType::Shader {
+                    name: "Default".to_string(),
+                    params: Vec::new(),
+                }));
+                ui.close();
+            }
+            #[cfg(feature = "ndi")]
+            if ui.button("\u{1F4E1} NDI Input").clicked() {
+                add_node(ModulePartType::Source(SourceType::NdiInput {
+                    source_name: None,
+                }));
+                ui.close();
+            }
+            #[cfg(target_os = "windows")]
+            if ui.button("\u{1F6B0} Spout Input").clicked() {
+                add_node(ModulePartType::Source(SourceType::SpoutInput {
+                    sender_name: String::new(),
+                }));
+                ui.close();
+            }
+            ui.separator();
+            ui.label("Bevy 3D:");
+            if ui.button("📝 3D Text").clicked() {
+                add_node(ModulePartType::Source(SourceType::Bevy3DText {
+                    text: "Hello 3D".to_string(),
+                    font_size: 20.0,
+                    color: [1.0, 1.0, 1.0, 1.0],
+                    position: [0.0, 0.0, 0.0],
+                    rotation: [0.0, 0.0, 0.0],
+                    alignment: "Center".to_string(),
+                }));
+                ui.close();
+            }
+            if ui.button("\u{1F9CA} 3D Shape").clicked() {
+                add_node(ModulePartType::Source(SourceType::Bevy3DShape {
+                    shape_type: mapmap_core::module::BevyShapeType::Cube,
+                    position: [0.0, 0.0, 0.0],
+                    rotation: [0.0, 0.0, 0.0],
+                    scale: [1.0, 1.0, 1.0],
+                    color: [1.0, 0.5, 0.0, 1.0],
+                    unlit: false,
+                    outline_width: 0.0,
+                    outline_color: [1.0, 1.0, 1.0, 1.0],
+                }));
+                ui.close();
+            }
+            if ui.button("\u{1F3A5} Camera").clicked() {
+                add_node(ModulePartType::Source(SourceType::BevyCamera {
+                    mode: BevyCameraMode::Orbit {
+                        radius: 10.0,
+                        speed: 10.0,
+                        target: [0.0, 0.0, 0.0],
+                        height: 5.0,
+                    },
+                    fov: 60.0,
+                    active: true,
+                }));
+                ui.close();
+            }
         });
 
         ui.menu_button("\u{1F3AD} Masks", |ui| {
-            if ui.button("\u{2B55} Shape").clicked() { add_node(ModulePartType::Mask(MaskType::Shape(MaskShape::Circle))); ui.close(); }
-            if ui.button("\u{1F308} Gradient").clicked() { add_node(ModulePartType::Mask(MaskType::Gradient { angle: 0.0, softness: 0.5 })); ui.close(); }
+            if ui.button("\u{2B55} Shape").clicked() {
+                add_node(ModulePartType::Mask(MaskType::Shape(MaskShape::Circle)));
+                ui.close();
+            }
+            if ui.button("\u{1F308} Gradient").clicked() {
+                add_node(ModulePartType::Mask(MaskType::Gradient {
+                    angle: 0.0,
+                    softness: 0.5,
+                }));
+                ui.close();
+            }
         });
 
         ui.menu_button("🎛️ Modulators", |ui| {
-            if ui.button("🎚️ Blend Mode").clicked() { add_node(ModulePartType::Modulizer(ModulizerType::BlendMode(BlendModeType::Normal))); ui.close(); }
+            if ui.button("🎚️ Blend Mode").clicked() {
+                add_node(ModulePartType::Modulizer(ModulizerType::BlendMode(
+                    BlendModeType::Normal,
+                )));
+                ui.close();
+            }
             ui.separator();
-            for effect in [EffectType::LoadLUT, EffectType::Blur, EffectType::Pixelate, EffectType::Glitch, EffectType::Kaleidoscope, EffectType::EdgeDetect, EffectType::Colorize, EffectType::HueShift] {
-                if ui.button(effect.name()).clicked() { add_node(ModulePartType::Modulizer(ModulizerType::Effect { effect_type: effect, params: std::collections::HashMap::new() })); ui.close(); }
+            for effect in [
+                EffectType::LoadLUT,
+                EffectType::Blur,
+                EffectType::Pixelate,
+                EffectType::Glitch,
+                EffectType::Kaleidoscope,
+                EffectType::EdgeDetect,
+                EffectType::Colorize,
+                EffectType::HueShift,
+            ] {
+                if ui.button(effect.name()).clicked() {
+                    add_node(ModulePartType::Modulizer(ModulizerType::Effect {
+                        effect_type: effect,
+                        params: std::collections::HashMap::new(),
+                    }));
+                    ui.close();
+                }
             }
         });
 
         ui.menu_button("\u{1F4D1} Layers", |ui| {
-            if ui.button("\u{1F4D1} Single Layer").clicked() { add_node(ModulePartType::Layer(LayerType::Single { id: 0, name: "New Layer".to_string(), opacity: 1.0, blend_mode: None, mesh: mapmap_core::module::MeshType::default(), mapping_mode: false })); ui.close(); }
-            if ui.button("📁 Layer Group").clicked() { add_node(ModulePartType::Layer(LayerType::Group { name: "New Group".to_string(), opacity: 1.0, blend_mode: None, mesh: mapmap_core::module::MeshType::default(), mapping_mode: false })); ui.close(); }
-            if ui.button("\u{1F4D1} All Layers").clicked() { add_node(ModulePartType::Layer(LayerType::All { opacity: 1.0, blend_mode: None })); ui.close(); }
+            if ui.button("\u{1F4D1} Single Layer").clicked() {
+                add_node(ModulePartType::Layer(LayerType::Single {
+                    id: 0,
+                    name: "New Layer".to_string(),
+                    opacity: 1.0,
+                    blend_mode: None,
+                    mesh: mapmap_core::module::MeshType::default(),
+                    mapping_mode: false,
+                }));
+                ui.close();
+            }
+            if ui.button("📁 Layer Group").clicked() {
+                add_node(ModulePartType::Layer(LayerType::Group {
+                    name: "New Group".to_string(),
+                    opacity: 1.0,
+                    blend_mode: None,
+                    mesh: mapmap_core::module::MeshType::default(),
+                    mapping_mode: false,
+                }));
+                ui.close();
+            }
+            if ui.button("\u{1F4D1} All Layers").clicked() {
+                add_node(ModulePartType::Layer(LayerType::All {
+                    opacity: 1.0,
+                    blend_mode: None,
+                }));
+                ui.close();
+            }
         });
 
         ui.menu_button("\u{1F4A1} Philips Hue", |ui| {
-            if ui.button("\u{1F4A1} Single Lamp").clicked() { add_node(ModulePartType::Hue(HueNodeType::SingleLamp { id: String::new(), name: "New Lamp".to_string(), brightness: 1.0, color: [1.0, 1.0, 1.0], effect: None, effect_active: false })); ui.close(); }
+            if ui.button("\u{1F4A1} Single Lamp").clicked() {
+                add_node(ModulePartType::Hue(HueNodeType::SingleLamp {
+                    id: String::new(),
+                    name: "New Lamp".to_string(),
+                    brightness: 1.0,
+                    color: [1.0, 1.0, 1.0],
+                    effect: None,
+                    effect_active: false,
+                }));
+                ui.close();
+            }
         });
 
         ui.separator();
-        if ui.button("\u{1F5BC} Output").clicked() { add_node(ModulePartType::Output(OutputType::Projector { id: 1, name: "Projector 1".to_string(), hide_cursor: false, target_screen: 0, show_in_preview_panel: true, extra_preview_window: false, output_width: 0, output_height: 0, output_fps: 60.0, ndi_enabled: false, ndi_stream_name: String::new() })); ui.close(); }
+        if ui.button("\u{1F5BC} Output").clicked() {
+            add_node(ModulePartType::Output(OutputType::Projector {
+                id: 1,
+                name: "Projector 1".to_string(),
+                hide_cursor: false,
+                target_screen: 0,
+                show_in_preview_panel: true,
+                extra_preview_window: false,
+                output_width: 0,
+                output_height: 0,
+                output_fps: 60.0,
+                ndi_enabled: false,
+                ndi_stream_name: String::new(),
+            }));
+            ui.close();
+        }
     }
 }
 
@@ -1219,39 +1403,93 @@ pub fn draw_quick_create_popup(
     manager: &mut ModuleManager,
     active_module_id: Option<u64>,
 ) {
-    if !canvas.show_quick_create { return; }
+    if !canvas.show_quick_create {
+        return;
+    }
     let popup_pos = canvas.quick_create_pos;
     let catalog = utils::build_node_catalog();
     let filter_lower = canvas.quick_create_filter.to_lowercase();
-    let filtered_items: Vec<&utils::NodeCatalogItem> = catalog.iter().filter(|item| { if filter_lower.is_empty() { true } else { item.label.to_lowercase().contains(&filter_lower) || item.search_tags.contains(&filter_lower) } }).collect();
-    if filtered_items.is_empty() { canvas.quick_create_selected_index = 0; }
-    else if canvas.quick_create_selected_index >= filtered_items.len() { canvas.quick_create_selected_index = filtered_items.len() - 1; }
+    let filtered_items: Vec<&utils::NodeCatalogItem> = catalog
+        .iter()
+        .filter(|item| {
+            if filter_lower.is_empty() {
+                true
+            } else {
+                item.label.to_lowercase().contains(&filter_lower)
+                    || item.search_tags.contains(&filter_lower)
+            }
+        })
+        .collect();
+    if filtered_items.is_empty() {
+        canvas.quick_create_selected_index = 0;
+    } else if canvas.quick_create_selected_index >= filtered_items.len() {
+        canvas.quick_create_selected_index = filtered_items.len() - 1;
+    }
     let mut commit_creation = false;
     let mut close_popup = false;
-    if ui.input(|i| i.key_pressed(egui::Key::ArrowDown)) { if !filtered_items.is_empty() { canvas.quick_create_selected_index = (canvas.quick_create_selected_index + 1) % filtered_items.len(); } }
-    else if ui.input(|i| i.key_pressed(egui::Key::ArrowUp)) { if !filtered_items.is_empty() { if canvas.quick_create_selected_index == 0 { canvas.quick_create_selected_index = filtered_items.len() - 1; } else { canvas.quick_create_selected_index -= 1; } } }
-    else if ui.input(|i| i.key_pressed(egui::Key::Enter)) { commit_creation = true; }
-    else if ui.input(|i| i.key_pressed(egui::Key::Escape)) || ui.input(|i| i.key_pressed(egui::Key::Tab)) { close_popup = true; }
-    let area = egui::Area::new("quick_create_popup".into()).fixed_pos(popup_pos).order(egui::Order::Foreground).constrain(true);
+    if ui.input(|i| i.key_pressed(egui::Key::ArrowDown)) {
+        if !filtered_items.is_empty() {
+            canvas.quick_create_selected_index =
+                (canvas.quick_create_selected_index + 1) % filtered_items.len();
+        }
+    } else if ui.input(|i| i.key_pressed(egui::Key::ArrowUp)) {
+        if !filtered_items.is_empty() {
+            if canvas.quick_create_selected_index == 0 {
+                canvas.quick_create_selected_index = filtered_items.len() - 1;
+            } else {
+                canvas.quick_create_selected_index -= 1;
+            }
+        }
+    } else if ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+        commit_creation = true;
+    } else if ui.input(|i| i.key_pressed(egui::Key::Escape))
+        || ui.input(|i| i.key_pressed(egui::Key::Tab))
+    {
+        close_popup = true;
+    }
+    let area = egui::Area::new("quick_create_popup".into())
+        .fixed_pos(popup_pos)
+        .order(egui::Order::Foreground)
+        .constrain(true);
     area.show(ui.ctx(), |ui| {
         egui::Frame::menu(ui.style()).show(ui, |ui| {
             ui.set_width(250.0);
-            let response = ui.add(egui::TextEdit::singleline(&mut canvas.quick_create_filter).hint_text("Type to create...").lock_focus(true));
-            if canvas.show_quick_create && response.changed() { response.request_focus(); }
-            if canvas.show_quick_create && !response.has_focus() { response.request_focus(); }
+            let response = ui.add(
+                egui::TextEdit::singleline(&mut canvas.quick_create_filter)
+                    .hint_text("Type to create...")
+                    .lock_focus(true),
+            );
+            if canvas.show_quick_create && response.changed() {
+                response.request_focus();
+            }
+            if canvas.show_quick_create && !response.has_focus() {
+                response.request_focus();
+            }
             ui.separator();
-            if filtered_items.is_empty() { ui.label(egui::RichText::new("No matching nodes found.").weak().italics()); }
-            else {
-                egui::ScrollArea::vertical().max_height(300.0).show(ui, |ui| {
-                    for (i, item) in filtered_items.iter().enumerate() {
-                        let is_selected = i == canvas.quick_create_selected_index;
-                        let (_, _, icon, _) = utils::get_part_style(&item.part_type);
-                        let label_text = format!("{} {}", icon, item.label);
-                        let response = ui.selectable_label(is_selected, label_text);
-                        if response.clicked() { canvas.quick_create_selected_index = i; commit_creation = true; }
-                        if is_selected { response.scroll_to_me(Some(egui::Align::Center)); }
-                    }
-                });
+            if filtered_items.is_empty() {
+                ui.label(
+                    egui::RichText::new("No matching nodes found.")
+                        .weak()
+                        .italics(),
+                );
+            } else {
+                egui::ScrollArea::vertical()
+                    .max_height(300.0)
+                    .show(ui, |ui| {
+                        for (i, item) in filtered_items.iter().enumerate() {
+                            let is_selected = i == canvas.quick_create_selected_index;
+                            let (_, _, icon, _) = utils::get_part_style(&item.part_type);
+                            let label_text = format!("{} {}", icon, item.label);
+                            let response = ui.selectable_label(is_selected, label_text);
+                            if response.clicked() {
+                                canvas.quick_create_selected_index = i;
+                                commit_creation = true;
+                            }
+                            if is_selected {
+                                response.scroll_to_me(Some(egui::Align::Center));
+                            }
+                        }
+                    });
             }
         });
     });
@@ -1272,5 +1510,8 @@ pub fn draw_quick_create_popup(
         }
         close_popup = true;
     }
-    if close_popup { canvas.show_quick_create = false; canvas.quick_create_filter.clear(); }
+    if close_popup {
+        canvas.show_quick_create = false;
+        canvas.quick_create_filter.clear();
+    }
 }

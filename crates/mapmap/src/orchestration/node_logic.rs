@@ -5,7 +5,8 @@ use std::path::Path;
 /// Specialized node logic (e.g. synchronization between graph and state).
 pub fn update_node_logic(app: &mut App) {
     // Sync audio config to analyzer
-    app.audio_analyzer.update_config(app.state.audio_config.clone());
+    app.audio_analyzer
+        .update_config(app.state.audio_config.clone());
 }
 
 /// Load a project file into the application.
@@ -20,7 +21,8 @@ pub fn load_project_file(app: &mut App, path: &Path) -> Result<()> {
     app.ui_state.module_canvas.selected_parts.clear();
 
     // Notify subsystems of new state
-    app.audio_analyzer.update_config(app.state.audio_config.clone());
+    app.audio_analyzer
+        .update_config(app.state.audio_config.clone());
 
     Ok(())
 }

@@ -841,7 +841,11 @@ impl EffectChainPanel {
                         if delete_button(ui) {
                             remove = true;
                         }
-                        if crate::widgets::custom::hold_to_action_button(ui, "↺ Reset", colors::WARN_COLOR) {
+                        if crate::widgets::custom::hold_to_action_button(
+                            ui,
+                            "↺ Reset",
+                            colors::WARN_COLOR,
+                        ) {
                             reset = true;
                         }
                         ui.add_enabled_ui(!is_last, |ui| {
@@ -941,144 +945,524 @@ impl EffectChainPanel {
     ) {
         match effect_type {
             EffectType::ColorAdjust => {
-                Self::render_param_slider_static(ui, parameters, param_changes, "brightness", &locale.t("param-brightness"), -1.0, 1.0, 0.0);
-                Self::render_param_slider_static(ui, parameters, param_changes, "contrast", &locale.t("param-contrast"), 0.0, 2.0, 1.0);
-                Self::render_param_slider_static(ui, parameters, param_changes, "saturation", &locale.t("param-saturation"), 0.0, 2.0, 1.0);
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "brightness",
+                    &locale.t("param-brightness"),
+                    -1.0,
+                    1.0,
+                    0.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "contrast",
+                    &locale.t("param-contrast"),
+                    0.0,
+                    2.0,
+                    1.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "saturation",
+                    &locale.t("param-saturation"),
+                    0.0,
+                    2.0,
+                    1.0,
+                );
             }
             EffectType::Blur => {
-                Self::render_param_slider_static(ui, parameters, param_changes, "radius", &locale.t("param-radius"), 0.0, 20.0, 5.0);
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "radius",
+                    &locale.t("param-radius"),
+                    0.0,
+                    20.0,
+                    5.0,
+                );
             }
             EffectType::ChromaticAberration => {
-                Self::render_param_slider_static(ui, parameters, param_changes, "amount", &locale.t("param-amount"), 0.0, 0.1, 0.01);
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "amount",
+                    &locale.t("param-amount"),
+                    0.0,
+                    0.1,
+                    0.01,
+                );
             }
             EffectType::Glow => {
-                Self::render_param_slider_static(ui, parameters, param_changes, "threshold", &locale.t("param-threshold"), 0.0, 1.0, 0.5);
-                Self::render_param_slider_static(ui, parameters, param_changes, "radius", &locale.t("param-radius"), 0.0, 30.0, 10.0);
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "threshold",
+                    &locale.t("param-threshold"),
+                    0.0,
+                    1.0,
+                    0.5,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "radius",
+                    &locale.t("param-radius"),
+                    0.0,
+                    30.0,
+                    10.0,
+                );
             }
             EffectType::Kaleidoscope => {
-                Self::render_param_slider_static(ui, parameters, param_changes, "segments", &locale.t("param-segments"), 2.0, 16.0, 6.0);
-                Self::render_param_slider_static(ui, parameters, param_changes, "rotation", &locale.t("param-rotation"), 0.0, 360.0, 0.0);
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "segments",
+                    &locale.t("param-segments"),
+                    2.0,
+                    16.0,
+                    6.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "rotation",
+                    &locale.t("param-rotation"),
+                    0.0,
+                    360.0,
+                    0.0,
+                );
             }
             EffectType::Pixelate => {
-                Self::render_param_slider_static(ui, parameters, param_changes, "pixel_size", &locale.t("param-pixel-size"), 1.0, 64.0, 8.0);
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "pixel_size",
+                    &locale.t("param-pixel-size"),
+                    1.0,
+                    64.0,
+                    8.0,
+                );
             }
             EffectType::Vignette => {
-                Self::render_param_slider_static(ui, parameters, param_changes, "radius", &locale.t("param-radius"), 0.0, 1.0, 0.5);
-                Self::render_param_slider_static(ui, parameters, param_changes, "softness", &locale.t("param-softness"), 0.0, 1.0, 0.5);
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "radius",
+                    &locale.t("param-radius"),
+                    0.0,
+                    1.0,
+                    0.5,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "softness",
+                    &locale.t("param-softness"),
+                    0.0,
+                    1.0,
+                    0.5,
+                );
             }
             EffectType::FilmGrain => {
-                Self::render_param_slider_static(ui, parameters, param_changes, "amount", &locale.t("param-amount"), 0.0, 0.5, 0.1);
-                Self::render_param_slider_static(ui, parameters, param_changes, "speed", &locale.t("param-speed"), 0.0, 5.0, 1.0);
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "amount",
+                    &locale.t("param-amount"),
+                    0.0,
+                    0.5,
+                    0.1,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "speed",
+                    &locale.t("param-speed"),
+                    0.0,
+                    5.0,
+                    1.0,
+                );
             }
             EffectType::Wave => {
-                Self::render_param_slider_static(ui, parameters, param_changes, "frequency", &locale.t("param-frequency"), 0.0, 50.0, 0.0);
-                Self::render_param_slider_static(ui, parameters, param_changes, "amplitude", &locale.t("param-amplitude"), 0.0, 2.0, 0.0);
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "frequency",
+                    &locale.t("param-frequency"),
+                    0.0,
+                    50.0,
+                    0.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "amplitude",
+                    &locale.t("param-amplitude"),
+                    0.0,
+                    2.0,
+                    0.0,
+                );
             }
             EffectType::Glitch => {
-                Self::render_param_slider_static(ui, parameters, param_changes, "block_size", &locale.t("param-block-size"), 1.0, 50.0, 0.0);
-                Self::render_param_slider_static(ui, parameters, param_changes, "color_shift", &locale.t("param-color-shift"), 0.0, 20.0, 0.0);
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "block_size",
+                    &locale.t("param-block-size"),
+                    1.0,
+                    50.0,
+                    0.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "color_shift",
+                    &locale.t("param-color-shift"),
+                    0.0,
+                    20.0,
+                    0.0,
+                );
             }
             EffectType::RgbSplit => {
-                Self::render_param_slider_static(ui, parameters, param_changes, "offset_x", &locale.t("param-offset-x"), -50.0, 50.0, 0.0);
-                Self::render_param_slider_static(ui, parameters, param_changes, "offset_y", &locale.t("param-offset-y"), -50.0, 50.0, 0.0);
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "offset_x",
+                    &locale.t("param-offset-x"),
+                    -50.0,
+                    50.0,
+                    0.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "offset_y",
+                    &locale.t("param-offset-y"),
+                    -50.0,
+                    50.0,
+                    0.0,
+                );
             }
             EffectType::Mirror => {
-                Self::render_param_slider_static(ui, parameters, param_changes, "center", &locale.t("param-center"), 0.0, 1.0, 0.0);
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "center",
+                    &locale.t("param-center"),
+                    0.0,
+                    1.0,
+                    0.0,
+                );
             }
             EffectType::HueShift => {
-                Self::render_param_slider_static(ui, parameters, param_changes, "hue_shift", &locale.t("param-hue-shift"), 0.0, 1.0, 0.0);
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "hue_shift",
+                    &locale.t("param-hue-shift"),
+                    0.0,
+                    1.0,
+                    0.0,
+                );
             }
             EffectType::Voronoi => {
-                Self::render_param_slider_static(ui, parameters, param_changes, "scale", &locale.t("param-scale"), 1.0, 50.0, 10.0);
-                Self::render_param_slider_static(ui, parameters, param_changes, "offset", &locale.t("param-offset"), 0.0, 10.0, 1.0);
-                Self::render_param_slider_static(ui, parameters, param_changes, "cell_size", &locale.t("param-cell-size"), 0.1, 5.0, 1.0);
-                Self::render_param_slider_static(ui, parameters, param_changes, "distortion", &locale.t("param-distortion"), 0.0, 2.0, 0.5);
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "scale",
+                    &locale.t("param-scale"),
+                    1.0,
+                    50.0,
+                    10.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "offset",
+                    &locale.t("param-offset"),
+                    0.0,
+                    10.0,
+                    1.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "cell_size",
+                    &locale.t("param-cell-size"),
+                    0.1,
+                    5.0,
+                    1.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "distortion",
+                    &locale.t("param-distortion"),
+                    0.0,
+                    2.0,
+                    0.5,
+                );
             }
             EffectType::Tunnel => {
-                Self::render_param_slider_static(ui, parameters, param_changes, "scale", &locale.t("param-scale"), 0.1, 2.0, 0.5);
-                Self::render_param_slider_static(ui, parameters, param_changes, "rotation", &locale.t("param-rotation"), 0.0, 5.0, 0.5);
-                Self::render_param_slider_static(ui, parameters, param_changes, "speed", &locale.t("param-speed"), 0.0, 5.0, 0.5);
-                Self::render_param_slider_static(ui, parameters, param_changes, "distortion", &locale.t("param-distortion"), 0.0, 2.0, 0.5);
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "scale",
+                    &locale.t("param-scale"),
+                    0.1,
+                    2.0,
+                    0.5,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "rotation",
+                    &locale.t("param-rotation"),
+                    0.0,
+                    5.0,
+                    0.5,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "speed",
+                    &locale.t("param-speed"),
+                    0.0,
+                    5.0,
+                    0.5,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "distortion",
+                    &locale.t("param-distortion"),
+                    0.0,
+                    2.0,
+                    0.5,
+                );
             }
             EffectType::Galaxy => {
-                Self::render_param_slider_static(ui, parameters, param_changes, "zoom", &locale.t("param-zoom"), 0.1, 5.0, 0.5);
-                Self::render_param_slider_static(ui, parameters, param_changes, "speed", &locale.t("param-speed"), 0.0, 2.0, 0.2);
-                Self::render_param_slider_static(ui, parameters, param_changes, "radius", &locale.t("param-radius"), 0.1, 3.0, 1.0);
-                Self::render_param_slider_static(ui, parameters, param_changes, "brightness", &locale.t("param-brightness"), 0.0, 2.0, 1.0);
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "zoom",
+                    &locale.t("param-zoom"),
+                    0.1,
+                    5.0,
+                    0.5,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "speed",
+                    &locale.t("param-speed"),
+                    0.0,
+                    2.0,
+                    0.2,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "radius",
+                    &locale.t("param-radius"),
+                    0.1,
+                    3.0,
+                    1.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "brightness",
+                    &locale.t("param-brightness"),
+                    0.0,
+                    2.0,
+                    1.0,
+                );
             }
-            _ => { ui.label(locale.t("no-parameters")); }
+            _ => {
+                ui.label(locale.t("no-parameters"));
+            }
         }
         let _ = effect_id;
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn render_param_slider_static(ui: &mut Ui, parameters: &std::collections::HashMap<String, f32>, param_changes: &mut Vec<(String, f32)>, param_name: &str, label: &str, min: f32, max: f32, default_value: f32) {
+    fn render_param_slider_static(
+        ui: &mut Ui,
+        parameters: &std::collections::HashMap<String, f32>,
+        param_changes: &mut Vec<(String, f32)>,
+        param_name: &str,
+        label: &str,
+        min: f32,
+        max: f32,
+        default_value: f32,
+    ) {
         ui.horizontal(|ui| {
             ui.label(format!("{}:", label));
             let old_value = *parameters.get(param_name).unwrap_or(&default_value);
             let mut value = old_value;
             let response = styled_slider(ui, &mut value, min..=max, default_value);
             response.context_menu(|ui| {
-                if crate::widgets::custom::hold_to_action_button(ui, "↺ Reset", colors::WARN_COLOR) {
+                if crate::widgets::custom::hold_to_action_button(ui, "↺ Reset", colors::WARN_COLOR)
+                {
                     value = default_value;
                     ui.close();
                 }
             });
-            if (value - old_value).abs() > 0.0001 { param_changes.push((param_name.to_string(), value)); }
+            if (value - old_value).abs() > 0.0001 {
+                param_changes.push((param_name.to_string(), value));
+            }
         });
     }
 
-    fn render_footer(&mut self, ui: &mut Ui, locale: &LocaleManager, icon_manager: Option<&IconManager>) {
+    fn render_footer(
+        &mut self,
+        ui: &mut Ui,
+        locale: &LocaleManager,
+        icon_manager: Option<&IconManager>,
+    ) {
         ui.horizontal(|ui| {
-            ui.label(format!("{} {}", self.chain.effects.len(), locale.t("panel-effect-chain")));
+            ui.label(format!(
+                "{} {}",
+                self.chain.effects.len(),
+                locale.t("panel-effect-chain")
+            ));
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if icon_button_simple(ui, icon_manager, AppIcon::FloppyDisk, 16.0, &locale.t("effect-save")).clicked() {
+                if icon_button_simple(
+                    ui,
+                    icon_manager,
+                    AppIcon::FloppyDisk,
+                    16.0,
+                    &locale.t("effect-save"),
+                )
+                .clicked()
+                {
                     self.show_preset_browser = true;
                 }
             });
         });
     }
 
-    fn render_preset_browser(&mut self, ctx: &egui::Context, locale: &LocaleManager, icon_manager: Option<&IconManager>) {
+    fn render_preset_browser(
+        &mut self,
+        ctx: &egui::Context,
+        locale: &LocaleManager,
+        icon_manager: Option<&IconManager>,
+    ) {
         let mut close_browser = false;
         let mut load_preset_path: Option<String> = None;
         let mut open = self.show_preset_browser;
-        egui::Window::new(locale.t("effect-presets-browser")).default_size([400.0, 300.0]).resizable(true).open(&mut open).frame(cyber_panel_frame(&ctx.style())).show(ctx, |ui| {
-            render_panel_header(ui, &locale.t("effect-presets-browser"), |_| {});
-            ui.add_space(8.0);
-            ui.horizontal(|ui| {
-                ui.label("🔍");
-                ui.add(egui::TextEdit::singleline(&mut self.preset_search).hint_text(locale.t("effect-search")));
-            });
-            ui.separator();
-            egui::Frame::default().fill(colors::DARKER_GREY).stroke(egui::Stroke::new(1.0, colors::STROKE_GREY)).corner_radius(CornerRadius::ZERO).inner_margin(4.0).show(ui, |ui| {
-                egui::ScrollArea::vertical().max_height(200.0).show(ui, |ui| {
-                    let search_lower = self.preset_search.to_lowercase();
-                    for preset in &self.presets {
-                        if !self.preset_search.is_empty() && !preset.name.to_lowercase().contains(&search_lower) { continue; }
-                        ui.horizontal(|ui| {
-                            let star = if preset.is_favorite { "⭐" } else { "☆" };
-                            ui.label(star);
-                            if ui.button(&preset.name).clicked() { load_preset_path = Some(preset.path.clone()); close_browser = true; }
-                            ui.weak(&preset.category);
-                        });
+        egui::Window::new(locale.t("effect-presets-browser"))
+            .default_size([400.0, 300.0])
+            .resizable(true)
+            .open(&mut open)
+            .frame(cyber_panel_frame(&ctx.style()))
+            .show(ctx, |ui| {
+                render_panel_header(ui, &locale.t("effect-presets-browser"), |_| {});
+                ui.add_space(8.0);
+                ui.horizontal(|ui| {
+                    ui.label("🔍");
+                    ui.add(
+                        egui::TextEdit::singleline(&mut self.preset_search)
+                            .hint_text(locale.t("effect-search")),
+                    );
+                });
+                ui.separator();
+                egui::Frame::default()
+                    .fill(colors::DARKER_GREY)
+                    .stroke(egui::Stroke::new(1.0, colors::STROKE_GREY))
+                    .corner_radius(CornerRadius::ZERO)
+                    .inner_margin(4.0)
+                    .show(ui, |ui| {
+                        egui::ScrollArea::vertical()
+                            .max_height(200.0)
+                            .show(ui, |ui| {
+                                let search_lower = self.preset_search.to_lowercase();
+                                for preset in &self.presets {
+                                    if !self.preset_search.is_empty()
+                                        && !preset.name.to_lowercase().contains(&search_lower)
+                                    {
+                                        continue;
+                                    }
+                                    ui.horizontal(|ui| {
+                                        let star = if preset.is_favorite { "⭐" } else { "☆" };
+                                        ui.label(star);
+                                        if ui.button(&preset.name).clicked() {
+                                            load_preset_path = Some(preset.path.clone());
+                                            close_browser = true;
+                                        }
+                                        ui.weak(&preset.category);
+                                    });
+                                }
+                                if self.presets.is_empty() {
+                                    ui.label(locale.t("effect-no-presets"));
+                                }
+                            });
+                    });
+                ui.separator();
+                ui.horizontal(|ui| {
+                    ui.label(locale.t("effect-save-as"));
+                    ui.text_edit_singleline(&mut self.save_preset_name);
+                    if icon_button_simple(
+                        ui,
+                        icon_manager,
+                        AppIcon::FloppyDisk,
+                        16.0,
+                        &locale.t("effect-save"),
+                    )
+                    .clicked()
+                        && !self.save_preset_name.is_empty()
+                    {
+                        self.actions
+                            .push(EffectChainAction::SavePreset(self.save_preset_name.clone()));
+                        self.save_preset_name.clear();
                     }
-                    if self.presets.is_empty() { ui.label(locale.t("effect-no-presets")); }
                 });
             });
-            ui.separator();
-            ui.horizontal(|ui| {
-                ui.label(locale.t("effect-save-as"));
-                ui.text_edit_singleline(&mut self.save_preset_name);
-                if icon_button_simple(ui, icon_manager, AppIcon::FloppyDisk, 16.0, &locale.t("effect-save")).clicked() && !self.save_preset_name.is_empty() {
-                    self.actions.push(EffectChainAction::SavePreset(self.save_preset_name.clone()));
-                    self.save_preset_name.clear();
-                }
-            });
-        });
         self.show_preset_browser = open;
-        if let Some(path) = load_preset_path { self.actions.push(EffectChainAction::LoadPreset(path)); }
-        if close_browser { self.show_preset_browser = false; }
+        if let Some(path) = load_preset_path {
+            self.actions.push(EffectChainAction::LoadPreset(path));
+        }
+        if close_browser {
+            self.show_preset_browser = false;
+        }
     }
 }
 
