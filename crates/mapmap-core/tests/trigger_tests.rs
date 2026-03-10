@@ -135,7 +135,7 @@ fn test_midi_trigger() {
         (0.0, 0.0),
     );
 
-    let shared = mapmap_core::module::SharedMediaState::default();
+    let mut shared = mapmap_core::module::SharedMediaState::default();
 
     // No MIDI
     let res = evaluator.evaluate(&module, &shared, 0);
@@ -191,7 +191,7 @@ fn test_osc_trigger() {
         (0.0, 0.0),
     );
 
-    let shared = mapmap_core::module::SharedMediaState::default();
+    let mut shared = mapmap_core::module::SharedMediaState::default();
 
     // No OSC
     let res = evaluator.evaluate(&module, &shared, 0);

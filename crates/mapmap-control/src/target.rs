@@ -190,6 +190,10 @@ impl ControlValue {
                         MAX_STRING_LEN
                     ));
                 }
+
+                // Security: Normalize path separators to correctly identify Windows-style
+                // traversal payloads across all operating systems.
+                let normalized = s.replace("\\", "/");
                 // Path traversal check
                 // Security check: normalize path separators to prevent Windows-style traversal payloads
                 // (e.g., ..\..\secret) from bypassing validation on non-Windows OS platforms.

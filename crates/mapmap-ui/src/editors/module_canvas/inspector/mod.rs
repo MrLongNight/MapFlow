@@ -4,7 +4,7 @@ use super::types::MediaPlaybackCommand;
 use crate::theme::colors;
 use crate::widgets::{styled_drag_value, styled_slider};
 use crate::UIAction;
-use egui::{Color32, Pos2, Rect, Sense, Stroke, Ui, Vec2};
+use egui::{Color32, Sense, Stroke, Ui, Vec2};
 use mapmap_core::module::{
     BevyCameraMode, BlendModeType, EffectType, HueMappingMode, LayerType, MaskShape, MaskType,
     ModuleId, ModulePart, ModulePartId, ModulePartType, ModulizerType, OutputType, SourceType,
