@@ -119,6 +119,9 @@ pub struct ModuleCanvas {
     pub quick_create_pos: Pos2,
     /// Index of the currently selected item in the quick create list
     pub quick_create_selected_index: usize,
+
+    /// Snapshot of a part before editing, used to create Undo/Redo commands when an edit finishes.
+    pub edit_snapshot: Option<mapmap_core::module::ModulePart>,
 }
 
 impl Default for ModuleCanvas {
@@ -173,6 +176,7 @@ impl Default for ModuleCanvas {
             quick_create_filter: String::new(),
             quick_create_pos: Pos2::ZERO,
             quick_create_selected_index: 0,
+            edit_snapshot: None,
         }
     }
 }

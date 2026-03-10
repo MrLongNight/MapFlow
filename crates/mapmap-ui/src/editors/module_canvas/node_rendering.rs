@@ -50,6 +50,15 @@ impl ModuleCanvas {
         module_id: mapmap_core::module::ModuleId,
         shared_media_ids: &[String],
     ) {
+        let interacting = ui.input(|i| i.pointer.any_pressed() || i.pointer.any_down());
+        let release = ui.input(|i| i.pointer.any_released());
+
+        if interacting && self.edit_snapshot.is_none() {
+            self.edit_snapshot = Some(part.clone());
+        }
+
+        let snapshot_before = part.clone();
+
         inspector::render_inspector_for_part(
             self,
             mesh_editor,
@@ -60,5 +69,35 @@ impl ModuleCanvas {
             module_id,
             shared_media_ids,
         );
+
+        let snapshot_after = part.clone();
+
+        // Detect non-pointer changes (e.g., text edits or buttons that don't hold pointer state long)
+        // or check if a drag just ended
+        if let Some(before) = self.edit_snapshot.take() {
+            if release {
+                if before != snapshot_after {
+                    self.undo_stack
+                        .push(super::types::CanvasAction::UpdatePart {
+                            part_id: part.id,
+                            before: Box::new(before),
+                            after: Box::new(snapshot_after),
+                        });
+                    self.redo_stack.clear();
+                }
+            } else {
+                // Keep the snapshot if still dragging
+                self.edit_snapshot = Some(before);
+            }
+        } else if snapshot_before != snapshot_after {
+            // Immediate change without dragging (e.g. keypress, combo box)
+            self.undo_stack
+                .push(super::types::CanvasAction::UpdatePart {
+                    part_id: part.id,
+                    before: Box::new(snapshot_before),
+                    after: Box::new(snapshot_after),
+                });
+            self.redo_stack.clear();
+        }
     }
 }

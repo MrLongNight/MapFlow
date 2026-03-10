@@ -151,6 +151,9 @@ mod ffmpeg_impl {
         current_format: ffmpeg::format::Pixel,
         hw_accel: HwAccelType,
         path: PathBuf,
+        consecutive_errors: u32,
+        fatal_error: bool,
+        last_pts: Duration,
     }
 
     impl RealFFmpegDecoder {
@@ -283,7 +286,50 @@ mod ffmpeg_impl {
                 current_format,
                 hw_accel: actual_hw_accel,
                 path: path.to_path_buf(),
+                consecutive_errors: 0,
+                fatal_error: false,
+                last_pts: Duration::ZERO,
             })
+        }
+
+        /// Re-initialize the decoder (e.g., after a fatal error), preserving position
+        fn reinit_decoder(&mut self) -> Result<()> {
+            info!(
+                "Re-initializing decoder for {} to recover from error state",
+                self.path.display()
+            );
+
+            // Create a fresh instance
+            let mut fresh = Self::open(self.path.clone(), self.hw_accel)?;
+
+            // If we had a known position, seek back to it
+            if self.last_pts > Duration::ZERO {
+                info!("Seeking back to previous position: {:?}", self.last_pts);
+                if let Err(e) = fresh.seek(self.last_pts) {
+                    warn!(
+                        "Failed to seek back to previous position during reinit: {}",
+                        e
+                    );
+                }
+            }
+
+            // Swap all state fields
+            self.input_ctx = fresh.input_ctx;
+            self.decoder = fresh.decoder;
+            self.scaler = fresh.scaler;
+            self.video_stream_idx = fresh.video_stream_idx;
+            self.time_base = fresh.time_base;
+            self.duration = fresh.duration;
+            self.fps = fresh.fps;
+            self.width = fresh.width;
+            self.height = fresh.height;
+            self.current_format = fresh.current_format;
+            self.hw_accel = fresh.hw_accel;
+            self.consecutive_errors = 0;
+            self.fatal_error = false;
+            // last_pts and path are kept from current instance
+
+            Ok(())
         }
 
         /// Setup hardware acceleration
@@ -337,14 +383,21 @@ mod ffmpeg_impl {
 
     impl super::VideoDecoder for RealFFmpegDecoder {
         fn next_frame(&mut self) -> Result<VideoFrame> {
+            if self.fatal_error {
+                return Err(MediaError::DecoderError(
+                    "Decoder is in a fatal error state".to_string(),
+                ));
+            }
+
             for (stream, packet) in self.input_ctx.packets() {
                 if stream.index() != self.video_stream_idx {
                     continue;
                 }
 
-                self.decoder
-                    .send_packet(&packet)
-                    .map_err(|e| MediaError::DecoderError(e.to_string()))?;
+                if let Err(e) = self.decoder.send_packet(&packet) {
+                    warn!("Failed to send packet to decoder: {}", e);
+                    continue; // Skip bad packets instead of crashing
+                }
 
                 let mut decoded = ffmpeg::util::frame::Video::empty();
 
@@ -383,12 +436,20 @@ mod ffmpeg_impl {
                     let frame_height = frame_ptr.height();
                     let frame_format = frame_ptr.format();
 
+                    if frame_width == 0 || frame_height == 0 {
+                        warn!(
+                            "Decoded frame has invalid dimensions: {}x{}",
+                            frame_width, frame_height
+                        );
+                        continue;
+                    }
+
                     if frame_width != self.width
                         || frame_height != self.height
                         || frame_format != self.current_format
                     {
                         info!(
-                            "Input changed: {}x{} {:?} -> {}x{} {:?}",
+                            "Recreating scaler: {}x{} {:?} -> {}x{} {:?}",
                             self.width,
                             self.height,
                             self.current_format,
@@ -397,7 +458,7 @@ mod ffmpeg_impl {
                             frame_format
                         );
 
-                        let new_scaler = ffmpeg::software::scaling::Context::get(
+                        match ffmpeg::software::scaling::Context::get(
                             frame_format,
                             frame_width,
                             frame_height,
@@ -409,26 +470,62 @@ mod ffmpeg_impl {
                         .map_err(|e| {
                             MediaError::DecoderError(format!("Failed to recreate scaler: {}", e))
                         })
-                        .map(SendContext)?;
-
-                        self.scaler = new_scaler;
-                        self.width = frame_width;
-                        self.height = frame_height;
-                        self.current_format = frame_format;
+                        .map(SendContext)
+                        {
+                            Ok(new_scaler) => {
+                                self.scaler = new_scaler;
+                                self.width = frame_width;
+                                self.height = frame_height;
+                                self.current_format = frame_format;
+                            }
+                            Err(e) => {
+                                warn!("Failed to recreate scaler, skipping frame: {}", e);
+                                self.consecutive_errors += 1;
+                                if self.consecutive_errors > 30 {
+                                    warn!("Too many consecutive scaler creation errors, entering fatal error state");
+                                    self.fatal_error = true;
+                                    // Notice: reinit_decoder requires mutable self, but we are inside the packets() iterator.
+                                    // We set fatal_error, and next_frame will catch it on the next call or the caller will seek/recover.
+                                    // For immediate abort out of the loop:
+                                    return Err(MediaError::DecoderError(
+                                        "Decoder hit fatal error and needs reinit".to_string(),
+                                    ));
+                                }
+                                continue;
+                            }
+                        }
                     }
 
                     // Scale to RGBA
                     let mut rgb_frame = ffmpeg::util::frame::Video::empty();
-                    self.scaler.run(frame_ptr, &mut rgb_frame).map_err(|e| {
-                        MediaError::DecoderError(format!(
-                            "Decoder error: Input changed? Scaler run failed: {}",
-                            e
-                        ))
-                    })?;
+                    let mut needs_reinit = false;
+                    if let Err(e) = self.scaler.run(frame_ptr, &mut rgb_frame) {
+                        warn!("Scaler run failed: {}", e);
+                        self.consecutive_errors += 1;
+                        if self.consecutive_errors > 30 {
+                            warn!("Too many consecutive scaler errors, entering fatal error state");
+                            self.fatal_error = true;
+                            needs_reinit = true;
+                        }
+                    } else {
+                        self.consecutive_errors = 0; // Reset error counter on success
+                    }
+
+                    if needs_reinit {
+                        return Err(MediaError::DecoderError(
+                            "Decoder hit fatal error and needs reinit".to_string(),
+                        ));
+                    }
+
+                    if self.consecutive_errors > 0 {
+                        continue; // Skip this bad frame
+                    }
 
                     let pts = Duration::from_secs_f64(
                         decoded.timestamp().unwrap_or(0) as f64 * f64::from(self.time_base),
                     );
+
+                    self.last_pts = pts;
 
                     return Ok(VideoFrame::new(
                         rgb_frame.data(0).to_vec(),
@@ -447,6 +544,18 @@ mod ffmpeg_impl {
         }
 
         fn seek(&mut self, timestamp: Duration) -> Result<()> {
+            // If in fatal error state, try to recover via complete reinit
+            if self.fatal_error {
+                info!("Decoder is in fatal error state, attempting reinit during seek...");
+                self.last_pts = timestamp;
+                if let Err(e) = self.reinit_decoder() {
+                    warn!("Failed to reinit decoder during seek: {}", e);
+                    // Still fall through and try standard seek as fallback
+                } else {
+                    return Ok(()); // Reinit inherently seeks to `self.last_pts`
+                }
+            }
+
             let timestamp_ts = (timestamp.as_secs_f64() / f64::from(self.time_base)) as i64;
 
             self.input_ctx
@@ -455,6 +564,9 @@ mod ffmpeg_impl {
 
             // Flush decoder buffers
             self.decoder.flush();
+            self.consecutive_errors = 0;
+            self.fatal_error = false;
+            self.last_pts = timestamp;
 
             Ok(())
         }

@@ -84,6 +84,13 @@ pub fn apply_undo_action(module: &mut MapFlowModule, action: &CanvasAction) {
         CanvasAction::AddPart { part_id, .. } => {
             module.parts.retain(|p| p.id != *part_id);
         }
+        CanvasAction::UpdatePart {
+            part_id, before, ..
+        } => {
+            if let Some(part) = module.parts.iter_mut().find(|p| p.id == *part_id) {
+                *part = *before.clone();
+            }
+        }
         CanvasAction::DeletePart { part_data } => {
             module.parts.push(part_data.clone());
         }
@@ -117,6 +124,11 @@ pub fn apply_redo_action(module: &mut MapFlowModule, action: &CanvasAction) {
     match action {
         CanvasAction::AddPart { part_data, .. } => {
             module.parts.push(part_data.clone());
+        }
+        CanvasAction::UpdatePart { part_id, after, .. } => {
+            if let Some(part) = module.parts.iter_mut().find(|p| p.id == *part_id) {
+                *part = *after.clone();
+            }
         }
         CanvasAction::DeletePart { part_data } => {
             module.parts.retain(|p| p.id != part_data.id);
