@@ -96,18 +96,13 @@ impl PaintPanel {
                                 });
                             }
 
-                            if let Some(mgr) = icon_manager {
-                                if let Some(img) = mgr.image(AppIcon::Remove, 16.0) {
-                                    if ui
-                                        .add(egui::Button::image(img))
-                                        .clone()
-                                        .on_hover_text(i18n.t("btn-remove"))
-                                        .clicked()
-                                    {
-                                        self.action = Some(PaintPanelAction::RemovePaint(paint.id));
-                                    }
-                                }
-                            } else if ui.button(i18n.t("btn-remove")).clicked() {
+                            if crate::widgets::custom::hold_to_action_icon(
+                                ui,
+                                icon_manager,
+                                AppIcon::Remove,
+                                16.0,
+                                crate::theme::colors::WARN_COLOR,
+                            ) {
                                 self.action = Some(PaintPanelAction::RemovePaint(paint.id));
                             }
                         });

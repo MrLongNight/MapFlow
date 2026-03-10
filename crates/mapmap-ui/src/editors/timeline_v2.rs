@@ -533,7 +533,11 @@ impl TimelineV2 {
                         a.start_time.total_cmp(&b.start_time).then(a.id.cmp(&b.id))
                     });
                 }
-                if ui.button("Clear").clicked() {
+                if crate::widgets::custom::hold_to_action_button(
+                    ui,
+                    "Clear",
+                    crate::theme::colors::WARN_COLOR,
+                ) {
                     self.module_arrangement.clear();
                     self.reset_runtime_selection();
                 }
