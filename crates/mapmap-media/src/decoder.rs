@@ -467,8 +467,11 @@ mod ffmpeg_impl {
                             frame_height,
                             ffmpeg::software::scaling::Flags::BILINEAR,
                         )
-                        .map_err(|e| MediaError::DecoderError(format!("Failed to recreate scaler: {}", e)))
-                        .map(SendContext) {
+                        .map_err(|e| {
+                            MediaError::DecoderError(format!("Failed to recreate scaler: {}", e))
+                        })
+                        .map(SendContext)
+                        {
                             Ok(new_scaler) => {
                                 self.scaler = new_scaler;
                                 self.width = frame_width;
