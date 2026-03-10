@@ -204,10 +204,6 @@ jobs:
 
             if (pr.data.mergeable_state === 'blocked') {
               console.log("❌ PR mergeable_state is 'blocked'. This might be due to required reviews or other policies.");
-<<<<<<< HEAD
-=======
-              // We could add a comment here if it's the first time
->>>>>>> origin/fix-hue-dtls-openssl-4596603282674004067
               return;
             }
 
