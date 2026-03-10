@@ -405,82 +405,82 @@ impl ModuleEvalResult {
 #[derive(Debug, Clone)]
 pub enum SourceCommand {
     /// Play media from a local path.
-    PlayMedia { 
+    PlayMedia {
         /// Path to the media file.
-        path: String, 
+        path: String,
         /// Current trigger value.
-        trigger_value: f32 
+        trigger_value: f32
     },
     /// Play media from the shared library.
-    PlaySharedMedia { 
+    PlaySharedMedia {
         /// Unique identifier for the shared media.
-        id: String, 
+        id: String,
         /// Path to the media file.
-        path: String, 
+        path: String,
         /// Current trigger value.
-        trigger_value: f32 
+        trigger_value: f32
     },
     /// Render a shader with the given parameters.
-    PlayShader { 
+    PlayShader {
         /// Name of the shader.
-        name: String, 
+        name: String,
         /// List of (parameter name, value) tuples.
-        params: Vec<(String, f32)>, 
+        params: Vec<(String, f32)>,
         /// Current trigger value.
-        trigger_value: f32 
+        trigger_value: f32
     },
     /// Receive frames from an NDI source.
-    NdiInput { 
+    NdiInput {
         /// Name of the NDI source.
-        source_name: Option<String>, 
+        source_name: Option<String>,
         /// Current trigger value.
-        trigger_value: f32 
+        trigger_value: f32
     },
     /// Receive frames from a live video device.
-    LiveInput { 
+    LiveInput {
         /// ID of the capture device.
-        device_id: u32, 
+        device_id: u32,
         /// Current trigger value.
-        trigger_value: f32 
+        trigger_value: f32
     },
     /// Receive frames from a Spout sender.
     #[cfg(target_os = "windows")]
-    SpoutInput { 
+    SpoutInput {
         /// Name of the Spout sender.
-        sender_name: String, 
+        sender_name: String,
         /// Current trigger value.
-        trigger_value: f32 
+        trigger_value: f32
     },
     /// Input from the Bevy game engine.
-    BevyInput { 
+    BevyInput {
         /// Current trigger value.
-        trigger_value: f32 
+        trigger_value: f32
     },
     /// Render a 3D model via Bevy.
-    Bevy3DModel { 
+    Bevy3DModel {
         /// Path to the 3D model.
-        path: String, 
+        path: String,
         /// Position in 3D space.
-        position: [f32; 3], 
+        position: [f32; 3],
         /// Rotation in degrees.
-        rotation: [f32; 3], 
+        rotation: [f32; 3],
         /// Scale factor.
-        scale: [f32; 3], 
+        scale: [f32; 3],
         /// Current trigger value.
-        trigger_value: f32 
+        trigger_value: f32
     },
     /// Control Philips Hue smart lights.
-    HueOutput { 
+    HueOutput {
         /// Brightness level (0.0 - 1.0).
-        brightness: f32, 
+        brightness: f32,
         /// Hue value (0.0 - 1.0, optional).
-        hue: Option<f32>, 
+        hue: Option<f32>,
         /// Saturation level (0.0 - 1.0, optional).
-        saturation: Option<f32>, 
+        saturation: Option<f32>,
         /// Strobe speed (0.0 - 1.0, optional).
-        strobe: Option<f32>, 
+        strobe: Option<f32>,
         /// List of light IDs to control.
-        ids: Option<Vec<String>> 
+        ids: Option<Vec<String>>
     },
 }
 
@@ -675,11 +675,11 @@ impl ModuleEvaluator {
         op.masks.clear();
         op.source_part_id = None;
         op.source_props = SourceProperties::default_identity();
-        
+
         let mut override_mesh = None;
         let mut current_id = start_node_id;
         let trigger_values = &self.cached_result.trigger_values;
-        
+
         // Cycle detection
         let mut visited = std::collections::HashSet::with_capacity(16);
         visited.insert(start_node_id);
@@ -688,7 +688,7 @@ impl ModuleEvaluator {
             // 1. Process triggers for the CURRENT node
             if let Some(&part_idx) = indices.part_index_cache.get(&current_id) {
                 let part = &module.parts[part_idx];
-                
+
                 // If this is a source, load its base properties first
                 if let ModulePartType::Source(source_type) = &part.part_type {
                     op.source_part_id = Some(part.id);
@@ -758,7 +758,7 @@ impl ModuleEvaluator {
             // 2. Find PREVIOUS node in chain
             if let Some(conn_idx) = indices.conn_index_cache.get(&current_id).and_then(|v| v.first()).copied() {
                 let conn = &module.connections[conn_idx];
-                
+
                 // Cycle detection
                 if !visited.insert(conn.from_part) {
                     tracing::warn!("Cycle detected in module graph chain starting at node {}", start_node_id);
@@ -794,7 +794,7 @@ impl ModuleEvaluator {
                 break;
             }
         }
-        
+
         op.effects.reverse();
         op.masks.reverse();
         op.mesh = override_mesh.unwrap_or_else(|| default_mesh.clone());
