@@ -14,19 +14,13 @@ pub struct Composition {
     /// Master opacity (M) - global opacity multiplier (Phase 1, Month 4)
     pub master_opacity: f32,
     /// Master blackout (B) - if true, everything is black (Phase 1, Month 6)
-    #[serde(default)]
     pub master_blackout: bool,
     /// Master speed (S) - global speed multiplier (Phase 1, Month 5)
-    #[serde(default = "default_master_speed")]
     pub master_speed: f32,
     /// Composition size in pixels (width, height)
     pub size: (u32, u32),
     /// Frame rate (FPS) for playback
     pub frame_rate: f32,
-}
-
-fn default_master_speed() -> f32 {
-    1.0
 }
 
 impl Default for Composition {

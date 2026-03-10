@@ -1,16 +1,5 @@
-# Getting Started with MapFlow
+# Getting Started (Transition)
 
-Welcome to the MapFlow documentation!
-
-## Where to start?
-
-1.  **[Installation Guide](INSTALLATION.md)**: How to install MapFlow on Windows, Linux, or macOS.
-2.  **[Build Instructions](BUILD.md)**: How to compile MapFlow from source code.
-3.  **[Quick Start](QUICK-START.md)**: Your first 5 minutes with MapFlow - Import media and start mapping.
-
-## Documentation Structure
-
-- **[CONTRIBUTING](../../CONTRIBUTING.md)**: Guidelines for developers and contributors.
-- **[Architecture](../../dev/architecture/)**: Technical design documents and diagrams.
-- **[User Guide](../manual/)**: Detailed manual for all features.
-- **[Roadmap](../../project/roadmap/)**: Future plans and feature status.
+- [A4 Manual / Installation](../../A4_USER/B1_MANUAL/DOC-C1_INSTALLATION.md)
+- [A4 Manual / Quickstart](../../A4_USER/B1_MANUAL/DOC-C2_QUICKSTART.md)
+- [A4 Support / Build](../../A4_USER/B3_SUPPORT/DOC-C1_BUILD.md)

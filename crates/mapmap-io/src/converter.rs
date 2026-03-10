@@ -415,9 +415,11 @@ impl Default for FormatConverter {
 /// Uses the BT.709 color space conversion matrix.
 #[inline]
 fn yuv_to_rgb(y: i32, u: i32, v: i32) -> (u8, u8, u8) {
-    let r = y + (1.402 * v as f32) as i32;
-    let g = y - (0.344 * u as f32) as i32 - (0.714 * v as f32) as i32;
-    let b = y + (1.772 * u as f32) as i32;
+    // Integer math approximation for BT.709 YUV to RGB conversion
+    // Avoids expensive float operations for better performance
+    let r = y + (359 * v) / 256;
+    let g = y - (88 * u + 183 * v) / 256;
+    let b = y + (454 * u) / 256;
 
     (
         r.clamp(0, 255) as u8,

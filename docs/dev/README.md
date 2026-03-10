@@ -1,15 +1,6 @@
-# Developer Documentation
+# Developer Documentation (Transition)
 
-Welcome to the MapFlow developer documentation.
+Die kanonische Entwicklungsdokumentation liegt unter:
 
-## Core Concepts
-
-*   [**Architecture**](architecture/RENDER-QUEUE.md)
-*   [**Data Flow**](architecture/DATA-FLOW.md)
-*   [**Crate Structure**](architecture/CRATES.md)
-
-## Setup
-
-*   [**Development Setup**](setup/DEVELOPMENT-SETUP.md)
-
-## Features
+- [A2_DEVELOPMENT](../A2_DEVELOPMENT/DOC-B0_README.md)
+- [A1_SYSTEM](../A1_SYSTEM/DOC-B0_README.md)

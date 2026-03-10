@@ -1,3 +1,7 @@
+## Roadmap Referenz
+
+*   **MF-046-MULTI-PC-MASTER-SLAVE:** Dieses Dokument dient als technische Grundlage für die Umsetzung der Master/Slave Architektur.
+
 # Machbarkeitsstudie: Multi-PC Architektur
 
 ## 1. Executive Summary

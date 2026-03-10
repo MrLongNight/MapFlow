@@ -62,7 +62,7 @@ pub async fn run_stream_loop(
             if !current_lights.is_empty() {
                 let msg = protocol::create_message(area_id, &current_lights);
 
-                match streamer.write_all(&msg).await {
+                match streamer.write_all(&msg) {
                     Ok(_) => {}
                     Err(e) => {
                         eprintln!("Error sending Hue stream frame: {}", e);

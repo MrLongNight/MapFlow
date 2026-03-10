@@ -9,32 +9,35 @@ use mapmap_control::midi::MidiInputHandler;
 
 /// Context required to render the settings window.
 pub struct SettingsContext<'a> {
-    /// UI State
+    /// Reference to the UI state.
     pub ui_state: &'a mut AppUI,
-    /// App State
+    /// Reference to the global application state.
     pub state: &'a mut AppState,
-    /// Wgpu Backend
+    /// Reference to the render backend.
     pub backend: &'a WgpuBackend,
-    /// Hue Controller
+    /// Reference to the Hue controller.
     pub hue_controller: &'a mut HueController,
-    /// MIDI Handler
+    /// Reference to the MIDI input handler (if enabled).
     #[cfg(feature = "midi")]
+    /// Optional handle to the active MIDI input system.
     pub midi_handler: &'a mut Option<MidiInputHandler>,
-    /// MIDI Ports
+    /// List of available MIDI ports (if enabled).
     #[cfg(feature = "midi")]
+    /// Available MIDI ports for connection.
     pub midi_ports: &'a mut Vec<String>,
-    /// Selected MIDI Port
+    /// Index of the selected MIDI port (if enabled).
     #[cfg(feature = "midi")]
+    /// Currently selected MIDI port index.
     pub selected_midi_port: &'a mut Option<usize>,
-    /// Restart Requested
+    /// Flag indicating if a restart was requested.
     pub restart_requested: &'a mut bool,
-    /// Exit Requested
+    /// Flag indicating if an exit was requested.
     pub exit_requested: &'a mut bool,
-    /// Tokio Runtime
+    /// Reference to the Tokio runtime.
     pub tokio_runtime: &'a tokio::runtime::Runtime,
 }
 
-/// Show settings dialog
+/// Renders the settings window.
 pub fn show(ctx: &Context, context: SettingsContext) {
     let mut show_settings = context.ui_state.show_settings;
     let i18n = &context.ui_state.i18n;
@@ -49,8 +52,11 @@ pub fn show(ctx: &Context, context: SettingsContext) {
     .default_width(500.0)
     .show(ctx, |ui| {
         egui::ScrollArea::vertical().show(ui, |ui| {
+            // --- GENERAL ---
             ui.heading(RichText::new("General").color(Color32::WHITE));
+
             ui.add_space(4.0);
+
             ui.horizontal(|ui| {
                 ui.label(format!("{}:", i18n.t("language")));
                 let current_lang = context.ui_state.user_config.language.clone();
@@ -189,6 +195,7 @@ pub fn show(ctx: &Context, context: SettingsContext) {
             ui.separator();
             ui.heading(RichText::new(i18n.t("audio")).color(Color32::WHITE));
             ui.add_space(4.0);
+
             ui.horizontal(|ui| {
                 ui.label(format!("{}:", i18n.t("label-device")));
                 let current_device = context
@@ -261,7 +268,14 @@ pub fn show(ctx: &Context, context: SettingsContext) {
                         .push(UIAction::UpdateAudioConfig(cfg));
                 }
             });
+
+            ui.add_space(10.0);
+            ui.separator();
+
+            // --- HUE ---
+            ui.heading(RichText::new("Philips Hue").color(Color32::from_rgb(255, 200, 0)));
             ui.add_space(4.0);
+            let is_connected = context.hue_controller.is_connected();
             ui.horizontal(|ui| {
                 ui.label("Level Meter Style:");
                 let meter = context.ui_state.user_config.meter_style;
@@ -299,5 +313,6 @@ pub fn show(ctx: &Context, context: SettingsContext) {
             });
         });
     });
+
     context.ui_state.show_settings = show_settings;
 }

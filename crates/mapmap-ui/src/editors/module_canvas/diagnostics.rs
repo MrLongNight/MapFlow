@@ -39,11 +39,7 @@ pub fn render_diagnostics_popup(canvas: &mut ModuleCanvas, ui: &mut Ui) {
             ui.add_space(8.0);
 
             if canvas.diagnostic_issues.is_empty() {
-                ui.label(
-                    egui::RichText::new("No issues found. Your module looks good!")
-                        .weak()
-                        .italics(),
-                );
+                ui.label("No issues found. Your module looks good!");
             } else {
                 egui::ScrollArea::vertical()
                     .max_height(150.0)

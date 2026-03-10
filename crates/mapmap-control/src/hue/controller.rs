@@ -134,14 +134,12 @@ impl HueController {
             .await
             .map_err(|e| e.to_string())?;
 
-        // 4. Start DTLS Stream
+        // 4. Start DTLS Stream (Synchronous)
         let streamer = match HueStreamer::connect(
             &self.config.bridge_ip,
             &self.config.application_id,
             &self.config.client_key,
-        )
-        .await
-        {
+        ) {
             Ok(s) => s,
             Err(e) => {
                 error!("Failed to connect to Hue Bridge DTLS: {}. Check if Windows Firewall blocks UDP port 2100.", e);

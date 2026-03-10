@@ -105,28 +105,6 @@ pub fn show(ui: &mut egui::Ui, ui_state: &mut AppUI, actions: &mut Vec<UIAction>
             ));
         }
         ui.separator();
-        ui.menu_button("Theme", |ui| {
-            use crate::core::theme::Theme;
-            let current_theme = ui_state.user_config.theme.theme;
-            for theme in [
-                Theme::Dark,
-                Theme::Light,
-                Theme::Resolume,
-                Theme::Synthwave,
-                Theme::HighContrast,
-            ] {
-                if ui
-                    .selectable_label(current_theme == theme, format!("{:?}", theme))
-                    .clicked()
-                {
-                    ui_state.user_config.theme.theme = theme;
-                    ui_state.user_config.theme.apply(ui.ctx());
-                    let _ = ui_state.user_config.save();
-                    ui.close();
-                }
-            }
-        });
-        ui.separator();
         if menu_item(
             ui,
             ui_state,

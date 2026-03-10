@@ -79,7 +79,3 @@
 ## 2024-05-24 – [Empty State Visibility]
 **Learning:** Plain `ui.label("No data")` blends in with regular data points, creating visual confusion about whether data is missing or if "No data" is the actual value.
 **Action:** Enforce empty/no data states to use `egui::RichText::new("...").weak().italics()` across all modules (e.g., "No matching nodes found.", "No MIDI devices"). This provides immediate visual differentiation.
-
-## 2026-03-08 - [Empty State Visibility]
-**Learning:** Plain `ui.label("No data")` or just `.weak()` blends in with regular data points, creating visual confusion about whether data is missing or if "No data" is the actual value.
-**Action:** Enforce empty/no data states to use `egui::RichText::new("...").weak().italics()` across all modules (e.g., "No matching nodes found.", "No MIDI devices"). This provides immediate visual differentiation.

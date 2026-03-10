@@ -17,7 +17,6 @@ pub enum InspectorContext<'a> {
         layer: &'a Layer,
         transform: &'a Transform,
         index: usize,
-        first_mapping: Option<&'a mapmap_core::mapping::Mapping>,
     },
     /// An output is selected
     Output(&'a OutputConfig),
@@ -37,8 +36,6 @@ pub enum InspectorAction {
     UpdateTransform(u64, Transform),
     /// Update layer opacity
     UpdateOpacity(u64, f32),
-    /// Update the mesh of a mapping
-    UpdateMappingMesh(u64, mapmap_core::Mesh),
 }
 
 // --- Visual Helpers ---

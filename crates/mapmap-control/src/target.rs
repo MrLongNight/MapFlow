@@ -190,8 +190,15 @@ impl ControlValue {
                         MAX_STRING_LEN
                     ));
                 }
+
+                // Security: Normalize path separators to correctly identify Windows-style
+                // traversal payloads across all operating systems.
+                let normalized = s.replace("\\", "/");
                 // Path traversal check
-                if Path::new(s)
+                // Security check: normalize path separators to prevent Windows-style traversal payloads
+                // (e.g., ..\..\secret) from bypassing validation on non-Windows OS platforms.
+                let normalized = s.replace("\\", "/");
+                if Path::new(&normalized)
                     .components()
                     .any(|c| matches!(c, Component::ParentDir))
                 {
@@ -321,6 +328,9 @@ mod tests {
 
         let traversal2 = ControlValue::String("foo/../bar".to_string());
         assert!(traversal2.validate().is_err());
+
+        let traversal_windows = ControlValue::String("foo\\..\\bar".to_string());
+        assert!(traversal_windows.validate().is_err());
 
         let valid_dots = ControlValue::String("Loading...".to_string());
         assert!(valid_dots.validate().is_ok());

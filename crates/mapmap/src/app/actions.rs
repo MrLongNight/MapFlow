@@ -27,24 +27,6 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
             }
 
             // Settings
-            UIAction::SelectAudioDevice(device) => {
-                app.ui_state.selected_audio_device = Some(device.clone());
-                app.ui_state.user_config.selected_audio_device = Some(device.clone());
-                app.state.dirty = true;
-                let _ = app.ui_state.user_config.save();
-                info!(
-                    "Selected audio device: {:?}",
-                    app.ui_state.selected_audio_device
-                );
-            }
-            UIAction::UpdateAudioConfig(cfg) => {
-                app.state.audio_config = cfg.clone();
-                app.audio_analyzer.update_config(cfg);
-                app.state.dirty = true;
-                // Persistence fix for MF-035
-                let _ = app.ui_state.user_config.save();
-            }
-            // Settings
             UIAction::SetTargetFps(fps) => {
                 app.ui_state.user_config.target_fps = Some(fps);
                 let _ = app.ui_state.user_config.save();
@@ -104,43 +86,11 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 app.ui_state.show_inspector = true;
                 app.ui_state.show_media_browser = true;
                 app.ui_state.show_module_canvas = false;
-                app.ui_state.show_stats = true;
-                app.ui_state.show_toolbar = true;
-                app.ui_state.show_master_controls = true;
             }
-            UIAction::Play => {
-                app.state.effect_animator_mut().play();
-                for handle in app.media_players.values_mut() {
-                    let _ = handle.command_tx.send(mapmap_media::PlaybackCommand::Play);
-                }
-            }
-            UIAction::Pause => {
-                app.state.effect_animator_mut().pause();
-                for handle in app.media_players.values_mut() {
-                    let _ = handle.command_tx.send(mapmap_media::PlaybackCommand::Pause);
-                }
-            }
-            UIAction::Stop => {
-                app.state.effect_animator_mut().stop();
-                for handle in app.media_players.values_mut() {
-                    let _ = handle.command_tx.send(mapmap_media::PlaybackCommand::Stop);
-                }
-            }
-            UIAction::SetSpeed(s) => {
-                app.state.effect_animator_mut().set_speed(s);
-                for handle in app.media_players.values_mut() {
-                    let _ = handle
-                        .command_tx
-                        .send(mapmap_media::PlaybackCommand::SetSpeed(s));
-                }
-            }
-            UIAction::SetLoopMode(m) => {
-                for handle in app.media_players.values_mut() {
-                    let _ = handle
-                        .command_tx
-                        .send(mapmap_media::PlaybackCommand::SetLoopMode(m));
-                }
-            }
+            UIAction::Play => app.state.effect_animator_mut().play(),
+            UIAction::Pause => app.state.effect_animator_mut().pause(),
+            UIAction::Stop => app.state.effect_animator_mut().stop(),
+            UIAction::SetSpeed(s) => app.state.effect_animator_mut().set_speed(s),
             UIAction::ToggleMediaManager => {
                 app.media_manager_ui.visible = !app.media_manager_ui.visible;
             }
@@ -233,24 +183,25 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 };
 
                 if !path.as_os_str().is_empty() {
-                    let _ = load_project_file(app, &path);
+                    load_project_file(app, &path);
                 }
             }
             UIAction::LoadRecentProject(path_str) => {
                 let path = PathBuf::from(path_str);
-                let _ = load_project_file(app, &path);
+                load_project_file(app, &path);
+            }
+            UIAction::SetTheme(theme) => {
+                app.ui_state.user_config.theme.theme = theme;
+
+                app.state.dirty = true;
+
+                info!("Theme switched to: {:?}", theme);
             }
             UIAction::SetLanguage(lang_code) => {
                 app.state.settings_mut().language = lang_code.clone();
                 app.state.dirty = true;
                 app.ui_state.i18n.set_locale(&lang_code);
                 info!("Language switched to: {}", lang_code);
-            }
-            UIAction::SetMeterStyle(style) => {
-                app.ui_state.user_config.meter_style = style;
-                app.state.dirty = true;
-                let _ = app.ui_state.user_config.save();
-                info!("Audio meter style switched to: {:?}", style);
             }
             UIAction::Exit => {
                 info!("Exit requested via menu");
@@ -264,78 +215,6 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 info!("About dialog requested");
                 app.ui_state.show_about = true;
             }
-            UIAction::OpenLicense => {
-                app.egui_context.open_url(egui::OpenUrl::new_tab(
-                    "https://github.com/MrLongNight/MapFlow/blob/main/LICENSE",
-                ));
-            }
-
-            UIAction::ToggleMidiLearn => {
-                app.ui_state.is_midi_learn_mode = !app.ui_state.is_midi_learn_mode;
-                info!("MIDI Learn mode: {}", app.ui_state.is_midi_learn_mode);
-            }
-            UIAction::ToggleAudioPanel => {
-                app.ui_state.show_audio = !app.ui_state.show_audio;
-            }
-
-            UIAction::AddPaint => {
-                app.history.push(app.state.clone());
-                let count = app.state.paint_manager.paints().len();
-                app.state
-                    .paint_manager_mut()
-                    .add_paint(mapmap_core::Paint::color(
-                        0,
-                        format!("Paint {}", count + 1),
-                        [1.0, 1.0, 1.0, 1.0],
-                    ));
-                app.state.dirty = true;
-            }
-            UIAction::RemovePaint(id) => {
-                app.history.push(app.state.clone());
-                app.state.paint_manager_mut().remove_paint(id);
-                app.state.dirty = true;
-            }
-
-            UIAction::AddMapping => {
-                app.history.push(app.state.clone());
-                let count = app.state.mapping_manager.mappings().len();
-                app.state
-                    .mapping_manager_mut()
-                    .add_mapping(mapmap_core::Mapping::quad(
-                        0,
-                        format!("Mapping {}", count + 1),
-                        0,
-                    ));
-                app.state.dirty = true;
-            }
-            UIAction::RemoveMapping(id) => {
-                app.history.push(app.state.clone());
-                app.state.mapping_manager_mut().remove_mapping(id);
-                app.state.dirty = true;
-            }
-            UIAction::SelectMapping(id) => {
-                app.ui_state.selected_output_id = Some(id);
-            }
-            UIAction::ToggleMappingVisibility(id, visible) => {
-                if let Some(mapping) = app.state.mapping_manager_mut().get_mapping_mut(id) {
-                    mapping.visible = visible;
-                    app.state.dirty = true;
-                }
-            }
-
-            UIAction::AddOutput(name, region, size) => {
-                app.history.push(app.state.clone());
-                app.state
-                    .output_manager_mut()
-                    .add_output(name, region, size);
-                app.state.dirty = true;
-            }
-            UIAction::RemoveOutput(id) => {
-                app.history.push(app.state.clone());
-                app.state.output_manager_mut().remove_output(id);
-                app.state.dirty = true;
-            }
-
             #[cfg(feature = "ndi")]
             UIAction::ConnectNdiSource { part_id, source } => {
                 let receiver = app.ndi_receivers.entry(part_id).or_insert_with(|| {
@@ -485,14 +364,6 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                     .create_layer(format!("Layer {}", count + 1));
                 app.state.dirty = true;
             }
-            UIAction::UpdateMappingMesh(id, mesh) => {
-                if let Some(mapping) =
-                    std::sync::Arc::make_mut(&mut app.state.mapping_manager).get_mapping_mut(id)
-                {
-                    mapping.mesh = mesh;
-                    app.state.dirty = true;
-                }
-            }
             UIAction::CreateGroup => {
                 let count = app.state.layer_manager.len();
                 app.state
@@ -588,10 +459,6 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                     .set_master_speed(val);
                 app.state.dirty = true;
             }
-            UIAction::SetMasterBlackout(val) => {
-                app.state.layer_manager_mut().composition.master_blackout = val;
-                app.state.dirty = true;
-            }
             UIAction::SetCompositionName(name) => {
                 app.state.layer_manager_mut().composition.name = name;
                 app.state.dirty = true;
@@ -625,9 +492,6 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                     .module_canvas
                     .pending_playback_commands
                     .push((part_id, command));
-            }
-            UIAction::ManualTrigger(_module_id, part_id) => {
-                app.module_evaluator.trigger_node(part_id);
             }
             UIAction::TimelineAction(timeline_action) => {
                 use mapmap_ui::TimelineAction;
@@ -685,10 +549,16 @@ fn handle_node_action(app: &mut App, action: NodeEditorAction) -> Result<()> {
                         needs_update = true;
                     }
                 }
+                NodeEditorAction::RemoveConnection(_from, _sub_idx, to, to_socket) => {
+                    if let Err(e) = graph.disconnect(to, &to_socket) {
+                        tracing::warn!("Failed to disconnect nodes: {}", e);
+                    } else {
+                        needs_update = true;
+                    }
+                }
                 NodeEditorAction::UpdateGraph(_) => {
                     needs_update = true;
                 }
-                _ => {}
             }
 
             if needs_update {

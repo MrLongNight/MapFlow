@@ -25,15 +25,8 @@ pub enum TriggerState {
     None,
     /// Random trigger state
     Random {
-        /// Accumulated time since last trigger
-        timer: f32,
-        /// Target interval for the next trigger
-        target: f32,
-    },
-    /// Fixed trigger state
-    Fixed {
-        /// Accumulated time since last trigger
-        timer: f32,
+        /// The timestamp (in ms since start) when the next trigger is scheduled.
+        next_fire_time_ms: u64,
     },
 }
 
@@ -104,6 +97,7 @@ mod tests_evaluator {
     use crate::module::{
         AudioTriggerOutputConfig, MapFlowModule, ModulePartType, SourceType, TriggerType,
     };
+    use std::time::Duration;
 
     fn create_test_module() -> MapFlowModule {
         MapFlowModule {
@@ -135,19 +129,21 @@ mod tests_evaluator {
         });
         let part_id = module.add_part_with_type(trigger_part, (0.0, 0.0));
 
-        // Initial eval - t=0.01 (small dt), phase=0.01 < 0.1 -> 0.0
-        evaluator.set_delta_time(0.01);
+        // Initial eval - t=0, phase=0, duration=10, 0 < 10 -> 1.0
         let result = evaluator.evaluate(&module, &shared, 0);
         let values = &result.trigger_values[&part_id];
-        assert_eq!(values[0], 0.0);
-
-        // Simulate 150ms passing
-        evaluator.set_delta_time(0.15);
-
-        let result = evaluator.evaluate(&module, &shared, 0);
-        let values = &result.trigger_values[&part_id];
-        // Now > 100ms should have passed, so it should have triggered
         assert_eq!(values[0], 1.0);
+
+        // We can't easily mock time passage without refactoring ModuleEvaluator to accept a clock,
+        // or sleeping. Sleeping in unit tests is generally bad, but for 15ms it's acceptable-ish
+        // for this specific scenario if we want to test the time logic.
+        // Ideally we'd refactor to inject time.
+        std::thread::sleep(Duration::from_millis(20));
+
+        let result = evaluator.evaluate(&module, &shared, 0);
+        let values = &result.trigger_values[&part_id];
+        // 20ms > 10ms pulse duration -> 0.0
+        assert_eq!(values[0], 0.0);
     }
 
     #[test]
@@ -182,6 +178,11 @@ mod tests_evaluator {
         let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default(), 0);
         let values = &result.trigger_values[&part_id];
 
+        // Order in generate_outputs:
+        // if volume_outputs: RMS, Peak
+        // if beat_output: Beat Out
+        // So indices: 0: RMS, 1: Peak, 2: Beat Out
+
         assert_eq!(values.len(), 3);
         assert_eq!(values[0], 0.8); // RMS
         assert_eq!(values[2], 1.0); // Beat detected
@@ -192,19 +193,25 @@ mod tests_evaluator {
         let mut evaluator = ModuleEvaluator::new();
         let mut module = create_test_module();
 
+        // 1. Trigger (Fixed -> always 1.0 at start)
         let t_type = ModulePartType::Trigger(TriggerType::Fixed {
             interval_ms: 0,
             offset_ms: 0,
-        });
+        }); // 0 interval = always on
         let t_id = module.add_part_with_type(t_type, (0.0, 0.0));
 
+        // 2. Source (Target)
         let s_id = module.add_part(crate::module::PartType::Source, (200.0, 0.0));
-        module.add_connection(t_id, 0, s_id, 0);
+        module.add_connection(t_id, 0, s_id, 0); // Trigger Out -> Source Trigger In
 
         let shared = crate::module::SharedMediaState::default();
-        evaluator.set_delta_time(0.01);
         let _result = evaluator.evaluate(&module, &shared, 0);
 
+        // Should produce a SourceCommand because trigger > 0.1
+        // (Source defaults to "MediaFile" with empty path, create_source_command checks empty path)
+        // Wait, SourceType::new_media_file("") -> default empty path.
+        // create_source_command returns None if path is empty.
+        // Let's set a path.
         if let Some(part) = module.parts.iter_mut().find(|p| p.id == s_id) {
             if let ModulePartType::Source(SourceType::MediaFile { path, .. }) = &mut part.part_type
             {
@@ -212,15 +219,15 @@ mod tests_evaluator {
             }
         }
 
-        evaluator.set_delta_time(0.01);
         let result = evaluator.evaluate(&module, &shared, 0);
         assert!(result.source_commands.contains_key(&s_id));
 
+        // Now remove connection
         module.remove_connection(t_id, 0, s_id, 0);
 
-        evaluator.set_delta_time(0.01);
         let result = evaluator.evaluate(&module, &shared, 1);
 
+        // A disconnected source defaults to trigger = 1.0, so it SHOULD generate a SourceCommand
         assert!(result.source_commands.contains_key(&s_id));
     }
 
@@ -229,12 +236,16 @@ mod tests_evaluator {
         let mut evaluator = ModuleEvaluator::new();
         let mut module = create_test_module();
 
+        // Graph: FixedTrigger(Always) -> Source -> Layer -> Output
+
+        // 1. Trigger
         let t_type = ModulePartType::Trigger(TriggerType::Fixed {
             interval_ms: 0,
             offset_ms: 0,
         });
         let t_id = module.add_part_with_type(t_type, (0.0, 0.0));
 
+        // 2. Source
         let s_id = module.add_part(crate::module::PartType::Source, (100.0, 0.0));
         if let Some(part) = module.parts.iter_mut().find(|p| p.id == s_id) {
             if let ModulePartType::Source(SourceType::MediaFile { path, .. }) = &mut part.part_type
@@ -243,22 +254,27 @@ mod tests_evaluator {
             }
         }
 
+        // 3. Layer
         let l_id = module.add_part(crate::module::PartType::Layer, (200.0, 0.0));
+
+        // 4. Output
         let o_id = module.add_part(crate::module::PartType::Output, (300.0, 0.0));
 
-        module.add_connection(t_id, 0, s_id, 0);
-        module.add_connection(s_id, 0, l_id, 0);
-        module.add_connection(l_id, 0, o_id, 0);
+        // Connections
+        module.add_connection(t_id, 0, s_id, 0); // Trigger -> Source Trigger
+        module.add_connection(s_id, 0, l_id, 0); // Source Media -> Layer Input
+        module.add_connection(l_id, 0, o_id, 0); // Layer Output -> Output Layer In
 
-        evaluator.set_delta_time(0.01);
         let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default(), 0);
 
+        // Verify RenderOp
         assert_eq!(result.render_ops.len(), 1);
         let op = &result.render_ops[0];
         assert_eq!(op.output_part_id, o_id);
         assert_eq!(op.layer_part_id, l_id);
         assert_eq!(op.source_part_id, Some(s_id));
 
+        // Verify SourceCommand
         assert!(result.source_commands.contains_key(&s_id));
         if let Some(SourceCommand::PlayMedia { path, .. }) = result.source_commands.get(&s_id) {
             assert_eq!(path, "test.mp4");
@@ -272,25 +288,29 @@ mod tests_evaluator {
         let mut evaluator = ModuleEvaluator::new();
         let mut module = create_test_module();
 
+        // Master Node (Trigger Type for simplicity, acting as master)
         let m_type = ModulePartType::Trigger(TriggerType::Fixed {
             interval_ms: 0,
             offset_ms: 0,
         });
         let m_id = module.add_part_with_type(m_type, (0.0, 0.0));
 
+        // Configure as Master
         if let Some(part) = module.parts.iter_mut().find(|p| p.id == m_id) {
             part.link_data.mode = LinkMode::Master;
-            part.link_data.trigger_input_enabled = true;
+            part.link_data.trigger_input_enabled = true; // Use trigger input to drive link
             part.outputs.push(crate::module::ModuleSocket {
                 name: "Link Out".to_string(),
                 socket_type: crate::module::ModuleSocketType::Link,
             });
+            // Also needs Trigger In socket if enabled
             part.inputs.push(crate::module::ModuleSocket {
                 name: "Trigger In (Vis)".to_string(),
                 socket_type: crate::module::ModuleSocketType::Trigger,
             });
         }
 
+        // Driving Trigger
         let t_id = module.add_part_with_type(
             ModulePartType::Trigger(TriggerType::Fixed {
                 interval_ms: 0,
@@ -299,9 +319,13 @@ mod tests_evaluator {
             (-100.0, 0.0),
         );
 
+        // Connect Driving Trigger -> Master Trigger In (Vis)
+        // Master Trigger In index: 0 (since Triggers usually have 0 inputs)
         module.add_connection(t_id, 0, m_id, 0);
 
+        // Slave Node (Layer)
         let s_id = module.add_part(crate::module::PartType::Layer, (100.0, 0.0));
+        // Configure as Slave
         if let Some(part) = module.parts.iter_mut().find(|p| p.id == s_id) {
             part.link_data.mode = LinkMode::Slave;
             part.inputs.push(crate::module::ModuleSocket {
@@ -310,14 +334,17 @@ mod tests_evaluator {
             });
         }
 
+        // Connect Master Link Out -> Slave Link In
+        // Master Link Out index: 1 (0 is Trigger Out)
+        // Slave Link In index: 2 (0=Media, 1=Trigger)
         module.add_connection(m_id, 1, s_id, 2);
 
-        evaluator.set_delta_time(0.01);
         let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default(), 0);
 
+        // Master ID in trigger_values should have 2 values: Trigger Out (1.0) and Link Out (1.0)
         let m_values = &result.trigger_values[&m_id];
         assert!(m_values.len() >= 2);
-        assert_eq!(m_values[1], 1.0);
+        assert_eq!(m_values[1], 1.0); // Link Out should be active
     }
 
     #[test]
@@ -325,27 +352,33 @@ mod tests_evaluator {
         let mut evaluator = ModuleEvaluator::new();
         let mut module = create_test_module();
 
+        // 1. Layer -> Output
         let l_id = module.add_part(crate::module::PartType::Layer, (0.0, 0.0));
         let o_id = module.add_part(crate::module::PartType::Output, (100.0, 0.0));
         module.add_connection(l_id, 0, o_id, 0);
 
         let shared = crate::module::SharedMediaState::default();
 
-        evaluator.set_delta_time(0.01);
+        // Pass 1: Should create one RenderOp
         evaluator.evaluate(&module, &shared, 0);
         assert_eq!(evaluator.cached_result.render_ops.len(), 1);
         assert_eq!(evaluator.cached_result.spare_render_ops.len(), 0);
 
-        evaluator.set_delta_time(0.01);
+        // Pass 2: Should recycle the RenderOp
+        // Note: evaluate() calls clear() at the start, moving render_ops to spare.
+        // Then it pops one.
         evaluator.evaluate(&module, &shared, 0);
         assert_eq!(evaluator.cached_result.render_ops.len(), 1);
+        // Spare should be 0 because we popped the one that was recycled
         assert_eq!(evaluator.cached_result.spare_render_ops.len(), 0);
 
+        // Pass 3: Reduce workload (no output connection)
         module.remove_connection(l_id, 0, o_id, 0);
-        evaluator.set_delta_time(0.01);
         evaluator.evaluate(&module, &shared, 1);
 
+        // render_ops should be empty
         assert_eq!(evaluator.cached_result.render_ops.len(), 0);
+        // spare_render_ops should contain the recycled one
         assert_eq!(evaluator.cached_result.spare_render_ops.len(), 1);
     }
 }
@@ -353,50 +386,62 @@ mod tests_evaluator {
 /// Render operation containing all info needed to render a layer to an output
 #[derive(Debug, Clone)]
 pub struct RenderOp {
-    /// ID of the output node this op belongs to.
+    /// The output node ID (Part ID)
     pub output_part_id: ModulePartId,
-    /// Type of output node.
+    /// The specific output type configuration
     pub output_type: OutputType,
-    /// ID of the layer part this op represents.
+
+    /// The layer node ID calling for this render
     pub layer_part_id: ModulePartId,
-    /// Mesh data for geometry deformation.
+    /// The mesh geometry to use
     pub mesh: MeshType,
-    /// Opacity of the layer.
+    /// Layer opacity
     pub opacity: f32,
-    /// Blend mode to use when compositing this layer.
+    /// Layer blend mode
     pub blend_mode: Option<BlendModeType>,
-    /// Whether this op is used for projection mapping mode.
+    /// Mapping mode active (render grid)
     pub mapping_mode: bool,
-    /// ID of the source node providing the texture, if any.
+
+    /// Source part ID (if any)
     pub source_part_id: Option<ModulePartId>,
-    /// Properties for the source node.
+    /// Source-specific properties (color, transform, flip)
     pub source_props: SourceProperties,
-    /// List of effects to apply to this layer.
+    /// Applied effects in order (Source -> Effect1 -> Effect2 -> ...)
     pub effects: Vec<ModulizerType>,
-    /// List of masks to apply to this layer.
+    /// Applied masks
     pub masks: Vec<MaskType>,
 }
 
 /// Evaluation result for a single frame
 #[derive(Debug, Clone, Default)]
 pub struct ModuleEvalResult {
-    /// Mapping from node ID to its calculated output values.
+    /// Trigger values: part_id -> (output_index -> value)
     pub trigger_values: HashMap<ModulePartId, Vec<f32>>,
-    /// Commands for source nodes to be executed by the renderer.
+    /// Source commands: part_id -> SourceCommand
     pub source_commands: HashMap<ModulePartId, SourceCommand>,
-    /// List of render operations for this frame.
+    /// Render operations to specific outputs
     pub render_ops: Vec<RenderOp>,
-    /// Spare render operations for reuse to avoid allocations.
+    /// Spare render operations for reuse (object pooling)
     pub spare_render_ops: Vec<RenderOp>,
 }
 
 impl ModuleEvalResult {
-    /// Clear the result for a new frame.
+    /// Clears the result for reuse, preserving capacity where possible
     pub fn clear(&mut self) {
+        // Clear trigger values but keep the vectors to reuse their capacity
         for values in self.trigger_values.values_mut() {
             values.clear();
         }
+        // Note: We don't remove keys from trigger_values map to reuse map capacity and vectors.
+        // However, if the graph changes, we might accumulate stale keys.
+        // For a fixed graph (most of the time), this is fine.
+        // To be safe against memory leaks on graph changes, we could occasionally prune.
+        // For now, simple reuse is a huge win.
+
+        // Source commands are typically small (one per source), but we can clear the map
         self.source_commands.clear();
+
+        // Recycle render ops instead of clearing (which drops/frees internal vectors)
         self.spare_render_ops.append(&mut self.render_ops);
     }
 }
@@ -443,7 +488,6 @@ pub enum SourceCommand {
         /// Current trigger value.
         trigger_value: f32,
     },
-    /// Receive frames from a Spout sender.
     #[cfg(target_os = "windows")]
     SpoutInput {
         /// Name of the Spout sender.
@@ -486,15 +530,41 @@ pub enum SourceCommand {
 
 /// Module graph evaluator
 pub struct ModuleEvaluator {
+    /// Current trigger data from audio analysis
     audio_trigger_data: AudioTriggerData,
+    /// Creation time for timing calculations
+    start_time: Instant,
+    /// Per-node state for stateful triggers (e.g., Random)
+    #[allow(dead_code)]
     trigger_states: HashMap<ModulePartId, TriggerState>,
+    /// Reusable result buffer to avoid allocations
     cached_result: ModuleEvalResult,
+
+    /// Cached indices per module ID to support multi-module switching
     indices_cache: HashMap<crate::module::ModuleId, Arc<ModuleGraphIndices>>,
+
+    /// Currently active keyboard keys (for Shortcut triggers)
     active_keys: std::collections::HashSet<String>,
+
+    /// State for smoothed trigger inputs: (PartId, SocketIdx) -> (Current Value, Last Updated Frame)
     trigger_smoothing_state: RefCell<HashMap<(ModulePartId, usize), (f32, u64)>>,
+
+    /// Manually fired triggers for the current frame
     manual_triggers: std::collections::HashSet<ModulePartId>,
+
+    /// MIDI notes/CCs received this frame: (channel, note/cc)
+    midi_triggers: std::collections::HashSet<(u8, u8)>,
+
+    /// OSC addresses received this frame
+    osc_triggers: std::collections::HashSet<String>,
+
+    /// Current evaluation frame count (used to prevent smoothing multiple times per frame)
     current_frame: u64,
+
+    /// Time of the last evaluation (used for delta time calculation)
     last_eval_time: Instant,
+
+    /// The delta time calculated at the start of the current evaluation frame
     current_dt: f32,
 }
 
@@ -505,28 +575,28 @@ impl Default for ModuleEvaluator {
 }
 
 impl ModuleEvaluator {
-    /// Create a new module graph evaluator.
+    /// Create a new module evaluator
     pub fn new() -> Self {
         Self {
             audio_trigger_data: AudioTriggerData::default(),
+            start_time: Instant::now(),
             trigger_states: HashMap::new(),
             cached_result: ModuleEvalResult::default(),
             indices_cache: HashMap::new(),
             active_keys: std::collections::HashSet::new(),
             trigger_smoothing_state: RefCell::new(HashMap::new()),
             manual_triggers: std::collections::HashSet::new(),
+            midi_triggers: std::collections::HashSet::new(),
+            osc_triggers: std::collections::HashSet::new(),
             current_frame: 0,
             last_eval_time: Instant::now(),
             current_dt: 0.0,
         }
     }
 
-    /// Set the delta time for the current frame and advance the internal clock.
-    pub fn set_delta_time(&mut self, dt: f32) {
-        self.current_dt = dt.min(0.5);
-        self.current_frame += 1;
-        self.last_eval_time = Instant::now();
-        self.manual_triggers.clear();
+    /// Manually fire a trigger node for the next evaluation frame
+    pub fn trigger_node(&mut self, part_id: ModulePartId) {
+        self.manual_triggers.insert(part_id);
     }
 
     /// Manually trigger a node for the current frame.
@@ -534,7 +604,12 @@ impl ModuleEvaluator {
         self.manual_triggers.insert(part_id);
     }
 
-    /// Update internal audio data for evaluation.
+    /// Record an OSC message for the next evaluation frame
+    pub fn record_osc(&mut self, address: &str) {
+        self.osc_triggers.insert(address.to_string());
+    }
+
+    /// Update audio trigger data from analysis
     pub fn update_audio(&mut self, analysis: &AudioAnalysisV2) {
         self.audio_trigger_data.band_energies = analysis.band_energies;
         self.audio_trigger_data.rms_volume = analysis.rms_volume;
@@ -581,6 +656,7 @@ impl ModuleEvaluator {
         }
     }
 
+    /// Get a spare RenderOp from the cache or create a new one (Object Pooling)
     fn get_spare_render_op(&mut self) -> RenderOp {
         self.cached_result
             .spare_render_ops
@@ -620,6 +696,8 @@ impl ModuleEvaluator {
         graph_revision: u64,
     ) -> &ModuleEvalResult {
         let mut rng = rand::rng();
+
+        // Clear previous result for reuse
         self.cached_result.clear();
         let indices_valid = if let Some(cache) = self.indices_cache.get(&module.id) {
             cache.last_revision == graph_revision
@@ -627,6 +705,7 @@ impl ModuleEvaluator {
             false
         };
         if !indices_valid {
+            // Rebuild cache
             let mut part_index_cache = HashMap::new();
             let mut conn_index_cache = HashMap::new();
             for (idx, part) in module.parts.iter().enumerate() {
@@ -647,7 +726,15 @@ impl ModuleEvaluator {
                 }),
             );
         }
+
+        // Clone the Arc to avoid borrowing self.indices_cache while borrowing self mutably later
         let indices = self.indices_cache[&module.id].clone();
+
+        // === DIAGNOSTICS: Log module structure ===
+        // (Diagnostic logging code removed for brevity/performance in hot path unless feature enabled?
+        // keeping it as it was but maybe less frequently? leaving as is per instructions to preserve functionality)
+
+        // Step 1: Evaluate all trigger nodes
         for part in &module.parts {
             if let ModulePartType::Trigger(trigger_type) = &part.part_type {
                 let state = self.trigger_states.entry(part.id).or_default();
@@ -657,6 +744,7 @@ impl ModuleEvaluator {
                     .entry(part.id)
                     .or_default();
                 values.clear();
+
                 let manual_fired = self.manual_triggers.contains(&part.id);
                 Self::compute_trigger_output(
                     trigger_type,
@@ -692,7 +780,11 @@ impl ModuleEvaluator {
                 }
             }
         }
+
+        // Step 4: Second propagation (Master Link Out -> Slave Link In)
         trigger_inputs = self.compute_trigger_inputs(module, &self.cached_result.trigger_values);
+
+        // Step 5: Process Slave Behaviors (Invert Link Input)
         for part in &module.parts {
             if part.link_data.mode == LinkMode::Slave {
                 if let Some(val) = trigger_inputs.get_mut(&part.id) {
@@ -702,9 +794,13 @@ impl ModuleEvaluator {
                 }
             }
         }
+
+        // Step 6: Generate source commands
         let socket_inputs = self.compute_socket_inputs(module, &self.cached_result.trigger_values);
+
         for part in &module.parts {
             if let ModulePartType::Source(source_type) = &part.part_type {
+                // Default to 1.0 (playing) so media files play even if no trigger is attached
                 let trigger_value = trigger_inputs.get(&part.id).copied().unwrap_or(1.0);
                 if let Some(mut cmd) =
                     self.create_source_command(source_type, trigger_value, shared_state)
@@ -743,16 +839,43 @@ impl ModuleEvaluator {
                     self.cached_result.source_commands.insert(part.id, cmd);
                 }
             }
+            // Generate output commands for Hue (which acts like a Sink/Output)
+            if let ModulePartType::Output(OutputType::Hue { .. }) = &part.part_type {
+                let trigger_value = trigger_inputs.get(&part.id).copied().unwrap_or(0.0);
+                self.cached_result.source_commands.insert(
+                    part.id,
+                    SourceCommand::HueOutput {
+                        brightness: trigger_value,
+                        hue: None,
+                        saturation: None,
+                        strobe: None,
+                        ids: None,
+                    },
+                );
+            }
+
+            // Generate output commands for New Hue Nodes
             if let ModulePartType::Hue(hue_node) = &part.part_type {
-                let s_inputs = socket_inputs.get(&part.id);
-                let brightness = s_inputs.and_then(|m| m.get(&0)).copied().unwrap_or(0.0);
-                let hue = s_inputs.and_then(|m| m.get(&1)).copied();
-                let strobe = s_inputs.and_then(|m| m.get(&2)).copied();
+                // We need per-socket inputs here
+                let socket_inputs =
+                    self.compute_socket_inputs(module, &self.cached_result.trigger_values);
+
+                let brightness = socket_inputs
+                    .get(&part.id)
+                    .and_then(|m| m.get(&0))
+                    .copied()
+                    .unwrap_or(0.0);
+                let hue = socket_inputs.get(&part.id).and_then(|m| m.get(&1)).copied(); // Socket 1: Color(Hue)
+                let strobe = socket_inputs.get(&part.id).and_then(|m| m.get(&2)).copied(); // Socket 2: Strobe
+                                                                                           // Note: If we added Saturation later it would be index 3? For now assume inputs from get_default_sockets:
+                                                                                           // 0: Brightness, 1: Color(Hue), 2: Strobe. (Wait, previous view showed 3 sockets)
+
+                // Extract IDs from node type
                 use crate::module::HueNodeType;
                 let ids = match hue_node {
                     HueNodeType::SingleLamp { id, .. } => Some(vec![id.clone()]),
                     HueNodeType::MultiLamp { ids, .. } => Some(ids.clone()),
-                    HueNodeType::EntertainmentGroup { .. } => None,
+                    HueNodeType::EntertainmentGroup { .. } => None, // Broadcast to group
                 };
                 self.cached_result.source_commands.insert(
                     part.id,
@@ -766,6 +889,8 @@ impl ModuleEvaluator {
                 );
             }
         }
+
+        // Step 4: Trace Render Pipeline
         for part in &module.parts {
             if let ModulePartType::Output(output_type) = &part.part_type {
                 if let Some(conn_idx) = indices
@@ -775,6 +900,8 @@ impl ModuleEvaluator {
                     .copied()
                 {
                     let conn = &module.connections[conn_idx];
+
+                    // Look up the layer part
                     if let Some(&layer_idx) = indices.part_index_cache.get(&conn.from_part) {
                         let layer_part = &module.parts[layer_idx];
                         let link_opacity =
@@ -807,10 +934,22 @@ impl ModuleEvaluator {
                             self.trace_chain_into(layer_part.id, module, &mut op, mesh, &indices);
                             self.cached_result.render_ops.push(op);
                         }
+                    } else {
+                        tracing::warn!(
+                            "ModuleEval: Output {} connected to non-Layer node {}",
+                            part.id,
+                            conn.from_part
+                        );
                     }
                 }
             }
         }
+
+        // Final step: Clear triggers for next frame
+        self.manual_triggers.clear();
+        self.midi_triggers.clear();
+        self.osc_triggers.clear();
+
         &self.cached_result
     }
 
@@ -835,8 +974,22 @@ impl ModuleEvaluator {
         let mut visited = std::collections::HashSet::with_capacity(16);
         visited.insert(start_node_id);
 
-        for _ in 0..50 {
-            // 1. Process triggers for the CURRENT node
+        // Optimization: Use the part index cache that was already built in evaluate()
+        // This avoids an O(N) allocation and iteration for every layer being rendered.
+        let _part_index = &indices.part_index_cache;
+
+        tracing::debug!(
+            "trace_chain: Starting from node {} in module {}",
+            start_node_id,
+            module.name
+        );
+
+        let trigger_values = &self.cached_result.trigger_values;
+
+        // Safety limit to prevent infinite loops in cyclic graphs
+        for _iteration in 0..50 {
+            // Apply Trigger Targets for the current node
+            // We need to find if any input sockets have triggers active and targets mapped
             if let Some(&part_idx) = indices.part_index_cache.get(&current_id) {
                 let part = &module.parts[part_idx];
 
@@ -876,16 +1029,23 @@ impl ModuleEvaluator {
                     }
                 }
 
-                // Apply trigger overrides (these override the base properties)
+                if !part.trigger_targets.is_empty() {
+                    tracing::debug!(
+                        "Part {} has {} trigger targets",
+                        part.id,
+                        part.trigger_targets.len()
+                    );
+                }
                 for (socket_idx, config) in &part.trigger_targets {
+                    // Find connection to this socket
                     let mut trigger_val = 0.0;
                     if let Some(conn_indices) = indices.conn_index_cache.get(&current_id) {
-                        for &c_idx in conn_indices {
-                            let conn = &module.connections[c_idx];
+                        for &conn_idx in conn_indices {
+                            let conn = &module.connections[conn_idx];
                             if conn.to_socket == *socket_idx {
-                                if let Some(vals) = trigger_values.get(&conn.from_part) {
-                                    if let Some(v) = vals.get(conn.from_socket) {
-                                        trigger_val = *v;
+                                if let Some(from_values) = trigger_values.get(&conn.from_part) {
+                                    if let Some(val) = from_values.get(conn.from_socket) {
+                                        trigger_val = *val;
                                     }
                                 }
                                 break;
@@ -929,11 +1089,6 @@ impl ModuleEvaluator {
                         _ => {}
                     }
                 }
-
-                // If we processed a source, we are done with the chain
-                if matches!(part.part_type, ModulePartType::Source(_)) {
-                    break;
-                }
             }
 
             // 2. Find PREVIOUS node in chain
@@ -957,6 +1112,217 @@ impl ModuleEvaluator {
                 if let Some(&part_idx) = indices.part_index_cache.get(&conn.from_part) {
                     let part = &module.parts[part_idx];
                     match &part.part_type {
+                        ModulePartType::Source(source_type) => {
+                            op.source_part_id = Some(part.id);
+
+                            // Helper to extract props from any source variant that has them
+                            let mut extracted_props = None;
+
+                            match source_type {
+                                SourceType::MediaFile {
+                                    opacity,
+                                    brightness,
+                                    contrast,
+                                    saturation,
+                                    hue_shift,
+                                    scale_x,
+                                    scale_y,
+                                    rotation,
+                                    offset_x,
+                                    offset_y,
+                                    flip_horizontal,
+                                    flip_vertical,
+                                    ..
+                                }
+                                | SourceType::VideoUni {
+                                    opacity,
+                                    brightness,
+                                    contrast,
+                                    saturation,
+                                    hue_shift,
+                                    scale_x,
+                                    scale_y,
+                                    rotation,
+                                    offset_x,
+                                    offset_y,
+                                    flip_horizontal,
+                                    flip_vertical,
+                                    ..
+                                }
+                                | SourceType::ImageUni {
+                                    opacity,
+                                    brightness,
+                                    contrast,
+                                    saturation,
+                                    hue_shift,
+                                    scale_x,
+                                    scale_y,
+                                    rotation,
+                                    offset_x,
+                                    offset_y,
+                                    flip_horizontal,
+                                    flip_vertical,
+                                    ..
+                                } => {
+                                    extracted_props = Some(SourceProperties {
+                                        opacity: *opacity,
+                                        brightness: *brightness,
+                                        contrast: *contrast,
+                                        saturation: *saturation,
+                                        hue_shift: *hue_shift,
+                                        scale_x: *scale_x,
+                                        scale_y: *scale_y,
+                                        rotation: *rotation,
+                                        offset_x: *offset_x,
+                                        offset_y: *offset_y,
+                                        flip_horizontal: *flip_horizontal,
+                                        flip_vertical: *flip_vertical,
+                                    });
+                                }
+                                SourceType::VideoMulti {
+                                    opacity,
+                                    brightness,
+                                    contrast,
+                                    saturation,
+                                    hue_shift,
+                                    scale_x,
+                                    scale_y,
+                                    rotation,
+                                    offset_x,
+                                    offset_y,
+                                    flip_horizontal,
+                                    flip_vertical,
+                                    ..
+                                }
+                                | SourceType::ImageMulti {
+                                    opacity,
+                                    brightness,
+                                    contrast,
+                                    saturation,
+                                    hue_shift,
+                                    scale_x,
+                                    scale_y,
+                                    rotation,
+                                    offset_x,
+                                    offset_y,
+                                    flip_horizontal,
+                                    flip_vertical,
+                                    ..
+                                } => {
+                                    extracted_props = Some(SourceProperties {
+                                        opacity: *opacity,
+                                        brightness: *brightness,
+                                        contrast: *contrast,
+                                        saturation: *saturation,
+                                        hue_shift: *hue_shift,
+                                        scale_x: *scale_x,
+                                        scale_y: *scale_y,
+                                        rotation: *rotation,
+                                        offset_x: *offset_x,
+                                        offset_y: *offset_y,
+                                        flip_horizontal: *flip_horizontal,
+                                        flip_vertical: *flip_vertical,
+                                    });
+                                }
+                                _ => {}
+                            }
+
+                            if let Some(mut props) = extracted_props {
+                                // Re-apply overrides since we just replaced with defaults
+                                // (This structure is slightly inefficient, re-doing logic)
+                                // Better: Apply overrides TO props.
+
+                                // .. Re-run target logic ..
+                                for (socket_idx, config) in &part.trigger_targets {
+                                    // Find connection to this socket
+                                    let mut trigger_val = 0.0;
+                                    // L556 replacement
+                                    if let Some(conn_indices) =
+                                        indices.conn_index_cache.get(&part.id)
+                                    {
+                                        for &conn_idx in conn_indices {
+                                            let conn = &module.connections[conn_idx];
+                                            if conn.to_socket == *socket_idx {
+                                                if let Some(from_values) =
+                                                    trigger_values.get(&conn.from_part)
+                                                {
+                                                    if let Some(val) =
+                                                        from_values.get(conn.from_socket)
+                                                    {
+                                                        trigger_val = *val;
+                                                    }
+                                                }
+                                                break;
+                                            }
+                                        }
+                                    }
+
+                                    // Apply config if value is significant (or if fixed/random mode which might trigger on 0?)
+                                    // Actually we just apply the mapping.
+                                    match &config.target {
+                                        crate::module::TriggerTarget::None => {}
+                                        target => {
+                                            // Apply mapping
+                                            let raw_final_val = config.apply(trigger_val);
+                                            let final_val = self.apply_smoothing(
+                                                part.id,
+                                                *socket_idx,
+                                                raw_final_val,
+                                                &config.mode,
+                                            );
+
+                                            tracing::debug!(
+                                                "Trigger applying: part={}, socket={}, target={:?}, raw={}, final={}",
+                                                part.id, socket_idx, target, trigger_val, final_val
+                                            );
+
+                                            match target {
+                                                crate::module::TriggerTarget::Opacity => {
+                                                    props.opacity = final_val;
+                                                }
+                                                crate::module::TriggerTarget::Brightness => {
+                                                    props.brightness = final_val;
+                                                }
+                                                crate::module::TriggerTarget::Contrast => {
+                                                    props.contrast = final_val;
+                                                }
+                                                crate::module::TriggerTarget::Saturation => {
+                                                    props.saturation = final_val;
+                                                }
+                                                crate::module::TriggerTarget::HueShift => {
+                                                    props.hue_shift = final_val;
+                                                }
+                                                crate::module::TriggerTarget::ScaleX => {
+                                                    props.scale_x = final_val;
+                                                }
+                                                crate::module::TriggerTarget::ScaleY => {
+                                                    props.scale_y = final_val;
+                                                }
+                                                crate::module::TriggerTarget::Rotation => {
+                                                    props.rotation = final_val;
+                                                }
+                                                crate::module::TriggerTarget::OffsetX => {
+                                                    props.offset_x = final_val;
+                                                }
+                                                crate::module::TriggerTarget::OffsetY => {
+                                                    props.offset_y = final_val;
+                                                }
+                                                crate::module::TriggerTarget::FlipH => {
+                                                    props.flip_horizontal = final_val > 0.5;
+                                                }
+                                                crate::module::TriggerTarget::FlipV => {
+                                                    props.flip_vertical = final_val > 0.5;
+                                                }
+                                                _ => {}
+                                            }
+                                        }
+                                    }
+                                }
+
+                                op.source_props = props;
+                            }
+                            break;
+                        }
                         ModulePartType::Modulizer(mod_type) => {
                             op.effects.push(mod_type.clone());
                             current_id = part.id;
@@ -971,36 +1337,42 @@ impl ModuleEvaluator {
                             }
                             current_id = part.id;
                         }
-                        ModulePartType::Source(_) => {
-                            current_id = part.id;
+                        _ => {
+                            break;
                         }
-                        _ => break, // Trigger or other non-chain node
                     }
                 } else {
                     break;
                 }
             } else {
+                warn_once!(
+                    "trace_chain: Node {} not found in part_index, stopping traversal",
+                    current_id
+                );
                 break;
             }
         }
 
         op.effects.reverse();
         op.masks.reverse();
+
         op.mesh = override_mesh.unwrap_or_else(|| default_mesh.clone());
     }
 
+    /// Evaluate a trigger node and write output values to the provided buffer
     #[allow(clippy::too_many_arguments)]
     fn compute_trigger_output(
         trigger_type: &TriggerType,
-        state: &mut TriggerState,
         audio_data: &AudioTriggerData,
-        dt: f32,
-        shared_state: &SharedMediaState,
+        start_time: Instant,
         active_keys: &std::collections::HashSet<String>,
+        midi_triggers: &std::collections::HashSet<(u8, u8)>,
+        osc_triggers: &std::collections::HashSet<String>,
         manual_fired: bool,
         output: &mut Vec<f32>,
         rng: &mut impl rand::Rng,
     ) {
+        // Helper to push and optionally invert/manual override value
         let push_val_internal = |val: f32, out: &mut Vec<f32>, invert: bool| {
             let base_val = if manual_fired { 1.0 } else { val };
             let final_val = if invert {
@@ -1010,6 +1382,7 @@ impl ModuleEvaluator {
             };
             out.push(final_val);
         };
+
         match trigger_type {
             TriggerType::AudioFFT {
                 threshold,
@@ -1026,10 +1399,16 @@ impl ModuleEvaluator {
                     }
                 }
                 if output_config.volume_outputs {
-                    let invert_rms = output_config.inverted_outputs.contains("RMS Volume");
-                    let invert_peak = output_config.inverted_outputs.contains("Peak Volume");
-                    push_val_internal(audio_data.rms_volume, output, invert_rms);
-                    push_val_internal(audio_data.peak_volume, output, invert_peak);
+                    push_val_internal(
+                        audio_data.rms_volume,
+                        output,
+                        output_config.inverted_outputs.contains("RMS Volume"),
+                    );
+                    push_val_internal(
+                        audio_data.peak_volume,
+                        output,
+                        output_config.inverted_outputs.contains("Peak Volume"),
+                    );
                 }
                 if output_config.beat_output {
                     let invert = output_config.inverted_outputs.contains("Beat Out");
@@ -1090,7 +1469,8 @@ impl ModuleEvaluator {
                         }
                         push_val_internal(if triggered { 1.0 } else { 0.0 }, output, false);
                     }
-                }
+                };
+                push_val_internal(val, output, false);
             }
             TriggerType::Midi { channel, note, .. } => {
                 if let Some(&value) = shared_state.active_midi_cc.get(&(*channel, *note)) {
@@ -1118,6 +1498,8 @@ impl ModuleEvaluator {
                 modifiers,
             } => {
                 let is_pressed = active_keys.contains(key_code);
+
+                // Check modifiers bitmask (1=Shift, 2=Control, 4=Alt)
                 let mut modifiers_match = true;
                 if *modifiers & 1 != 0 && !active_keys.contains("Shift") {
                     modifiers_match = false;
@@ -1155,6 +1537,7 @@ impl ModuleEvaluator {
                 }
             }
         }
+
         inputs
     }
 
@@ -1164,6 +1547,7 @@ impl ModuleEvaluator {
         trigger_values: &HashMap<ModulePartId, Vec<f32>>,
     ) -> HashMap<ModulePartId, HashMap<usize, f32>> {
         let mut inputs: HashMap<ModulePartId, HashMap<usize, f32>> = HashMap::new();
+
         for conn in &module.connections {
             if let Some(values) = trigger_values.get(&conn.from_part) {
                 if let Some(&value) = values.get(conn.from_socket) {

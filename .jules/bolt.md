@@ -60,3 +60,7 @@
 ## 2026-03-08 - O(N) FrameData Allocations in Video Pipelines
 **Learning:** `Vec<u8>` for `FrameData::Cpu` in `mapmap-io` resulted in large O(N) memory allocations (deep copying raw video frames) during video playback or transfer.
 **Action:** `FrameData::Cpu` now wraps pixel buffers in an `Arc<Vec<u8>>`. Reusing the `Arc` pointer entirely bypasses the O(N) duplication, enabling zero-copy frame dispatch across multi-threaded renderer contexts.
+
+## 2024-03-10 - Integer Math for YUV to RGB Conversion
+**Learning:** Floating-point operations in hot loops, like `yuv_to_rgb` processing every pixel in video frames, can be a major performance bottleneck.
+**Action:** When performing color space conversions or other pixel-level math, always prefer integer math approximations (e.g., multiplying by a constant and dividing by a power of two) over float operations to significantly reduce processing time.

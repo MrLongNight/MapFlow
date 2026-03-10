@@ -100,10 +100,11 @@ pub fn show_osc_panel(
             for (addr, target) in &control_manager.osc_mapping.map {
                 ui.horizontal(|ui| {
                     ui.label(format!("{} -> {:?}", addr, target));
-                    if ui
-                        .button(format!("{}##{}", app_ui.i18n.t("btn-remove"), addr))
-                        .clicked()
-                    {
+                    if crate::widgets::custom::hold_to_action_button(
+                        ui,
+                        &format!("{}##{}", app_ui.i18n.t("btn-remove"), addr),
+                        crate::theme::colors::WARN_COLOR,
+                    ) {
                         mappings_to_remove.push(addr.clone());
                     }
                 });

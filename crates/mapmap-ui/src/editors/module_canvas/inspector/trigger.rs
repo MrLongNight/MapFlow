@@ -313,11 +313,7 @@ pub fn render_trigger_ui(canvas: &mut ModuleCanvas, ui: &mut Ui, trigger: &mut T
                         mapmap_control::midi::MidiInputHandler::list_ports()
                     {
                         if ports.is_empty() {
-<<<<<<< HEAD
-                            ui.label(egui::RichText::new("No MIDI devices").weak());
-=======
-                            ui.label(egui::RichText::new("No MIDI devices").weak().italics());
->>>>>>> origin/lina-ui-empty-states-13849761770176199869
+                            ui.label("No MIDI devices");
                         } else {
                             egui::ComboBox::from_id_salt(
                                 "midi_device",

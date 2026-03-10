@@ -16,8 +16,7 @@ impl ModuleCanvas {
         manager: &mut ModuleManager,
         locale: &LocaleManager,
         actions: &mut Vec<crate::UIAction>,
-        meter_style: crate::config::AudioMeterStyle,
     ) {
-        renderer::show(self, ui, manager, locale, actions, meter_style);
+        renderer::show(self, ui, manager, locale, actions);
     }
 }

@@ -46,11 +46,6 @@ pub struct ControlManager {
     /// Map of keyboard shortcuts to application actions.
     pub key_bindings: KeyBindings,
 
-    /// Raw MIDI events received this frame (channel, note/cc)
-    pub raw_midi_events: Vec<(u8, u8)>,
-    /// Raw OSC addresses received this frame
-    pub raw_osc_events: Vec<String>,
-
     /// Event callback for control changes
     #[allow(clippy::type_complexity)]
     /// Optional callback function triggered on every control value change.
@@ -80,9 +75,6 @@ impl ControlManager {
 
             cue_list: CueList::new(),
             key_bindings: KeyBindings::new(),
-
-            raw_midi_events: Vec::new(),
-            raw_osc_events: Vec::new(),
 
             control_callback: None,
         }
@@ -181,10 +173,6 @@ impl ControlManager {
 
     /// Update all control systems (call every frame)
     pub fn update(&mut self) -> (Vec<crate::midi::MidiMessage>, Vec<rosc::OscPacket>) {
-        // Clear raw events for the new frame
-        self.raw_midi_events.clear();
-        self.raw_osc_events.clear();
-
         let midi_events;
         let osc_events;
 

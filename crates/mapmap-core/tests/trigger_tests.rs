@@ -21,7 +21,7 @@ fn test_manual_trigger() {
     let t_id = module.add_part_with_type(ModulePartType::Trigger(TriggerType::Beat), (0.0, 0.0));
 
     // Evaluate without manual trigger
-    let shared = SharedMediaState::default();
+    let shared = mapmap_core::module::SharedMediaState::default();
     let res = evaluator.evaluate(&module, &shared, 0);
     let val = res
         .trigger_values
@@ -39,11 +39,10 @@ fn test_manual_trigger() {
         .get(&t_id)
         .and_then(|v| v.first())
         .copied()
-        .unwrap_or(1.0); // Should be 1.0
+        .unwrap_or(0.0);
     assert_eq!(val, 1.0);
 
     // Verify it's cleared next frame
-    evaluator.set_delta_time(0.01);
     let res = evaluator.evaluate(&module, &shared, 0);
     let val = res
         .trigger_values
@@ -76,7 +75,7 @@ fn test_shortcut_trigger() {
         (0.0, 0.0),
     );
 
-    let shared = SharedMediaState::default();
+    let shared = mapmap_core::module::SharedMediaState::default();
 
     // No key pressed
     let res = evaluator.evaluate(&module, &shared, 0);
@@ -138,7 +137,7 @@ fn test_midi_trigger() {
         (0.0, 0.0),
     );
 
-    let mut shared = SharedMediaState::default();
+    let mut shared = mapmap_core::module::SharedMediaState::default();
 
     // No MIDI
     let res = evaluator.evaluate(&module, &shared, 0);
@@ -150,9 +149,10 @@ fn test_midi_trigger() {
         .unwrap_or(0.0);
     assert_eq!(val, 0.0);
 
-    // Send MIDI note event
-    shared.active_midi_events.push((1, 60, 127));
-    let res = evaluator.evaluate(&module, &shared, 0);
+    // Send MIDI
+    let mut shared_midi = shared.clone();
+    shared_midi.active_midi_events.push((1, 60, 127));
+    let res = evaluator.evaluate(&module, &shared_midi, 0);
     let val = res
         .trigger_values
         .get(&t_id)
@@ -161,8 +161,7 @@ fn test_midi_trigger() {
         .unwrap_or(0.0);
     assert_eq!(val, 1.0);
 
-    // Verify cleared in next frame
-    shared.active_midi_events.clear();
+    // Verify cleared
     let res = evaluator.evaluate(&module, &shared, 0);
     let val = res
         .trigger_values
@@ -194,7 +193,7 @@ fn test_osc_trigger() {
         (0.0, 0.0),
     );
 
-    let mut shared = SharedMediaState::default();
+    let mut shared = mapmap_core::module::SharedMediaState::default();
 
     // No OSC
     let res = evaluator.evaluate(&module, &shared, 0);
@@ -220,7 +219,6 @@ fn test_osc_trigger() {
     assert_eq!(val, 1.0);
 
     // Verify cleared
-    shared.active_osc_messages.clear();
     let res = evaluator.evaluate(&module, &shared, 0);
     let val = res
         .trigger_values

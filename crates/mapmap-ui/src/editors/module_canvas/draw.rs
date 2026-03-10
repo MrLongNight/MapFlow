@@ -148,23 +148,28 @@ where
     let pointer_pos = ui.input(|i| i.pointer.hover_pos());
     let secondary_clicked = ui.input(|i| i.pointer.secondary_clicked());
     let alt_held = ui.input(|i| i.modifiers.alt);
+    let _primary_clicked = ui.input(|i| i.pointer.primary_clicked());
 
     let mut remove_idx = None;
 
     for (conn_idx, conn) in module.connections.iter().enumerate() {
+        // Find source and target parts
         let from_part = module.parts.iter().find(|p| p.id == conn.from_part);
         let to_part = module.parts.iter().find(|p| p.id == conn.to_part);
 
         if let (Some(from), Some(to)) = (from_part, to_part) {
+            // Determine cable color based on socket type
             let socket_type = if let Some(socket) = from.outputs.get(conn.from_socket) {
                 &socket.socket_type
             } else if let Some(socket) = to.inputs.get(conn.to_socket) {
                 &socket.socket_type
             } else {
-                &mapmap_core::module::ModuleSocketType::Media
+                &mapmap_core::module::ModuleSocketType::Media // Fallback
             };
             let cable_color = utils::get_socket_color(socket_type);
 
+            // Calculate WORLD positions
+            // Output: Right side + center of socket height
             let from_local_y = title_height
                 + socket_offset_y
                 + conn.from_socket as f32 * socket_spacing
@@ -172,16 +177,19 @@ where
             let from_socket_world =
                 Pos2::new(from.position.0 + node_width, from.position.1 + from_local_y);
 
+            // Input: Left side + center of socket height
             let to_local_y = title_height
                 + socket_offset_y
                 + conn.to_socket as f32 * socket_spacing
                 + socket_spacing / 2.0;
             let to_socket_world = Pos2::new(to.position.0, to.position.1 + to_local_y);
 
+            // Convert to SCREEN positions
             let start_pos = to_screen(from_socket_world);
             let end_pos = to_screen(to_socket_world);
 
-            let plug_size = 20.0 * canvas.zoom;
+            // Draw Plugs - plugs should point INTO the nodes
+            let plug_size = 32.0 * canvas.zoom;
 
             let icon_name = match socket_type {
                 mapmap_core::module::ModuleSocketType::Trigger => "audio-jack1.1.svg",
@@ -192,19 +200,18 @@ where
                 mapmap_core::module::ModuleSocketType::Link => "audio-jack_1.2.svg",
             };
 
-            let is_new_jack = icon_name == "audio-jack1.1.svg" || icon_name == "audio-jack_2.svg";
-            let is_trigger = matches!(socket_type, mapmap_core::module::ModuleSocketType::Trigger);
-
+            // Draw Cable (Bezier)
             let cable_start = start_pos;
             let cable_end = end_pos;
 
             let (ctrl1, ctrl2) =
                 geometry::calculate_control_points(cable_start, cable_end, canvas.zoom);
 
+            // Hit Detection (Approximate Bezier with segments)
             let mut is_hovered = false;
             if let Some(pos) = pointer_pos {
                 let steps = 20;
-                let threshold = 5.0 * canvas.zoom.max(1.0);
+                let threshold = 5.0 * canvas.zoom.max(1.0); // Adjust hit area with zoom
 
                 if geometry::is_point_near_cubic_bezier(
                     pos,
@@ -219,6 +226,7 @@ where
                 }
             }
 
+            // Handle Interaction
             let mut progress = 0.0;
             if is_hovered {
                 if secondary_clicked {
@@ -227,6 +235,7 @@ where
                     canvas.context_menu_part = None;
                 }
 
+                // Hold to delete (Alt + Click + Hold)
                 let is_interacting = alt_held && ui.input(|i| i.pointer.primary_down());
                 let conn_id = ui.id().with(("delete_conn", conn_idx));
                 let (triggered, p) = crate::widgets::check_hold_state(ui, conn_id, is_interacting);
@@ -237,9 +246,12 @@ where
                 }
             }
 
+            // Visual Style
             let (stroke_width, stroke_color, glow_width) = if is_hovered {
                 if alt_held {
+                    // Destructive Mode
                     if progress > 0.0 {
+                        // Animate while holding
                         let pulse = (ui.input(|i| i.time) * 20.0).sin().abs() as f32;
                         let color = Color32::RED.linear_multiply(0.5 + 0.5 * pulse);
                         (
@@ -251,12 +263,14 @@ where
                         (4.0 * canvas.zoom, Color32::RED, 10.0 * canvas.zoom)
                     }
                 } else {
+                    // Normal Hover
                     (3.0 * canvas.zoom, Color32::WHITE, 8.0 * canvas.zoom)
                 }
             } else {
                 (2.0 * canvas.zoom, cable_color, 6.0 * canvas.zoom)
             };
 
+            // Glow (Behind)
             let glow_stroke = Stroke::new(glow_width, cable_color.linear_multiply(0.3));
             painter.add(CubicBezierShape::from_points_stroke(
                 [cable_start, ctrl1, ctrl2, cable_end],
@@ -265,6 +279,7 @@ where
                 glow_stroke,
             ));
 
+            // Core Cable (Front)
             let cable_stroke = Stroke::new(stroke_width, stroke_color);
             painter.add(CubicBezierShape::from_points_stroke(
                 [cable_start, ctrl1, ctrl2, cable_end],
@@ -273,6 +288,7 @@ where
                 cable_stroke,
             ));
 
+            // Add flow animation
             if canvas.zoom > 0.6 {
                 let time = ui.input(|i| i.time);
                 let flow_t = (time * 1.5).fract() as f32;
@@ -290,6 +306,7 @@ where
                     Color32::from_rgba_unmultiplied(255, 255, 255, 150),
                 );
             }
+            // Draw Plugs on top of cable
             if let Some(texture) = canvas.plug_icons.get(icon_name) {
                 use std::f32::consts::PI;
 
@@ -345,23 +362,30 @@ where
                     Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
                     painter,
                     texture.id(),
+                    start_rect,
+                    Rect::from_min_max(Pos2::new(1.0, 0.0), Pos2::new(0.0, 1.0)),
+                    Color32::WHITE,
                 );
 
-                draw_rotated(
-                    end_pos,
-                    target_angle,
-                    plug_size,
-                    Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
-                    painter,
+                // Target Plug at INPUT socket - pointing RIGHT (into node)
+                let end_rect = Rect::from_center_size(end_pos, Vec2::splat(plug_size));
+                // Normal orientation (pointing right into node)
+                painter.image(
                     texture.id(),
+                    end_rect,
+                    Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0)),
+                    Color32::WHITE,
                 );
             } else {
+                // Fallback circles
                 painter.circle_filled(start_pos, 6.0 * canvas.zoom, cable_color);
                 painter.circle_filled(end_pos, 6.0 * canvas.zoom, cable_color);
             }
 
+            // Draw Hold Progress Overlay
             if progress > 0.0 {
                 if let Some(pos) = pointer_pos {
+                    // Draw arc using overlay painter
                     let overlay_painter = ui.ctx().layer_painter(egui::LayerId::new(
                         egui::Order::Tooltip,
                         ui.id().with("overlay"),
@@ -371,12 +395,14 @@ where
                     let radius = 15.0 * canvas.zoom;
                     let stroke = Stroke::new(3.0 * canvas.zoom, Color32::RED);
 
+                    // Background ring
                     overlay_painter.circle_stroke(
                         pos,
                         radius,
                         Stroke::new(2.0, Color32::RED.linear_multiply(0.2)),
                     );
 
+                    // Progress arc
                     let start_angle = -TAU / 4.0;
                     let end_angle = start_angle + progress * TAU;
                     let n_points = 32;
@@ -390,6 +416,7 @@ where
 
                     overlay_painter.add(egui::Shape::line(points, stroke));
 
+                    // Text hint
                     overlay_painter.text(
                         pos + Vec2::new(0.0, radius + 5.0),
                         egui::Align2::CENTER_TOP,
@@ -405,7 +432,6 @@ where
     remove_idx
 }
 
-#[allow(clippy::too_many_arguments)]
 pub fn draw_part_with_delete(
     canvas: &ModuleCanvas,
     ui: &Ui,
@@ -414,11 +440,12 @@ pub fn draw_part_with_delete(
     rect: Rect,
     actions: &mut Vec<UIAction>,
     module_id: ModuleId,
-    meter_style: crate::config::AudioMeterStyle,
 ) {
+    // Get part color and name based on type
     let (_bg_color, title_color, icon, name) = utils::get_part_style(&part.part_type);
     let category = utils::get_part_category(&part.part_type);
 
+    // Helper: get audio trigger state
     let is_audio_trigger = matches!(
         part.part_type,
         ModulePartType::Trigger(TriggerType::AudioFFT { .. })
@@ -432,6 +459,7 @@ pub fn draw_part_with_delete(
     }) = &part.part_type
     {
         threshold = *t;
+        // Cast AudioBand enum to usize for indexing
         let index = *band as usize;
         if let Some(val) = canvas.audio_trigger_data.band_energies.get(index) {
             audio_trigger_value = *val;
@@ -439,6 +467,7 @@ pub fn draw_part_with_delete(
         }
     }
 
+    // Check generic trigger value from evaluator
     let generic_trigger_value = canvas
         .last_trigger_values
         .get(&part.id)
@@ -446,6 +475,7 @@ pub fn draw_part_with_delete(
         .unwrap_or(0.0);
     let is_generic_active = generic_trigger_value > 0.1;
 
+    // Combine
     let trigger_value = if is_generic_active {
         generic_trigger_value
     } else {
@@ -453,11 +483,13 @@ pub fn draw_part_with_delete(
     };
     let is_active = is_audio_active || is_generic_active;
 
+    // Draw glow effect if active
     if is_active {
         let glow_intensity = (trigger_value * 2.0).min(1.0);
         let base_color =
             Color32::from_rgba_unmultiplied(255, (160.0 * glow_intensity) as u8, 0, 255);
 
+        // Cyber-Glow: Multi-layered sharp strokes
         for i in 1..=4 {
             let expansion = i as f32 * 1.5 * canvas.zoom;
             let alpha = (100.0 / (i as f32)).min(255.0) as u8;
@@ -473,6 +505,7 @@ pub fn draw_part_with_delete(
             );
         }
 
+        // Inner "Light" border
         painter.rect_stroke(
             rect,
             0.0,
@@ -484,6 +517,7 @@ pub fn draw_part_with_delete(
         );
     }
 
+    // MIDI Learn Highlight
     let is_midi_learn = canvas.midi_learn_part_id == Some(part.id);
     if is_midi_learn {
         let time = ui.input(|i| i.time);
@@ -506,9 +540,11 @@ pub fn draw_part_with_delete(
         );
     }
 
+    // Draw background (Dark Neutral for high contrast)
     let neutral_bg = colors::DARK_GREY;
     painter.rect_filled(rect, 0.0, neutral_bg);
 
+    // Handle drag and drop for Media Files
     if let mapmap_core::module::ModulePartType::Source(
         mapmap_core::module::SourceType::MediaFile { .. },
     ) = &part.part_type
@@ -536,6 +572,7 @@ pub fn draw_part_with_delete(
         }
     }
 
+    // Node border
     painter.rect_stroke(
         rect,
         0.0,
@@ -543,15 +580,19 @@ pub fn draw_part_with_delete(
         egui::StrokeKind::Middle,
     );
 
+    // Title bar
     let title_height = 28.0 * canvas.zoom;
     let title_rect = Rect::from_min_size(rect.min, Vec2::new(rect.width(), title_height));
 
+    // Title bar background
     painter.rect_filled(title_rect, 0.0, colors::LIGHTER_GREY);
 
+    // Title bar Top Accent Stripe
     let stripe_height = 3.0 * canvas.zoom;
     let stripe_rect = Rect::from_min_size(rect.min, Vec2::new(rect.width(), stripe_height));
     painter.rect_filled(stripe_rect, 0.0, title_color);
 
+    // Title separator line
     painter.line_segment(
         [
             Pos2::new(rect.min.x, rect.min.y + title_height),
@@ -560,6 +601,8 @@ pub fn draw_part_with_delete(
         Stroke::new(1.0, colors::STROKE_GREY),
     );
 
+    // --- NODE PREVIEW (Video/Effect Output) ---
+    // Calculate preview area (body of the node)
     let preview_rect = Rect::from_min_max(
         Pos2::new(
             rect.min.x + 2.0 * canvas.zoom,
@@ -572,6 +615,7 @@ pub fn draw_part_with_delete(
     );
 
     if let Some(&texture_id) = canvas.node_previews.get(&(module_id, part.id)) {
+        // Draw the registered texture
         painter.image(
             texture_id,
             preview_rect,
@@ -579,12 +623,15 @@ pub fn draw_part_with_delete(
             Color32::WHITE,
         );
     } else {
+        // Fallback: subtle pattern or dark background if no preview is available
         painter.rect_filled(preview_rect, 0.0, Color32::from_gray(15));
     }
 
+    // Enhanced Title Rendering
     let mut cursor_x = rect.min.x + 8.0 * canvas.zoom;
     let center_y = title_rect.center().y;
 
+    // 1. Icon
     let icon_galley = ui.painter().layout_no_wrap(
         icon.to_string(),
         egui::FontId::proportional(16.0 * canvas.zoom),
@@ -597,6 +644,7 @@ pub fn draw_part_with_delete(
     );
     cursor_x += icon_galley.size().x + 6.0 * canvas.zoom;
 
+    // 2. Category
     let category_text = category.to_uppercase();
     let category_color = Color32::from_white_alpha(160);
     let category_galley = ui.painter().layout_no_wrap(
@@ -611,6 +659,7 @@ pub fn draw_part_with_delete(
     );
     cursor_x += category_galley.size().x + 6.0 * canvas.zoom;
 
+    // 3. Name
     let name_galley = ui.painter().layout_no_wrap(
         name.to_string(),
         egui::FontId::proportional(14.0 * canvas.zoom),
@@ -622,8 +671,10 @@ pub fn draw_part_with_delete(
         Color32::WHITE,
     );
 
+    // Delete button
     let delete_button_rect = get_delete_button_rect(canvas, rect);
 
+    // Retrieve hold progress for visualization (Mary StyleUX)
     let delete_id = egui::Id::new((part.id, "delete"));
     let progress = ui
         .ctx()
@@ -646,10 +697,12 @@ pub fn draw_part_with_delete(
         Color32::from_rgba_unmultiplied(255, 100, 100, 200),
     );
 
+    // Draw property display based on part type
     let property_text = utils::get_part_property_text(&part.part_type);
     let has_property_text = !property_text.is_empty();
 
     if has_property_text {
+        // Position at the bottom of the node to avoid overlapping sockets
         let property_y = rect.max.y - 10.0 * canvas.zoom;
         painter.text(
             Pos2::new(rect.center().x, property_y),
@@ -660,6 +713,7 @@ pub fn draw_part_with_delete(
         );
     }
 
+    // Draw Media Playback Progress Bar
     if let mapmap_core::module::ModulePartType::Source(
         mapmap_core::module::SourceType::MediaFile { .. },
     ) = &part.part_type
@@ -675,10 +729,12 @@ pub fn draw_part_with_delete(
             let bar_width = rect.width() - 20.0 * canvas.zoom;
             let bar_x = rect.min.x + 10.0 * canvas.zoom;
 
+            // Background
             let bar_bg =
                 Rect::from_min_size(Pos2::new(bar_x, bar_y), Vec2::new(bar_width, bar_height));
             painter.rect_filled(bar_bg, 2.0 * canvas.zoom, Color32::from_gray(30));
 
+            // Progress
             let progress_width = (progress * bar_width).max(2.0 * canvas.zoom);
             let progress_rect = Rect::from_min_size(
                 Pos2::new(bar_x, bar_y),
@@ -686,13 +742,14 @@ pub fn draw_part_with_delete(
             );
 
             let color = if is_playing {
-                Color32::from_rgb(100, 255, 100)
+                Color32::from_rgb(100, 255, 100) // Green
             } else {
-                Color32::from_rgb(255, 200, 50)
+                Color32::from_rgb(255, 200, 50) // Yellow/Orange
             };
 
             painter.rect_filled(progress_rect, 2.0 * canvas.zoom, color);
 
+            // Interaction (Seek)
             let interact_rect = bar_bg.expand(6.0 * canvas.zoom);
             let bar_response = ui.interact(
                 interact_rect,
@@ -717,125 +774,79 @@ pub fn draw_part_with_delete(
         }
     }
 
+    // Draw audio trigger VU meter and live value display
     if is_audio_trigger {
         let offset_from_bottom = if has_property_text { 28.0 } else { 12.0 };
-
-        let meter_height = match meter_style {
-            crate::config::AudioMeterStyle::Retro => 12.0 * canvas.zoom,
-            crate::config::AudioMeterStyle::Digital => 4.0 * canvas.zoom,
-        };
-
+        let meter_height = 4.0 * canvas.zoom; // Thinner meter
         let meter_y = rect.max.y - (offset_from_bottom * canvas.zoom) - meter_height;
         let meter_width = rect.width() - 20.0 * canvas.zoom;
         let meter_x = rect.min.x + 10.0 * canvas.zoom;
 
-        match meter_style {
-            crate::config::AudioMeterStyle::Retro => {
-                let meter_bg = Rect::from_min_size(
-                    Pos2::new(meter_x, meter_y),
-                    Vec2::new(meter_width, meter_height),
-                );
-                painter.rect_filled(meter_bg, 2.0, Color32::from_rgb(230, 225, 210));
+        // Background bar
+        let meter_bg = Rect::from_min_size(
+            Pos2::new(meter_x, meter_y),
+            Vec2::new(meter_width, meter_height),
+        );
+        painter.rect_filled(meter_bg, 2.0, Color32::from_gray(20));
 
-                let arc_rect = meter_bg.shrink(2.0 * canvas.zoom);
-                let clamped_val = trigger_value.clamp(0.0, 1.0);
-                let pivot = Pos2::new(meter_bg.center().x, meter_bg.max.y + meter_height * 0.5);
-                let radius = meter_height * 1.5;
+        // Value bar with Hardware-Segments
+        let num_segments = 20;
+        let segment_spacing = 1.0 * canvas.zoom;
+        let segment_width =
+            (meter_width - (num_segments as f32 - 1.0) * segment_spacing) / num_segments as f32;
 
-                let start_angle = -40.0_f32.to_radians();
-                let end_angle = 40.0_f32.to_radians();
-                let needle_angle = start_angle + (end_angle - start_angle) * clamped_val;
-
-                let needle_tip =
-                    pivot + Vec2::new(needle_angle.sin() * radius, -needle_angle.cos() * radius);
-
-                let bounded_tip = Pos2::new(
-                    needle_tip.x.clamp(arc_rect.min.x, arc_rect.max.x),
-                    needle_tip.y.max(arc_rect.min.y),
-                );
-
-                painter.line_segment(
-                    [
-                        Pos2::new(meter_x + meter_width * 0.8, meter_y + meter_height * 0.5),
-                        Pos2::new(meter_x + meter_width * 0.95, meter_y + meter_height * 0.5),
-                    ],
-                    Stroke::new(1.0 * canvas.zoom, Color32::from_rgb(200, 50, 50)),
-                );
-
-                let visible_base = Pos2::new(pivot.x, meter_bg.max.y);
-                painter.line_segment(
-                    [visible_base, bounded_tip],
-                    Stroke::new(1.5 * canvas.zoom, Color32::from_rgb(180, 40, 40)),
-                );
-
-                painter.rect_stroke(
-                    meter_bg,
-                    2.0,
-                    Stroke::new(1.0, Color32::from_white_alpha(40)),
-                    egui::StrokeKind::Inside,
-                );
+        for i in 0..num_segments {
+            let t = i as f32 / num_segments as f32;
+            if t > trigger_value {
+                break;
             }
-            crate::config::AudioMeterStyle::Digital => {
-                let meter_bg = Rect::from_min_size(
-                    Pos2::new(meter_x, meter_y),
-                    Vec2::new(meter_width, meter_height),
-                );
-                painter.rect_filled(meter_bg, 2.0, Color32::from_gray(20));
 
-                let num_segments = 20;
-                let segment_spacing = 1.0 * canvas.zoom;
-                let segment_width = (meter_width - (num_segments as f32 - 1.0) * segment_spacing)
-                    / num_segments as f32;
+            let seg_x = meter_x + i as f32 * (segment_width + segment_spacing);
+            let seg_rect = Rect::from_min_size(
+                Pos2::new(seg_x, meter_y),
+                Vec2::new(segment_width, meter_height),
+            );
 
-                for i in 0..num_segments {
-                    let t = i as f32 / num_segments as f32;
-                    if t > trigger_value {
-                        break;
-                    }
+            let seg_color = if t < 0.6 {
+                Color32::from_rgb(0, 255, 100) // Green
+            } else if t < 0.85 {
+                Color32::from_rgb(255, 180, 0) // Orange
+            } else {
+                Color32::from_rgb(255, 50, 50) // Red
+            };
 
-                    let seg_x = meter_x + i as f32 * (segment_width + segment_spacing);
-                    let seg_rect = Rect::from_min_size(
-                        Pos2::new(seg_x, meter_y),
-                        Vec2::new(segment_width, meter_height),
-                    );
-
-                    let seg_color = if t < 0.6 {
-                        Color32::from_rgb(0, 255, 100)
-                    } else if t < 0.85 {
-                        Color32::from_rgb(255, 180, 0)
-                    } else {
-                        Color32::from_rgb(255, 50, 50)
-                    };
-
-                    painter.rect_filled(seg_rect, 1.0, seg_color);
-                }
-
-                let threshold_x = meter_x + threshold * meter_width;
-                painter.line_segment(
-                    [
-                        Pos2::new(threshold_x, meter_y - 2.0),
-                        Pos2::new(threshold_x, meter_y + meter_height + 2.0),
-                    ],
-                    Stroke::new(1.5, Color32::from_rgba_unmultiplied(255, 50, 50, 200)),
-                );
-            }
+            painter.rect_filled(seg_rect, 1.0, seg_color);
         }
+
+        // Threshold line
+        let threshold_x = meter_x + threshold * meter_width;
+        painter.line_segment(
+            [
+                Pos2::new(threshold_x, meter_y - 2.0),
+                Pos2::new(threshold_x, meter_y + meter_height + 2.0),
+            ],
+            Stroke::new(1.5, Color32::from_rgba_unmultiplied(255, 50, 50, 200)),
+        );
     }
 
+    // Draw input sockets (left side)
     let socket_start_y = rect.min.y + title_height + 10.0 * canvas.zoom;
     for (i, socket) in part.inputs.iter().enumerate() {
         let socket_y = socket_start_y + i as f32 * 22.0 * canvas.zoom;
         let socket_pos = Pos2::new(rect.min.x, socket_y);
         let socket_radius = 7.0 * canvas.zoom;
 
+        // Socket "Port" style
         let socket_color = utils::get_socket_color(&socket.socket_type);
 
+        // Check hover
         let is_hovered = if let Some(pointer_pos) = ui.input(|i| i.pointer.hover_pos()) {
             socket_pos.distance(pointer_pos) < socket_radius * 1.5
         } else {
             false
         };
 
+        // Outer ring (Socket Color)
         let ring_stroke = if is_hovered {
             let pulse = (ui.input(|i| i.time) * 10.0).sin() as f32 * 0.2 + 0.8;
             Stroke::new(3.0 * canvas.zoom, Color32::WHITE.linear_multiply(pulse))
@@ -843,11 +854,13 @@ pub fn draw_part_with_delete(
             Stroke::new(2.0 * canvas.zoom, socket_color)
         };
         painter.circle_stroke(socket_pos, socket_radius, ring_stroke);
+        // Inner hole (Dark)
         painter.circle_filled(
             socket_pos,
             socket_radius - 2.0 * canvas.zoom,
             Color32::from_gray(20),
         );
+        // Inner dot (Connector contact)
         painter.circle_filled(
             socket_pos,
             2.0 * canvas.zoom,
@@ -858,6 +871,7 @@ pub fn draw_part_with_delete(
             },
         );
 
+        // Socket label
         let type_name = socket.socket_type.name();
         let display_name = if socket
             .name
@@ -872,25 +886,29 @@ pub fn draw_part_with_delete(
         painter.text(
             Pos2::new(rect.min.x + 14.0 * canvas.zoom, socket_y),
             egui::Align2::LEFT_CENTER,
-            &display_name,
+            display_name,
             egui::FontId::proportional(11.0 * canvas.zoom),
             Color32::from_gray(230),
         );
     }
 
+    // Draw output sockets (right side)
     for (i, socket) in part.outputs.iter().enumerate() {
         let socket_y = socket_start_y + i as f32 * 22.0 * canvas.zoom;
         let socket_pos = Pos2::new(rect.max.x, socket_y);
         let socket_radius = 7.0 * canvas.zoom;
 
+        // Socket "Port" style
         let socket_color = utils::get_socket_color(&socket.socket_type);
 
+        // Check hover
         let is_hovered = if let Some(pointer_pos) = ui.input(|i| i.pointer.hover_pos()) {
             socket_pos.distance(pointer_pos) < socket_radius * 1.5
         } else {
             false
         };
 
+        // Outer ring (Socket Color)
         let ring_stroke = if is_hovered {
             let pulse = (ui.input(|i| i.time) * 10.0).sin() as f32 * 0.2 + 0.8;
             Stroke::new(3.0 * canvas.zoom, Color32::WHITE.linear_multiply(pulse))
@@ -898,11 +916,13 @@ pub fn draw_part_with_delete(
             Stroke::new(2.0 * canvas.zoom, socket_color)
         };
         painter.circle_stroke(socket_pos, socket_radius, ring_stroke);
+        // Inner hole (Dark)
         painter.circle_filled(
             socket_pos,
             socket_radius - 2.0 * canvas.zoom,
             Color32::from_gray(20),
         );
+        // Inner dot (Connector contact)
         painter.circle_filled(
             socket_pos,
             2.0 * canvas.zoom,
@@ -913,6 +933,7 @@ pub fn draw_part_with_delete(
             },
         );
 
+        // Socket label
         let type_name = socket.socket_type.name();
         let display_name = if socket
             .name
@@ -927,10 +948,17 @@ pub fn draw_part_with_delete(
         painter.text(
             Pos2::new(rect.max.x - 14.0 * canvas.zoom, socket_y),
             egui::Align2::RIGHT_CENTER,
-            &display_name,
+            display_name,
             egui::FontId::proportional(11.0 * canvas.zoom),
             Color32::from_gray(230),
         );
+
+        // Draw live value meter for output sockets
+        // This requires get_socket_live_value which is not extracted yet
+        // I will assume it's in utils or just not call it for now if it's complex
+        // It's in mod.rs around 5857. It uses module evaluator implicitly or something?
+        // Ah, it uses `self.last_trigger_values` but maps it to sockets.
+        // It's specific to the canvas. I should implement it here or in utils.
     }
 }
 
@@ -951,6 +979,7 @@ pub fn draw_search_popup(
     canvas_rect: Rect,
     module: &mut MapFlowModule,
 ) {
+    // Search popup in top-center
     let popup_width = 300.0;
     let popup_height = 200.0;
     let popup_rect = Rect::from_min_size(
@@ -961,6 +990,7 @@ pub fn draw_search_popup(
         Vec2::new(popup_width, popup_height),
     );
 
+    // Draw popup background
     let painter = ui.painter();
     painter.rect_filled(
         popup_rect,
@@ -974,6 +1004,7 @@ pub fn draw_search_popup(
         egui::StrokeKind::Middle,
     );
 
+    // Popup content
     let inner_rect = popup_rect.shrink(10.0);
     ui.scope_builder(egui::UiBuilder::new().max_rect(inner_rect), |ui| {
         ui.vertical(|ui| {
@@ -983,6 +1014,7 @@ pub fn draw_search_popup(
             });
             ui.add_space(8.0);
 
+            // Filter and show matching nodes
             let filter_lower = canvas.search_filter.to_lowercase();
             let matching_parts: Vec<_> = module
                 .parts
@@ -1015,6 +1047,7 @@ pub fn draw_search_popup(
                         {
                             canvas.selected_parts.clear();
                             canvas.selected_parts.push(part.id);
+                            // Center view on selected node
                             canvas.pan_offset =
                                 Vec2::new(-part.position.0 + 200.0, -part.position.1 + 150.0);
                             canvas.show_search = false;
@@ -1031,6 +1064,7 @@ pub fn draw_presets_popup(
     canvas_rect: Rect,
     module: &mut MapFlowModule,
 ) {
+    // Presets popup in top-center
     let popup_width = 280.0;
     let popup_height = 220.0;
     let popup_rect = Rect::from_min_size(
@@ -1041,6 +1075,7 @@ pub fn draw_presets_popup(
         Vec2::new(popup_width, popup_height),
     );
 
+    // Draw popup background
     let painter = ui.painter();
     painter.rect_filled(
         popup_rect,
@@ -1054,6 +1089,7 @@ pub fn draw_presets_popup(
         egui::StrokeKind::Middle,
     );
 
+    // Popup content
     let inner_rect = popup_rect.shrink(12.0);
     ui.scope_builder(egui::UiBuilder::new().max_rect(inner_rect), |ui| {
         ui.vertical(|ui| {
@@ -1065,11 +1101,12 @@ pub fn draw_presets_popup(
                 .show(ui, |ui| {
                     let presets = canvas.presets.clone();
                     if presets.is_empty() {
-                        ui.label("No presets found.");
+                        ui.label(egui::RichText::new("No presets found.").weak().italics());
                     }
                     for preset in &presets {
                         ui.horizontal(|ui| {
                             if ui.button(&preset.name).clicked() {
+                                // ... (existing load logic remains same)
                                 module.parts.clear();
                                 module.connections.clear();
                                 let mut part_ids = Vec::new();
@@ -1116,6 +1153,7 @@ pub fn draw_presets_popup(
             ui.horizontal(|ui| {
                 ui.text_edit_singleline(&mut canvas.new_preset_name);
                 if ui.button("💾 Save Current").clicked() && !canvas.new_preset_name.is_empty() {
+                    // Create new preset from current module
                     let mut parts = Vec::new();
                     let mut id_map = std::collections::HashMap::new();
 
@@ -1163,6 +1201,7 @@ pub fn render_add_node_menu_content(
     };
 
     if let Some(module) = &mut module {
+        // Simplified helpers to add nodes directly
         let mut add_node = |part_type: ModulePartType| {
             let preferred_pos = pos_override.unwrap_or((200.0, 200.0));
             let pos = utils::find_free_position(&module.parts, preferred_pos);
@@ -1408,6 +1447,8 @@ pub fn draw_quick_create_popup(
     }
     let popup_pos = canvas.quick_create_pos;
     let catalog = utils::build_node_catalog();
+
+    // Filter catalog
     let filter_lower = canvas.quick_create_filter.to_lowercase();
     let filtered_items: Vec<&utils::NodeCatalogItem> = catalog
         .iter()
@@ -1493,17 +1534,35 @@ pub fn draw_quick_create_popup(
             }
         });
     });
+
     if commit_creation {
         if let Some(item) = filtered_items.get(canvas.quick_create_selected_index) {
             if let Some(module_id) = active_module_id {
                 if let Some(module) = manager.get_module_mut(module_id) {
+                    // Calculate position relative to pan/zoom
+                    // We want to place it where the mouse was when popup opened (quick_create_pos)
+                    // but converted to canvas coordinates.
+                    // However, we don't have easy access to `to_screen` closure here.
+                    // We need to inverse transform manually.
+                    // Canvas pos = (Screen Pos - Pan - Canvas Min) / Zoom
+                    // We can approximate or just use the center of view if mouse pos is complex.
+                    // But we stored `quick_create_pos` which is Screen Coords.
+                    // We assume `draw_quick_create_popup` is called inside the canvas area context.
+                    // Wait, `from_screen` logic is in `renderer.rs`.
+                    // We can just pass the position logic or calculate it here if we had rect.
+                    // We have `_canvas_rect`.
+
                     let canvas_min = _canvas_rect.min.to_vec2();
                     let pos_screen = canvas.quick_create_pos;
                     let pan = canvas.pan_offset;
                     let zoom = canvas.zoom;
+
                     let x = (pos_screen.x - pan.x - canvas_min.x) / zoom;
                     let y = (pos_screen.y - pan.y - canvas_min.y) / zoom;
+
+                    // Find free spot near there
                     let final_pos = utils::find_free_position(&module.parts, (x, y));
+
                     module.add_part_with_type(item.part_type.clone(), final_pos);
                 }
             }

@@ -40,29 +40,23 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
                     egui::CollapsingHeader::new(app.ui_state.i18n.t("dashboard"))
                         .default_open(true)
                         .show(ui_obj, |ui| {
-                            if let Some(dash_action) = app.ui_state.dashboard.render_contents(
-                                ui,
-                                &app.ui_state.i18n,
-                                app.ui_state.icon_manager.as_ref(),
-                            ) {
-                                match dash_action {
-                                    ui::view::dashboard::DashboardAction::SendCommand(cmd) => {
-                                        if let Some(_module_id) =
-                                            app.ui_state.module_canvas.active_module_id
-                                        {
-                                            if let Some(part_id) =
-                                                app.ui_state.module_canvas.get_selected_part_id()
-                                            {
-                                                app.ui_state
-                                                    .actions
-                                                    .push(ui::UIAction::MediaCommand(part_id, cmd));
-                                            }
-                                        }
+                            if let Some(ui::view::dashboard::DashboardAction::SendCommand(cmd)) =
+                                app.ui_state.dashboard.render_contents(
+                                    ui,
+                                    &app.ui_state.i18n,
+                                    app.ui_state.icon_manager.as_ref(),
+                                )
+                            {
+                                if let Some(_module_id) =
+                                    app.ui_state.module_canvas.active_module_id
+                                {
+                                    if let Some(part_id) =
+                                        app.ui_state.module_canvas.get_selected_part_id()
+                                    {
+                                        app.ui_state
+                                            .actions
+                                            .push(ui::UIAction::MediaCommand(part_id, cmd));
                                     }
-                                    ui::view::dashboard::DashboardAction::ToggleAudioPanel => {
-                                        app.ui_state.show_audio = !app.ui_state.show_audio;
-                                    }
-                                    _ => {}
                                 }
                             }
                         });
@@ -146,7 +140,6 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
                     std::sync::Arc::make_mut(&mut app.state.module_manager),
                     &app.state.layer_manager,
                     &app.state.output_manager,
-                    &app.state.mapping_manager,
                 );
 
                 // Legacy panels (can be toggled separately or integrated)
@@ -312,7 +305,6 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
                     std::sync::Arc::make_mut(&mut app.state.module_manager),
                     &app.ui_state.i18n,
                     &mut app.ui_state.actions,
-                    app.ui_state.user_config.meter_style,
                 );
             } else {
                 ui_obj.centered_and_justified(|ui_obj| {

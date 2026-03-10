@@ -845,7 +845,7 @@ pub fn collapsing_header_with_reset(
         .show_header(ui, |ui| {
             ui.label(title);
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if ui.button("↺ Reset").clicked() {
+                if hold_to_action_button(ui, "↺ Reset", colors::WARN_COLOR) {
                     reset_clicked = true;
                 }
             });

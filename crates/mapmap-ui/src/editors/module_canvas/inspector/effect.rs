@@ -149,11 +149,7 @@ pub fn render_effect_ui(ui: &mut Ui, mod_type: &mut ModulizerType, part_id: Modu
                     ui.add(egui::Slider::new(sat, 0.0..=2.0).text("Saturation"));
                 }
                 _ => {
-<<<<<<< HEAD
-                    ui.label(egui::RichText::new("No configurable parameters").weak());
-=======
-                    ui.label(egui::RichText::new("No configurable parameters").weak().italics());
->>>>>>> origin/lina-ui-empty-states-13849761770176199869
+                    ui.label("No configurable parameters");
                 }
             }
         }

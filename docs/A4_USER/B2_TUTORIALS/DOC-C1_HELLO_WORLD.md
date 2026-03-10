@@ -39,7 +39,7 @@ MapFlow uses a **Paint → Mapping → Mesh → Output** pipeline:
 
 ### System Dependencies
 
-Please refer to the main [BUILD.md](../getting-started/BUILD.md) for detailed, up-to-date dependency lists for your platform.
+Please refer to the main [BUILD.md](../B3_SUPPORT/DOC-C1_BUILD.md) for detailed, up-to-date dependency lists for your platform.
 
 ### Clone the Repository
 

@@ -1,16 +1,6 @@
-# Architecture Documentation
+# Architecture Documentation (Transition)
 
-Dieses Verzeichnis enthält Architektur-Dokumentation für MapFlow.
+Kanonische Architektur-Dokumente:
 
-## Canonical Architecture Document
-
-- [**Render Queue & Pipeline Architektur (Single Source of Truth)**](RENDER-QUEUE.md):
-  Vollständige, konsolidierte Dokumentation für System-/Thread-Architektur,
-  PAP-Datenfluss sowie Decode → Upload → Render Laufzeitlogik.
-
-## Related Documents
-
-- [**Crates Overview**](CRATES.md): Übersicht der Crates und ihrer Rollen.
-- [**Data Flow**](DATA-FLOW.md): Datenflüsse und Zustandsübergänge in der App.
-- [**Design Patterns**](DESIGN-PATTERNS.md): Architektur- und Code-Patterns.
-- [**UI Architecture**](UI.md): UI-Struktur und Zusammenspiel mit dem Core.
+- [A1_SYSTEM / B1_ARCHITECTURE](../../A1_SYSTEM/B1_ARCHITECTURE/DOC-C0_README.md)
+- [A2_DEVELOPMENT / B3_ARCHITECTURE](../../A2_DEVELOPMENT/B3_ARCHITECTURE/DOC-C0_README.md)

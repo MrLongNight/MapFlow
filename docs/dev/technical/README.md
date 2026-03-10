@@ -1,17 +1,6 @@
-# Technical Documentation
+# Technical Documentation (Transition)
 
-This section covers technical details, specific implementations, and system internals.
+Kanonische technische Dokumente:
 
-## Core Systems
-
-* [**Rendering Pipeline**](rendering.md): Detailed look at the rendering architecture.
-* [**Shader System**](SHADER-SYSTEM.md): How shaders are managed and executed.
-* [**HAP Codec Integration**](HAP_INTEGRATION.md): Details on the HAP video codec implementation.
-
-## Performance
-
-* [**Performance Optimization**](PERFORMANCE.md): Strategies and measurements for system performance.
-
-## APIs
-
-* [**MCP API Reference**](MCP_API_REF.md): Reference for the Model Context Protocol integration.
+- [A2_DEVELOPMENT / B4_TECHNICAL](../../A2_DEVELOPMENT/B4_TECHNICAL/DOC-C0_README.md)
+- [A1_SYSTEM / B1_ARCHITECTURE](../../A1_SYSTEM/B1_ARCHITECTURE/DOC-C0_README.md)

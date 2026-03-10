@@ -15,7 +15,6 @@ pub fn show(
     manager: &mut ModuleManager,
     locale: &LocaleManager,
     actions: &mut Vec<UIAction>,
-    meter_style: crate::config::AudioMeterStyle,
 ) {
     if !canvas.selected_parts.is_empty()
         && !ui.memory(|m| m.focused().is_some())
@@ -73,7 +72,7 @@ pub fn show(
     }
 
     if let Some(module_id) = canvas.active_module_id {
-        render_canvas(canvas, ui, manager, module_id, locale, actions, meter_style);
+        render_canvas(canvas, ui, manager, module_id, locale, actions);
     } else {
         ui.centered_and_justified(|ui| {
             ui.vertical_centered(|ui| {
@@ -94,7 +93,6 @@ pub fn render_canvas(
     module_id: ModuleId,
     _locale: &LocaleManager,
     actions: &mut Vec<UIAction>,
-    meter_style: crate::config::AudioMeterStyle,
 ) {
     let module = if let Some(m) = manager.get_module_mut(module_id) {
         m
@@ -174,6 +172,20 @@ pub fn render_canvas(
     // Draw grid
     draw::draw_grid(canvas, &painter, canvas_rect);
 
+    // Handle Zoom (Mouse Wheel)
+    if response.hovered() {
+        let scroll = ui.input(|i| i.smooth_scroll_delta.y);
+        if scroll != 0.0 {
+            let old_zoom = canvas.zoom;
+            canvas.zoom = (canvas.zoom * (1.0 + scroll * 0.001)).clamp(0.1, 5.0);
+
+            if let Some(mouse_pos) = ui.input(|i| i.pointer.hover_pos()) {
+                let zoom_factor = canvas.zoom / old_zoom;
+                canvas.pan_offset = mouse_pos - (mouse_pos - canvas.pan_offset) * zoom_factor;
+            }
+        }
+    }
+
     let zoom = canvas.zoom;
     let pan_offset = canvas.pan_offset;
     let canvas_min = canvas_rect.min.to_vec2();
@@ -187,6 +199,23 @@ pub fn render_canvas(
             module.connections.remove(idx);
         }
     }
+
+    // --- ZOOM UI ---
+    let zoom_ui_rect = Rect::from_min_size(
+        Pos2::new(canvas_rect.max.x - 120.0, canvas_rect.max.y - 140.0),
+        Vec2::new(100.0, 30.0),
+    );
+    ui.scope_builder(egui::UiBuilder::new().max_rect(zoom_ui_rect), |ui| {
+        ui.horizontal(|ui| {
+            if ui.button("-").clicked() {
+                canvas.zoom = (canvas.zoom - 0.1).max(0.1);
+            }
+            ui.add(egui::Slider::new(&mut canvas.zoom, 0.1..=5.0).show_value(false));
+            if ui.button("+").clicked() {
+                canvas.zoom = (canvas.zoom + 0.1).min(5.0);
+            }
+        });
+    });
 
     // 1. Collect ALL socket positions first
     let mut all_sockets = Vec::new();
@@ -284,16 +313,7 @@ pub fn render_canvas(
             }
         }
 
-        draw::draw_part_with_delete(
-            canvas,
-            ui,
-            &painter,
-            part,
-            part_rect,
-            actions,
-            module.id,
-            meter_style,
-        );
+        draw::draw_part_with_delete(canvas, ui, &painter, part, part_rect, actions, module.id);
 
         let part_id = part.id;
 
@@ -305,15 +325,9 @@ pub fn render_canvas(
                 let socket_resp = ui.interact(
                     socket_rect,
                     egui::Id::new((part_id, socket_info.is_output, socket_info.socket_idx)),
-                    Sense::click_and_drag(),
+                    Sense::drag(),
                 );
 
-                if socket_resp.clicked()
-                    && socket_info.is_output
-                    && socket_info.socket_type == mapmap_core::module::ModuleSocketType::Trigger
-                {
-                    actions.push(UIAction::ManualTrigger(module_id, part_id));
-                }
                 if socket_resp.drag_started() {
                     canvas.creating_connection = Some((
                         part_id,
@@ -399,48 +413,45 @@ pub fn render_canvas(
 
     // 3. Global Connection Release
     if ui.input(|i| i.pointer.any_released()) {
-        if let Some((from_part, from_idx, is_output, _from_type, _)) =
+        if let Some((from_part, from_idx, is_output, from_type, _)) =
             canvas.creating_connection.take()
         {
             if let Some(pointer_pos) = ui.input(|i| i.pointer.hover_pos()) {
-                let mut closest_socket = None;
-                let mut min_dist = 25.0 * canvas.zoom;
+                let mut best_target = None;
+                let mut min_dist = 25.0 * canvas.zoom; // Slightly tighter radius
 
                 for target in &all_sockets {
                     let dist = target.position.distance(pointer_pos);
                     if dist < min_dist
                         && target.part_id != from_part
                         && target.is_output != is_output
+                        && target.socket_type == from_type
                     {
                         min_dist = dist;
-                        closest_socket = Some(target);
+                        best_target = Some(target.clone());
                     }
                 }
 
-                if let Some(target) = closest_socket {
+                if let Some(target) = best_target {
                     let (out_part, out_idx, in_part, in_idx) = if is_output {
                         (from_part, from_idx, target.part_id, target.socket_idx)
                     } else {
                         (target.part_id, target.socket_idx, from_part, from_idx)
                     };
 
-                    let exists = module.connections.iter().any(|c| {
-                        c.from_part == out_part
-                            && c.from_socket == out_idx
-                            && c.to_part == in_part
-                            && c.to_socket == in_idx
-                    });
+                    // Final safety check: no self-connection (redundant but safe)
+                    if out_part != in_part {
+                        let exists = module.connections.iter().any(|c| {
+                            c.from_part == out_part
+                                && c.from_socket == out_idx
+                                && c.to_part == in_part
+                                && c.to_socket == in_idx
+                        });
 
-                    if !exists {
-                        module
-                            .connections
-                            .push(mapmap_core::module::ModuleConnection {
-                                from_part: out_part,
-                                from_socket: out_idx,
-                                to_part: in_part,
-                                to_socket: in_idx,
-                            });
-                        ui.ctx().request_repaint();
+                        if !exists {
+                            module.add_connection(out_part, out_idx, in_part, in_idx);
+                            ui.ctx().request_repaint();
+                        }
                     }
                 }
             }
@@ -604,40 +615,4 @@ pub fn render_canvas(
             }
         }
     }
-
-    egui::Area::new(egui::Id::new("canvas_zoom_area"))
-        .anchor(egui::Align2::RIGHT_BOTTOM, egui::vec2(-20.0, -20.0))
-        .show(ui.ctx(), |ui| {
-            crate::widgets::panel::cyber_panel_frame(ui.style()).show(ui, |ui: &mut egui::Ui| {
-                ui.horizontal(|ui: &mut egui::Ui| {
-                    ui.spacing_mut().item_spacing.x = 4.0;
-                    if ui
-                        .button(egui::RichText::new("-").strong())
-                        .on_hover_text("Zoom Out")
-                        .clicked()
-                    {
-                        canvas.zoom = (canvas.zoom / 1.2).max(0.1);
-                    }
-
-                    ui.add(
-                        egui::Slider::new(&mut canvas.zoom, 0.1..=2.0)
-                            .show_value(false)
-                            .trailing_fill(true),
-                    );
-
-                    if ui
-                        .button(egui::RichText::new("+").strong())
-                        .on_hover_text("Zoom In")
-                        .clicked()
-                    {
-                        canvas.zoom = (canvas.zoom * 1.2).min(2.0);
-                    }
-                    ui.label(
-                        egui::RichText::new(format!("{:.0}%", canvas.zoom * 100.0))
-                            .size(11.0)
-                            .color(Color32::WHITE),
-                    );
-                });
-            });
-        });
 }

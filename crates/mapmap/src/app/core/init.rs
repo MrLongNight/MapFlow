@@ -135,7 +135,6 @@ impl App {
             let paths = [
                 "resources/controllers/ecler_nuo4/elements.json",
                 "../resources/controllers/ecler_nuo4/elements.json",
-                r"C:\Users\Vinyl\Desktop\VJMapper\VjMapper\resources\controllers\ecler_nuo4\elements.json",
             ];
             for path_str in paths {
                 let path = std::path::Path::new(path_str);
@@ -505,7 +504,7 @@ impl App {
             }
         };
 
-        let mut app = Self {
+        let app = Self {
             window_manager,
             ui_state,
             backend,
@@ -540,7 +539,6 @@ impl App {
             dummy_view: Some(dummy_view),
             module_evaluator: ModuleEvaluator::new(),
             last_graph_revision: 0,
-            last_output_ids: std::collections::HashSet::new(), // Will be synced on first update
             cached_output_infos: Vec::new(),
             frame_counter: 0,
             media_players: HashMap::new(),
@@ -602,11 +600,6 @@ impl App {
             },
             bevy_runner: Some(mapmap_bevy::BevyRunner::new()),
         };
-
-        // Populate last_output_ids to prevent immediate double-sync,
-        // but ensure first update triggers window creation.
-        // Actually, leaving it empty is better, so the first logic::update creates the windows.
-        app.last_output_ids.clear();
 
         // --- INITIALIZATION STATUS REPORT ---
         info!("==========================================");

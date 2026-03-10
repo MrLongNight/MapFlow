@@ -93,8 +93,6 @@ pub struct App {
     pub module_evaluator: ModuleEvaluator,
     /// Last processed graph revision
     pub last_graph_revision: u64,
-    /// Last set of active output IDs to detect window changes
-    pub last_output_ids: std::collections::HashSet<u64>,
     /// Cached info about output parts for preview rendering
     pub cached_output_infos: Vec<(u64, u64, String)>,
     /// Global frame counter for throttling

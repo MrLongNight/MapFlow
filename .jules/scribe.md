@@ -20,3 +20,7 @@ I have addressed several broken links and outdated status indicators in the docu
 ## 2026-03-05 - Folder Structure Migration Fixes
 **Observation:** Some files still had legacy `0[1-9]-...` references to the documentation directory (e.g. `docs/01-GETTING-STARTED/INSTALLATION.md`) instead of the new semantic folder structure (like `docs/user/getting-started/INSTALLATION.md`).
 **Action:** Fixed `crates/mapmap/README.md`, `docs/user/getting-started/BUILD.md`, `docs/project/cicd/WORKFLOW_CONTROL.md`, `docs/project/cicd/WORKFLOW_QUICKREF.md`, and `docs/project/audits/DOCUMENTATION_AUDIT.md` to point to the correct semantic documentation paths.
+
+## 2026-03-10 - Dokumentations-Architektur Migration
+**Erkenntnis:** Die Dokumentationsstruktur in `docs/` wurde von der bisherigen `user/`, `dev/`, `project/` Struktur auf eine 3-Ebenen-Struktur (`A1_SYSTEM`, `A2_DEVELOPMENT`, `A3_PROJECT`, `A4_USER`) umgestellt.
+**Aktion:** Haupt-README.md und docs/README.md angepasst, um diese neue Struktur als Einstiegspunkte korrekt zu reflektieren. Alte `New_README.md` gelöscht.

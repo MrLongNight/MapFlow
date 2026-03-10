@@ -72,7 +72,7 @@ pub fn render_mask_ui(ui: &mut Ui, mask: &mut MaskType) {
                             *path = picked.display().to_string();
                         }
                     }
-                    ui.label(egui::RichText::new("No mask loaded").weak().italics());
+                    ui.label(egui::RichText::new("No mask loaded").weak());
                     ui.add_space(10.0);
                 });
             } else {
