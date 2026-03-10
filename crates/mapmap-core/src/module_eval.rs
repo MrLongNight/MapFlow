@@ -405,82 +405,82 @@ impl ModuleEvalResult {
 #[derive(Debug, Clone)]
 pub enum SourceCommand {
     /// Play media from a local path.
-    PlayMedia { 
+    PlayMedia {
         /// Path to the media file.
-        path: String, 
+        path: String,
         /// Current trigger value.
-        trigger_value: f32 
+        trigger_value: f32,
     },
     /// Play media from the shared library.
-    PlaySharedMedia { 
+    PlaySharedMedia {
         /// Unique identifier for the shared media.
-        id: String, 
+        id: String,
         /// Path to the media file.
-        path: String, 
+        path: String,
         /// Current trigger value.
-        trigger_value: f32 
+        trigger_value: f32,
     },
     /// Render a shader with the given parameters.
-    PlayShader { 
+    PlayShader {
         /// Name of the shader.
-        name: String, 
+        name: String,
         /// List of (parameter name, value) tuples.
-        params: Vec<(String, f32)>, 
+        params: Vec<(String, f32)>,
         /// Current trigger value.
-        trigger_value: f32 
+        trigger_value: f32,
     },
     /// Receive frames from an NDI source.
-    NdiInput { 
+    NdiInput {
         /// Name of the NDI source.
-        source_name: Option<String>, 
+        source_name: Option<String>,
         /// Current trigger value.
-        trigger_value: f32 
+        trigger_value: f32,
     },
     /// Receive frames from a live video device.
-    LiveInput { 
+    LiveInput {
         /// ID of the capture device.
-        device_id: u32, 
+        device_id: u32,
         /// Current trigger value.
-        trigger_value: f32 
+        trigger_value: f32,
     },
     /// Receive frames from a Spout sender.
     #[cfg(target_os = "windows")]
-    SpoutInput { 
+    SpoutInput {
         /// Name of the Spout sender.
-        sender_name: String, 
+        sender_name: String,
         /// Current trigger value.
-        trigger_value: f32 
+        trigger_value: f32,
     },
     /// Input from the Bevy game engine.
-    BevyInput { 
+    BevyInput {
         /// Current trigger value.
-        trigger_value: f32 
+        trigger_value: f32,
     },
     /// Render a 3D model via Bevy.
-    Bevy3DModel { 
+    Bevy3DModel {
         /// Path to the 3D model.
-        path: String, 
+        path: String,
         /// Position in 3D space.
-        position: [f32; 3], 
+        position: [f32; 3],
         /// Rotation in degrees.
-        rotation: [f32; 3], 
+        rotation: [f32; 3],
         /// Scale factor.
-        scale: [f32; 3], 
+        scale: [f32; 3],
         /// Current trigger value.
-        trigger_value: f32 
+        trigger_value: f32,
     },
     /// Control Philips Hue smart lights.
-    HueOutput { 
+    HueOutput {
         /// Brightness level (0.0 - 1.0).
-        brightness: f32, 
+        brightness: f32,
         /// Hue value (0.0 - 1.0, optional).
-        hue: Option<f32>, 
+        hue: Option<f32>,
         /// Saturation level (0.0 - 1.0, optional).
-        saturation: Option<f32>, 
+        saturation: Option<f32>,
         /// Strobe speed (0.0 - 1.0, optional).
-        strobe: Option<f32>, 
+        strobe: Option<f32>,
         /// List of light IDs to control.
-        ids: Option<Vec<String>> 
+        ids: Option<Vec<String>>,
     },
 }
 
@@ -499,7 +499,9 @@ pub struct ModuleEvaluator {
 }
 
 impl Default for ModuleEvaluator {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ModuleEvaluator {
@@ -528,7 +530,9 @@ impl ModuleEvaluator {
     }
 
     /// Manually trigger a node for the current frame.
-    pub fn trigger_node(&mut self, part_id: ModulePartId) { self.manual_triggers.insert(part_id); }
+    pub fn trigger_node(&mut self, part_id: ModulePartId) {
+        self.manual_triggers.insert(part_id);
+    }
 
     /// Update internal audio data for evaluation.
     pub fn update_audio(&mut self, analysis: &AudioAnalysisV2) {
@@ -541,64 +545,149 @@ impl ModuleEvaluator {
     }
 
     /// Update active keyboard keys for evaluation.
-    pub fn update_keys(&mut self, keys: &std::collections::HashSet<String>) { self.active_keys = keys.clone(); }
+    pub fn update_keys(&mut self, keys: &std::collections::HashSet<String>) {
+        self.active_keys = keys.clone();
+    }
 
-    fn apply_smoothing(&self, part_id: ModulePartId, socket_idx: usize, target_val: f32, mode: &crate::module::TriggerMappingMode) -> f32 {
+    fn apply_smoothing(
+        &self,
+        part_id: ModulePartId,
+        socket_idx: usize,
+        target_val: f32,
+        mode: &crate::module::TriggerMappingMode,
+    ) -> f32 {
         if let crate::module::TriggerMappingMode::Smoothed { attack, release } = mode {
             let state_key = (part_id, socket_idx);
             let mut cache = self.trigger_smoothing_state.borrow_mut();
-            let (mut current_val, last_frame) = cache.get(&state_key).copied().unwrap_or((target_val, 0));
+            let (mut current_val, last_frame) =
+                cache.get(&state_key).copied().unwrap_or((target_val, 0));
             if last_frame != self.current_frame {
-                let time_constant = if target_val > current_val { *attack } else { *release };
+                let time_constant = if target_val > current_val {
+                    *attack
+                } else {
+                    *release
+                };
                 if time_constant > 0.001 {
                     let alpha = 1.0 - (-self.current_dt / time_constant).exp();
                     current_val = current_val + (target_val - current_val) * alpha;
-                } else { current_val = target_val; }
+                } else {
+                    current_val = target_val;
+                }
                 cache.insert(state_key, (current_val, self.current_frame));
             }
             current_val
-        } else { target_val }
+        } else {
+            target_val
+        }
     }
 
     fn get_spare_render_op(&mut self) -> RenderOp {
-        self.cached_result.spare_render_ops.pop().unwrap_or_else(|| RenderOp {
-            output_part_id: 0,
-            output_type: OutputType::Projector { id: 0, name: String::new(), hide_cursor: false, target_screen: 0, show_in_preview_panel: true, extra_preview_window: false, output_width: 1920, output_height: 1080, output_fps: 60.0, ndi_enabled: false, ndi_stream_name: String::new() },
-            layer_part_id: 0, mesh: MeshType::default(), opacity: 1.0, blend_mode: None, mapping_mode: false, source_part_id: None, source_props: SourceProperties::default_identity(), effects: Vec::new(), masks: Vec::new(),
-        })
+        self.cached_result
+            .spare_render_ops
+            .pop()
+            .unwrap_or_else(|| RenderOp {
+                output_part_id: 0,
+                output_type: OutputType::Projector {
+                    id: 0,
+                    name: String::new(),
+                    hide_cursor: false,
+                    target_screen: 0,
+                    show_in_preview_panel: true,
+                    extra_preview_window: false,
+                    output_width: 1920,
+                    output_height: 1080,
+                    output_fps: 60.0,
+                    ndi_enabled: false,
+                    ndi_stream_name: String::new(),
+                },
+                layer_part_id: 0,
+                mesh: MeshType::default(),
+                opacity: 1.0,
+                blend_mode: None,
+                mapping_mode: false,
+                source_part_id: None,
+                source_props: SourceProperties::default_identity(),
+                effects: Vec::new(),
+                masks: Vec::new(),
+            })
     }
 
     /// Evaluate the module graph for the current frame.
-    pub fn evaluate(&mut self, module: &MapFlowModule, shared_state: &SharedMediaState, graph_revision: u64) -> &ModuleEvalResult {
+    pub fn evaluate(
+        &mut self,
+        module: &MapFlowModule,
+        shared_state: &SharedMediaState,
+        graph_revision: u64,
+    ) -> &ModuleEvalResult {
         let mut rng = rand::rng();
         self.cached_result.clear();
-        let indices_valid = if let Some(cache) = self.indices_cache.get(&module.id) { cache.last_revision == graph_revision } else { false };
+        let indices_valid = if let Some(cache) = self.indices_cache.get(&module.id) {
+            cache.last_revision == graph_revision
+        } else {
+            false
+        };
         if !indices_valid {
             let mut part_index_cache = HashMap::new();
             let mut conn_index_cache = HashMap::new();
-            for (idx, part) in module.parts.iter().enumerate() { part_index_cache.insert(part.id, idx); }
-            for (idx, conn) in module.connections.iter().enumerate() { conn_index_cache.entry(conn.to_part).or_insert_with(Vec::new).push(idx); }
-            self.indices_cache.insert(module.id, Arc::new(ModuleGraphIndices { part_index_cache, conn_index_cache, last_revision: graph_revision }));
+            for (idx, part) in module.parts.iter().enumerate() {
+                part_index_cache.insert(part.id, idx);
+            }
+            for (idx, conn) in module.connections.iter().enumerate() {
+                conn_index_cache
+                    .entry(conn.to_part)
+                    .or_insert_with(Vec::new)
+                    .push(idx);
+            }
+            self.indices_cache.insert(
+                module.id,
+                Arc::new(ModuleGraphIndices {
+                    part_index_cache,
+                    conn_index_cache,
+                    last_revision: graph_revision,
+                }),
+            );
         }
         let indices = self.indices_cache[&module.id].clone();
         for part in &module.parts {
             if let ModulePartType::Trigger(trigger_type) = &part.part_type {
                 let state = self.trigger_states.entry(part.id).or_default();
-                let values = self.cached_result.trigger_values.entry(part.id).or_default();
+                let values = self
+                    .cached_result
+                    .trigger_values
+                    .entry(part.id)
+                    .or_default();
                 values.clear();
                 let manual_fired = self.manual_triggers.contains(&part.id);
-                Self::compute_trigger_output(trigger_type, state, &self.audio_trigger_data, self.current_dt, shared_state, &self.active_keys, manual_fired, values, &mut rng);
+                Self::compute_trigger_output(
+                    trigger_type,
+                    state,
+                    &self.audio_trigger_data,
+                    self.current_dt,
+                    shared_state,
+                    &self.active_keys,
+                    manual_fired,
+                    values,
+                    &mut rng,
+                );
             }
         }
-        let mut trigger_inputs = self.compute_trigger_inputs(module, &self.cached_result.trigger_values);
+        let mut trigger_inputs =
+            self.compute_trigger_inputs(module, &self.cached_result.trigger_values);
         for part in &module.parts {
             if part.link_data.mode == LinkMode::Master {
                 let mut activity = 1.0;
-                if part.link_data.trigger_input_enabled { activity = trigger_inputs.get(&part.id).copied().unwrap_or(0.0); }
+                if part.link_data.trigger_input_enabled {
+                    activity = trigger_inputs.get(&part.id).copied().unwrap_or(0.0);
+                }
                 if !part.outputs.is_empty() {
                     let output_count = part.outputs.len();
-                    let values = self.cached_result.trigger_values.entry(part.id).or_default();
-                    values.clear(); values.resize(output_count, 0.0);
+                    let values = self
+                        .cached_result
+                        .trigger_values
+                        .entry(part.id)
+                        .or_default();
+                    values.clear();
+                    values.resize(output_count, 0.0);
                     values[output_count - 1] = activity;
                 }
             }
@@ -606,21 +695,46 @@ impl ModuleEvaluator {
         trigger_inputs = self.compute_trigger_inputs(module, &self.cached_result.trigger_values);
         for part in &module.parts {
             if part.link_data.mode == LinkMode::Slave {
-                if let Some(val) = trigger_inputs.get_mut(&part.id) { if part.link_data.behavior == LinkBehavior::Inverted { *val = 1.0 - (*val).clamp(0.0, 1.0); } }
+                if let Some(val) = trigger_inputs.get_mut(&part.id) {
+                    if part.link_data.behavior == LinkBehavior::Inverted {
+                        *val = 1.0 - (*val).clamp(0.0, 1.0);
+                    }
+                }
             }
         }
         let socket_inputs = self.compute_socket_inputs(module, &self.cached_result.trigger_values);
         for part in &module.parts {
             if let ModulePartType::Source(source_type) = &part.part_type {
                 let trigger_value = trigger_inputs.get(&part.id).copied().unwrap_or(1.0);
-                if let Some(mut cmd) = self.create_source_command(source_type, trigger_value, shared_state) {
+                if let Some(mut cmd) =
+                    self.create_source_command(source_type, trigger_value, shared_state)
+                {
                     for (socket_idx, config) in &part.trigger_targets {
                         if let Some(socket_vals) = socket_inputs.get(&part.id) {
                             if let Some(&raw_val) = socket_vals.get(socket_idx) {
-                                let val = self.apply_smoothing(part.id, *socket_idx, config.apply(raw_val), &config.mode);
+                                let val = self.apply_smoothing(
+                                    part.id,
+                                    *socket_idx,
+                                    config.apply(raw_val),
+                                    &config.mode,
+                                );
                                 match (&mut cmd, &config.target) {
-                                    (SourceCommand::Bevy3DModel { position, .. }, crate::module::TriggerTarget::Position3D) => { position[0] = val; position[1] = val; position[2] = val; }
-                                    (SourceCommand::Bevy3DModel { scale, .. }, crate::module::TriggerTarget::Scale3D) => { scale[0] = val; scale[1] = val; scale[2] = val; }
+                                    (
+                                        SourceCommand::Bevy3DModel { position, .. },
+                                        crate::module::TriggerTarget::Position3D,
+                                    ) => {
+                                        position[0] = val;
+                                        position[1] = val;
+                                        position[2] = val;
+                                    }
+                                    (
+                                        SourceCommand::Bevy3DModel { scale, .. },
+                                        crate::module::TriggerTarget::Scale3D,
+                                    ) => {
+                                        scale[0] = val;
+                                        scale[1] = val;
+                                        scale[2] = val;
+                                    }
                                     _ => {}
                                 }
                             }
@@ -640,26 +754,56 @@ impl ModuleEvaluator {
                     HueNodeType::MultiLamp { ids, .. } => Some(ids.clone()),
                     HueNodeType::EntertainmentGroup { .. } => None,
                 };
-                self.cached_result.source_commands.insert(part.id, SourceCommand::HueOutput { brightness, hue, saturation: None, strobe, ids });
+                self.cached_result.source_commands.insert(
+                    part.id,
+                    SourceCommand::HueOutput {
+                        brightness,
+                        hue,
+                        saturation: None,
+                        strobe,
+                        ids,
+                    },
+                );
             }
         }
         for part in &module.parts {
             if let ModulePartType::Output(output_type) = &part.part_type {
-                if let Some(conn_idx) = indices.conn_index_cache.get(&part.id).and_then(|v| v.first()).copied() {
+                if let Some(conn_idx) = indices
+                    .conn_index_cache
+                    .get(&part.id)
+                    .and_then(|v| v.first())
+                    .copied()
+                {
                     let conn = &module.connections[conn_idx];
                     if let Some(&layer_idx) = indices.part_index_cache.get(&conn.from_part) {
                         let layer_part = &module.parts[layer_idx];
-                        let link_opacity = trigger_inputs.get(&layer_part.id).copied().unwrap_or(1.0);
+                        let link_opacity =
+                            trigger_inputs.get(&layer_part.id).copied().unwrap_or(1.0);
                         if let ModulePartType::Layer(layer_type) = &layer_part.part_type {
                             let (mesh, opacity, blend_mode, mapping_mode) = match layer_type {
-                                LayerType::Single { mesh, opacity, blend_mode, mapping_mode, .. } => (mesh, opacity, blend_mode, mapping_mode),
-                                LayerType::Group { mesh, opacity, blend_mode, mapping_mode, .. } => (mesh, opacity, blend_mode, mapping_mode),
+                                LayerType::Single {
+                                    mesh,
+                                    opacity,
+                                    blend_mode,
+                                    mapping_mode,
+                                    ..
+                                } => (mesh, opacity, blend_mode, mapping_mode),
+                                LayerType::Group {
+                                    mesh,
+                                    opacity,
+                                    blend_mode,
+                                    mapping_mode,
+                                    ..
+                                } => (mesh, opacity, blend_mode, mapping_mode),
                                 _ => continue,
                             };
                             let mut op = self.get_spare_render_op();
-                            op.output_part_id = part.id; op.output_type = output_type.clone();
-                            op.layer_part_id = layer_part.id; op.opacity = *opacity * link_opacity;
-                            op.blend_mode = *blend_mode; op.mapping_mode = *mapping_mode;
+                            op.output_part_id = part.id;
+                            op.output_type = output_type.clone();
+                            op.layer_part_id = layer_part.id;
+                            op.opacity = *opacity * link_opacity;
+                            op.blend_mode = *blend_mode;
+                            op.mapping_mode = *mapping_mode;
                             self.trace_chain_into(layer_part.id, module, &mut op, mesh, &indices);
                             self.cached_result.render_ops.push(op);
                         }
@@ -670,16 +814,23 @@ impl ModuleEvaluator {
         &self.cached_result
     }
 
-    fn trace_chain_into(&self, start_node_id: ModulePartId, module: &MapFlowModule, op: &mut RenderOp, default_mesh: &MeshType, indices: &ModuleGraphIndices) {
+    fn trace_chain_into(
+        &self,
+        start_node_id: ModulePartId,
+        module: &MapFlowModule,
+        op: &mut RenderOp,
+        default_mesh: &MeshType,
+        indices: &ModuleGraphIndices,
+    ) {
         op.effects.clear();
         op.masks.clear();
         op.source_part_id = None;
         op.source_props = SourceProperties::default_identity();
-        
+
         let mut override_mesh = None;
         let mut current_id = start_node_id;
         let trigger_values = &self.cached_result.trigger_values;
-        
+
         // Cycle detection
         let mut visited = std::collections::HashSet::with_capacity(16);
         visited.insert(start_node_id);
@@ -688,11 +839,26 @@ impl ModuleEvaluator {
             // 1. Process triggers for the CURRENT node
             if let Some(&part_idx) = indices.part_index_cache.get(&current_id) {
                 let part = &module.parts[part_idx];
-                
+
                 // If this is a source, load its base properties first
                 if let ModulePartType::Source(source_type) = &part.part_type {
                     op.source_part_id = Some(part.id);
-                    if let SourceType::MediaFile { opacity, brightness, contrast, saturation, hue_shift, scale_x, scale_y, rotation, offset_x, offset_y, flip_horizontal, flip_vertical, .. } = source_type {
+                    if let SourceType::MediaFile {
+                        opacity,
+                        brightness,
+                        contrast,
+                        saturation,
+                        hue_shift,
+                        scale_x,
+                        scale_y,
+                        rotation,
+                        offset_x,
+                        offset_y,
+                        flip_horizontal,
+                        flip_vertical,
+                        ..
+                    } = source_type
+                    {
                         op.source_props = SourceProperties {
                             opacity: *opacity,
                             brightness: *brightness,
@@ -705,7 +871,7 @@ impl ModuleEvaluator {
                             offset_x: *offset_x,
                             offset_y: *offset_y,
                             flip_horizontal: *flip_horizontal,
-                            flip_vertical: *flip_vertical
+                            flip_vertical: *flip_vertical,
                         };
                     }
                 }
@@ -726,22 +892,37 @@ impl ModuleEvaluator {
                             }
                         }
                     }
-                    let val = self.apply_smoothing(part.id, *socket_idx, config.apply(trigger_val), &config.mode);
+                    let val = self.apply_smoothing(
+                        part.id,
+                        *socket_idx,
+                        config.apply(trigger_val),
+                        &config.mode,
+                    );
                     match &config.target {
                         crate::module::TriggerTarget::Opacity => op.source_props.opacity = val,
-                        crate::module::TriggerTarget::Brightness => op.source_props.brightness = val,
+                        crate::module::TriggerTarget::Brightness => {
+                            op.source_props.brightness = val
+                        }
                         crate::module::TriggerTarget::Contrast => op.source_props.contrast = val,
-                        crate::module::TriggerTarget::Saturation => op.source_props.saturation = val,
+                        crate::module::TriggerTarget::Saturation => {
+                            op.source_props.saturation = val
+                        }
                         crate::module::TriggerTarget::HueShift => op.source_props.hue_shift = val,
                         crate::module::TriggerTarget::ScaleX => op.source_props.scale_x = val,
                         crate::module::TriggerTarget::ScaleY => op.source_props.scale_y = val,
                         crate::module::TriggerTarget::Rotation => op.source_props.rotation = val,
                         crate::module::TriggerTarget::OffsetX => op.source_props.offset_x = val,
                         crate::module::TriggerTarget::OffsetY => op.source_props.offset_y = val,
-                        crate::module::TriggerTarget::FlipH => op.source_props.flip_horizontal = val > 0.5,
-                        crate::module::TriggerTarget::FlipV => op.source_props.flip_vertical = val > 0.5,
+                        crate::module::TriggerTarget::FlipH => {
+                            op.source_props.flip_horizontal = val > 0.5
+                        }
+                        crate::module::TriggerTarget::FlipV => {
+                            op.source_props.flip_vertical = val > 0.5
+                        }
                         crate::module::TriggerTarget::Param(name) => {
-                            if let Some(ModulizerType::Effect { params, .. }) = op.effects.last_mut() {
+                            if let Some(ModulizerType::Effect { params, .. }) =
+                                op.effects.last_mut()
+                            {
                                 params.insert(name.clone(), val);
                             }
                         }
@@ -756,12 +937,20 @@ impl ModuleEvaluator {
             }
 
             // 2. Find PREVIOUS node in chain
-            if let Some(conn_idx) = indices.conn_index_cache.get(&current_id).and_then(|v| v.first()).copied() {
+            if let Some(conn_idx) = indices
+                .conn_index_cache
+                .get(&current_id)
+                .and_then(|v| v.first())
+                .copied()
+            {
                 let conn = &module.connections[conn_idx];
-                
+
                 // Cycle detection
                 if !visited.insert(conn.from_part) {
-                    tracing::warn!("Cycle detected in module graph chain starting at node {}", start_node_id);
+                    tracing::warn!(
+                        "Cycle detected in module graph chain starting at node {}",
+                        start_node_id
+                    );
                     break;
                 }
 
@@ -794,7 +983,7 @@ impl ModuleEvaluator {
                 break;
             }
         }
-        
+
         op.effects.reverse();
         op.masks.reverse();
         op.mesh = override_mesh.unwrap_or_else(|| default_mesh.clone());
@@ -814,15 +1003,25 @@ impl ModuleEvaluator {
     ) {
         let push_val_internal = |val: f32, out: &mut Vec<f32>, invert: bool| {
             let base_val = if manual_fired { 1.0 } else { val };
-            let final_val = if invert { 1.0 - base_val.clamp(0.0, 1.0) } else { base_val };
+            let final_val = if invert {
+                1.0 - base_val.clamp(0.0, 1.0)
+            } else {
+                base_val
+            };
             out.push(final_val);
         };
         match trigger_type {
-            TriggerType::AudioFFT { threshold, output_config, .. } => {
+            TriggerType::AudioFFT {
+                threshold,
+                output_config,
+                ..
+            } => {
                 if output_config.frequency_bands {
                     for i in 0..9 {
                         let val = audio_data.band_energies[i];
-                        let invert = output_config.inverted_outputs.contains(&format!("Band {}", i));
+                        let invert = output_config
+                            .inverted_outputs
+                            .contains(&format!("Band {}", i));
                         push_val_internal(if val > *threshold { val } else { 0.0 }, output, invert);
                     }
                 }
@@ -834,86 +1033,210 @@ impl ModuleEvaluator {
                 }
                 if output_config.beat_output {
                     let invert = output_config.inverted_outputs.contains("Beat Out");
-                    push_val_internal(if audio_data.beat_detected { 1.0 } else { 0.0 }, output, invert);
+                    push_val_internal(
+                        if audio_data.beat_detected { 1.0 } else { 0.0 },
+                        output,
+                        invert,
+                    );
                 }
             }
-            TriggerType::Beat => push_val_internal(if audio_data.beat_detected { 1.0 } else { 0.0 }, output, false),
-            TriggerType::Random { min_interval_ms, max_interval_ms, probability } => {
-                if !matches!(state, TriggerState::Random { .. }) { *state = TriggerState::Random { timer: 0.0, target: rng.random_range((*min_interval_ms as f32 / 1000.0)..=(*max_interval_ms as f32 / 1000.0)) }; }
+            TriggerType::Beat => push_val_internal(
+                if audio_data.beat_detected { 1.0 } else { 0.0 },
+                output,
+                false,
+            ),
+            TriggerType::Random {
+                min_interval_ms,
+                max_interval_ms,
+                probability,
+            } => {
+                if !matches!(state, TriggerState::Random { .. }) {
+                    *state = TriggerState::Random {
+                        timer: 0.0,
+                        target: rng.random_range(
+                            (*min_interval_ms as f32 / 1000.0)..=(*max_interval_ms as f32 / 1000.0),
+                        ),
+                    };
+                }
                 if let TriggerState::Random { timer, target } = state {
                     *timer += dt;
                     let mut triggered = false;
                     if *timer >= *target {
                         *timer = 0.0;
-                        *target = rng.random_range((*min_interval_ms as f32 / 1000.0)..=(*max_interval_ms as f32 / 1000.0));
-                        if rng.random_range(0.0..=1.0) < *probability { triggered = true; }
+                        *target = rng.random_range(
+                            (*min_interval_ms as f32 / 1000.0)..=(*max_interval_ms as f32 / 1000.0),
+                        );
+                        if rng.random_range(0.0..=1.0) < *probability {
+                            triggered = true;
+                        }
                     }
                     push_val_internal(if triggered { 1.0 } else { 0.0 }, output, false);
                 }
             }
             TriggerType::Fixed { interval_ms, .. } => {
-                if !matches!(state, TriggerState::Fixed { .. }) { *state = TriggerState::Fixed { timer: 0.0 }; }
+                if !matches!(state, TriggerState::Fixed { .. }) {
+                    *state = TriggerState::Fixed { timer: 0.0 };
+                }
                 if let TriggerState::Fixed { timer } = state {
                     let interval = *interval_ms as f32 / 1000.0;
-                    if interval <= 0.0 { push_val_internal(1.0, output, false); }
-                    else {
+                    if interval <= 0.0 {
+                        push_val_internal(1.0, output, false);
+                    } else {
                         *timer += dt;
                         let mut triggered = false;
-                        if *timer >= interval { *timer -= interval; triggered = true; }
+                        if *timer >= interval {
+                            *timer -= interval;
+                            triggered = true;
+                        }
                         push_val_internal(if triggered { 1.0 } else { 0.0 }, output, false);
                     }
                 }
             }
             TriggerType::Midi { channel, note, .. } => {
-                if let Some(&value) = shared_state.active_midi_cc.get(&(*channel, *note)) { output.push(value as f32 / 127.0); }
-                else {
+                if let Some(&value) = shared_state.active_midi_cc.get(&(*channel, *note)) {
+                    output.push(value as f32 / 127.0);
+                } else {
                     let mut active_val = 0.0;
-                    for (ev_ch, ev_note, velocity) in &shared_state.active_midi_events { if ev_ch == channel && ev_note == note { active_val = *velocity as f32 / 127.0; break; } }
+                    for (ev_ch, ev_note, velocity) in &shared_state.active_midi_events {
+                        if ev_ch == channel && ev_note == note {
+                            active_val = *velocity as f32 / 127.0;
+                            break;
+                        }
+                    }
                     output.push(active_val);
                 }
             }
             TriggerType::Osc { address } => {
                 let mut active_val = 0.0;
-                if let Some(values) = shared_state.active_osc_messages.get(address) { active_val = values.first().copied().unwrap_or(1.0); }
+                if let Some(values) = shared_state.active_osc_messages.get(address) {
+                    active_val = values.first().copied().unwrap_or(1.0);
+                }
                 output.push(active_val);
             }
-            TriggerType::Shortcut { key_code, modifiers } => {
+            TriggerType::Shortcut {
+                key_code,
+                modifiers,
+            } => {
                 let is_pressed = active_keys.contains(key_code);
                 let mut modifiers_match = true;
-                if *modifiers & 1 != 0 && !active_keys.contains("Shift") { modifiers_match = false; }
-                if *modifiers & 2 != 0 && !active_keys.contains("Control") { modifiers_match = false; }
-                if *modifiers & 4 != 0 && !active_keys.contains("Alt") { modifiers_match = false; }
-                push_val_internal(if is_pressed && modifiers_match { 1.0 } else { 0.0 }, output, false);
+                if *modifiers & 1 != 0 && !active_keys.contains("Shift") {
+                    modifiers_match = false;
+                }
+                if *modifiers & 2 != 0 && !active_keys.contains("Control") {
+                    modifiers_match = false;
+                }
+                if *modifiers & 4 != 0 && !active_keys.contains("Alt") {
+                    modifiers_match = false;
+                }
+                push_val_internal(
+                    if is_pressed && modifiers_match {
+                        1.0
+                    } else {
+                        0.0
+                    },
+                    output,
+                    false,
+                );
             }
         }
     }
 
-    fn compute_trigger_inputs(&self, module: &MapFlowModule, trigger_values: &HashMap<ModulePartId, Vec<f32>>) -> HashMap<ModulePartId, f32> {
+    fn compute_trigger_inputs(
+        &self,
+        module: &MapFlowModule,
+        trigger_values: &HashMap<ModulePartId, Vec<f32>>,
+    ) -> HashMap<ModulePartId, f32> {
         let mut inputs = HashMap::new();
         for conn in &module.connections {
-            if let Some(values) = trigger_values.get(&conn.from_part) { if let Some(&value) = values.get(conn.from_socket) { let current = inputs.entry(conn.to_part).or_insert(0.0); *current = f32::max(*current, value); } }
+            if let Some(values) = trigger_values.get(&conn.from_part) {
+                if let Some(&value) = values.get(conn.from_socket) {
+                    let current = inputs.entry(conn.to_part).or_insert(0.0);
+                    *current = f32::max(*current, value);
+                }
+            }
         }
         inputs
     }
 
-    fn compute_socket_inputs(&self, module: &MapFlowModule, trigger_values: &HashMap<ModulePartId, Vec<f32>>) -> HashMap<ModulePartId, HashMap<usize, f32>> {
+    fn compute_socket_inputs(
+        &self,
+        module: &MapFlowModule,
+        trigger_values: &HashMap<ModulePartId, Vec<f32>>,
+    ) -> HashMap<ModulePartId, HashMap<usize, f32>> {
         let mut inputs: HashMap<ModulePartId, HashMap<usize, f32>> = HashMap::new();
         for conn in &module.connections {
-            if let Some(values) = trigger_values.get(&conn.from_part) { if let Some(&value) = values.get(conn.from_socket) { let part_inputs = inputs.entry(conn.to_part).or_default(); let current = part_inputs.entry(conn.to_socket).or_insert(0.0); *current = f32::max(*current, value); } }
+            if let Some(values) = trigger_values.get(&conn.from_part) {
+                if let Some(&value) = values.get(conn.from_socket) {
+                    let part_inputs = inputs.entry(conn.to_part).or_default();
+                    let current = part_inputs.entry(conn.to_socket).or_insert(0.0);
+                    *current = f32::max(*current, value);
+                }
+            }
         }
         inputs
     }
 
-    fn create_source_command(&self, source_type: &SourceType, trigger_value: f32, shared_state: &SharedMediaState) -> Option<SourceCommand> {
-        if trigger_value < 0.1 { return None; }
+    fn create_source_command(
+        &self,
+        source_type: &SourceType,
+        trigger_value: f32,
+        shared_state: &SharedMediaState,
+    ) -> Option<SourceCommand> {
+        if trigger_value < 0.1 {
+            return None;
+        }
         match source_type {
-            SourceType::MediaFile { path, .. } | SourceType::VideoUni { path, .. } | SourceType::ImageUni { path, .. } => { if path.is_empty() { return None; } Some(SourceCommand::PlayMedia { path: path.clone(), trigger_value }) }
-            SourceType::VideoMulti { shared_id, .. } | SourceType::ImageMulti { shared_id, .. } => { shared_state.get(shared_id).map(|item| SourceCommand::PlaySharedMedia { id: shared_id.clone(), path: item.path.clone(), trigger_value }) }
-            SourceType::Shader { name, params } => Some(SourceCommand::PlayShader { name: name.clone(), params: params.clone(), trigger_value }),
-            SourceType::NdiInput { source_name } => Some(SourceCommand::NdiInput { source_name: source_name.clone(), trigger_value }),
-            SourceType::LiveInput { device_id } => Some(SourceCommand::LiveInput { device_id: *device_id, trigger_value }),
-            #[cfg(target_os = "windows")] SourceType::SpoutInput { sender_name } => Some(SourceCommand::SpoutInput { sender_name: sender_name.clone(), trigger_value }),
-            SourceType::Bevy3DModel { path, position, rotation, scale, .. } => { Some(SourceCommand::Bevy3DModel { path: path.clone(), position: *position, rotation: *rotation, scale: *scale, trigger_value }) }
+            SourceType::MediaFile { path, .. }
+            | SourceType::VideoUni { path, .. }
+            | SourceType::ImageUni { path, .. } => {
+                if path.is_empty() {
+                    return None;
+                }
+                Some(SourceCommand::PlayMedia {
+                    path: path.clone(),
+                    trigger_value,
+                })
+            }
+            SourceType::VideoMulti { shared_id, .. } | SourceType::ImageMulti { shared_id, .. } => {
+                shared_state
+                    .get(shared_id)
+                    .map(|item| SourceCommand::PlaySharedMedia {
+                        id: shared_id.clone(),
+                        path: item.path.clone(),
+                        trigger_value,
+                    })
+            }
+            SourceType::Shader { name, params } => Some(SourceCommand::PlayShader {
+                name: name.clone(),
+                params: params.clone(),
+                trigger_value,
+            }),
+            SourceType::NdiInput { source_name } => Some(SourceCommand::NdiInput {
+                source_name: source_name.clone(),
+                trigger_value,
+            }),
+            SourceType::LiveInput { device_id } => Some(SourceCommand::LiveInput {
+                device_id: *device_id,
+                trigger_value,
+            }),
+            #[cfg(target_os = "windows")]
+            SourceType::SpoutInput { sender_name } => Some(SourceCommand::SpoutInput {
+                sender_name: sender_name.clone(),
+                trigger_value,
+            }),
+            SourceType::Bevy3DModel {
+                path,
+                position,
+                rotation,
+                scale,
+                ..
+            } => Some(SourceCommand::Bevy3DModel {
+                path: path.clone(),
+                position: *position,
+                rotation: *rotation,
+                scale: *scale,
+                trigger_value,
+            }),
             _ => Some(SourceCommand::BevyInput { trigger_value }),
         }
     }

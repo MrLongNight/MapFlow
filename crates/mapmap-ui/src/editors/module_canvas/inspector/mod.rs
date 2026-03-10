@@ -994,96 +994,277 @@ fn render_hue_bridge_discovery(canvas: &mut ModuleCanvas, ui: &mut Ui, current_i
     if ui.button("🔍 Discover Bridges").clicked() {
         let (tx, rx) = std::sync::mpsc::channel();
         canvas.hue_discovery_rx = Some(rx);
-        #[cfg(feature = "tokio")] {
+        #[cfg(feature = "tokio")]
+        {
             canvas.hue_status_message = Some("Searching...".to_string());
             let task = async move {
-                let result = mapmap_control::hue::api::discovery::discover_bridges().await.map_err(|e| e.to_string());
+                let result = mapmap_control::hue::api::discovery::discover_bridges()
+                    .await
+                    .map_err(|e| e.to_string());
                 let _ = tx.send(result);
             };
             tokio::spawn(task);
         }
-        #[cfg(not(feature = "tokio"))] { let _ = tx; canvas.hue_status_message = Some("Async runtime not available".to_string()); }
+        #[cfg(not(feature = "tokio"))]
+        {
+            let _ = tx;
+            canvas.hue_status_message = Some("Async runtime not available".to_string());
+        }
     }
     if !canvas.hue_bridges.is_empty() {
-        ui.separator(); ui.label("Select Bridge:");
-        for bridge in &canvas.hue_bridges { if ui.button(format!("{} ({})", bridge.id, bridge.ip)).clicked() { *current_ip = bridge.ip.clone(); } }
+        ui.separator();
+        ui.label("Select Bridge:");
+        for bridge in &canvas.hue_bridges {
+            if ui
+                .button(format!("{} ({})", bridge.id, bridge.ip))
+                .clicked()
+            {
+                *current_ip = bridge.ip.clone();
+            }
+        }
     }
 }
 
 fn render_trigger_config_ui(canvas: &mut ModuleCanvas, ui: &mut Ui, part: &mut ModulePart) {
-    if part.inputs.is_empty() { return; }
+    if part.inputs.is_empty() {
+        return;
+    }
     ui.add_space(5.0);
-    egui::CollapsingHeader::new("\u{26A1} Trigger & Automation").default_open(false).show(ui, |ui| {
-        ui.horizontal(|ui| {
-            ui.label("MIDI Assignment:");
-            let is_learning = canvas.midi_learn_part_id == Some(part.id);
-            let btn_text = if is_learning { "\u{1F6D1} Stop Learning" } else { "\u{1F3B9} MIDI Learn" };
-            if ui.selectable_label(is_learning, btn_text).clicked() { if is_learning { canvas.midi_learn_part_id = None; } else { canvas.midi_learn_part_id = Some(part.id); } }
-        });
-        ui.separator();
-        for (idx, socket) in part.inputs.iter().enumerate() {
-            ui.push_id(idx, |ui| {
-                ui.separator(); ui.label(format!("Input {}: {}", idx, socket.name));
-                let mut config = part.trigger_targets.entry(idx).or_default().clone();
-                let original_config = config.clone();
-                egui::ComboBox::from_id_salt("target").selected_text(format!("{:?}", config.target)).show_ui(ui, |ui| {
-                    use mapmap_core::module::TriggerTarget;
-                    ui.selectable_value(&mut config.target, TriggerTarget::None, "None");
-                    ui.selectable_value(&mut config.target, TriggerTarget::Opacity, "Opacity");
-                    ui.selectable_value(&mut config.target, TriggerTarget::Brightness, "Brightness");
-                    ui.selectable_value(&mut config.target, TriggerTarget::Contrast, "Contrast");
-                    ui.selectable_value(&mut config.target, TriggerTarget::Saturation, "Saturation");
-                    ui.selectable_value(&mut config.target, TriggerTarget::HueShift, "Hue Shift");
-                    ui.selectable_value(&mut config.target, TriggerTarget::ScaleX, "Scale X");
-                    ui.selectable_value(&mut config.target, TriggerTarget::ScaleY, "Scale Y");
-                    ui.selectable_value(&mut config.target, TriggerTarget::Rotation, "Rotation");
-                });
-                if config.target != TriggerTarget::None {
-                    ui.horizontal(|ui| {
-                        ui.label("Mode:");
-                        let mode_name = match config.mode { TriggerMappingMode::Direct => "Direct", TriggerMappingMode::Fixed => "Fixed", TriggerMappingMode::RandomInRange => "Random", TriggerMappingMode::Smoothed { .. } => "Smoothed" };
-                        egui::ComboBox::from_id_salt("mode").selected_text(mode_name).show_ui(ui, |ui| {
-                            use mapmap_core::module::TriggerMappingMode;
-                            ui.selectable_value(&mut config.mode, TriggerMappingMode::Direct, "Direct");
-                            ui.selectable_value(&mut config.mode, TriggerMappingMode::Fixed, "Fixed");
-                            ui.selectable_value(&mut config.mode, TriggerMappingMode::RandomInRange, "Random");
-                            ui.selectable_value(&mut config.mode, TriggerMappingMode::Smoothed { attack: 0.1, release: 0.1 }, "Smoothed");
-                        });
-                    });
-                    match &mut config.mode {
-                        TriggerMappingMode::Fixed => { ui.horizontal(|ui| { ui.label("Threshold:"); styled_slider(ui, &mut config.threshold, 0.0..=1.0, 0.5); }); ui.horizontal(|ui| { ui.label("Off:"); styled_slider(ui, &mut config.min_value, -5.0..=5.0, 0.0); ui.label("On:"); styled_slider(ui, &mut config.max_value, -5.0..=5.0, 1.0); }); }
-                        TriggerMappingMode::RandomInRange => { ui.horizontal(|ui| { ui.label("Range:"); ui.label("Min:"); styled_slider(ui, &mut config.min_value, -5.0..=5.0, 0.0); ui.label("Max:"); styled_slider(ui, &mut config.max_value, -5.0..=5.0, 1.0); }); }
-                        TriggerMappingMode::Smoothed { attack, release } => { ui.horizontal(|ui| { ui.label("Range:"); ui.label("Min:"); styled_slider(ui, &mut config.min_value, -5.0..=5.0, 0.0); ui.label("Max:"); styled_slider(ui, &mut config.max_value, -5.0..=5.0, 1.0); }); ui.horizontal(|ui| { ui.label("Attack:"); styled_slider(ui, attack, 0.0..=2.0, 0.1); ui.label("s"); }); ui.horizontal(|ui| { ui.label("Release:"); styled_slider(ui, release, 0.0..=2.0, 0.1); ui.label("s"); }); }
-                        _ => { ui.horizontal(|ui| { ui.label("Range:"); ui.label("Min:"); styled_slider(ui, &mut config.min_value, -5.0..=5.0, 0.0); ui.label("Max:"); styled_slider(ui, &mut config.max_value, -5.0..=5.0, 1.0); }); }
+    egui::CollapsingHeader::new("\u{26A1} Trigger & Automation")
+        .default_open(false)
+        .show(ui, |ui| {
+            ui.horizontal(|ui| {
+                ui.label("MIDI Assignment:");
+                let is_learning = canvas.midi_learn_part_id == Some(part.id);
+                let btn_text = if is_learning {
+                    "\u{1F6D1} Stop Learning"
+                } else {
+                    "\u{1F3B9} MIDI Learn"
+                };
+                if ui.selectable_label(is_learning, btn_text).clicked() {
+                    if is_learning {
+                        canvas.midi_learn_part_id = None;
+                    } else {
+                        canvas.midi_learn_part_id = Some(part.id);
                     }
-                    ui.checkbox(&mut config.invert, "Invert Input");
                 }
-                if config != original_config { part.trigger_targets.insert(idx, config); }
             });
-        }
-    });
+            ui.separator();
+            for (idx, socket) in part.inputs.iter().enumerate() {
+                ui.push_id(idx, |ui| {
+                    ui.separator();
+                    ui.label(format!("Input {}: {}", idx, socket.name));
+                    let mut config = part.trigger_targets.entry(idx).or_default().clone();
+                    let original_config = config.clone();
+                    egui::ComboBox::from_id_salt("target")
+                        .selected_text(format!("{:?}", config.target))
+                        .show_ui(ui, |ui| {
+                            use mapmap_core::module::TriggerTarget;
+                            ui.selectable_value(&mut config.target, TriggerTarget::None, "None");
+                            ui.selectable_value(
+                                &mut config.target,
+                                TriggerTarget::Opacity,
+                                "Opacity",
+                            );
+                            ui.selectable_value(
+                                &mut config.target,
+                                TriggerTarget::Brightness,
+                                "Brightness",
+                            );
+                            ui.selectable_value(
+                                &mut config.target,
+                                TriggerTarget::Contrast,
+                                "Contrast",
+                            );
+                            ui.selectable_value(
+                                &mut config.target,
+                                TriggerTarget::Saturation,
+                                "Saturation",
+                            );
+                            ui.selectable_value(
+                                &mut config.target,
+                                TriggerTarget::HueShift,
+                                "Hue Shift",
+                            );
+                            ui.selectable_value(
+                                &mut config.target,
+                                TriggerTarget::ScaleX,
+                                "Scale X",
+                            );
+                            ui.selectable_value(
+                                &mut config.target,
+                                TriggerTarget::ScaleY,
+                                "Scale Y",
+                            );
+                            ui.selectable_value(
+                                &mut config.target,
+                                TriggerTarget::Rotation,
+                                "Rotation",
+                            );
+                        });
+                    if config.target != TriggerTarget::None {
+                        ui.horizontal(|ui| {
+                            ui.label("Mode:");
+                            let mode_name = match config.mode {
+                                TriggerMappingMode::Direct => "Direct",
+                                TriggerMappingMode::Fixed => "Fixed",
+                                TriggerMappingMode::RandomInRange => "Random",
+                                TriggerMappingMode::Smoothed { .. } => "Smoothed",
+                            };
+                            egui::ComboBox::from_id_salt("mode")
+                                .selected_text(mode_name)
+                                .show_ui(ui, |ui| {
+                                    use mapmap_core::module::TriggerMappingMode;
+                                    ui.selectable_value(
+                                        &mut config.mode,
+                                        TriggerMappingMode::Direct,
+                                        "Direct",
+                                    );
+                                    ui.selectable_value(
+                                        &mut config.mode,
+                                        TriggerMappingMode::Fixed,
+                                        "Fixed",
+                                    );
+                                    ui.selectable_value(
+                                        &mut config.mode,
+                                        TriggerMappingMode::RandomInRange,
+                                        "Random",
+                                    );
+                                    ui.selectable_value(
+                                        &mut config.mode,
+                                        TriggerMappingMode::Smoothed {
+                                            attack: 0.1,
+                                            release: 0.1,
+                                        },
+                                        "Smoothed",
+                                    );
+                                });
+                        });
+                        match &mut config.mode {
+                            TriggerMappingMode::Fixed => {
+                                ui.horizontal(|ui| {
+                                    ui.label("Threshold:");
+                                    styled_slider(ui, &mut config.threshold, 0.0..=1.0, 0.5);
+                                });
+                                ui.horizontal(|ui| {
+                                    ui.label("Off:");
+                                    styled_slider(ui, &mut config.min_value, -5.0..=5.0, 0.0);
+                                    ui.label("On:");
+                                    styled_slider(ui, &mut config.max_value, -5.0..=5.0, 1.0);
+                                });
+                            }
+                            TriggerMappingMode::RandomInRange => {
+                                ui.horizontal(|ui| {
+                                    ui.label("Range:");
+                                    ui.label("Min:");
+                                    styled_slider(ui, &mut config.min_value, -5.0..=5.0, 0.0);
+                                    ui.label("Max:");
+                                    styled_slider(ui, &mut config.max_value, -5.0..=5.0, 1.0);
+                                });
+                            }
+                            TriggerMappingMode::Smoothed { attack, release } => {
+                                ui.horizontal(|ui| {
+                                    ui.label("Range:");
+                                    ui.label("Min:");
+                                    styled_slider(ui, &mut config.min_value, -5.0..=5.0, 0.0);
+                                    ui.label("Max:");
+                                    styled_slider(ui, &mut config.max_value, -5.0..=5.0, 1.0);
+                                });
+                                ui.horizontal(|ui| {
+                                    ui.label("Attack:");
+                                    styled_slider(ui, attack, 0.0..=2.0, 0.1);
+                                    ui.label("s");
+                                });
+                                ui.horizontal(|ui| {
+                                    ui.label("Release:");
+                                    styled_slider(ui, release, 0.0..=2.0, 0.1);
+                                    ui.label("s");
+                                });
+                            }
+                            _ => {
+                                ui.horizontal(|ui| {
+                                    ui.label("Range:");
+                                    ui.label("Min:");
+                                    styled_slider(ui, &mut config.min_value, -5.0..=5.0, 0.0);
+                                    ui.label("Max:");
+                                    styled_slider(ui, &mut config.max_value, -5.0..=5.0, 1.0);
+                                });
+                            }
+                        }
+                        ui.checkbox(&mut config.invert, "Invert Input");
+                    }
+                    if config != original_config {
+                        part.trigger_targets.insert(idx, config);
+                    }
+                });
+            }
+        });
 }
 
-fn render_transport_controls(canvas: &mut ModuleCanvas, ui: &mut Ui, part_id: ModulePartId, is_playing: bool, _current_pos: f32, loop_enabled: &mut bool, _reverse_playback: &mut bool) {
+fn render_transport_controls(
+    canvas: &mut ModuleCanvas,
+    ui: &mut Ui,
+    part_id: ModulePartId,
+    is_playing: bool,
+    _current_pos: f32,
+    loop_enabled: &mut bool,
+    _reverse_playback: &mut bool,
+) {
     ui.horizontal(|ui| {
-        if ui.button(if is_playing { "⏸ Pause" } else { "▶ Play" }).clicked() {
-            let cmd = if is_playing { MediaPlaybackCommand::Pause } else { MediaPlaybackCommand::Play };
+        if ui
+            .button(if is_playing { "⏸ Pause" } else { "▶ Play" })
+            .clicked()
+        {
+            let cmd = if is_playing {
+                MediaPlaybackCommand::Pause
+            } else {
+                MediaPlaybackCommand::Play
+            };
             canvas.pending_playback_commands.push((part_id, cmd));
         }
-        if ui.button("⏹ Stop").clicked() { canvas.pending_playback_commands.push((part_id, MediaPlaybackCommand::Stop)); }
-        if ui.button("🔄 Reload").clicked() { canvas.pending_playback_commands.push((part_id, MediaPlaybackCommand::Reload)); }
+        if ui.button("⏹ Stop").clicked() {
+            canvas
+                .pending_playback_commands
+                .push((part_id, MediaPlaybackCommand::Stop));
+        }
+        if ui.button("🔄 Reload").clicked() {
+            canvas
+                .pending_playback_commands
+                .push((part_id, MediaPlaybackCommand::Reload));
+        }
         ui.separator();
-        if ui.checkbox(loop_enabled, "🔁 Loop").changed() { canvas.pending_playback_commands.push((part_id, MediaPlaybackCommand::SetLoop(*loop_enabled))); }
+        if ui.checkbox(loop_enabled, "🔁 Loop").changed() {
+            canvas
+                .pending_playback_commands
+                .push((part_id, MediaPlaybackCommand::SetLoop(*loop_enabled)));
+        }
     });
 }
 
-fn render_timeline(_canvas: &mut ModuleCanvas, ui: &mut Ui, _part_id: ModulePartId, duration: f32, current_pos: f32, _start_time: &mut f32, _end_time: &mut f32) {
+fn render_timeline(
+    _canvas: &mut ModuleCanvas,
+    ui: &mut Ui,
+    _part_id: ModulePartId,
+    duration: f32,
+    current_pos: f32,
+    _start_time: &mut f32,
+    _end_time: &mut f32,
+) {
     ui.label("Timeline:");
-    let (rect, _) = ui.allocate_at_least(egui::vec2(ui.available_width(), 40.0), Sense::click_and_drag());
+    let (rect, _) = ui.allocate_at_least(
+        egui::vec2(ui.available_width(), 40.0),
+        Sense::click_and_drag(),
+    );
     let painter = ui.painter();
     painter.rect_filled(rect, 2.0, colors::DARKER_GREY);
     let progress_x = rect.min.x + (current_pos / duration) * rect.width();
-    painter.line_segment([egui::pos2(progress_x, rect.min.y), egui::pos2(progress_x, rect.max.y)], Stroke::new(2.0, Color32::WHITE));
+    painter.line_segment(
+        [
+            egui::pos2(progress_x, rect.min.y),
+            egui::pos2(progress_x, rect.max.y),
+        ],
+        Stroke::new(2.0, Color32::WHITE),
+    );
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1104,35 +1285,142 @@ fn render_common_controls(
     flip_vertical: &mut bool,
 ) {
     ui.collapsing("\u{1F3A8} Appearance", |ui| {
-        egui::Grid::new("appearance_grid").num_columns(2).spacing([10.0, 8.0]).show(ui, |ui| {
-            ui.label("Opacity:"); styled_slider(ui, opacity, 0.0..=1.0, 1.0); ui.end_row();
-            ui.label("Blend Mode:");
-            egui::ComboBox::from_id_salt("blend_mode_selector").selected_text(match blend_mode { Some(BlendModeType::Normal) => "Normal", Some(BlendModeType::Add) => "Add", Some(BlendModeType::Multiply) => "Multiply", Some(BlendModeType::Screen) => "Screen", Some(BlendModeType::Overlay) => "Overlay", Some(BlendModeType::Difference) => "Difference", Some(BlendModeType::Exclusion) => "Exclusion", None => "Normal" }).show_ui(ui, |ui| {
-                if ui.selectable_label(blend_mode.is_none(), "Normal").clicked() { *blend_mode = None; }
-                if ui.selectable_label(*blend_mode == Some(BlendModeType::Add), "Add").clicked() { *blend_mode = Some(BlendModeType::Add); }
-                if ui.selectable_label(*blend_mode == Some(BlendModeType::Multiply), "Multiply").clicked() { *blend_mode = Some(BlendModeType::Multiply); }
-                if ui.selectable_label(*blend_mode == Some(BlendModeType::Screen), "Screen").clicked() { *blend_mode = Some(BlendModeType::Screen); }
-                if ui.selectable_label(*blend_mode == Some(BlendModeType::Overlay), "Overlay").clicked() { *blend_mode = Some(BlendModeType::Overlay); }
-                if ui.selectable_label(*blend_mode == Some(BlendModeType::Difference), "Difference").clicked() { *blend_mode = Some(BlendModeType::Difference); }
-                if ui.selectable_label(*blend_mode == Some(BlendModeType::Exclusion), "Exclusion").clicked() { *blend_mode = Some(BlendModeType::Exclusion); }
+        egui::Grid::new("appearance_grid")
+            .num_columns(2)
+            .spacing([10.0, 8.0])
+            .show(ui, |ui| {
+                ui.label("Opacity:");
+                styled_slider(ui, opacity, 0.0..=1.0, 1.0);
+                ui.end_row();
+                ui.label("Blend Mode:");
+                egui::ComboBox::from_id_salt("blend_mode_selector")
+                    .selected_text(match blend_mode {
+                        Some(BlendModeType::Normal) => "Normal",
+                        Some(BlendModeType::Add) => "Add",
+                        Some(BlendModeType::Multiply) => "Multiply",
+                        Some(BlendModeType::Screen) => "Screen",
+                        Some(BlendModeType::Overlay) => "Overlay",
+                        Some(BlendModeType::Difference) => "Difference",
+                        Some(BlendModeType::Exclusion) => "Exclusion",
+                        None => "Normal",
+                    })
+                    .show_ui(ui, |ui| {
+                        if ui
+                            .selectable_label(blend_mode.is_none(), "Normal")
+                            .clicked()
+                        {
+                            *blend_mode = None;
+                        }
+                        if ui
+                            .selectable_label(*blend_mode == Some(BlendModeType::Add), "Add")
+                            .clicked()
+                        {
+                            *blend_mode = Some(BlendModeType::Add);
+                        }
+                        if ui
+                            .selectable_label(
+                                *blend_mode == Some(BlendModeType::Multiply),
+                                "Multiply",
+                            )
+                            .clicked()
+                        {
+                            *blend_mode = Some(BlendModeType::Multiply);
+                        }
+                        if ui
+                            .selectable_label(*blend_mode == Some(BlendModeType::Screen), "Screen")
+                            .clicked()
+                        {
+                            *blend_mode = Some(BlendModeType::Screen);
+                        }
+                        if ui
+                            .selectable_label(
+                                *blend_mode == Some(BlendModeType::Overlay),
+                                "Overlay",
+                            )
+                            .clicked()
+                        {
+                            *blend_mode = Some(BlendModeType::Overlay);
+                        }
+                        if ui
+                            .selectable_label(
+                                *blend_mode == Some(BlendModeType::Difference),
+                                "Difference",
+                            )
+                            .clicked()
+                        {
+                            *blend_mode = Some(BlendModeType::Difference);
+                        }
+                        if ui
+                            .selectable_label(
+                                *blend_mode == Some(BlendModeType::Exclusion),
+                                "Exclusion",
+                            )
+                            .clicked()
+                        {
+                            *blend_mode = Some(BlendModeType::Exclusion);
+                        }
+                    });
+                ui.end_row();
             });
-            ui.end_row();
-        });
     });
     if crate::widgets::collapsing_header_with_reset(ui, "\u{1F308} Color Correction", false, |ui| {
-        egui::Grid::new("color_correction_grid").num_columns(2).spacing([10.0, 8.0]).show(ui, |ui| {
-            ui.label("Brightness:"); styled_slider(ui, brightness, -1.0..=1.0, 0.0); ui.end_row();
-            ui.label("Contrast:"); styled_slider(ui, contrast, 0.0..=2.0, 1.0); ui.end_row();
-            ui.label("Saturation:"); styled_slider(ui, saturation, 0.0..=2.0, 1.0); ui.end_row();
-            ui.label("Hue Shift:"); styled_slider(ui, hue_shift, -180.0..=180.0, 0.0); ui.end_row();
-        });
-    }) { *brightness = 0.0; *contrast = 1.0; *saturation = 1.0; *hue_shift = 0.0; }
+        egui::Grid::new("color_correction_grid")
+            .num_columns(2)
+            .spacing([10.0, 8.0])
+            .show(ui, |ui| {
+                ui.label("Brightness:");
+                styled_slider(ui, brightness, -1.0..=1.0, 0.0);
+                ui.end_row();
+                ui.label("Contrast:");
+                styled_slider(ui, contrast, 0.0..=2.0, 1.0);
+                ui.end_row();
+                ui.label("Saturation:");
+                styled_slider(ui, saturation, 0.0..=2.0, 1.0);
+                ui.end_row();
+                ui.label("Hue Shift:");
+                styled_slider(ui, hue_shift, -180.0..=180.0, 0.0);
+                ui.end_row();
+            });
+    }) {
+        *brightness = 0.0;
+        *contrast = 1.0;
+        *saturation = 1.0;
+        *hue_shift = 0.0;
+    }
     if crate::widgets::collapsing_header_with_reset(ui, "📐 Transform (2D)", false, |ui| {
-        egui::Grid::new("transform_grid").num_columns(2).spacing([10.0, 8.0]).show(ui, |ui| {
-            ui.label("Scale:"); ui.horizontal(|ui| { styled_drag_value(ui, scale_x, 0.01, 0.01..=10.0, 1.0, "X: ", ""); styled_drag_value(ui, scale_y, 0.01, 0.01..=10.0, 1.0, "Y: ", ""); }); ui.end_row();
-            ui.label("Rotation:"); styled_slider(ui, rotation, -180.0..=180.0, 0.0); ui.end_row();
-            ui.label("Offset:"); ui.horizontal(|ui| { styled_drag_value(ui, offset_x, 0.01, -1.0..=1.0, 0.0, "X: ", ""); styled_drag_value(ui, offset_y, 0.01, -1.0..=1.0, 0.0, "Y: ", ""); }); ui.end_row();
-            ui.label("Flip:"); ui.horizontal(|ui| { ui.checkbox(flip_horizontal, "Horizontal"); ui.checkbox(flip_vertical, "Vertical"); }); ui.end_row();
-        });
-    }) { *scale_x = 1.0; *scale_y = 1.0; *rotation = 0.0; *offset_x = 0.0; *offset_y = 0.0; *flip_horizontal = false; *flip_vertical = false; }
+        egui::Grid::new("transform_grid")
+            .num_columns(2)
+            .spacing([10.0, 8.0])
+            .show(ui, |ui| {
+                ui.label("Scale:");
+                ui.horizontal(|ui| {
+                    styled_drag_value(ui, scale_x, 0.01, 0.01..=10.0, 1.0, "X: ", "");
+                    styled_drag_value(ui, scale_y, 0.01, 0.01..=10.0, 1.0, "Y: ", "");
+                });
+                ui.end_row();
+                ui.label("Rotation:");
+                styled_slider(ui, rotation, -180.0..=180.0, 0.0);
+                ui.end_row();
+                ui.label("Offset:");
+                ui.horizontal(|ui| {
+                    styled_drag_value(ui, offset_x, 0.01, -1.0..=1.0, 0.0, "X: ", "");
+                    styled_drag_value(ui, offset_y, 0.01, -1.0..=1.0, 0.0, "Y: ", "");
+                });
+                ui.end_row();
+                ui.label("Flip:");
+                ui.horizontal(|ui| {
+                    ui.checkbox(flip_horizontal, "Horizontal");
+                    ui.checkbox(flip_vertical, "Vertical");
+                });
+                ui.end_row();
+            });
+    }) {
+        *scale_x = 1.0;
+        *scale_y = 1.0;
+        *rotation = 0.0;
+        *offset_x = 0.0;
+        *offset_y = 0.0;
+        *flip_horizontal = false;
+        *flip_vertical = false;
+    }
 }

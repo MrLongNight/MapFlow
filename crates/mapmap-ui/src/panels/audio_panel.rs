@@ -25,15 +25,11 @@ pub enum FftVisualizationMode {
 #[derive(Debug)]
 pub struct AudioPanel {
     pub is_expanded: bool,
-    last_draw_time: std::time::Instant,
 }
 
 impl Default for AudioPanel {
     fn default() -> Self {
-        Self {
-            is_expanded: true,
-            last_draw_time: std::time::Instant::now(),
-        }
+        Self { is_expanded: true }
     }
 }
 
@@ -64,15 +60,6 @@ impl AudioPanel {
         fft_mode: &mut FftVisualizationMode,
     ) -> Option<AudioPanelAction> {
         let mut action = None;
-
-        // Throttle UI updates to ~30 FPS for analysis visualization
-        let now = std::time::Instant::now();
-        let should_redraw = now.duration_since(self.last_draw_time).as_millis() >= 33;
-
-        if should_redraw {
-            self.last_draw_time = now;
-            ui.ctx().request_repaint();
-        }
 
         // Use standard Cyber Dark panel frame
         panel::cyber_panel_frame(ui.style()).show(ui, |ui| {
