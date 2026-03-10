@@ -332,43 +332,6 @@ mod ffmpeg_impl {
             Ok(())
         }
 
-        /// Recreate the scaler for new dimensions or pixel format
-        fn recreate_scaler(
-            &mut self,
-            frame_width: u32,
-            frame_height: u32,
-            frame_format: ffmpeg::format::Pixel,
-        ) -> Result<()> {
-            info!(
-                "Recreating scaler: {}x{} {:?} -> {}x{} {:?}",
-                self.width,
-                self.height,
-                self.current_format,
-                frame_width,
-                frame_height,
-                frame_format
-            );
-
-            let new_scaler = ffmpeg::software::scaling::Context::get(
-                frame_format,
-                frame_width,
-                frame_height,
-                ffmpeg::format::Pixel::RGBA,
-                frame_width,
-                frame_height,
-                ffmpeg::software::scaling::Flags::BILINEAR,
-            )
-            .map_err(|e| MediaError::DecoderError(format!("Failed to recreate scaler: {}", e)))
-            .map(SendContext)?;
-
-            self.scaler = new_scaler;
-            self.width = frame_width;
-            self.height = frame_height;
-            self.current_format = frame_format;
-
-            Ok(())
-        }
-
         /// Setup hardware acceleration
         fn setup_hw_accel(
             _decoder: &mut ffmpeg::codec::decoder::Video,
@@ -485,27 +448,48 @@ mod ffmpeg_impl {
                         || frame_height != self.height
                         || frame_format != self.current_format
                     {
-                        if let Err(e) =
-                            self.recreate_scaler(frame_width, frame_height, frame_format)
-                        {
-                            warn!("Failed to recreate scaler, skipping frame: {}", e);
-                            self.consecutive_errors += 1;
-                            if self.consecutive_errors > 30 {
-                                warn!("Too many consecutive scaler creation errors, entering fatal error state");
-                                self.fatal_error = true;
-                                if let Err(reinit_err) = self.reinit_decoder() {
-                                    warn!("Failed to re-initialize decoder: {}", reinit_err);
-                                } else {
-                                    info!(
-                                        "Successfully re-initialized decoder after scaler failures"
-                                    );
-                                    self.consecutive_errors = 0; // reset on success
-                                }
-                                return Err(MediaError::DecoderError(
-                                    "Decoder hit fatal error and attempted reinit".to_string(),
-                                ));
+                        info!(
+                            "Recreating scaler: {}x{} {:?} -> {}x{} {:?}",
+                            self.width,
+                            self.height,
+                            self.current_format,
+                            frame_width,
+                            frame_height,
+                            frame_format
+                        );
+
+                        match ffmpeg::software::scaling::Context::get(
+                            frame_format,
+                            frame_width,
+                            frame_height,
+                            ffmpeg::format::Pixel::RGBA,
+                            frame_width,
+                            frame_height,
+                            ffmpeg::software::scaling::Flags::BILINEAR,
+                        )
+                        .map_err(|e| MediaError::DecoderError(format!("Failed to recreate scaler: {}", e)))
+                        .map(SendContext) {
+                            Ok(new_scaler) => {
+                                self.scaler = new_scaler;
+                                self.width = frame_width;
+                                self.height = frame_height;
+                                self.current_format = frame_format;
                             }
-                            continue;
+                            Err(e) => {
+                                warn!("Failed to recreate scaler, skipping frame: {}", e);
+                                self.consecutive_errors += 1;
+                                if self.consecutive_errors > 30 {
+                                    warn!("Too many consecutive scaler creation errors, entering fatal error state");
+                                    self.fatal_error = true;
+                                    // Notice: reinit_decoder requires mutable self, but we are inside the packets() iterator.
+                                    // We set fatal_error, and next_frame will catch it on the next call or the caller will seek/recover.
+                                    // For immediate abort out of the loop:
+                                    return Err(MediaError::DecoderError(
+                                        "Decoder hit fatal error and needs reinit".to_string(),
+                                    ));
+                                }
+                                continue;
+                            }
                         }
                     }
 
@@ -525,16 +509,8 @@ mod ffmpeg_impl {
                     }
 
                     if needs_reinit {
-                        // We must reinit outside the scaler block to avoid holding frame references.
-                        // Attempt to re-initialize the entire decoder if it's permanently stuck
-                        if let Err(reinit_err) = self.reinit_decoder() {
-                            warn!("Failed to re-initialize decoder: {}", reinit_err);
-                        } else {
-                            info!("Successfully re-initialized decoder after scaler failures");
-                            self.consecutive_errors = 0; // reset on success
-                        }
                         return Err(MediaError::DecoderError(
-                            "Decoder hit fatal error and attempted reinit".to_string(),
+                            "Decoder hit fatal error and needs reinit".to_string(),
                         ));
                     }
 
