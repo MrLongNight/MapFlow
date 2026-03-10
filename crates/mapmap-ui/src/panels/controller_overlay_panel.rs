@@ -3,9 +3,11 @@
 //! Visual representation of the Ecler NUO 4 (or other MIDI controllers)
 //! with live state visualization and MIDI Learn functionality.
 
-use egui::{Color32, Pos2, Rect, Sense, Stroke, TextureHandle, Ui, Vec2};
+#[allow(unused_imports)]
+use egui::{Color32, Pos2, Rect, Response, Sense, Stroke, TextureHandle, Ui, Vec2};
 
-use crate::config::{MidiAssignment, UserConfig};
+#[allow(unused_imports)]
+use crate::config::{MidiAssignment, MidiAssignmentTarget, UserConfig};
 
 #[cfg(feature = "midi")]
 use mapmap_control::midi::{
@@ -13,7 +15,8 @@ use mapmap_control::midi::{
     MidiLearnManager, MidiMessage,
 };
 use mapmap_control::target::ControlTarget;
-use std::collections::HashMap;
+#[allow(unused_imports)]
+use std::collections::{HashMap, HashSet};
 
 #[allow(dead_code)]
 fn get_mock_targets() -> Vec<ControlTarget> {
@@ -604,7 +607,8 @@ impl ControllerOverlayPanel {
     }
 
     /// Show the visual overlay with mixer background
-    fn show_overlay_view(&mut self, ui: &mut Ui, _assignments: &[MidiAssignment]) {
+    #[allow(unused_variables)]
+    fn show_overlay_view(&mut self, ui: &mut Ui, assignments: &[MidiAssignment]) {
         let (base_w, base_h) = if let Some(tex) = &self.background_texture {
             let size = tex.size();
             (size[0] as f32, size[1] as f32)
@@ -873,7 +877,7 @@ impl ControllerOverlayPanel {
         container: Rect,
         element: &ControllerElement,
         response: &Response,
-        _assignments: &[MidiAssignment],
+        assignments: &[MidiAssignment],
     ) {
         // Calculate element rect based on relative position
         let elem_rect = Rect::from_min_size(
@@ -1082,7 +1086,8 @@ impl ControllerOverlayPanel {
         ui.separator();
 
         // Element table
-        let element_to_remove: Option<String> = None;
+        #[allow(unused_mut)]
+        let mut element_to_remove: Option<String> = None;
 
         egui::ScrollArea::vertical().show(ui, |ui| {
             egui::Grid::new("element_list")
