@@ -76,8 +76,8 @@ cargo run --release
 ```
 
 ### 3. Usage
-* Check the [**Quick Start Guide**](docs/user/getting-started/QUICK-START.md) to create your first composition.
-* Explore the [**User Manual**](docs/user/manual/) for detailed control explanations.
+* Check the [**Quick Start Guide**](docs/A4_USER/B1_MANUAL/DOC-C2_QUICKSTART.md) to create your first composition.
+* Explore the [**User Manual**](docs/A4_USER/B1_MANUAL/DOC-C0_README.md) for detailed control explanations.
 
 ---
 
@@ -85,8 +85,8 @@ cargo run --release
 
 Explore our comprehensive guides in the [`docs/`](docs/README.md) directory:
 
-* 📖 [**User Guide**](docs/user/manual/): Interface layout, keyboard shortcuts, and performance tips.
-* 👨‍💻 [**Developer Portal**](docs/dev/): Architecture overview, coding standards, and build instructions.
+* 📖 [**User Guide**](docs/A4_USER/B1_MANUAL/DOC-C0_README.md): Interface layout, keyboard shortcuts, and performance tips.
+* 👨‍💻 [**Developer Portal**](docs/A2_DEVELOPMENT/DOC-B0_README.md): Architecture overview, coding standards, and build instructions.
 * 🗺️ [**Project Roadmap**](ROADMAP.md): Current status and upcoming Phase 1.0 release goals.
 
 ---
