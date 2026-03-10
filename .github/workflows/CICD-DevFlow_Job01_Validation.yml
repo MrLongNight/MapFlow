@@ -9,11 +9,8 @@ on:
       - 'assets/**'
       - '.vscode/**'
   pull_request:
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'assets/**'
-      - '.vscode/**'
+    # Required status checks must always be created for PR heads.
+    # Trigger-level path filters can leave branch protection waiting forever.
   workflow_dispatch:
     inputs:
       toolchain:
