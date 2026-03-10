@@ -2,10 +2,10 @@
 # Runs automatically via pre-commit.ci on every PR
 
 ci:
-  autofix_commit_msg: "style: auto-fix by pre-commit.ci [skip ci]"
+  autofix_commit_msg: "style: auto-fix by pre-commit.ci"
   autofix_prs: true
   autoupdate_branch: ""
-  autoupdate_commit_msg: "chore: pre-commit autoupdate [skip ci]"
+  autoupdate_commit_msg: "chore: pre-commit autoupdate"
   autoupdate_schedule: weekly
 
   # Skip Rust hooks in CI (no toolchain available)

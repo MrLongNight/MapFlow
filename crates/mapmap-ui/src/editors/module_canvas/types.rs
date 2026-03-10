@@ -38,6 +38,11 @@ pub enum CanvasAction {
         part_id: ModulePartId,
         part_data: mapmap_core::module::ModulePart,
     },
+    UpdatePart {
+        part_id: ModulePartId,
+        before: Box<mapmap_core::module::ModulePart>,
+        after: Box<mapmap_core::module::ModulePart>,
+    },
     DeletePart {
         part_data: mapmap_core::module::ModulePart,
     },
