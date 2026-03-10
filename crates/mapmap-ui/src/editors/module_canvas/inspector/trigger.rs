@@ -34,10 +34,11 @@ pub fn render_trigger_config_ui(canvas: &mut ModuleCanvas, ui: &mut Ui, part: &m
             ui.separator();
 
             // Iterate over inputs
-            for (idx, socket) in part.inputs.iter().enumerate() {
+            for idx in 0..part.inputs.len() {
                 ui.push_id(idx, |ui| {
                     ui.separator();
-                    ui.label(format!("Input {}: {}", idx, socket.name));
+                    let input_name = part.inputs[idx].name.clone();
+                    ui.label(["Input ", &idx.to_string(), ": ", &input_name].concat());
 
                     // Get config
                     let mut config = part.trigger_targets.entry(idx).or_default().clone();
@@ -380,6 +381,10 @@ pub fn render_trigger_ui(canvas: &mut ModuleCanvas, ui: &mut Ui, trigger: &mut T
             key_code,
             modifiers,
         } => {
+            let ctrl = *modifiers & 1 != 0;
+            let shift = *modifiers & 2 != 0;
+            let alt = *modifiers & 4 != 0;
+
             ui.label("âŒ¨ï¸  Shortcut");
             ui.horizontal(|ui| {
                 ui.label("Key:");
@@ -387,12 +392,7 @@ pub fn render_trigger_ui(canvas: &mut ModuleCanvas, ui: &mut Ui, trigger: &mut T
             });
             ui.horizontal(|ui| {
                 ui.label("Mods:");
-                ui.label(format!(
-                    "Ctrl={} Shift={} Alt={}",
-                    *modifiers & 1 != 0,
-                    *modifiers & 2 != 0,
-                    *modifiers & 4 != 0
-                ));
+                ui.label(format!("Ctrl={ctrl} Shift={shift} Alt={alt}"));
             });
         }
     }

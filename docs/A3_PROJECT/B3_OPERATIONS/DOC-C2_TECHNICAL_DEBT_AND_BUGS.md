@@ -58,9 +58,9 @@ Dieses Dokument dient der zentralen Erfassung von Architektur-Problemen, monolit
 | **mapmap-render** | Paint Image Loading | ✅ | Synchrones Laden von Bildern in GPU-Cache implementiert. |
 | **mapmap-ui** | ID Sync & Clippy Scrub | ✅ | Node-Editor ID-Synchronisation gefixt. Redundante Bindings entfernt. |
 =======
-| **mapmap-io** | NDI Activation & Test Stability | ✅ | NDI-Warnungen entfernt, Projekt-Roundtrip verifiziert. |  
+| **mapmap-io** | NDI Activation & Test Stability | ✅ | NDI-Warnungen entfernt, Projekt-Roundtrip verifiziert. |
 | **mapmap-render** | Paint Image Loading | ✅ | Synchrones Laden von Bildern in GPU-Cache implementiert. |
-| **mapmap-ui** | ID Sync & Clippy Scrub | ✅ | Node-Editor ID-Synchronisation gefixt. Redundante Bindings entfernt. |  
+| **mapmap-ui** | ID Sync & Clippy Scrub | ✅ | Node-Editor ID-Synchronisation gefixt. Redundante Bindings entfernt. |
 >>>>>>> remotes/origin/jules/bolt-optimize-history-vecdeque-15195946004347935531
 =======
 | **mapmap-io** | NDI Activation & Test Stability | ✅ | NDI-Warnungen entfernt, Projekt-Roundtrip verifiziert. |
