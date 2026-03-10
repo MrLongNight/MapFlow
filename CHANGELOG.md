@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 - 2026-03-10: fix(ci): Harden DevFlow validation by forcing Node 24 for JavaScript actions, aligning Linux deps, and using `cargo deny` advisories.
 - 2026-03-10: fix(ci): Use manifest-mode `vcpkg install` in the release workflow and restore `SetMeterStyle` action handling for release builds.
+- 2026-03-10: fix(ci): Fix Windows release `vcpkg` baseline checkout by replacing cached shallow `vcpkg` clones with full-history bootstraps, and restore `SetMeterStyle` action handling for release builds.
 - 2026-03-09: fix(ui): Standardize panel layout and resolve UI consistency gaps (MF-011).
 - 2026-03-08: feat(ui): Implement Toast Notification system for engine errors and status updates (MF-023).
 - 2026-03-08: fix(core): Refactor Trigger System logic for synchronized multi-module evaluation (MF-038).

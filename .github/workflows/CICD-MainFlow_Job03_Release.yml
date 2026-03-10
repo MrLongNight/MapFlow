@@ -113,17 +113,22 @@ jobs:
         uses: actions/cache@v5
         with:
           path: vcpkg
-          key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json') }}
+          key: ${{ runner.os }}-vcpkg-full-clone-v1-${{ hashFiles('vcpkg.json') }}
           restore-keys: |
-            ${{ runner.os }}-vcpkg-
+            ${{ runner.os }}-vcpkg-full-clone-v1-
 
       - name: vcpkg installieren
         shell: pwsh
         run: |
           if (-not (Test-Path "vcpkg")) {
-            git clone --depth 1 https://github.com/microsoft/vcpkg.git
-            .\vcpkg\bootstrap-vcpkg.bat
+            git clone https://github.com/microsoft/vcpkg.git
+          } elseif (Test-Path "vcpkg\\.git\\shallow") {
+            git -C vcpkg fetch --unshallow origin
+          } else {
+            git -C vcpkg fetch origin
           }
+
+          .\vcpkg\bootstrap-vcpkg.bat
 
       - name: Cache vcpkg installed libs
         id: cache-vcpkg-installed
