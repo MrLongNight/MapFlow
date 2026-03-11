@@ -17,6 +17,7 @@ permissions:
   pull-requests: write
   issues: write
   checks: read
+  statuses: read
 
 jobs:
   auto-merge:
@@ -106,15 +107,24 @@ jobs:
 
             await new Promise((resolve) => setTimeout(resolve, 2000));
 
-            console.log(`Fetching check runs for commit ${pr.data.head.sha}...`);
+            console.log(`Fetching check runs and statuses for commit ${pr.data.head.sha}...`);
 
-            const checks = await github.rest.checks.listForRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: pr.data.head.sha,
-            });
+            const [checks, combinedStatus] = await Promise.all([
+              github.rest.checks.listForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: pr.data.head.sha,
+              }),
+              github.rest.repos.getCombinedStatusForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: pr.data.head.sha,
+              }),
+            ]);
 
-            console.log(`Found ${checks.data.total_count} check run(s)`);
+            console.log(
+              `Found ${checks.data.total_count} check run(s) and ${combinedStatus.data.statuses.length} status context(s)`,
+            );
 
             const REQUIRED_CHECKS = [
               'pre-commit.ci - pr',
@@ -135,11 +145,28 @@ jobs:
               return true;
             });
 
+            const externalStatuses = combinedStatus.data.statuses.map((status) => ({
+              name: status.context,
+              source: 'status',
+              status: status.state === 'pending' ? 'in_progress' : 'completed',
+              conclusion: status.state === 'pending' ? null : status.state,
+            }));
+
+            const observedChecks = [
+              ...externalRuns.map((run) => ({
+                name: run.name,
+                source: 'check_run',
+                status: run.status,
+                conclusion: run.conclusion,
+              })),
+              ...externalStatuses,
+            ];
+
             let allRequiredPassed = true;
             const missingOrFailed = [];
 
             for (const requiredName of REQUIRED_CHECKS) {
-              const match = externalRuns.find((run) => run.name === requiredName);
+              const match = observedChecks.find((check) => check.name === requiredName);
 
               if (!match) {
                 console.log(`Required check "${requiredName}" not found yet.`);
@@ -148,7 +175,9 @@ jobs:
                 continue;
               }
 
-              console.log(`  - ${requiredName}: status=${match.status}, conclusion=${match.conclusion}`);
+              console.log(
+                `  - ${requiredName}: source=${match.source}, status=${match.status}, conclusion=${match.conclusion}`,
+              );
 
               if (match.status !== 'completed') {
                 allRequiredPassed = false;
@@ -167,16 +196,16 @@ jobs:
               return;
             }
 
-            const otherFailed = externalRuns.filter(
-              (run) =>
-                !REQUIRED_CHECKS.includes(run.name) &&
-                run.status === 'completed' &&
-                ['failure', 'timed_out', 'cancelled'].includes(run.conclusion),
+            const otherFailed = observedChecks.filter(
+              (check) =>
+                !REQUIRED_CHECKS.includes(check.name) &&
+                check.status === 'completed' &&
+                ['failure', 'timed_out', 'cancelled', 'error'].includes(check.conclusion),
             );
 
             if (otherFailed.length > 0) {
               console.log('Non-required checks failed:');
-              otherFailed.forEach((run) => console.log(`  - ${run.name}: ${run.conclusion}`));
+              otherFailed.forEach((check) => console.log(`  - ${check.name}: ${check.conclusion}`));
             }
 
             if (pr.data.mergeable_state === 'blocked') {
