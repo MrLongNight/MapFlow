@@ -6,13 +6,15 @@ on:
   check_suite:
     types: [completed]
   workflow_run:
-    workflows: ["CICD-DevFlow: Job01 Validation"]
+    workflows: ["CICD-DevFlow: Job01 Validation", "Security Analysis"]
     types: [completed]
+  status:
 
 env:
   AUTO_MERGE_ENABLED: true
 
 permissions:
+  actions: write
   contents: write
   pull-requests: write
   issues: write
@@ -23,7 +25,7 @@ jobs:
   auto-merge:
     name: Auto-Merge
     runs-on: ubuntu-latest
-    if: github.event.pull_request != null || github.event.workflow_run != null || github.event.check_suite != null
+    if: github.event.pull_request != null || github.event.workflow_run != null || github.event.check_suite != null || github.event_name == 'status'
     steps:
       - name: Auto-Merge Logic
         uses: actions/github-script@v7
@@ -35,6 +37,43 @@ jobs:
             }
 
             let prNumber = context.payload.pull_request?.number;
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+            const findOpenPrByHeadSha = async (headSha) => {
+              const prs = await github.rest.pulls.list({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'open',
+                per_page: 100,
+              });
+
+              return prs.data.find((pr) => pr.head.sha === headSha);
+            };
+            const waitForUpdatedPrHead = async (pullNumber, previousHeadSha) => {
+              for (let attempt = 1; attempt <= 20; attempt += 1) {
+                const currentPr = await github.rest.pulls.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pullNumber,
+                });
+
+                if (currentPr.data.head.sha !== previousHeadSha) {
+                  console.log(
+                    `PR head updated from ${previousHeadSha} to ${currentPr.data.head.sha} on attempt ${attempt}.`,
+                  );
+                  return currentPr.data;
+                }
+
+                console.log(
+                  `PR head still ${previousHeadSha}; waiting for branch update propagation (attempt ${attempt}/20)...`,
+                );
+                await sleep(3000);
+              }
+
+              console.log(
+                'PR head SHA did not change after the branch update request. Skipping manual workflow dispatch to avoid targeting a stale commit.',
+              );
+              return null;
+            };
 
             if (!prNumber && context.payload.workflow_run) {
               const headBranch = context.payload.workflow_run.head_branch;
@@ -46,6 +85,7 @@ jobs:
                 repo: context.repo.repo,
                 state: 'open',
                 head: `${context.repo.owner}:${headBranch}`,
+                per_page: 100,
               });
 
               const match = prs.data.find((pr) => pr.head.sha === headSha);
@@ -57,13 +97,23 @@ jobs:
             }
 
             if (!prNumber && context.payload.check_suite) {
+              const associatedPrNumber = context.payload.check_suite.pull_requests?.[0]?.number;
+              if (associatedPrNumber) {
+                prNumber = associatedPrNumber;
+              }
+            }
+
+            if (!prNumber && context.payload.check_suite) {
               const headSha = context.payload.check_suite.head_sha;
-              const prs = await github.rest.pulls.list({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                state: 'open',
-              });
-              const match = prs.data.find((pr) => pr.head.sha === headSha);
+              const match = await findOpenPrByHeadSha(headSha);
+              if (match) {
+                prNumber = match.number;
+              }
+            }
+
+            if (!prNumber && context.eventName === 'status') {
+              const headSha = context.payload.sha;
+              const match = await findOpenPrByHeadSha(headSha);
               if (match) {
                 prNumber = match.number;
               }
@@ -100,15 +150,59 @@ jobs:
             }
 
             if (pr.data.mergeable_state === 'behind') {
-              console.log(
-                'PR is behind the base branch. Skipping automatic branch updates because bot-generated update commits do not re-emit the required PR checks on the new head SHA.',
-              );
+              console.log('PR is behind the base branch. Updating branch before attempting auto-merge...');
+
+              try {
+                await github.rest.pulls.updateBranch({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: prNumber,
+                  expected_head_sha: pr.data.head.sha,
+                });
+
+                console.log(
+                  'Branch update requested successfully. Waiting for the synchronize event and fresh required checks on the new head SHA.',
+                );
+
+                const updatedPr = await waitForUpdatedPrHead(prNumber, pr.data.head.sha);
+                if (updatedPr) {
+                  await github.rest.actions.createWorkflowDispatch({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    workflow_id: 'CICD-DevFlow_Job01_Validation.yml',
+                    ref: updatedPr.head.ref,
+                    inputs: {
+                      toolchain: 'stable',
+                    },
+                  });
+
+                  console.log(
+                    `Triggered ${'CICD-DevFlow_Job01_Validation.yml'} via workflow_dispatch on branch ${updatedPr.head.ref} for head ${updatedPr.head.sha}.`,
+                  );
+
+                  await github.rest.actions.createWorkflowDispatch({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    workflow_id: 'CI-02_security-scan.yml',
+                    ref: updatedPr.head.ref,
+                  });
+
+                  console.log(
+                    `Triggered ${'CI-02_security-scan.yml'} via workflow_dispatch on branch ${updatedPr.head.ref} for head ${updatedPr.head.sha}.`,
+                  );
+                }
+              } catch (error) {
+                console.log(`Branch update failed: ${error.message}`);
+              }
+
+              return;
             }
 
             await new Promise((resolve) => setTimeout(resolve, 2000));
 
             console.log(`Fetching check runs and statuses for commit ${pr.data.head.sha}...`);
 
+            // pre-commit.ci reports through the Status API, not the Checks API.
             const [checks, combinedStatus] = await Promise.all([
               github.rest.checks.listForRef({
                 owner: context.repo.owner,
@@ -126,12 +220,47 @@ jobs:
               `Found ${checks.data.total_count} check run(s) and ${combinedStatus.data.statuses.length} status context(s)`,
             );
 
-            const REQUIRED_CHECKS = [
-              'pre-commit.ci - pr',
-              'Quality Gate (Format & Lint)',
-              'Security Scan',
-              'Build & Test (Linux)',
-              'Validation Success',
+            const EXPECTED_CHECKS = [
+              {
+                name: 'pre-commit.ci - pr',
+                source: 'status',
+                allowedConclusions: ['success'],
+              },
+              {
+                name: 'Quality Gate (Format & Lint)',
+                source: 'check_run',
+                allowedConclusions: ['success'],
+              },
+              {
+                name: 'Security Scan',
+                source: 'check_run',
+                allowedConclusions: ['success'],
+              },
+              {
+                name: 'Build & Test (Linux)',
+                source: 'check_run',
+                allowedConclusions: ['success'],
+              },
+              {
+                name: 'Build & Test (Windows)',
+                source: 'check_run',
+                allowedConclusions: ['success', 'skipped', 'neutral'],
+              },
+              {
+                name: 'Validation Success',
+                source: 'check_run',
+                allowedConclusions: ['success'],
+              },
+              {
+                name: 'Analyze (rust)',
+                source: 'check_run',
+                allowedConclusions: ['success'],
+              },
+              {
+                name: 'CodeQL',
+                source: 'check_run',
+                allowedConclusions: ['success'],
+              },
             ];
 
             const ownRunId = process.env.GITHUB_RUN_ID;
@@ -145,49 +274,68 @@ jobs:
               return true;
             });
 
-            const externalStatuses = combinedStatus.data.statuses.map((status) => ({
-              name: status.context,
-              source: 'status',
-              status: status.state === 'pending' ? 'in_progress' : 'completed',
-              conclusion: status.state === 'pending' ? null : status.state,
-            }));
+            const latestRunsByName = new Map();
+            for (const run of externalRuns.sort((left, right) => {
+              const leftTime = Date.parse(left.completed_at || left.started_at || '1970-01-01T00:00:00Z');
+              const rightTime = Date.parse(right.completed_at || right.started_at || '1970-01-01T00:00:00Z');
+              return rightTime - leftTime;
+            })) {
+              if (!latestRunsByName.has(run.name)) {
+                latestRunsByName.set(run.name, {
+                  name: run.name,
+                  source: 'check_run',
+                  status: run.status,
+                  conclusion: run.conclusion,
+                });
+              }
+            }
+
+            const latestStatusesByName = new Map();
+            for (const status of combinedStatus.data.statuses) {
+              if (!latestStatusesByName.has(status.context)) {
+                latestStatusesByName.set(status.context, {
+                  name: status.context,
+                  source: 'status',
+                  status: status.state === 'pending' ? 'in_progress' : 'completed',
+                  conclusion: status.state === 'pending' ? null : status.state,
+                });
+              }
+            }
 
             const observedChecks = [
-              ...externalRuns.map((run) => ({
-                name: run.name,
-                source: 'check_run',
-                status: run.status,
-                conclusion: run.conclusion,
-              })),
-              ...externalStatuses,
+              ...latestRunsByName.values(),
+              ...latestStatusesByName.values(),
             ];
 
             let allRequiredPassed = true;
             const missingOrFailed = [];
 
-            for (const requiredName of REQUIRED_CHECKS) {
-              const match = observedChecks.find((check) => check.name === requiredName);
+            for (const expectedCheck of EXPECTED_CHECKS) {
+              const match =
+                expectedCheck.source === 'status'
+                  ? latestStatusesByName.get(expectedCheck.name)
+                  : latestRunsByName.get(expectedCheck.name);
 
               if (!match) {
-                console.log(`Required check "${requiredName}" not found yet.`);
+                console.log(`Required check "${expectedCheck.name}" not found yet.`);
                 allRequiredPassed = false;
-                missingOrFailed.push(`${requiredName} (missing)`);
+                missingOrFailed.push(`${expectedCheck.name} (missing)`);
                 continue;
               }
 
               console.log(
-                `  - ${requiredName}: source=${match.source}, status=${match.status}, conclusion=${match.conclusion}`,
+                `  - ${expectedCheck.name}: source=${match.source}, status=${match.status}, conclusion=${match.conclusion}`,
               );
 
               if (match.status !== 'completed') {
                 allRequiredPassed = false;
-                missingOrFailed.push(`${requiredName} (${match.status})`);
+                missingOrFailed.push(`${expectedCheck.name} (${match.status})`);
                 continue;
               }
 
-              if (!['success', 'skipped', 'neutral'].includes(match.conclusion)) {
+              if (!expectedCheck.allowedConclusions.includes(match.conclusion)) {
                 allRequiredPassed = false;
-                missingOrFailed.push(`${requiredName} (${match.conclusion})`);
+                missingOrFailed.push(`${expectedCheck.name} (${match.conclusion})`);
               }
             }
 
@@ -198,7 +346,7 @@ jobs:
 
             const otherFailed = observedChecks.filter(
               (check) =>
-                !REQUIRED_CHECKS.includes(check.name) &&
+                !EXPECTED_CHECKS.some((expectedCheck) => expectedCheck.name === check.name) &&
                 check.status === 'completed' &&
                 ['failure', 'timed_out', 'cancelled', 'error'].includes(check.conclusion),
             );

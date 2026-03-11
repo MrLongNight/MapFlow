@@ -70,7 +70,7 @@ jobs:
       - name: Install Tools
         uses: cargo-bins/cargo-binstall@main
       - name: Install cargo-deny
-        run: cargo binstall cargo-deny --no-confirm
+        run: cargo binstall -y cargo-deny --force
       - name: Run Advisory Check
         run: cargo deny check advisories
 

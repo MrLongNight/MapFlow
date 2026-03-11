@@ -6,9 +6,14 @@
 #![warn(missing_docs)]
 
 pub mod app;
+/// UI components.
+/// CLI arguments parsing and types.
+pub mod cli;
 mod media_manager_ui;
 /// Orchestration and node evaluation logic.
 pub mod orchestration;
+/// Player modes.
+pub mod player;
 /// UI components.
 pub mod ui;
 mod window_manager;
@@ -28,6 +33,9 @@ use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::window::WindowId;
 
 use crate::app::core::app_struct::App;
+
+use crate::cli::{CliArgs, Mode};
+use clap::Parser;
 
 struct MapFlowApp {
     app: Option<App>,
@@ -366,6 +374,8 @@ impl App {
 }
 
 fn main() -> Result<()> {
+    let args = CliArgs::parse();
+
     // Initialize logging
     let file_appender = tracing_appender::rolling::daily("logs", "mapflow.log");
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
@@ -400,12 +410,44 @@ fn main() -> Result<()> {
         .with(file_layer)
         .init();
 
-    info!("Starting MapFlow...");
+    info!("Starting MapFlow in {:?} mode...", args.mode);
 
+    match args.mode {
+        Mode::Editor => run_editor()?,
+        Mode::PlayerNdi => run_player_ndi(&args)?,
+        Mode::PlayerDist => run_player_dist(&args)?,
+        Mode::PlayerLegacy => run_player_legacy(&args)?,
+        Mode::PlayerPi => run_player_pi(&args)?,
+    }
+
+    Ok(())
+}
+
+fn run_editor() -> Result<()> {
+    info!("Starting Editor mode...");
     let event_loop = EventLoop::new()?;
     let mut app_handler = MapFlowApp { app: None };
 
     event_loop.run_app(&mut app_handler)?;
 
+    Ok(())
+}
+
+fn run_player_ndi(args: &CliArgs) -> Result<()> {
+    crate::player::ndi_player::run(args)
+}
+
+fn run_player_dist(_args: &CliArgs) -> Result<()> {
+    info!("Starting Distributed Player mode...");
+    Ok(())
+}
+
+fn run_player_legacy(_args: &CliArgs) -> Result<()> {
+    info!("Starting Legacy RTSP/H.264 Player mode...");
+    Ok(())
+}
+
+fn run_player_pi(_args: &CliArgs) -> Result<()> {
+    info!("Starting Raspberry Pi Player mode...");
     Ok(())
 }
