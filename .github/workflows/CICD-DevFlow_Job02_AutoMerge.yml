@@ -8,6 +8,12 @@ on:
   workflow_run:
     workflows: ["CICD-DevFlow: Job01 Validation", "Security Analysis"]
     types: [completed]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Optional PR number to re-evaluate manually"
+        required: false
+        type: string
   status:
 
 env:
@@ -25,7 +31,7 @@ jobs:
   auto-merge:
     name: Auto-Merge
     runs-on: ubuntu-latest
-    if: github.event.pull_request != null || github.event.workflow_run != null || github.event.check_suite != null || github.event_name == 'status'
+    if: github.event.pull_request != null || github.event.workflow_run != null || github.event.check_suite != null || github.event_name == 'status' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Auto-Merge Logic
         uses: actions/github-script@v7
@@ -37,7 +43,76 @@ jobs:
             }
 
             let prNumber = context.payload.pull_request?.number;
+            const manualPrNumber = context.payload.inputs?.pr_number;
+            if (!prNumber && manualPrNumber) {
+              const parsedPrNumber = Number.parseInt(manualPrNumber, 10);
+              if (Number.isNaN(parsedPrNumber)) {
+                console.log(`Invalid pr_number input: "${manualPrNumber}"`);
+                return;
+              }
+              prNumber = parsedPrNumber;
+            }
             const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+            const MERGE_BLOCKING_CHECKS = [
+              {
+                name: 'pre-commit.ci - pr',
+                source: 'status',
+                allowedConclusions: ['success'],
+              },
+              {
+                name: 'Quality Gate (Format & Lint)',
+                source: 'check_run',
+                allowedConclusions: ['success'],
+              },
+              {
+                name: 'Security Scan',
+                source: 'check_run',
+                allowedConclusions: ['success'],
+              },
+              {
+                name: 'Build & Test (Linux)',
+                source: 'check_run',
+                allowedConclusions: ['success'],
+              },
+              {
+                name: 'Build & Test (Windows)',
+                source: 'check_run',
+                allowedConclusions: ['success', 'skipped', 'neutral'],
+              },
+              {
+                name: 'Validation Success',
+                source: 'check_run',
+                allowedConclusions: ['success'],
+              },
+              {
+                name: 'Analyze (rust)',
+                source: 'check_run',
+                allowedConclusions: ['success'],
+              },
+            ];
+            const MANAGED_WORKFLOWS = [
+              {
+                workflowId: 'CICD-DevFlow_Job01_Validation.yml',
+                workflowName: 'CICD-DevFlow: Job01 Validation',
+                checkNames: [
+                  'Quality Gate (Format & Lint)',
+                  'Security Scan',
+                  'Build & Test (Linux)',
+                  'Build & Test (Windows)',
+                  'Validation Success',
+                ],
+                inputs: {
+                  toolchain: 'stable',
+                },
+              },
+              {
+                workflowId: 'CI-02_security-scan.yml',
+                workflowName: 'Security Analysis',
+                checkNames: ['Analyze (rust)'],
+              },
+            ];
+            const isActiveWorkflowRun = (run) =>
+              ['queued', 'in_progress', 'pending', 'requested', 'waiting'].includes(run.status);
             const findOpenPrByHeadSha = async (headSha) => {
               const prs = await github.rest.pulls.list({
                 owner: context.repo.owner,
@@ -47,6 +122,79 @@ jobs:
               });
 
               return prs.data.find((pr) => pr.head.sha === headSha);
+            };
+            const listWorkflowRunsForHead = async (workflowId, branch, headSha) => {
+              const runs = await github.request(
+                'GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',
+                {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  workflow_id: workflowId,
+                  branch,
+                  per_page: 20,
+                },
+              );
+
+              return runs.data.workflow_runs.filter((run) => run.head_sha === headSha);
+            };
+            const dispatchWorkflowForHead = async ({ workflowId, workflowName, ref, headSha, inputs }) => {
+              const matchingRuns = await listWorkflowRunsForHead(workflowId, ref, headSha);
+              const activeRun = matchingRuns.find((run) => isActiveWorkflowRun(run));
+              if (activeRun) {
+                console.log(
+                  `${workflowName} already has an active run for ${headSha}: ${activeRun.html_url || activeRun.url}`,
+                );
+                return false;
+              }
+
+              try {
+                await github.rest.actions.createWorkflowDispatch({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  workflow_id: workflowId,
+                  ref,
+                  ...(inputs ? { inputs } : {}),
+                });
+              } catch (error) {
+                if (
+                  error.status === 422 &&
+                  error.message?.includes("Workflow does not have 'workflow_dispatch' trigger")
+                ) {
+                  console.log(
+                    `${workflowName} on branch ${ref} does not expose workflow_dispatch yet; waiting for the branch to pick up the updated workflow definition.`,
+                  );
+                  return false;
+                }
+                throw error;
+              }
+
+              console.log(`Triggered ${workflowId} via workflow_dispatch on branch ${ref} for head ${headSha}.`);
+              return true;
+            };
+            const recoverMissingManagedWorkflows = async (headRef, headSha, latestRunsByName) => {
+              let dispatchedAny = false;
+
+              for (const workflow of MANAGED_WORKFLOWS) {
+                const missingChecks = workflow.checkNames.filter((checkName) => !latestRunsByName.has(checkName));
+                if (missingChecks.length === 0) {
+                  continue;
+                }
+
+                console.log(
+                  `${workflow.workflowName} is missing checks on ${headSha}: ${missingChecks.join(', ')}`,
+                );
+
+                const dispatched = await dispatchWorkflowForHead({
+                  workflowId: workflow.workflowId,
+                  workflowName: workflow.workflowName,
+                  ref: headRef,
+                  headSha,
+                  inputs: workflow.inputs,
+                });
+                dispatchedAny = dispatchedAny || dispatched;
+              }
+
+              return dispatchedAny;
             };
             const waitForUpdatedPrHead = async (pullNumber, previousHeadSha) => {
               for (let attempt = 1; attempt <= 20; attempt += 1) {
@@ -71,6 +219,40 @@ jobs:
 
               console.log(
                 'PR head SHA did not change after the branch update request. Skipping manual workflow dispatch to avoid targeting a stale commit.',
+              );
+              return null;
+            };
+            const waitForResolvedMergeability = async (pullNumber, initialPr) => {
+              let currentPr = initialPr;
+
+              for (let attempt = 1; attempt <= 10; attempt += 1) {
+                if (
+                  (currentPr.mergeable_state && currentPr.mergeable_state !== 'unknown') ||
+                  currentPr.mergeable !== null
+                ) {
+                  if (attempt > 1) {
+                    console.log(
+                      `PR mergeability resolved on attempt ${attempt}: mergeable=${currentPr.mergeable}, state=${currentPr.mergeable_state}`,
+                    );
+                  }
+                  return currentPr;
+                }
+
+                console.log(
+                  `PR mergeability still pending (mergeable=${currentPr.mergeable}, state=${currentPr.mergeable_state}); retrying (${attempt}/10)...`,
+                );
+                await sleep(2000);
+
+                const refreshedPr = await github.rest.pulls.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pullNumber,
+                });
+                currentPr = refreshedPr.data;
+              }
+
+              console.log(
+                'PR mergeability is still unknown after waiting. Skipping evaluation until GitHub finishes recomputing it.',
               );
               return null;
             };
@@ -126,30 +308,34 @@ jobs:
 
             console.log(`Checking PR #${prNumber} for auto-merge eligibility...`);
 
-            const pr = await github.rest.pulls.get({
+            const initialPr = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: prNumber,
             });
+            const pr = await waitForResolvedMergeability(prNumber, initialPr.data);
+            if (!pr) {
+              return;
+            }
 
-            if (pr.data.draft) {
+            if (pr.draft) {
               console.log('PR is a draft. Skipping auto-merge.');
               return;
             }
 
-            if (pr.data.state === 'closed') {
+            if (pr.state === 'closed') {
               console.log('PR is already closed.');
               return;
             }
 
-            console.log(`Mergeable: ${pr.data.mergeable}, state: ${pr.data.mergeable_state}`);
+            console.log(`Mergeable: ${pr.mergeable}, state: ${pr.mergeable_state}`);
 
-            if (pr.data.mergeable === false) {
+            if (pr.mergeable === false) {
               console.log('PR has merge conflicts. Cannot auto-merge.');
               return;
             }
 
-            if (pr.data.mergeable_state === 'behind') {
+            if (pr.mergeable_state === 'behind') {
               console.log('PR is behind the base branch. Updating branch before attempting auto-merge...');
 
               try {
@@ -157,39 +343,32 @@ jobs:
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   pull_number: prNumber,
-                  expected_head_sha: pr.data.head.sha,
+                  expected_head_sha: pr.head.sha,
                 });
 
                 console.log(
                   'Branch update requested successfully. Waiting for the synchronize event and fresh required checks on the new head SHA.',
                 );
 
-                const updatedPr = await waitForUpdatedPrHead(prNumber, pr.data.head.sha);
+                const updatedPr = await waitForUpdatedPrHead(prNumber, pr.head.sha);
                 if (updatedPr) {
-                  await github.rest.actions.createWorkflowDispatch({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    workflow_id: 'CICD-DevFlow_Job01_Validation.yml',
-                    ref: updatedPr.head.ref,
-                    inputs: {
-                      toolchain: 'stable',
-                    },
-                  });
+                  let dispatchedAny = false;
+                  for (const workflow of MANAGED_WORKFLOWS) {
+                    const dispatched = await dispatchWorkflowForHead({
+                      workflowId: workflow.workflowId,
+                      workflowName: workflow.workflowName,
+                      ref: updatedPr.head.ref,
+                      headSha: updatedPr.head.sha,
+                      inputs: workflow.inputs,
+                    });
+                    dispatchedAny = dispatchedAny || dispatched;
+                  }
 
-                  console.log(
-                    `Triggered ${'CICD-DevFlow_Job01_Validation.yml'} via workflow_dispatch on branch ${updatedPr.head.ref} for head ${updatedPr.head.sha}.`,
-                  );
-
-                  await github.rest.actions.createWorkflowDispatch({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    workflow_id: 'CI-02_security-scan.yml',
-                    ref: updatedPr.head.ref,
-                  });
-
-                  console.log(
-                    `Triggered ${'CI-02_security-scan.yml'} via workflow_dispatch on branch ${updatedPr.head.ref} for head ${updatedPr.head.sha}.`,
-                  );
+                  if (!dispatchedAny) {
+                    console.log(
+                      'No workflow dispatch needed after branch update; relevant workflows are already running for the new head.',
+                    );
+                  }
                 }
               } catch (error) {
                 console.log(`Branch update failed: ${error.message}`);
@@ -200,68 +379,25 @@ jobs:
 
             await new Promise((resolve) => setTimeout(resolve, 2000));
 
-            console.log(`Fetching check runs and statuses for commit ${pr.data.head.sha}...`);
+            console.log(`Fetching check runs and statuses for commit ${pr.head.sha}...`);
 
             // pre-commit.ci reports through the Status API, not the Checks API.
             const [checks, combinedStatus] = await Promise.all([
               github.rest.checks.listForRef({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                ref: pr.data.head.sha,
+                ref: pr.head.sha,
               }),
               github.rest.repos.getCombinedStatusForRef({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                ref: pr.data.head.sha,
+                ref: pr.head.sha,
               }),
             ]);
 
             console.log(
               `Found ${checks.data.total_count} check run(s) and ${combinedStatus.data.statuses.length} status context(s)`,
             );
-
-            const EXPECTED_CHECKS = [
-              {
-                name: 'pre-commit.ci - pr',
-                source: 'status',
-                allowedConclusions: ['success'],
-              },
-              {
-                name: 'Quality Gate (Format & Lint)',
-                source: 'check_run',
-                allowedConclusions: ['success'],
-              },
-              {
-                name: 'Security Scan',
-                source: 'check_run',
-                allowedConclusions: ['success'],
-              },
-              {
-                name: 'Build & Test (Linux)',
-                source: 'check_run',
-                allowedConclusions: ['success'],
-              },
-              {
-                name: 'Build & Test (Windows)',
-                source: 'check_run',
-                allowedConclusions: ['success', 'skipped', 'neutral'],
-              },
-              {
-                name: 'Validation Success',
-                source: 'check_run',
-                allowedConclusions: ['success'],
-              },
-              {
-                name: 'Analyze (rust)',
-                source: 'check_run',
-                allowedConclusions: ['success'],
-              },
-              {
-                name: 'CodeQL',
-                source: 'check_run',
-                allowedConclusions: ['success'],
-              },
-            ];
 
             const ownRunId = process.env.GITHUB_RUN_ID;
             const externalRuns = checks.data.check_runs.filter((run) => {
@@ -306,11 +442,21 @@ jobs:
               ...latestRunsByName.values(),
               ...latestStatusesByName.values(),
             ];
+            const dispatchedMissingWorkflows = await recoverMissingManagedWorkflows(
+              pr.head.ref,
+              pr.head.sha,
+              latestRunsByName,
+            );
+
+            if (dispatchedMissingWorkflows) {
+              console.log('Triggered missing workflow runs for the current PR head. Waiting for fresh checks.');
+              return;
+            }
 
             let allRequiredPassed = true;
             const missingOrFailed = [];
 
-            for (const expectedCheck of EXPECTED_CHECKS) {
+            for (const expectedCheck of MERGE_BLOCKING_CHECKS) {
               const match =
                 expectedCheck.source === 'status'
                   ? latestStatusesByName.get(expectedCheck.name)
@@ -346,7 +492,7 @@ jobs:
 
             const otherFailed = observedChecks.filter(
               (check) =>
-                !EXPECTED_CHECKS.some((expectedCheck) => expectedCheck.name === check.name) &&
+                !MERGE_BLOCKING_CHECKS.some((expectedCheck) => expectedCheck.name === check.name) &&
                 check.status === 'completed' &&
                 ['failure', 'timed_out', 'cancelled', 'error'].includes(check.conclusion),
             );
@@ -356,7 +502,7 @@ jobs:
               otherFailed.forEach((check) => console.log(`  - ${check.name}: ${check.conclusion}`));
             }
 
-            if (pr.data.mergeable_state === 'blocked') {
+            if (pr.mergeable_state === 'blocked') {
               console.log("PR mergeable_state is 'blocked'. This may be caused by required reviews or other policies.");
               return;
             }
@@ -369,8 +515,8 @@ jobs:
                 repo: context.repo.repo,
                 pull_number: prNumber,
                 merge_method: 'squash',
-                commit_title: `${pr.data.title} (#${prNumber})`,
-                commit_message: `${pr.data.body || ''}\n\nAuto-merged by GitHub Actions`,
+                commit_title: `${pr.title} (#${prNumber})`,
+                commit_message: `${pr.body || ''}\n\nAuto-merged by GitHub Actions`,
               });
 
               console.log('PR merged successfully.');
