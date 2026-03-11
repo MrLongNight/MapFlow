@@ -44,11 +44,16 @@ criterion = "0.8"
 
 # Concurrency
 crossbeam-channel = "0.5"
+
+# Phase 6: egui migration
+ecolor = "0.33.3"
 egui = { version = "0.33.3", features = ["serde"] }
 egui-wgpu = "0.33.3"
 egui-winit = "0.33.3"
 egui_extras = { version = "0.33.3", features = ["image", "file", "svg"] }
 egui_node_editor = "0.9.0"
+emath = "0.33.3"
+epaint = "0.33.3"
 
 # Media
 ffmpeg-next = { version = "7.1", default-features = false, features = [
@@ -66,6 +71,10 @@ hex = "0.4"
 hound = "3.5"
 hyper = "1.1"
 image = "0.24"
+# UI
+imgui = "0.12"
+imgui-wgpu = { path = "crates/vendor/imgui-wgpu" }
+imgui-winit-support = "0.12"
 libmpv2 = { version = "5.0", features = ["render"] }
 
 # Control
@@ -94,6 +103,7 @@ serde_json = "1.0"
 
 # Crypto
 sha2 = "0.10"
+tests_bin = "0.1"
 # Error handling
 thiserror = "1.0"
 tiny-skia = "0.12"
