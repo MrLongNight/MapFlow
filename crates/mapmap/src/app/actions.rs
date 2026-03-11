@@ -350,6 +350,11 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                     error!("Failed to connect to NDI source: {}", e);
                 }
             }
+            #[cfg(feature = "ndi")]
+            UIAction::DisconnectNdiSource { part_id } => {
+                info!("Disconnecting NDI source from part {}", part_id);
+                app.ndi_receivers.remove(&part_id);
+            }
             UIAction::SetMidiAssignment(element_id, target_id) => {
                 #[cfg(feature = "midi")]
                 {

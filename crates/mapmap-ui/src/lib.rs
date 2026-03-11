@@ -246,6 +246,12 @@ pub enum UIAction {
         /// The NDI source
         source: NdiSource,
     },
+    #[cfg(feature = "ndi")]
+    /// Disconnect NDI source from module part
+    DisconnectNdiSource {
+        /// The module part ID
+        part_id: mapmap_core::module::ModulePartId,
+    },
 
     // Cue actions (Phase 7)
     /// Add new cue

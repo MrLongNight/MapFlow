@@ -71,9 +71,6 @@ pub struct ModuleCanvas {
     /// Channel to receive discovered NDI sources from async task
     #[cfg(feature = "ndi")]
     pub ndi_discovery_rx: Option<mpsc::Receiver<Vec<NdiSource>>>,
-    /// Pending NDI connection (part_id, source)
-    #[cfg(feature = "ndi")]
-    pub pending_ndi_connect: Option<(ModulePartId, NdiSource)>,
     /// Available outputs (id, name) for output node selection
     pub available_outputs: Vec<(u64, String)>,
     /// ID of the part being edited in a popup
@@ -156,8 +153,6 @@ impl Default for ModuleCanvas {
             ndi_sources: Vec::new(),
             #[cfg(feature = "ndi")]
             ndi_discovery_rx: None,
-            #[cfg(feature = "ndi")]
-            pending_ndi_connect: None,
             available_outputs: Vec::new(),
             editing_part_id: None,
             node_previews: std::collections::HashMap::new(),

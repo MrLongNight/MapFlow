@@ -3,8 +3,10 @@
 //! Visual representation of the Ecler NUO 4 (or other MIDI controllers)
 //! with live state visualization and MIDI Learn functionality.
 
+#[allow(unused_imports)]
 use egui::{Color32, Pos2, Rect, Response, Sense, Stroke, TextureHandle, Ui, Vec2};
 
+#[allow(unused_imports)]
 use crate::config::{MidiAssignment, MidiAssignmentTarget, UserConfig};
 
 #[cfg(feature = "midi")]
@@ -14,6 +16,7 @@ use mapmap_control::midi::{
 };
 use mapmap_control::target::ControlTarget;
 use mapmap_core::runtime_paths;
+#[allow(unused_imports)]
 use std::collections::{HashMap, HashSet};
 
 #[allow(dead_code)]
@@ -65,9 +68,11 @@ pub struct ControllerOverlayPanel {
     pub last_active_time: Option<std::time::Instant>,
 
     /// Input field for Streamer.bot function
+    #[allow(dead_code)]
     streamerbot_function: String,
 
     /// Input field for Mixxx function
+    #[allow(dead_code)]
     mixxx_function: String,
 
     /// Show element labels
@@ -81,9 +86,11 @@ pub struct ControllerOverlayPanel {
     show_midi_info: bool,
 
     /// Selected element for editing
+    #[allow(dead_code)]
     selected_element: Option<String>,
 
     /// Hovered element
+    #[allow(dead_code)]
     hovered_element: Option<String>,
 
     /// Panel is expanded
@@ -108,9 +115,11 @@ pub struct ControllerOverlayPanel {
     pub is_edit_mode: bool,
 
     /// Clipboard for element size (width, height)
+    #[allow(dead_code)]
     clipboard_size: Option<[f32; 2]>,
 
     /// Loaded assets
+    #[allow(dead_code)]
     assets: HashMap<String, TextureHandle>,
 }
 
@@ -596,6 +605,7 @@ impl ControllerOverlayPanel {
     }
 
     /// Show the visual overlay with mixer background
+    #[allow(unused_variables)]
     fn show_overlay_view(&mut self, ui: &mut Ui, assignments: &[MidiAssignment]) {
         let (base_w, base_h) = if let Some(tex) = &self.background_texture {
             let size = tex.size();
@@ -1068,6 +1078,7 @@ impl ControllerOverlayPanel {
         ui.separator();
 
         // Element table
+        #[allow(unused_mut)]
         let mut element_to_remove: Option<String> = None;
 
         egui::ScrollArea::vertical().show(ui, |ui| {
@@ -1136,6 +1147,7 @@ impl ControllerOverlayPanel {
 }
 
 /// Get current time in seconds for animations
+#[allow(dead_code)]
 fn ui_time_seconds() -> f64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)

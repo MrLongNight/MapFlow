@@ -434,6 +434,7 @@ pub fn render_source_ui(
                             .clicked()
                         {
                             *source_name = None;
+                            actions.push(UIAction::DisconnectNdiSource { part_id });
                         }
 
                         // Available sources
@@ -452,11 +453,10 @@ pub fn render_source_ui(
                                 );
 
                                 // Trigger connection action
-                                canvas.pending_ndi_connect =
-                                    Some((
-                                        part_id,
-                                        ndi_source.clone(),
-                                    ));
+                                actions.push(UIAction::ConnectNdiSource {
+                                    part_id,
+                                    source: ndi_source.clone(),
+                                });
                             }
                         }
                     });
