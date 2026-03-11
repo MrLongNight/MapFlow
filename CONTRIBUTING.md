@@ -1,7 +1,7 @@
 # Contribute to MapFlow
 
 Thank you for contributing! MapFlow is a community-built, maintained and operated project that welcomes contributions from everyone.
-Please read our [code of conduct](docs/project/general/CODE-OF-CONDUCT.md)
+Please read our [code of conduct](docs/A3_PROJECT/B5_GOVERNANCE/DOC-C1_CODE_OF_CONDUCT.md)
 
 This document outlines the procedures and what to expect when contributing a bug report, a feature request, or new code via a pull request.
 
@@ -136,9 +136,9 @@ This granularity makes the code easier to deal with in cases where some things h
 
 ## Additional resources
 
-- [Build Instructions](docs/user/getting-started/BUILD.md)
-- [Architecture Documentation](docs/dev/architecture/ARCHITECTURE.md)
-- [Development Setup](docs/dev/setup/DEVELOPMENT-SETUP.md)
+- [Build Instructions](docs/A4_USER/B3_SUPPORT/DOC-C1_BUILD.md)
+- [Architecture Documentation](docs/A1_SYSTEM/B1_ARCHITECTURE/DOC-C1_OVERVIEW.md)
+- [Development Setup](docs/A2_DEVELOPMENT/B1_SETUP/DOC-C3_DEVELOPMENT_SETUP.md)
 - [Roadmap](ROADMAP.md)
 
 ## Questions?

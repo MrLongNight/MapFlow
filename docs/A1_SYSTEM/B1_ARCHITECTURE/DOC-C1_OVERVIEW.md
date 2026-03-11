@@ -94,4 +94,4 @@ Das UI basiert auf `egui` (Retained Mode Style).
 - **Module Canvas**: Custom-Knoteneditor für die visuelle Programmierung (keine externen Node-Libs).
 
 ---
-*Referenzen: docs/project/MODULE_TREE.md (Physische Struktur)*
+*Referenzen: ../DOC-A1_MODULE_TREE.md (Physische Struktur)*
