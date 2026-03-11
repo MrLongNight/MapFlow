@@ -57,7 +57,6 @@ pub async fn discover_bridges() -> Result<Vec<DiscoveredBridge>, HueError> {
 async fn is_bridge_reachable(ip: &str) -> bool {
     let client = match Client::builder()
         .timeout(Duration::from_secs(2)) // Faster timeout for reachability check
-        .danger_accept_invalid_certs(true)
         .build()
     {
         Ok(c) => c,
