@@ -256,6 +256,45 @@ jobs:
               );
               return null;
             };
+            const updateBehindPr = async (currentPr) => {
+              console.log('PR is behind the base branch. Updating branch before attempting auto-merge...');
+
+              try {
+                await github.rest.pulls.updateBranch({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: currentPr.number,
+                  expected_head_sha: currentPr.head.sha,
+                });
+
+                console.log(
+                  'Branch update requested successfully. Waiting for the synchronize event and fresh required checks on the new head SHA.',
+                );
+
+                const updatedPr = await waitForUpdatedPrHead(currentPr.number, currentPr.head.sha);
+                if (updatedPr) {
+                  let dispatchedAny = false;
+                  for (const workflow of MANAGED_WORKFLOWS) {
+                    const dispatched = await dispatchWorkflowForHead({
+                      workflowId: workflow.workflowId,
+                      workflowName: workflow.workflowName,
+                      ref: updatedPr.head.ref,
+                      headSha: updatedPr.head.sha,
+                      inputs: workflow.inputs,
+                    });
+                    dispatchedAny = dispatchedAny || dispatched;
+                  }
+
+                  if (!dispatchedAny) {
+                    console.log(
+                      'No workflow dispatch needed after branch update; relevant workflows are already running for the new head.',
+                    );
+                  }
+                }
+              } catch (error) {
+                console.log(`Branch update failed: ${error.message}`);
+              }
+            };
 
             if (!prNumber && context.payload.workflow_run) {
               const headBranch = context.payload.workflow_run.head_branch;
@@ -336,44 +375,7 @@ jobs:
             }
 
             if (pr.mergeable_state === 'behind') {
-              console.log('PR is behind the base branch. Updating branch before attempting auto-merge...');
-
-              try {
-                await github.rest.pulls.updateBranch({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  pull_number: prNumber,
-                  expected_head_sha: pr.head.sha,
-                });
-
-                console.log(
-                  'Branch update requested successfully. Waiting for the synchronize event and fresh required checks on the new head SHA.',
-                );
-
-                const updatedPr = await waitForUpdatedPrHead(prNumber, pr.head.sha);
-                if (updatedPr) {
-                  let dispatchedAny = false;
-                  for (const workflow of MANAGED_WORKFLOWS) {
-                    const dispatched = await dispatchWorkflowForHead({
-                      workflowId: workflow.workflowId,
-                      workflowName: workflow.workflowName,
-                      ref: updatedPr.head.ref,
-                      headSha: updatedPr.head.sha,
-                      inputs: workflow.inputs,
-                    });
-                    dispatchedAny = dispatchedAny || dispatched;
-                  }
-
-                  if (!dispatchedAny) {
-                    console.log(
-                      'No workflow dispatch needed after branch update; relevant workflows are already running for the new head.',
-                    );
-                  }
-                }
-              } catch (error) {
-                console.log(`Branch update failed: ${error.message}`);
-              }
-
+              await updateBehindPr(pr);
               return;
             }
 
@@ -502,9 +504,42 @@ jobs:
               otherFailed.forEach((check) => console.log(`  - ${check.name}: ${check.conclusion}`));
             }
 
-            if (pr.mergeable_state === 'blocked') {
-              console.log("PR mergeable_state is 'blocked'. This may be caused by required reviews or other policies.");
+            const refreshedPrResponse = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+            const finalPr = await waitForResolvedMergeability(prNumber, refreshedPrResponse.data);
+            if (!finalPr) {
               return;
+            }
+
+            if (finalPr.state === 'closed') {
+              console.log('PR became closed before the merge attempt.');
+              return;
+            }
+
+            if (finalPr.draft) {
+              console.log('PR became a draft before the merge attempt.');
+              return;
+            }
+
+            if (finalPr.mergeable === false) {
+              console.log('PR developed merge conflicts before the merge attempt.');
+              return;
+            }
+
+            if (finalPr.mergeable_state === 'behind') {
+              await updateBehindPr(finalPr);
+              return;
+            }
+
+            if (finalPr.mergeable_state === 'blocked') {
+              console.log(
+                "PR mergeable_state is 'blocked' despite all required checks passing. Attempting merge and letting the GitHub API enforce branch protection.",
+              );
+            } else {
+              console.log(`Final pre-merge state: mergeable=${finalPr.mergeable}, state=${finalPr.mergeable_state}`);
             }
 
             console.log('All conditions met. Initiating auto-merge...');
@@ -515,8 +550,8 @@ jobs:
                 repo: context.repo.repo,
                 pull_number: prNumber,
                 merge_method: 'squash',
-                commit_title: `${pr.title} (#${prNumber})`,
-                commit_message: `${pr.body || ''}\n\nAuto-merged by GitHub Actions`,
+                commit_title: `${finalPr.title} (#${prNumber})`,
+                commit_message: `${finalPr.body || ''}\n\nAuto-merged by GitHub Actions`,
               });
 
               console.log('PR merged successfully.');
