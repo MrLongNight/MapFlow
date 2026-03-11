@@ -5,7 +5,7 @@
 //! complexities of managing winit windows and wgpu surfaces.
 
 use anyhow::Result;
-use mapmap_core::{OutputId, OutputManager};
+use mapmap_core::{runtime_paths, OutputId, OutputManager};
 use mapmap_render::WgpuBackend;
 use mapmap_ui::config::VSyncMode;
 use std::collections::HashMap;
@@ -460,34 +460,28 @@ impl WindowManager {
 /// Helper function to load the application icon.
 fn load_app_icon() -> Option<winit::window::Icon> {
     let search_paths = [
-        "resources/app_icons/MapFlow_Logo_HQ-Full-M.png",
-        "../resources/app_icons/MapFlow_Logo_HQ-Full-M.png",
-        "../../resources/app_icons/MapFlow_Logo_HQ-Full-M.png",
-        "resources/app_icons/mapflow.png",
-        "../resources/app_icons/mapflow.png",
+        runtime_paths::existing_resource_path("app_icons/MapFlow_Logo_HQ-Full-M.png"),
+        runtime_paths::existing_resource_path("app_icons/mapflow.png"),
     ];
 
-    for path_str in search_paths {
-        let path = std::path::Path::new(path_str);
-        if path.exists() {
-            match image::open(path) {
-                Ok(img) => {
-                    let rgba = img.to_rgba8();
-                    let (width, height) = rgba.dimensions();
-                    tracing::info!("Found icon at {:?} ({}x{})", path, width, height);
-                    match winit::window::Icon::from_rgba(rgba.into_raw(), width, height) {
-                        Ok(icon) => {
-                            tracing::info!("Successfully created winit icon from {:?}", path);
-                            return Some(icon);
-                        }
-                        Err(e) => {
-                            tracing::warn!("Failed to create winit icon from {:?}: {}", path, e);
-                        }
+    for path in search_paths.into_iter().flatten() {
+        match image::open(&path) {
+            Ok(img) => {
+                let rgba = img.to_rgba8();
+                let (width, height) = rgba.dimensions();
+                tracing::info!("Found icon at {:?} ({}x{})", path, width, height);
+                match winit::window::Icon::from_rgba(rgba.into_raw(), width, height) {
+                    Ok(icon) => {
+                        tracing::info!("Successfully created winit icon from {:?}", path);
+                        return Some(icon);
+                    }
+                    Err(e) => {
+                        tracing::warn!("Failed to create winit icon from {:?}: {}", path, e);
                     }
                 }
-                Err(e) => {
-                    tracing::warn!("Failed to open icon {:?}: {}", path, e);
-                }
+            }
+            Err(e) => {
+                tracing::warn!("Failed to open icon {:?}: {}", path, e);
             }
         }
     }

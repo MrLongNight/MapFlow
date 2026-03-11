@@ -13,6 +13,7 @@ use mapmap_control::midi::{
     MidiLearnManager, MidiMessage,
 };
 use mapmap_control::target::ControlTarget;
+use mapmap_core::runtime_paths;
 use std::collections::{HashMap, HashSet};
 
 #[allow(dead_code)]
@@ -169,10 +170,8 @@ impl ControllerOverlayPanel {
         // Load Background
         if self.background_texture.is_none() {
             let bg_paths = [
-                "resources/controllers/ecler_nuo4/background.png",
-                "resources/controllers/ecler_nuo4/background.jpg",
-                "../resources/controllers/ecler_nuo4/background.png",
-                "../resources/controllers/ecler_nuo4/background.jpg",
+                runtime_paths::resource_path("controllers/ecler_nuo4/background.png"),
+                runtime_paths::resource_path("controllers/ecler_nuo4/background.jpg"),
             ];
             if let Some(tex) = self.load_texture_from_candidates(ctx, &bg_paths, "mixer_background")
             {
@@ -193,10 +192,9 @@ impl ControllerOverlayPanel {
 
             for asset_name in needed {
                 if !self.assets.contains_key(&asset_name) {
-                    let paths = [
-                        format!("resources/controllers/ecler_nuo4/{}", asset_name),
-                        format!("../resources/controllers/ecler_nuo4/{}", asset_name),
-                    ];
+                    let paths = [runtime_paths::resource_path(
+                        std::path::Path::new("controllers/ecler_nuo4").join(&asset_name),
+                    )];
                     if let Some(tex) = self.load_texture_from_candidates(ctx, &paths, &asset_name) {
                         self.assets.insert(asset_name, tex);
                     }
@@ -205,14 +203,14 @@ impl ControllerOverlayPanel {
         }
     }
 
-    fn load_texture_from_candidates<S: AsRef<str>>(
+    fn load_texture_from_candidates<P: AsRef<std::path::Path>>(
         &self,
         ctx: &egui::Context,
-        paths: &[S],
+        paths: &[P],
         name: &str,
     ) -> Option<TextureHandle> {
-        for path_str in paths {
-            let path = std::path::Path::new(path_str.as_ref());
+        for path in paths {
+            let path = path.as_ref();
             if path.exists() {
                 if let Ok(image_data) = std::fs::read(path) {
                     if let Ok(img) = image::load_from_memory(&image_data) {
@@ -1008,26 +1006,20 @@ impl ControllerOverlayPanel {
     fn save_elements(&self) {
         #[cfg(feature = "midi")]
         if let Some(elements) = &self.elements {
-            let paths = [
-                "resources/controllers/ecler_nuo4/elements.json",
-                "../resources/controllers/ecler_nuo4/elements.json",
-            ];
-
-            for path_str in paths {
-                let path = std::path::Path::new(path_str);
-                if path.exists() {
-                    match serde_json::to_string_pretty(elements) {
-                        Ok(json) => {
-                            if let Err(e) = std::fs::write(path, json) {
-                                tracing::error!("Failed to save elements to {:?}: {}", path, e);
-                            } else {
-                                tracing::info!("Saved elements to {:?}", path);
-                            }
+            if let Some(path) =
+                runtime_paths::existing_resource_path("controllers/ecler_nuo4/elements.json")
+            {
+                match serde_json::to_string_pretty(elements) {
+                    Ok(json) => {
+                        if let Err(e) = std::fs::write(&path, json) {
+                            tracing::error!("Failed to save elements to {:?}: {}", path, e);
+                        } else {
+                            tracing::info!("Saved elements to {:?}", path);
                         }
-                        Err(e) => tracing::error!("Failed to serialize elements: {}", e),
                     }
-                    return;
+                    Err(e) => tracing::error!("Failed to serialize elements: {}", e),
                 }
+                return;
             }
             tracing::error!("Could not find elements.json to save to.");
         }
