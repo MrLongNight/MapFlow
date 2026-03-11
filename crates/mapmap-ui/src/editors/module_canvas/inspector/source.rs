@@ -120,7 +120,7 @@ pub fn render_source_ui(
                     if ui.add(egui::Button::new("\u{1F4C2} Select Media File").min_size(egui::vec2(150.0, 30.0))).clicked() {
                         actions.push(UIAction::PickMediaFile(module_id, part_id, "".to_string()));
                     }
-                    ui.label(egui::RichText::new("No media loaded").weak());
+                    ui.label(egui::RichText::new("No media loaded").weak().italics());
                     ui.add_space(10.0);
                 });
             } else {
@@ -242,7 +242,7 @@ pub fn render_source_ui(
                     if ui.add(egui::Button::new("\u{1F4C2} Select Image File").min_size(egui::vec2(150.0, 30.0))).clicked() {
                         actions.push(crate::UIAction::PickMediaFile(module_id, part_id, "".to_string()));
                     }
-                    ui.label(egui::RichText::new("No image loaded").weak());
+                    ui.label(egui::RichText::new("No image loaded").weak().italics());
                     ui.add_space(10.0);
                 });
             } else {
@@ -372,7 +372,8 @@ pub fn render_source_ui(
                         egui::RichText::new(
                             "No NDI source selected",
                         )
-                        .weak(),
+                        .weak()
+                        .italics(),
                     );
                     ui.add_space(10.0);
                 });
@@ -834,7 +835,7 @@ pub fn render_source_ui(
         }
         SourceType::Bevy => {
             ui.label("\u{1F3AE} Bevy Scene");
-            ui.label(egui::RichText::new("Rendering Internal 3D Scene").weak());
+            ui.label(egui::RichText::new("Rendering Internal 3D Scene").weak().italics());
             ui.small("The scene is rendered internally and available as 'bevy_output'");
         }
     }
