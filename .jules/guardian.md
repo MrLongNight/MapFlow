@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 ## 2026-02-08 - MIDI Learn Timeout State
 
 **Erkenntnis:** State machines like `MidiLearnState` rely heavily on timeouts for user experience, but logic checks like `check_timeout` are often assumed correct without verifying the state transition actually happens.
@@ -123,7 +123,7 @@ Die Inkonsistenz im `ModuleEvaluator` bleibt bestehen, da dieser statenlos ist u
 ## 2024-05-24 - Split Logic in ModuleEvaluator
 **Erkenntnis:** The application of `TriggerTarget` logic is split between two separate methods in `ModuleEvaluator`. `evaluate()` handles `SourceCommand` modification (for Bevy/Media inputs), while `trace_chain_into()` handles `RenderOp` modification (for visual properties like Opacity/Scale). This separation increases the risk of regression if one path is updated without the other.
 **Aktion:** Ensure both paths are explicitly tested for `TriggerTarget` application. Future refactoring should consider unifying this logic.
-=======
+
 ## 2024-03-04 - Ungetestete ModuleManager Funktion
 **Erkenntnis:** Die `ModuleManager` Struktur in `mapmap-core/src/module/manager.rs` war komplett ungetestet. Dies ist kritische Core-Logik.
 **Aktion:** Unit Tests für die Modul-Erstellung, -Löschung, -Umbenennung und -Duplizierung hinzugefügt, inklusive Behandlung von Namenskonflikten.
@@ -133,4 +133,8 @@ Die Inkonsistenz im `ModuleEvaluator` bleibt bestehen, da dieser statenlos ist u
 **Abdeckung:** Erreicht vollständige Testabdeckung der Initialisierungslogik.
 **Neue Tests:** `test_composition_default_values`, `test_composition_new_initialization`, `test_composition_set_master_opacity_bounds`, `test_composition_set_master_speed_bounds`, `test_composition_with_description_builder`.
 **Geänderte Tests:** Keine.
->>>>>>> origin/jules-mf-048-core-repair-2290194584907283660
+
+
+## 2025-03-11 - Testabdeckung im mapmap-core/layer verbessert
+**Erkenntnis:** Der mapmap-core layer manager (manager.rs) hatte keine direkte Testabdeckung für diverse Extrem- oder Fehlerfälle (z.B. ID out-of-bounds, `remove_layer` von nicht existierenden IDs).
+**Aktion:** Umfangreiche Tests für LayerManager direkt in `crates/mapmap-core/src/layer/manager.rs` hinzugefügt, insbesondere für Edge-Cases und extrem-Szenarien (`move_layer_up_down_extremes`, `duplicate_nonexistent_layer`). In Zukunft bei neuem Code immer den zugehörigen Test-File prüfen, insbesondere bei zentralen Managern in mapmap-core.

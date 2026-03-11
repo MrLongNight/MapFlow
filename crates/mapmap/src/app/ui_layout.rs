@@ -4,6 +4,12 @@ use mapmap_ui as ui;
 /// Main UI orchestration function.
 /// Renders the entire application UI layout using egui.
 pub fn show(ctx: &egui::Context, app: &mut App) {
+    app.ui_state.update_responsive_styles(ctx);
+
+    let viewport_width = ctx.content_rect().width();
+    let sidebar_default = (viewport_width * 0.2).clamp(240.0, 420.0);
+    let inspector_default = (viewport_width * 0.24).clamp(280.0, 520.0);
+
     // 1. Global Menu Bar (Top-most)
     let menu_actions = ui::view::menu_bar::show(ctx, &mut app.ui_state);
     for action in menu_actions {
@@ -14,6 +20,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
     if app.ui_state.show_toolbar {
         egui::TopBottomPanel::top("toolbar_panel")
             .resizable(true)
+            .min_height(44.0)
             .frame(
                 egui::Frame::default()
                     .fill(ctx.style().visuals.window_fill())
@@ -32,9 +39,52 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
     if app.ui_state.show_left_sidebar {
         egui::SidePanel::left("left_sidebar_panel")
             .resizable(true)
-            .default_width(300.0)
-            .min_width(200.0)
+            .default_width(sidebar_default)
+            .min_width(220.0)
+            .max_width((viewport_width * 0.45).max(340.0))
             .show(ctx, |ui_obj| {
+                egui::TopBottomPanel::bottom("left_sidebar_preview")
+                    .resizable(true)
+                    .default_height(180.0)
+                    .min_height(110.0)
+                    .show_inside(ui_obj, |ui_obj| {
+                        if app.ui_state.show_preview_panel {
+                            use mapmap_core::module::{ModulePartType, OutputType};
+                            let preview_outputs = app
+                                .state
+                                .module_manager
+                                .modules()
+                                .iter()
+                                .flat_map(|m| m.parts.iter())
+                                .filter_map(|part| {
+                                    if let ModulePartType::Output(OutputType::Projector {
+                                        id,
+                                        name,
+                                        show_in_preview_panel,
+                                        ..
+                                    }) = &part.part_type
+                                    {
+                                        Some(ui::OutputPreviewInfo {
+                                            id: *id,
+                                            name: name.clone(),
+                                            show_in_panel: *show_in_preview_panel,
+                                            texture_name: None,
+                                            texture_id: app
+                                                .output_preview_cache
+                                                .get(id)
+                                                .map(|(texture_id, _)| *texture_id),
+                                        })
+                                    } else {
+                                        None
+                                    }
+                                })
+                                .collect();
+
+                            app.ui_state.preview_panel.update_outputs(preview_outputs);
+                            app.ui_state.preview_panel.show(ui_obj);
+                        }
+                    });
+
                 egui::ScrollArea::vertical().show(ui_obj, |ui_obj| {
                     // --- Dashboard Section ---
                     egui::CollapsingHeader::new(app.ui_state.i18n.t("dashboard"))
@@ -136,9 +186,9 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
     if app.ui_state.show_inspector {
         egui::SidePanel::right("right_panel")
             .resizable(true)
-            .default_width(400.0)
-            .min_width(300.0)
-            .max_width(600.0)
+            .default_width(inspector_default)
+            .min_width(260.0)
+            .max_width((viewport_width * 0.5).max(420.0))
             .show(ctx, |ui_obj| {
                 // Render the unified Inspector
                 app.ui_state.render_inspector(
@@ -155,12 +205,18 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
                 }
 
                 // Effect chain integrated into inspector side
-                app.ui_state.effect_chain_panel.ui(
-                    ctx,
-                    &app.ui_state.i18n,
-                    app.ui_state.icon_manager.as_ref(),
-                    Some(&mut app.recent_effect_configs),
-                );
+                egui::TopBottomPanel::bottom("inspector_effect_chain_split")
+                    .resizable(true)
+                    .default_height(240.0)
+                    .min_height(120.0)
+                    .show_inside(ui_obj, |_ui| {
+                        app.ui_state.effect_chain_panel.ui(
+                            ctx,
+                            &app.ui_state.i18n,
+                            app.ui_state.icon_manager.as_ref(),
+                            Some(&mut app.recent_effect_configs),
+                        );
+                    });
             });
     }
 

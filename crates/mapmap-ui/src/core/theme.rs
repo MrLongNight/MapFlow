@@ -98,9 +98,18 @@ impl ThemeConfig {
 
         style.visuals = visuals;
 
-        // Base Spacing (will be overridden by responsive logic if necessary)
+        // Normalize modern component geometry across all themes for a consistent look.
+        let radius = egui::CornerRadius::same(6);
+        style.visuals.widgets.noninteractive.corner_radius = radius;
+        style.visuals.widgets.inactive.corner_radius = radius;
+        style.visuals.widgets.hovered.corner_radius = radius;
+        style.visuals.widgets.active.corner_radius = radius;
+        style.visuals.widgets.open.corner_radius = radius;
+
+        // Base spacing for modern, less cramped layouts (responsive layer can override).
         style.spacing.item_spacing = egui::vec2(8.0, 6.0);
-        style.spacing.button_padding = egui::vec2(8.0, 4.0);
+        style.spacing.button_padding = egui::vec2(10.0, 6.0);
+        style.spacing.interact_size = egui::vec2(24.0, 22.0);
 
         ctx.set_style(style);
     }

@@ -345,17 +345,49 @@ fn render_content(
     }
 
     let output_config_opt = ctx.output_manager.get_output(output_id).cloned();
-    let _use_edge_blend = output_config_opt.is_some() && ctx.edge_blend_renderer.is_some();
-    let _use_color_calib = output_config_opt.is_some() && ctx.color_calibration_renderer.is_some();
+    let use_edge_blend = output_config_opt
+        .as_ref()
+        .map(|cfg| {
+            cfg.edge_blend.left.enabled
+                || cfg.edge_blend.right.enabled
+                || cfg.edge_blend.top.enabled
+                || cfg.edge_blend.bottom.enabled
+        })
+        .unwrap_or(false)
+        && ctx.edge_blend_renderer.is_some();
+    let use_color_calib = output_config_opt.is_some() && ctx.color_calibration_renderer.is_some();
 
-    let _mesh_target_view_ref = view;
+    let needs_post_processing = use_edge_blend || use_color_calib;
+
+    let intermediate_tex_name = format!("output_{}_intermediate", output_id);
+    let mesh_target_view_ref = if needs_post_processing {
+        if let Some(config) = &output_config_opt {
+            ctx.texture_pool.ensure_texture(
+                &intermediate_tex_name,
+                config.resolution.0,
+                config.resolution.1,
+                wgpu::TextureFormat::Rgba8Unorm, // Always supported for RENDER_ATTACHMENT and TEXTURE_BINDING
+                wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+            );
+        }
+        Some(ctx.texture_pool.get_view(&intermediate_tex_name))
+    } else {
+        None
+    };
+
+    let target_view = if needs_post_processing {
+        mesh_target_view_ref.as_deref().unwrap()
+    } else {
+        view
+    };
+
     // Clear Pass
     {
         let _pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Clear Output Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 depth_slice: None,
-                view,
+                view: target_view,
                 resolve_target: None,
 
                 ops: wgpu::Operations {
@@ -504,7 +536,7 @@ fn render_content(
                 label: Some("Mesh Layer Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     depth_slice: None,
-                    view,
+                    view: target_view,
                     resolve_target: None,
 
                     ops: wgpu::Operations {
@@ -526,6 +558,84 @@ fn render_content(
                 &texture_bind_group,
                 true,
             );
+        }
+    }
+
+    // --- POST PROCESSING PASSES ---
+    if needs_post_processing {
+        let intermediate_view = mesh_target_view_ref.as_ref().unwrap();
+        // If we have edge blending, render it to the final view
+        if use_edge_blend {
+            if let Some(edge_blend_renderer) = ctx.edge_blend_renderer.as_ref() {
+                if let Some(config) = &output_config_opt {
+                    // PERFORMANCE NOTE: ideally we shouldn't create buffers and bind groups every frame.
+                    // However, we'll keep it functional first and optimize if it becomes a bottleneck or
+                    // we could cache these in a hash map inside the renderer later.
+                    let texture_bind_group =
+                        edge_blend_renderer.create_texture_bind_group(intermediate_view);
+                    let uniform_buffer =
+                        edge_blend_renderer.create_uniform_buffer(&config.edge_blend);
+                    let uniform_bind_group =
+                        edge_blend_renderer.create_uniform_bind_group(&uniform_buffer);
+
+                    let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("Edge Blending Pass"),
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            depth_slice: None,
+                            view, // Draw to the final surface view
+                            resolve_target: None,
+
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(wgpu::Color::BLACK), // Clear previous if any
+                                store: wgpu::StoreOp::Store,
+                            },
+                        })],
+                        depth_stencil_attachment: None,
+                        timestamp_writes: None,
+                        occlusion_query_set: None,
+                    });
+
+                    edge_blend_renderer.render(
+                        &mut rpass,
+                        &texture_bind_group,
+                        &uniform_bind_group,
+                    );
+                }
+            }
+        } else if use_color_calib {
+            // Placeholder: if only color calib is enabled (or color calib needs to run after edge blend)
+            // For now, if edge blending is off but we still used an intermediate texture,
+            // we need to copy it to the final view.
+            if let Some(edge_blend_renderer) = ctx.edge_blend_renderer.as_ref() {
+                let texture_bind_group =
+                    edge_blend_renderer.create_texture_bind_group(intermediate_view);
+                let default_config = mapmap_core::EdgeBlendConfig::default();
+                let uniform_buffer = edge_blend_renderer.create_uniform_buffer(&default_config);
+                let uniform_bind_group =
+                    edge_blend_renderer.create_uniform_bind_group(&uniform_buffer);
+
+                let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("Passthrough Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        depth_slice: None,
+                        view, // Draw to the final surface view
+                        resolve_target: None,
+
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color::BLACK), // Clear previous if any
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: None,
+                    timestamp_writes: None,
+                    occlusion_query_set: None,
+                });
+
+                edge_blend_renderer.render(&mut rpass, &texture_bind_group, &uniform_bind_group);
+            } else {
+                // FALLBACK: If edge_blend_renderer is missing, we must manually copy the intermediate texture to the final view
+                // to avoid a black screen. A simple blit pass would go here.
+            }
         }
     }
 

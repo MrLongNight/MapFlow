@@ -31,6 +31,6 @@ Folgende Dateien liegen direkt im Root von `docs/` und sollten verschoben werden
 3.  **Update Index:** Stelle sicher, dass `INDEX.md` alle neuen Dokumente referenziert.
 
 ## Geplante Tasks
-- [ ] Move `HAP_INTEGRATION_PLAN.md` to `docs/dev/technical/`
-- [ ] Move `MCP-API.md` to `docs/dev/technical/`
-- [ ] Move `MIDI_USER_GUIDE.md` to `docs/user/manual/`
+- [x] Move `HAP_INTEGRATION_PLAN.md` to `docs/A3_PROJECT/B1_PLANNING/DOC-C9_HAP_INTEGRATION.md`
+- [x] Move `MCP-API.md` to `docs/A4_USER/B1_MANUAL/DOC-C10_MCP_API_REF.md`
+- [x] Move `MIDI_USER_GUIDE.md` to `docs/A4_USER/B1_MANUAL/DOC-C7_MIDI_CONTROL.md`

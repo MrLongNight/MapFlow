@@ -24,3 +24,7 @@ I have addressed several broken links and outdated status indicators in the docu
 ## 2026-03-10 - Dokumentations-Architektur Migration
 **Erkenntnis:** Die Dokumentationsstruktur in `docs/` wurde von der bisherigen `user/`, `dev/`, `project/` Struktur auf eine 3-Ebenen-Struktur (`A1_SYSTEM`, `A2_DEVELOPMENT`, `A3_PROJECT`, `A4_USER`) umgestellt.
 **Aktion:** Haupt-README.md und docs/README.md angepasst, um diese neue Struktur als Einstiegspunkte korrekt zu reflektieren. Alte `New_README.md` gelöscht.
+
+## 2026-03-11 - Fixed broken legacy references across documentation
+**Observation:** Several documents (e.g. `CONTRIBUTING.md`, `DOC-C1_OVERVIEW.md`, `DOC-C10_PROJECT_PHASES.md` and `DOC-C6_DOCUMENTATION_AUDIT.md`) contained outdated file paths referring to legacy structures like `docs/project/general/CODE-OF-CONDUCT.md` or `docs/dev/architecture/MULTI-PC-FEASIBILITY.md`.
+**Action:** Re-linked to their new A-series documentation paths (`docs/A3_PROJECT/B5_GOVERNANCE/DOC-C1_CODE_OF_CONDUCT.md`, `../DOC-A1_MODULE_TREE.md`, etc) to reflect the 3-level folder architecture migration. Checked off tasks in `DOC-C6_DOCUMENTATION_AUDIT.md`.
