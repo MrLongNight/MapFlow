@@ -208,11 +208,20 @@ jobs:
           Compress-Archive -Path "target/release/MapFlow.exe", "target/release/*.dll" -DestinationPath "$ZipName"
           Add-Content -Path $env:GITHUB_ENV -Value "ZIP_PATH=$ZipName"
 
+      - name: Ensure WiX Output Directory
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "target/wix" -Force | Out-Null
+
       - name: Build MSI Installer
         shell: pwsh
         run: |
-          cargo wix --release -p mapmap --no-check-includes
-          $MsiPath = Get-ChildItem -Path "target/wix/*.msi" | Select-Object -First 1 -ExpandProperty FullName
+          cargo wix -p mapmap --no-check-includes -- --release
+          $MsiPath = Get-ChildItem -Path "target/wix/*.msi" -File -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
+          if (-not $MsiPath) {
+            Write-Error "No MSI artifact was generated in target/wix."
+            exit 1
+          }
           Move-Item -Path $MsiPath -Destination "MapFlow-${{ needs.resolve-release.outputs.version }}-x64.msi"
 
       - name: Upload Artifacts
