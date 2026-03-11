@@ -75,7 +75,8 @@ jobs:
           test -x "${CARGO_HOME}/bin/cargo-deny"
           "${CARGO_HOME}/bin/cargo-deny" --version
       - name: Run Advisory Check
-        run: "${CARGO_HOME}/bin/cargo-deny" check advisories
+        run: |
+          "${CARGO_HOME}/bin/cargo-deny" check advisories
 
   build-linux:
     name: "Build & Test (Linux)"
@@ -101,8 +102,8 @@ jobs:
     name: "Build & Test (Windows)"
     runs-on: windows-latest
     if: |
-      github.ref == 'refs/heads/main' ||
-      contains(github.event.pull_request.labels.*.name, 'test-windows')
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'test-windows'))
     steps:
       - uses: actions/checkout@v5
       - name: Set up Rust
