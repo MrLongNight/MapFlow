@@ -70,9 +70,12 @@ jobs:
       - name: Install Tools
         uses: cargo-bins/cargo-binstall@main
       - name: Install cargo-deny
-        run: cargo binstall -y cargo-deny --force
+        run: |
+          cargo binstall -y cargo-deny --force
+          test -x "${CARGO_HOME}/bin/cargo-deny"
+          "${CARGO_HOME}/bin/cargo-deny" --version
       - name: Run Advisory Check
-        run: cargo deny check advisories
+        run: "${CARGO_HOME}/bin/cargo-deny" check advisories
 
   build-linux:
     name: "Build & Test (Linux)"
