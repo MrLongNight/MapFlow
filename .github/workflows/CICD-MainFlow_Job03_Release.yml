@@ -272,9 +272,52 @@ jobs:
           if-no-files-found: error
           path: MapFlow-${{ needs.resolve-release.outputs.version }}-Linux-x64.tar.gz
 
+  build-macos:
+    name: "Build (macOS Beta)"
+    needs: [resolve-release]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo Registry
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Build (Release)
+        run: cargo build --release -p mapmap --no-default-features --features "macos-beta"
+
+      - name: Package .app Bundle
+        shell: bash
+        run: |
+          bash scripts/package_macos_app.sh "${{ needs.resolve-release.outputs.version }}"
+
+      - name: Create ZIP Artifact
+        shell: bash
+        run: |
+          VERSION="${{ needs.resolve-release.outputs.version }}"
+          ZIP_NAME="MapFlow-$VERSION-macOS-beta.zip"
+          ditto -c -k --sequesterRsrc --keepParent "target/release/MapFlow.app" "$ZIP_NAME"
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-artifacts
+          if-no-files-found: error
+          path: MapFlow-${{ needs.resolve-release.outputs.version }}-macOS-beta.zip
+
   publish-release:
     name: "Publish Release"
-    needs: [resolve-release, build-windows, build-linux]
+    needs: [resolve-release, build-windows, build-linux, build-macos]
     runs-on: ubuntu-latest
     steps:
       - name: Download Artifacts
@@ -295,6 +338,7 @@ jobs:
             "release-artifacts/MapFlow-$RELEASE_VERSION-Windows-x64.zip"
             "release-artifacts/MapFlow-$RELEASE_VERSION-x64.msi"
             "release-artifacts/MapFlow-$RELEASE_VERSION-Linux-x64.tar.gz"
+            "release-artifacts/MapFlow-$RELEASE_VERSION-macOS-beta.zip"
           )
 
           args=(

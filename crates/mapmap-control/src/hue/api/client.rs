@@ -35,7 +35,9 @@ impl HueClient {
     /// Returns a HueConfig with username and client_key.
     /// Note: application_id must be fetched separately via get_application_id().
     pub async fn register_user(ip: &str, devicename: &str) -> Result<HueConfig, HueError> {
-        let client = reqwest::Client::builder().build()?;
+        let client = reqwest::Client::builder()
+            .danger_accept_invalid_certs(true)
+            .build()?;
 
         let body = RegisterBody {
             devicetype: devicename,
@@ -79,7 +81,9 @@ impl HueClient {
     /// The bridge returns the application ID in the response header "hue-application-id"
     /// when calling GET /auth/v1 with the hue-application-key header.
     pub async fn get_application_id(ip: &str, username: &str) -> Result<String, HueError> {
-        let client = reqwest::Client::builder().build()?;
+        let client = reqwest::Client::builder()
+            .danger_accept_invalid_certs(true)
+            .build()?;
 
         let url = format!("https://{}/auth/v1", ip);
         let resp = client
