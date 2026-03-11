@@ -43,8 +43,8 @@ Maintenance und Release-Management auf dem `main` Branch.
 
 1. **Lokal arbeiten:**
   - Führe vor jedem Commit das Skript aus:
-    - `./scripts/Final-Prepare-PreCommit.ps1` (Windows)
-    - `./scripts/Final-Prepare-PreCommit.sh` (Linux/Mac)
+    - `./scripts/dev-tools/prepare-pre-commit.ps1` (Windows)
+    - `./scripts/dev-tools/prepare-pre-commit.sh` (Linux/Mac)
   - Dies fixt Formatierung und Linting-Fehler automatisch.
 
 2. **Pull Request:**

@@ -195,7 +195,7 @@ cargo build --release -p mapmap --no-default-features --features macos-beta
 cargo run --release -p mapmap --no-default-features --features macos-beta
 
 # Package a .app bundle from the built binary
-bash scripts/package_macos_app.sh 0.2.0
+bash scripts/mapflow/package-macos-app.sh 0.2.0
 ```
 
 Notes:

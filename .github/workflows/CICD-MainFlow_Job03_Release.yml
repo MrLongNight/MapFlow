@@ -308,7 +308,7 @@ jobs:
       - name: Package .app Bundle
         shell: bash
         run: |
-          bash scripts/package_macos_app.sh "${{ needs.resolve-release.outputs.version }}"
+          bash scripts/mapflow/package-macos-app.sh "${{ needs.resolve-release.outputs.version }}"
 
       - name: Create ZIP Artifact
         shell: bash
