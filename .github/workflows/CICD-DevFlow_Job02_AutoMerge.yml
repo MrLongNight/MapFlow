@@ -6,7 +6,7 @@ on:
   check_suite:
     types: [completed]
   workflow_run:
-    workflows: ["CICD-DevFlow: Job01 Validation"]
+    workflows: ["CICD-DevFlow: Job01 Validation", "Security Analysis"]
     types: [completed]
   status:
 
@@ -37,6 +37,7 @@ jobs:
             }
 
             let prNumber = context.payload.pull_request?.number;
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
             const findOpenPrByHeadSha = async (headSha) => {
               const prs = await github.rest.pulls.list({
                 owner: context.repo.owner,
@@ -46,6 +47,32 @@ jobs:
               });
 
               return prs.data.find((pr) => pr.head.sha === headSha);
+            };
+            const waitForUpdatedPrHead = async (pullNumber, previousHeadSha) => {
+              for (let attempt = 1; attempt <= 20; attempt += 1) {
+                const currentPr = await github.rest.pulls.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pullNumber,
+                });
+
+                if (currentPr.data.head.sha !== previousHeadSha) {
+                  console.log(
+                    `PR head updated from ${previousHeadSha} to ${currentPr.data.head.sha} on attempt ${attempt}.`,
+                  );
+                  return currentPr.data;
+                }
+
+                console.log(
+                  `PR head still ${previousHeadSha}; waiting for branch update propagation (attempt ${attempt}/20)...`,
+                );
+                await sleep(3000);
+              }
+
+              console.log(
+                'PR head SHA did not change after the branch update request. Skipping manual workflow dispatch to avoid targeting a stale commit.',
+              );
+              return null;
             };
 
             if (!prNumber && context.payload.workflow_run) {
@@ -66,6 +93,13 @@ jobs:
                 prNumber = match.number;
               } else if (prs.data.length > 0) {
                 prNumber = prs.data[0].number;
+              }
+            }
+
+            if (!prNumber && context.payload.check_suite) {
+              const associatedPrNumber = context.payload.check_suite.pull_requests?.[0]?.number;
+              if (associatedPrNumber) {
+                prNumber = associatedPrNumber;
               }
             }
 
@@ -130,30 +164,33 @@ jobs:
                   'Branch update requested successfully. Waiting for the synchronize event and fresh required checks on the new head SHA.',
                 );
 
-                await github.rest.actions.createWorkflowDispatch({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  workflow_id: 'CICD-DevFlow_Job01_Validation.yml',
-                  ref: pr.data.head.ref,
-                  inputs: {
-                    toolchain: 'stable',
-                  },
-                });
+                const updatedPr = await waitForUpdatedPrHead(prNumber, pr.data.head.sha);
+                if (updatedPr) {
+                  await github.rest.actions.createWorkflowDispatch({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    workflow_id: 'CICD-DevFlow_Job01_Validation.yml',
+                    ref: updatedPr.head.ref,
+                    inputs: {
+                      toolchain: 'stable',
+                    },
+                  });
 
-                console.log(
-                  `Triggered ${'CICD-DevFlow_Job01_Validation.yml'} via workflow_dispatch on branch ${pr.data.head.ref}.`,
-                );
+                  console.log(
+                    `Triggered ${'CICD-DevFlow_Job01_Validation.yml'} via workflow_dispatch on branch ${updatedPr.head.ref} for head ${updatedPr.head.sha}.`,
+                  );
 
-                await github.rest.actions.createWorkflowDispatch({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  workflow_id: 'CI-02_security-scan.yml',
-                  ref: pr.data.head.ref,
-                });
+                  await github.rest.actions.createWorkflowDispatch({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    workflow_id: 'CI-02_security-scan.yml',
+                    ref: updatedPr.head.ref,
+                  });
 
-                console.log(
-                  `Triggered ${'CI-02_security-scan.yml'} via workflow_dispatch on branch ${pr.data.head.ref}.`,
-                );
+                  console.log(
+                    `Triggered ${'CI-02_security-scan.yml'} via workflow_dispatch on branch ${updatedPr.head.ref} for head ${updatedPr.head.sha}.`,
+                  );
+                }
               } catch (error) {
                 console.log(`Branch update failed: ${error.message}`);
               }
