@@ -34,10 +34,10 @@ pub fn render_trigger_config_ui(canvas: &mut ModuleCanvas, ui: &mut Ui, part: &m
             ui.separator();
 
             // Iterate over inputs
-            for (idx, _socket) in part.inputs.iter().enumerate() {
+            for (idx, socket) in part.inputs.iter().enumerate() {
                 ui.push_id(idx, |ui| {
                     ui.separator();
-                    ui.label(format!("Input {}", idx));
+                    ui.label(format!("Input {}: {}", idx, socket.name));
 
                     // Get config
                     let mut config = part.trigger_targets.entry(idx).or_default().clone();

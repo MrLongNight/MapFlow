@@ -256,36 +256,6 @@ impl EffectParameterAnimator {
         self.player.clip.looping = looping;
     }
 
-    /// Set playback mode
-    pub fn set_playback_mode(&mut self, mode: crate::animation::PlaybackMode) {
-        self.clip.playback_mode = mode;
-        self.player.clip.playback_mode = mode;
-    }
-
-    /// Set reverse playback
-    pub fn set_reverse(&mut self, reverse: bool) {
-        self.clip.reverse = reverse;
-        self.player.clip.reverse = reverse;
-    }
-
-    /// Set in/out points
-    pub fn set_in_out_points(&mut self, in_point: Option<f64>, out_point: Option<f64>) {
-        self.clip.in_point = in_point;
-        self.clip.out_point = out_point;
-        self.player.clip.in_point = in_point;
-        self.player.clip.out_point = out_point;
-    }
-
-    /// Set BPM sync
-    pub fn set_bpm_sync(&mut self, enabled: bool, bpm: f32, beats: f32) {
-        self.clip.bpm_sync = enabled;
-        self.clip.bpm = bpm;
-        self.clip.beats = beats;
-        self.player.clip.bpm_sync = enabled;
-        self.player.clip.bpm = bpm;
-        self.player.clip.beats = beats;
-    }
-
     /// Get the underlying clip (for serialization)
     pub fn clip(&self) -> &AnimationClip {
         &self.clip

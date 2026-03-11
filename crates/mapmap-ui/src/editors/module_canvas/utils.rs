@@ -5,7 +5,6 @@ use mapmap_core::module::{
     LayerType, MaskShape, MaskType, ModulePart, ModulePartType, ModuleSocket, ModuleSocketType,
     ModulizerType, OutputType, PartType, SourceType, TriggerType,
 };
-use mapmap_core::runtime_paths;
 
 pub struct NodeCatalogItem {
     /// User-friendly name for identifying the element.
@@ -250,7 +249,7 @@ pub fn ensure_icons_loaded(
         return;
     }
 
-    let paths = [runtime_paths::resource_path("stecker_icons")];
+    let paths = ["resources/stecker_icons", "../resources/stecker_icons"];
 
     let files = [
         "audio-jack1.1.svg",
@@ -262,7 +261,7 @@ pub fn ensure_icons_loaded(
     ];
 
     for path_str in paths {
-        let base_path = path_str.as_path();
+        let base_path = std::path::Path::new(path_str);
         if base_path.exists() {
             for file in files {
                 let path = base_path.join(file);

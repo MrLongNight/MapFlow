@@ -9,18 +9,6 @@ use std::collections::BTreeMap;
 /// Time in seconds
 pub type TimePoint = f64;
 
-/// Playback behavior mode
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
-pub enum PlaybackMode {
-    /// Loop playback infinitely
-    #[default]
-    Loop,
-    /// Play back and forth
-    PingPong,
-    /// Play once and stop
-    OneShot,
-}
-
 /// Interpolation mode for keyframes
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum InterpolationMode {
@@ -273,22 +261,8 @@ pub struct AnimationClip {
     pub tracks: Vec<AnimationTrack>,
     /// Total duration of the clip in seconds
     pub duration: TimePoint,
-    /// Legacy looping flag (use playback_mode)
+    /// Whether the animation loops
     pub looping: bool,
-    /// Playback mode (Loop, PingPong, OneShot)
-    pub playback_mode: PlaybackMode,
-    /// Whether to play in reverse
-    pub reverse: bool,
-    /// In point (start time)
-    pub in_point: Option<TimePoint>,
-    /// Out point (end time)
-    pub out_point: Option<TimePoint>,
-    /// Sync to BPM
-    pub bpm_sync: bool,
-    /// Target BPM
-    pub bpm: f32,
-    /// Number of beats this clip takes
-    pub beats: f32,
 }
 
 impl AnimationClip {
@@ -299,13 +273,6 @@ impl AnimationClip {
             tracks: Vec::new(),
             duration: 10.0, // Default 10 seconds
             looping: false,
-            playback_mode: PlaybackMode::Loop,
-            reverse: false,
-            in_point: None,
-            out_point: None,
-            bpm_sync: false,
-            bpm: 120.0,
-            beats: 4.0,
         }
     }
 
@@ -326,8 +293,7 @@ impl AnimationClip {
 
     /// Evaluate all tracks at a given time
     pub fn evaluate(&self, time: TimePoint) -> Vec<(String, AnimValue)> {
-        let loops = self.looping || self.playback_mode == PlaybackMode::Loop;
-        let wrapped_time = if loops && self.duration > 0.0 {
+        let wrapped_time = if self.looping && self.duration > 0.0 {
             time % self.duration
         } else {
             time.min(self.duration)
@@ -363,8 +329,6 @@ pub struct AnimationPlayer {
     pub current_time: TimePoint,
     /// Whether playback is active
     pub playing: bool,
-    /// Direction (-1.0 for backward, 1.0 for forward)
-    pub current_direction: f32,
     /// Playback speed multiplier (1.0 = normal)
     pub speed: f32,
 }
@@ -372,12 +336,10 @@ pub struct AnimationPlayer {
 impl AnimationPlayer {
     /// Create a new animation player
     pub fn new(clip: AnimationClip) -> Self {
-        let dir = if clip.reverse { -1.0 } else { 1.0 };
         Self {
             clip,
             current_time: 0.0,
             playing: false,
-            current_direction: dir,
             speed: 1.0,
         }
     }
@@ -385,25 +347,6 @@ impl AnimationPlayer {
     /// Play the animation
     pub fn play(&mut self) {
         self.playing = true;
-
-        let in_pt = self.clip.in_point.unwrap_or(0.0).max(0.0);
-        let out_pt = self
-            .clip
-            .out_point
-            .unwrap_or(self.clip.duration)
-            .min(self.clip.duration)
-            .max(in_pt + 0.001);
-
-        // When we start playing, if we're at the very end of the bounds in the direction we want to go, loop around.
-        if self.clip.reverse && self.current_time <= in_pt {
-            self.current_time = out_pt;
-            self.current_direction = -1.0;
-        } else if !self.clip.reverse && self.current_time >= out_pt {
-            self.current_time = in_pt;
-            self.current_direction = 1.0;
-        } else if self.current_direction == 0.0 {
-            self.current_direction = if self.clip.reverse { -1.0 } else { 1.0 };
-        }
     }
 
     /// Pause the animation
@@ -414,81 +357,21 @@ impl AnimationPlayer {
     /// Stop and reset the animation
     pub fn stop(&mut self) {
         self.playing = false;
-        self.current_direction = if self.clip.reverse { -1.0 } else { 1.0 };
-
-        let in_pt = self.clip.in_point.unwrap_or(0.0).max(0.0);
-        let out_pt = self
-            .clip
-            .out_point
-            .unwrap_or(self.clip.duration)
-            .min(self.clip.duration)
-            .max(in_pt + 0.001);
-
-        self.current_time = if self.clip.reverse { out_pt } else { in_pt };
+        self.current_time = 0.0;
     }
 
     /// Update the player (call every frame)
     pub fn update(&mut self, delta_time: f64) -> Vec<(String, AnimValue)> {
-        let in_pt = self.clip.in_point.unwrap_or(0.0).max(0.0);
-        let out_pt = self
-            .clip
-            .out_point
-            .unwrap_or(self.clip.duration)
-            .min(self.clip.duration)
-            .max(in_pt + 0.001);
-
         if self.playing {
-            // Apply reverse strictly if NOT in ping-pong mode
-            if self.clip.playback_mode != PlaybackMode::PingPong {
-                self.current_direction = if self.clip.reverse { -1.0 } else { 1.0 };
-            }
+            self.current_time += delta_time * self.speed as f64;
 
-            let bpm_speed_multiplier =
-                if self.clip.bpm_sync && self.clip.bpm > 0.0 && self.clip.beats > 0.0 {
-                    let clip_duration_beats = out_pt - in_pt;
-                    let beat_duration_sec = 60.0 / self.clip.bpm as f64;
-                    let target_duration_sec = beat_duration_sec * self.clip.beats as f64;
-                    if target_duration_sec > 0.0 {
-                        clip_duration_beats / target_duration_sec
-                    } else {
-                        1.0
-                    }
-                } else {
-                    1.0
-                };
-
-            let step = delta_time * self.speed as f64 * bpm_speed_multiplier;
-            self.current_time += step * self.current_direction as f64;
-
-            let is_looping = self.clip.looping || self.clip.playback_mode == PlaybackMode::Loop;
-
-            match self.clip.playback_mode {
-                PlaybackMode::Loop if is_looping => {
-                    if self.current_direction > 0.0 && self.current_time >= out_pt {
-                        self.current_time = in_pt + (self.current_time - out_pt) % (out_pt - in_pt);
-                    } else if self.current_direction < 0.0 && self.current_time <= in_pt {
-                        self.current_time = out_pt - (in_pt - self.current_time) % (out_pt - in_pt);
-                    }
+            if self.clip.looping {
+                if self.current_time >= self.clip.duration {
+                    self.current_time %= self.clip.duration;
                 }
-                PlaybackMode::PingPong => {
-                    if self.current_time >= out_pt {
-                        self.current_time = out_pt - (self.current_time - out_pt);
-                        self.current_direction = -1.0;
-                    } else if self.current_time <= in_pt {
-                        self.current_time = in_pt + (in_pt - self.current_time);
-                        self.current_direction = 1.0;
-                    }
-                }
-                _ => {
-                    // OneShot or default non-looping
-                    if self.current_direction > 0.0 && self.current_time >= out_pt {
-                        self.current_time = out_pt;
-                        self.playing = false;
-                    } else if self.current_direction < 0.0 && self.current_time <= in_pt {
-                        self.current_time = in_pt;
-                        self.playing = false;
-                    }
-                }
+            } else if self.current_time >= self.clip.duration {
+                self.current_time = self.clip.duration;
+                self.playing = false;
             }
         }
 
@@ -497,14 +380,7 @@ impl AnimationPlayer {
 
     /// Seek to a specific time
     pub fn seek(&mut self, time: TimePoint) {
-        let in_pt = self.clip.in_point.unwrap_or(0.0).max(0.0);
-        let out_pt = self
-            .clip
-            .out_point
-            .unwrap_or(self.clip.duration)
-            .min(self.clip.duration)
-            .max(in_pt + 0.001);
-        self.current_time = time.clamp(in_pt, out_pt);
+        self.current_time = time.clamp(0.0, self.clip.duration);
     }
 }
 

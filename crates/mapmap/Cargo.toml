@@ -18,7 +18,6 @@ audio = ["mapmap-core/audio"]
 midi = ["mapmap-control/midi", "mapmap-ui/midi"]
 ndi = ["mapmap-io/ndi", "mapmap-ui/ndi"]
 libmpv = ["mapmap-media/libmpv"]
-macos-beta = []
 
 [dependencies]
 
@@ -29,7 +28,6 @@ bindgen = { workspace = true }
 bytemuck = { workspace = true }
 cbindgen = { workspace = true }
 cc = { workspace = true }
-clap = { version = "4.5.60", features = ["derive"] }
 cpal = { workspace = true }
 criterion = { workspace = true }
 crossbeam-channel = { workspace = true }
