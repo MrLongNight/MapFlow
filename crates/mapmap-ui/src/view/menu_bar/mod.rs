@@ -39,7 +39,7 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
     // Custom frame for modern look
     let frame = egui::Frame::default()
         .fill(ctx.style().visuals.window_fill())
-        .inner_margin(egui::Margin::symmetric(16, 8));
+        .inner_margin(egui::Margin::symmetric(8, 2));
 
     egui::TopBottomPanel::top("top_panel")
         .frame(frame)
@@ -48,25 +48,30 @@ pub fn show(ctx: &egui::Context, ui_state: &mut AppUI) -> Vec<UIAction> {
             ui.style_mut().visuals.widgets.hovered.bg_stroke = egui::Stroke::NONE;
             ui.style_mut().visuals.widgets.inactive.bg_stroke = egui::Stroke::NONE;
 
+            let compact_menu = ctx.content_rect().height() < 900.0;
+
             // --- Main Menu Bar ---
             egui::MenuBar::new().ui(ui, |ui| {
-                ui.style_mut().spacing.button_padding = egui::vec2(8.0, 4.0);
+                ui.style_mut().spacing.button_padding = egui::vec2(6.0, 2.0);
+                ui.style_mut().spacing.item_spacing = egui::vec2(4.0, 2.0);
 
                 // --- File Menu ---
-                file_menu::show(ui, ui_state, &mut actions);
+                file_menu::show(ui, ui_state, &mut actions, compact_menu);
 
                 // --- Edit Menu ---
-                edit_menu::show(ui, ui_state, &mut actions);
+                edit_menu::show(ui, ui_state, &mut actions, compact_menu);
 
                 // --- View Menu ---
-                view_menu::show(ui, ui_state, &mut actions);
+                view_menu::show(ui, ui_state, &mut actions, compact_menu);
 
                 // --- Help Menu ---
-                help_menu::show(ui, ui_state, &mut actions);
+                help_menu::show(ui, ui_state, &mut actions, compact_menu);
             });
 
-            ui.add_space(4.0);
-            ui.separator();
+            if !compact_menu {
+                ui.add_space(2.0);
+                ui.separator();
+            }
         });
 
     actions

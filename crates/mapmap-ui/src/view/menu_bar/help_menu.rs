@@ -2,8 +2,14 @@ use super::menu_item;
 use crate::icons::AppIcon;
 use crate::{AppUI, UIAction};
 
-pub fn show(ui: &mut egui::Ui, ui_state: &AppUI, actions: &mut Vec<UIAction>) {
-    ui.menu_button(ui_state.i18n.t("menu-help"), |ui| {
+pub fn show(ui: &mut egui::Ui, ui_state: &AppUI, actions: &mut Vec<UIAction>, compact_menu: bool) {
+    let menu_help_label = ui_state.i18n.t("menu-help");
+    let top_label = if compact_menu {
+        "❓"
+    } else {
+        &menu_help_label
+    };
+    let response = ui.menu_button(top_label, |ui| {
         if ui.button(ui_state.i18n.t("menu-help-docs")).clicked() {
             actions.push(UIAction::OpenDocs);
             ui.close();
@@ -33,4 +39,8 @@ pub fn show(ui: &mut egui::Ui, ui_state: &AppUI, actions: &mut Vec<UIAction>) {
             }
         });
     });
+
+    if compact_menu {
+        response.response.on_hover_text(menu_help_label);
+    }
 }
