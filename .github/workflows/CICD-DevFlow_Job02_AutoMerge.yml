@@ -143,6 +143,17 @@ jobs:
                 console.log(
                   `Triggered ${'CICD-DevFlow_Job01_Validation.yml'} via workflow_dispatch on branch ${pr.data.head.ref}.`,
                 );
+
+                await github.rest.actions.createWorkflowDispatch({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  workflow_id: 'CI-02_security-scan.yml',
+                  ref: pr.data.head.ref,
+                });
+
+                console.log(
+                  `Triggered ${'CI-02_security-scan.yml'} via workflow_dispatch on branch ${pr.data.head.ref}.`,
+                );
               } catch (error) {
                 console.log(`Branch update failed: ${error.message}`);
               }
