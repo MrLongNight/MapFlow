@@ -147,13 +147,26 @@ jobs:
                 return false;
               }
 
-              await github.rest.actions.createWorkflowDispatch({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                workflow_id: workflowId,
-                ref,
-                ...(inputs ? { inputs } : {}),
-              });
+              try {
+                await github.rest.actions.createWorkflowDispatch({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  workflow_id: workflowId,
+                  ref,
+                  ...(inputs ? { inputs } : {}),
+                });
+              } catch (error) {
+                if (
+                  error.status === 422 &&
+                  error.message?.includes("Workflow does not have 'workflow_dispatch' trigger")
+                ) {
+                  console.log(
+                    `${workflowName} on branch ${ref} does not expose workflow_dispatch yet; waiting for the branch to pick up the updated workflow definition.`,
+                  );
+                  return false;
+                }
+                throw error;
+              }
 
               console.log(`Triggered ${workflowId} via workflow_dispatch on branch ${ref} for head ${headSha}.`);
               return true;
@@ -209,6 +222,40 @@ jobs:
               );
               return null;
             };
+            const waitForResolvedMergeability = async (pullNumber, initialPr) => {
+              let currentPr = initialPr;
+
+              for (let attempt = 1; attempt <= 10; attempt += 1) {
+                if (
+                  (currentPr.mergeable_state && currentPr.mergeable_state !== 'unknown') ||
+                  currentPr.mergeable !== null
+                ) {
+                  if (attempt > 1) {
+                    console.log(
+                      `PR mergeability resolved on attempt ${attempt}: mergeable=${currentPr.mergeable}, state=${currentPr.mergeable_state}`,
+                    );
+                  }
+                  return currentPr;
+                }
+
+                console.log(
+                  `PR mergeability still pending (mergeable=${currentPr.mergeable}, state=${currentPr.mergeable_state}); retrying (${attempt}/10)...`,
+                );
+                await sleep(2000);
+
+                const refreshedPr = await github.rest.pulls.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pullNumber,
+                });
+                currentPr = refreshedPr.data;
+              }
+
+              console.log(
+                'PR mergeability is still unknown after waiting. Skipping evaluation until GitHub finishes recomputing it.',
+              );
+              return null;
+            };
 
             if (!prNumber && context.payload.workflow_run) {
               const headBranch = context.payload.workflow_run.head_branch;
@@ -261,30 +308,34 @@ jobs:
 
             console.log(`Checking PR #${prNumber} for auto-merge eligibility...`);
 
-            const pr = await github.rest.pulls.get({
+            const initialPr = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: prNumber,
             });
+            const pr = await waitForResolvedMergeability(prNumber, initialPr.data);
+            if (!pr) {
+              return;
+            }
 
-            if (pr.data.draft) {
+            if (pr.draft) {
               console.log('PR is a draft. Skipping auto-merge.');
               return;
             }
 
-            if (pr.data.state === 'closed') {
+            if (pr.state === 'closed') {
               console.log('PR is already closed.');
               return;
             }
 
-            console.log(`Mergeable: ${pr.data.mergeable}, state: ${pr.data.mergeable_state}`);
+            console.log(`Mergeable: ${pr.mergeable}, state: ${pr.mergeable_state}`);
 
-            if (pr.data.mergeable === false) {
+            if (pr.mergeable === false) {
               console.log('PR has merge conflicts. Cannot auto-merge.');
               return;
             }
 
-            if (pr.data.mergeable_state === 'behind') {
+            if (pr.mergeable_state === 'behind') {
               console.log('PR is behind the base branch. Updating branch before attempting auto-merge...');
 
               try {
@@ -292,14 +343,14 @@ jobs:
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   pull_number: prNumber,
-                  expected_head_sha: pr.data.head.sha,
+                  expected_head_sha: pr.head.sha,
                 });
 
                 console.log(
                   'Branch update requested successfully. Waiting for the synchronize event and fresh required checks on the new head SHA.',
                 );
 
-                const updatedPr = await waitForUpdatedPrHead(prNumber, pr.data.head.sha);
+                const updatedPr = await waitForUpdatedPrHead(prNumber, pr.head.sha);
                 if (updatedPr) {
                   let dispatchedAny = false;
                   for (const workflow of MANAGED_WORKFLOWS) {
@@ -328,19 +379,19 @@ jobs:
 
             await new Promise((resolve) => setTimeout(resolve, 2000));
 
-            console.log(`Fetching check runs and statuses for commit ${pr.data.head.sha}...`);
+            console.log(`Fetching check runs and statuses for commit ${pr.head.sha}...`);
 
             // pre-commit.ci reports through the Status API, not the Checks API.
             const [checks, combinedStatus] = await Promise.all([
               github.rest.checks.listForRef({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                ref: pr.data.head.sha,
+                ref: pr.head.sha,
               }),
               github.rest.repos.getCombinedStatusForRef({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                ref: pr.data.head.sha,
+                ref: pr.head.sha,
               }),
             ]);
 
@@ -392,8 +443,8 @@ jobs:
               ...latestStatusesByName.values(),
             ];
             const dispatchedMissingWorkflows = await recoverMissingManagedWorkflows(
-              pr.data.head.ref,
-              pr.data.head.sha,
+              pr.head.ref,
+              pr.head.sha,
               latestRunsByName,
             );
 
@@ -451,7 +502,7 @@ jobs:
               otherFailed.forEach((check) => console.log(`  - ${check.name}: ${check.conclusion}`));
             }
 
-            if (pr.data.mergeable_state === 'blocked') {
+            if (pr.mergeable_state === 'blocked') {
               console.log("PR mergeable_state is 'blocked'. This may be caused by required reviews or other policies.");
               return;
             }
@@ -464,8 +515,8 @@ jobs:
                 repo: context.repo.repo,
                 pull_number: prNumber,
                 merge_method: 'squash',
-                commit_title: `${pr.data.title} (#${prNumber})`,
-                commit_message: `${pr.data.body || ''}\n\nAuto-merged by GitHub Actions`,
+                commit_title: `${pr.title} (#${prNumber})`,
+                commit_message: `${pr.body || ''}\n\nAuto-merged by GitHub Actions`,
               });
 
               console.log('PR merged successfully.');
