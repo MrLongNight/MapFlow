@@ -13,10 +13,10 @@ default = []
 ffmpeg = ["stream"] # Alias for stream feature
 ndi = ["dep:grafton-ndi", "dep:tokio"] # NDI support (requires NDI SDK)
 decklink = [] # DeckLink SDI support (requires DeckLink SDK)
-# spout = [
-#     "dep:windows",
-#     "dep:rusty-spout",
-# ] # Spout texture sharing (Windows only)
+spout = [
+    "dep:windows",
+    "dep:rusty-spout",
+] # Spout texture sharing (Windows only)
 syphon = [
     "cocoa",
     "core-foundation",
@@ -63,7 +63,7 @@ objc = { version = "0.2", optional = true }
 
 # Platform-specific dependencies
 [target.'cfg(windows)'.dependencies]
-# rusty-spout = { git = "https://github.com/virtual-puppet-project/rusty-spout", optional = true }
+rusty-spout = { git = "https://github.com/virtual-puppet-project/rusty-spout", optional = true }
 windows = { version = "0.58", features = [
     "Win32_Graphics_Direct3D11",
     "Win32_Graphics_Dxgi",

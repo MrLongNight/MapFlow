@@ -14,11 +14,11 @@ MapFlow is a complete rewrite of the legacy "MapMap" application. The C++/Qt ver
 
 ### 1. Download Release Binaries (Recommended)
 
-Pre-built binaries for Windows and Linux are available on the GitHub Releases page:
+Pre-built binaries for Windows, Linux, and the macOS beta are available on the GitHub Releases page:
 
 [**Download Latest Release**](https://github.com/MrLongNight/MapFlow/releases)
 
-1. Download the appropriate file for your OS (`.zip` for Windows, `.deb` for Debian/Ubuntu).
+1. Download the appropriate file for your OS (`.zip` for Windows, `.deb` for Debian/Ubuntu, `.zip` containing `MapFlow.app` for macOS beta).
 2. **Windows**: Extract the zip archive and run `mapflow.exe`.
 3. **Linux**: Install the package:
    ```bash
@@ -26,6 +26,7 @@ Pre-built binaries for Windows and Linux are available on the GitHub Releases pa
    sudo apt-get install -f  # Fix missing dependencies if any
    mapflow
    ```
+4. **macOS beta**: Extract the archive and move `MapFlow.app` to `/Applications` or launch it directly from Finder.
 
 ### 2. Build from Source
 
@@ -41,6 +42,6 @@ cd MapFlow
 # Install system dependencies (Ubuntu example)
 sudo apt-get install build-essential pkg-config libxcb1-dev libasound2-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev
 
-# Run
-cargo run --release --features ffmpeg,audio
+# Run the current macOS beta baseline
+cargo run --release -p mapmap --no-default-features --features macos-beta
 ```

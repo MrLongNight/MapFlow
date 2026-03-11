@@ -14,7 +14,7 @@ use mapmap_control::ControlManager;
 use mapmap_core::{
     audio::backend::{cpal_backend::CpalBackend, AudioBackend},
     media_library::MediaLibrary,
-    AppState, ModuleEvaluator,
+    runtime_paths, AppState, ModuleEvaluator,
 };
 use mapmap_io::load_project;
 use mapmap_mcp::McpServer;
@@ -132,25 +132,19 @@ impl App {
 
         #[cfg(feature = "midi")]
         {
-            let paths = [
-                "resources/controllers/ecler_nuo4/elements.json",
-                "../resources/controllers/ecler_nuo4/elements.json",
-            ];
-            for path_str in paths {
-                let path = std::path::Path::new(path_str);
-                if path.exists() {
-                    match std::fs::read_to_string(path) {
-                        Ok(json) => {
-                            if let Err(e) = ui_state.controller_overlay.load_elements(&json) {
-                                tracing::error!("Failed to parse elements.json: {}", e);
-                            } else {
-                                tracing::info!("Loaded controller elements from {:?}", path);
-                                break;
-                            }
+            if let Some(path) =
+                runtime_paths::existing_resource_path("controllers/ecler_nuo4/elements.json")
+            {
+                match std::fs::read_to_string(&path) {
+                    Ok(json) => {
+                        if let Err(e) = ui_state.controller_overlay.load_elements(&json) {
+                            tracing::error!("Failed to parse elements.json: {}", e);
+                        } else {
+                            tracing::info!("Loaded controller elements from {:?}", path);
                         }
-                        Err(e) => {
-                            tracing::error!("Failed to read elements.json from {:?}: {}", path, e)
-                        }
+                    }
+                    Err(e) => {
+                        tracing::error!("Failed to read elements.json from {:?}: {}", path, e)
                     }
                 }
             }
@@ -396,20 +390,7 @@ impl App {
         };
 
         // Initialize icons from assets directory
-        let assets_dir = std::env::current_exe()
-            .ok()
-            .and_then(|p| p.parent().map(|p| p.to_path_buf()))
-            .unwrap_or_else(|| std::path::PathBuf::from("."))
-            .join("..")
-            .join("..")
-            .join("assets");
-
-        // Try alternative paths for development
-        let assets_path = if assets_dir.exists() {
-            assets_dir
-        } else {
-            std::path::PathBuf::from("assets")
-        };
+        let assets_path = runtime_paths::assets_dir();
 
         ui_state.initialize_icons(&egui_context, &assets_path);
         ui_state.user_config.theme.apply(&egui_context);
@@ -592,8 +573,7 @@ impl App {
                     lib.add_scan_path(video_dir);
                 }
                 // Also add project relative media dir if it exists
-                let project_media = std::path::PathBuf::from("resources/app_videos");
-                if project_media.exists() {
+                if let Some(project_media) = runtime_paths::existing_resource_path("app_videos") {
                     lib.add_scan_path(project_media);
                 }
                 lib
