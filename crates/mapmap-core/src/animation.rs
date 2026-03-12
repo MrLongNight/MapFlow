@@ -315,7 +315,7 @@ struct AnimationClipSerde {
 
 impl From<AnimationClipSerde> for AnimationClip {
     fn from(value: AnimationClipSerde) -> Self {
-        let playback_mode = value.playback_mode.unwrap_or_else(|| {
+        let playback_mode = value.playback_mode.unwrap_or({
             if value.looping {
                 PlaybackMode::Loop
             } else {

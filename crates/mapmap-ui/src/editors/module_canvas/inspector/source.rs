@@ -372,7 +372,8 @@ pub fn render_source_ui(
                         egui::RichText::new(
                             "No NDI source selected",
                         )
-                        .weak(),
+                        .weak()
+                        .italics(),
                     );
                     ui.add_space(10.0);
                 });
