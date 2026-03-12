@@ -297,12 +297,19 @@ struct AnimationClipSerde {
     tracks: Vec<AnimationTrack>,
     duration: TimePoint,
     looping: bool,
+    #[serde(default, deserialize_with = "deserialize_optional_playback_mode")]
     playback_mode: Option<PlaybackMode>,
+    #[serde(default)]
     reverse: bool,
+    #[serde(default)]
     in_point: Option<TimePoint>,
+    #[serde(default)]
     out_point: Option<TimePoint>,
+    #[serde(default)]
     bpm_sync: bool,
+    #[serde(default = "default_animation_bpm")]
     bpm: f32,
+    #[serde(default = "default_animation_beats")]
     beats: f32,
 }
 
@@ -339,6 +346,23 @@ impl<'de> Deserialize<'de> for AnimationClip {
     {
         AnimationClipSerde::deserialize(deserializer).map(Into::into)
     }
+}
+
+fn deserialize_optional_playback_mode<'de, D>(
+    deserializer: D,
+) -> Result<Option<PlaybackMode>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    PlaybackMode::deserialize(deserializer).map(Some)
+}
+
+fn default_animation_bpm() -> f32 {
+    120.0
+}
+
+fn default_animation_beats() -> f32 {
+    4.0
 }
 
 impl AnimationClip {
@@ -405,7 +429,7 @@ impl AnimationClip {
 }
 
 /// Animation player state
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct AnimationPlayer {
     /// The animation clip being played
     pub clip: AnimationClip,
@@ -417,6 +441,54 @@ pub struct AnimationPlayer {
     pub current_direction: f32,
     /// Playback speed multiplier (1.0 = normal)
     pub speed: f32,
+}
+
+#[derive(Debug, Deserialize)]
+struct AnimationPlayerSerde {
+    clip: AnimationClip,
+    current_time: TimePoint,
+    playing: bool,
+    #[serde(default, deserialize_with = "deserialize_optional_current_direction")]
+    current_direction: Option<f32>,
+    #[serde(default = "default_animation_speed")]
+    speed: f32,
+}
+
+impl From<AnimationPlayerSerde> for AnimationPlayer {
+    fn from(value: AnimationPlayerSerde) -> Self {
+        let current_direction =
+            value
+                .current_direction
+                .unwrap_or(if value.clip.reverse { -1.0 } else { 1.0 });
+
+        Self {
+            clip: value.clip,
+            current_time: value.current_time,
+            playing: value.playing,
+            current_direction,
+            speed: value.speed,
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for AnimationPlayer {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        AnimationPlayerSerde::deserialize(deserializer).map(Into::into)
+    }
+}
+
+fn deserialize_optional_current_direction<'de, D>(deserializer: D) -> Result<Option<f32>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    f32::deserialize(deserializer).map(Some)
+}
+
+fn default_animation_speed() -> f32 {
+    1.0
 }
 
 impl AnimationPlayer {
@@ -605,12 +677,6 @@ mod tests {
                 tracks: [],
                 duration: 2.0,
                 looping: false,
-                reverse: false,
-                in_point: None,
-                out_point: None,
-                bpm_sync: false,
-                bpm: 120.0,
-                beats: 4.0,
             )
         "#;
 
@@ -619,6 +685,12 @@ mod tests {
 
         assert!(!clip.looping);
         assert_eq!(clip.playback_mode, PlaybackMode::OneShot);
+        assert!(!clip.reverse);
+        assert_eq!(clip.in_point, None);
+        assert_eq!(clip.out_point, None);
+        assert!(!clip.bpm_sync);
+        assert_eq!(clip.bpm, 120.0);
+        assert_eq!(clip.beats, 4.0);
     }
 
     #[test]
@@ -644,6 +716,32 @@ mod tests {
 
         assert!(clip.looping);
         assert_eq!(clip.playback_mode, PlaybackMode::PingPong);
+    }
+
+    #[test]
+    fn test_animation_player_backward_compatibility_with_legacy_defaults() {
+        let legacy_player = r#"
+            (
+                clip: (
+                    name: "legacy",
+                    tracks: [],
+                    duration: 2.0,
+                    looping: false,
+                ),
+                current_time: 0.5,
+                playing: false,
+                speed: 1.0,
+            )
+        "#;
+
+        let player: AnimationPlayer =
+            ron::from_str(legacy_player).expect("Should deserialize legacy player");
+
+        assert_eq!(player.clip.playback_mode, PlaybackMode::OneShot);
+        assert_eq!(player.current_direction, 1.0);
+        assert_eq!(player.current_time, 0.5);
+        assert!(!player.playing);
+        assert_eq!(player.speed, 1.0);
     }
 
     #[test]

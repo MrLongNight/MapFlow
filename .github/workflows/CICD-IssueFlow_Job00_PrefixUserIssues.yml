@@ -33,13 +33,14 @@ jobs:
               return;
             }
 
-            const preservedPrefixes = ['MFusr_#', 'MF_#', 'MFsub_#'];
+            const preservedPrefixes = ['MFuser_#', 'MFusr_#', 'MF_#', 'MFsub_#'];
             if (preservedPrefixes.some((prefix) => issue.title.startsWith(prefix))) {
               console.log('Issue title already uses a managed prefix.');
               return;
             }
 
             let baseTitle = issue.title
+              .replace(/^MFuser_\s*/i, '')
               .replace(/^\[(Bug|Feature|Task)\]:\s*/i, '')
               .replace(/\s+/g, ' ')
               .trim();
@@ -48,7 +49,7 @@ jobs:
               baseTitle = 'User-Issue';
             }
 
-            const normalizedTitle = `MFusr_#${issue.number}-${baseTitle}`;
+            const normalizedTitle = `MFuser_#${issue.number}-${baseTitle}`;
 
             if (normalizedTitle === issue.title) {
               console.log('Issue title already normalized.');
