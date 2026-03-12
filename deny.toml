@@ -10,8 +10,6 @@ ignore = [
     # proc-macro-error is "unmaintained" but not a security vulnerability
     # It's a transitive dependency from egui_dock -> duplicate -> proc-macro-error
     # We cannot upgrade egui_dock without upgrading the entire egui ecosystem
-    # Tracking: https://rustsec.org/advisories/RUSTSEC-2024-0370
-    "RUSTSEC-2024-0370",
     # bincode is unmaintained
     "RUSTSEC-2025-0141",
     # paste is unmaintained

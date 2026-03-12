@@ -372,7 +372,8 @@ pub fn render_source_ui(
                         egui::RichText::new(
                             "No NDI source selected",
                         )
-                        .weak(),
+                        .weak()
+                        .italics(),
                     );
                     ui.add_space(10.0);
                 });
@@ -834,7 +835,7 @@ pub fn render_source_ui(
         }
         SourceType::Bevy => {
             ui.label("\u{1F3AE} Bevy Scene");
-            ui.label(egui::RichText::new("Rendering Internal 3D Scene").weak());
+            ui.label(egui::RichText::new("Rendering Internal 3D Scene").weak().italics());
             ui.small("The scene is rendered internally and available as 'bevy_output'");
         }
     }

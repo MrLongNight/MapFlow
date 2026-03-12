@@ -559,6 +559,8 @@ impl App {
             render_ops: Vec::new(),
             edge_blend_renderer,
             color_calibration_renderer,
+            edge_blend_cache: std::collections::HashMap::new(),
+            edge_blend_texture_cache: std::collections::HashMap::new(),
             output_temp_textures: std::collections::HashMap::new(),
             preview_texture_cache: HashMap::new(),
             output_preview_cache: HashMap::new(),

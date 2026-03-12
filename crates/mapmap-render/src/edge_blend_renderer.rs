@@ -238,7 +238,29 @@ impl EdgeBlendRenderer {
 
     /// Create a uniform buffer from edge blend configuration
     pub fn create_uniform_buffer(&self, config: &EdgeBlendConfig) -> wgpu::Buffer {
-        let uniforms = EdgeBlendUniforms {
+        let uniforms = self.config_to_uniforms(config);
+
+        self.device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Edge Blend Uniform Buffer"),
+                contents: bytemuck::cast_slice(&[uniforms]),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            })
+    }
+
+    /// Updates an existing uniform buffer with new configuration
+    pub fn update_uniform_buffer(
+        &self,
+        queue: &wgpu::Queue,
+        buffer: &wgpu::Buffer,
+        config: &EdgeBlendConfig,
+    ) {
+        let uniforms = self.config_to_uniforms(config);
+        queue.write_buffer(buffer, 0, bytemuck::cast_slice(&[uniforms]));
+    }
+
+    fn config_to_uniforms(&self, config: &EdgeBlendConfig) -> EdgeBlendUniforms {
+        EdgeBlendUniforms {
             left_width: if config.left.enabled {
                 config.left.width
             } else {
@@ -261,14 +283,7 @@ impl EdgeBlendRenderer {
             },
             gamma: config.gamma,
             _padding: [0.0; 7],
-        };
-
-        self.device
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("Edge Blend Uniform Buffer"),
-                contents: bytemuck::cast_slice(&[uniforms]),
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            })
+        }
     }
 
     /// Create a uniform bind group

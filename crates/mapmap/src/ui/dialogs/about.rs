@@ -18,7 +18,9 @@ pub fn show(ctx: &Context, show_about: &mut bool) {
         ui.vertical_centered(|ui| {
             ui.add_space(10.0);
             ui.heading(RichText::new("MapFlow VJ").size(24.0).strong());
-            ui.label(RichText::new("Version 1.0.0-RC1 (Rescue Edition)").color(Color32::GRAY));
+
+            let version = env!("CARGO_PKG_VERSION");
+            ui.label(RichText::new(format!("Version {}", version)).color(Color32::GRAY));
 
             ui.add_space(10.0);
             ui.label("Professional Projection Mapping & VJ Software");

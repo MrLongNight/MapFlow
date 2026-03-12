@@ -33,6 +33,14 @@ impl HapTextureType {
         }
     }
 
+    /// Returns the secondary GPU texture format for this HAP type, if any
+    pub fn secondary_texture_format(&self) -> Option<&'static str> {
+        match self {
+            Self::YCoCgAlpha => Some("Bc4RUnorm"),
+            _ => None,
+        }
+    }
+
     /// Returns true if this type requires YCoCg→RGB shader conversion
     pub fn needs_ycocg_conversion(&self) -> bool {
         matches!(self, Self::YCoCg | Self::YCoCgAlpha)
@@ -123,6 +131,32 @@ pub fn decode_hap_frame(data: &[u8], width: u32, height: u32) -> Result<HapFrame
     let _flags = data[2]; // Reserved
     let _section_length_hint = data[3]; // Can be used for validation
 
+    // HAP Q Alpha (Multiple Images)
+    if section_type == 0x0D {
+        // Parse header (4 or 8 bytes)
+        let is_8_byte = data[0] == 0 && data[1] == 0 && data[2] == 0;
+        let data_offset = if is_8_byte { 8 } else { 4 };
+
+        if data.len() < data_offset {
+            return Err(HapError::InvalidHeader);
+        }
+
+        let container_data = &data[data_offset..];
+
+        let sections = decode_multiple_images(container_data)?;
+        if sections.len() < 2 {
+            return Err(HapError::InvalidSectionCount);
+        }
+
+        return Ok(HapFrame {
+            texture_type: HapTextureType::YCoCgAlpha,
+            width,
+            height,
+            texture_data: sections[0].clone(),
+            secondary_texture: Some(sections[1].clone()),
+        });
+    }
+
     let texture_type = match section_type {
         0x0B => HapTextureType::Rgb,
         0x0E => HapTextureType::Rgba,
@@ -162,7 +196,7 @@ pub fn decode_hap_frame(data: &[u8], width: u32, height: u32) -> Result<HapFrame
             })
         }
         0xC0 => {
-            // Complex multi-section (HAP Q / HAP Q Alpha)
+            // Complex multi-section (HAP Q)
             debug!("HAP frame: Complex multi-section");
             let sections = decode_complex_frame(compressed_data)?;
 
@@ -170,19 +204,18 @@ pub fn decode_hap_frame(data: &[u8], width: u32, height: u32) -> Result<HapFrame
                 return Err(HapError::InvalidSectionCount);
             }
 
-            let main_texture = sections[0].clone();
-            let secondary_texture = if sections.len() > 1 {
-                Some(sections[1].clone())
-            } else {
-                None
-            };
+            // HAP Q (Single plane, but chunked)
+            let mut combined_texture = Vec::new();
+            for chunk in sections {
+                combined_texture.extend(chunk);
+            }
 
             Ok(HapFrame {
                 texture_type,
                 width,
                 height,
-                texture_data: main_texture,
-                secondary_texture,
+                texture_data: combined_texture,
+                secondary_texture: None,
             })
         }
         other => Err(HapError::UnsupportedCompressor(other)),
@@ -198,6 +231,93 @@ fn decompress_snappy(data: &[u8]) -> Result<Vec<u8>, HapError> {
     decoder
         .decompress_vec(data)
         .map_err(|e| HapError::SnappyError(e.to_string()))
+}
+
+/// Decode multiple images from a multiple images container (HAP Q Alpha)
+#[cfg(feature = "hap")]
+fn decode_multiple_images(data: &[u8]) -> Result<Vec<Vec<u8>>, HapError> {
+    let mut offset = 0;
+    let mut result = Vec::new();
+
+    while offset < data.len() {
+        if offset + 4 > data.len() {
+            return Err(HapError::InvalidHeader);
+        }
+
+        // Check if header is 4 or 8 bytes
+        let is_8_byte = data[offset] == 0 && data[offset + 1] == 0 && data[offset + 2] == 0;
+
+        let (section_size, section_type, header_size, data_offset) = if is_8_byte {
+            if offset + 8 > data.len() {
+                return Err(HapError::InvalidHeader);
+            }
+            let size = u32::from_le_bytes([
+                data[offset + 4],
+                data[offset + 5],
+                data[offset + 6],
+                data[offset + 7],
+            ]) as usize;
+            (size, data[offset + 3], 8, offset + 8)
+        } else {
+            let size =
+                u32::from_le_bytes([data[offset], data[offset + 1], data[offset + 2], 0]) as usize;
+            (size, data[offset + 3], 4, offset + 4)
+        };
+
+        if section_size < header_size {
+            return Err(HapError::InvalidHeader);
+        }
+        let payload_size = section_size - header_size;
+
+        if data_offset + payload_size > data.len() {
+            return Err(HapError::BufferTooSmall {
+                needed: data_offset + payload_size,
+                got: data.len(),
+            });
+        }
+
+        let section_data = &data[data_offset..data_offset + payload_size];
+
+        // Determine compressor from type
+        // e.g., 0xCF is YCoCg + Decode Instructions, 0xBF is YCoCg + Snappy, 0xAF is YCoCg + None
+        // 0xC1 is Alpha + Decode Instructions, 0xB1 is Alpha + Snappy, 0xA1 is Alpha + None
+        // Since we know this is a multiple-image section, the top nibble contains the compressor mapping:
+        // A -> None, B -> Snappy, C -> Complex
+        let compressor_nibble = (section_type & 0xF0) >> 4;
+
+        match compressor_nibble {
+            0xA => {
+                // No compression
+                result.push(section_data.to_vec());
+            }
+            0xB => {
+                // Snappy compression
+                let decompressed = decompress_snappy(section_data)?;
+                result.push(decompressed);
+            }
+            0xC => {
+                // Complex / Decode Instructions
+                let sections = decode_complex_frame(section_data)?;
+                if !sections.is_empty() {
+                    // For a complex frame that represents a single image plane (like YCoCg or Alpha),
+                    // it might be chunked into multiple pieces. We need to concatenate all chunks
+                    // back into a single continuous texture buffer for the GPU.
+                    let mut combined_texture = Vec::new();
+                    for chunk in sections {
+                        combined_texture.extend(chunk);
+                    }
+                    result.push(combined_texture);
+                } else {
+                    return Err(HapError::InvalidSectionCount);
+                }
+            }
+            _ => return Err(HapError::UnsupportedCompressor(section_type)),
+        }
+
+        offset = data_offset + payload_size;
+    }
+
+    Ok(result)
 }
 
 /// Decode complex multi-section frame (HAP Q)

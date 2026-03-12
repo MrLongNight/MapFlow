@@ -337,6 +337,10 @@ pub enum IoError {
     /// Error: {0}.
     /// Error: {0}.
     Other(String),
+
+    #[error("Zip error: {0}")]
+    /// Error: Zip error.
+    ZipError(String),
 }
 
 impl IoError {
@@ -353,6 +357,12 @@ impl IoError {
     /// Creates a platform not supported error.
     pub fn platform_not_supported(operation: &str) -> Self {
         Self::PlatformNotSupported(operation.to_string())
+    }
+}
+
+impl From<zip::result::ZipError> for IoError {
+    fn from(err: zip::result::ZipError) -> Self {
+        IoError::ZipError(err.to_string())
     }
 }
 

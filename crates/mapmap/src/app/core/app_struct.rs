@@ -147,6 +147,10 @@ pub struct App {
     pub edge_blend_renderer: Option<EdgeBlendRenderer>,
     /// Color calibration renderer for output windows
     pub color_calibration_renderer: Option<ColorCalibrationRenderer>,
+    /// Cache for edge blending resources (OutputID -> (UniformBuffer, UniformBindGroup, ConfigHash))
+    pub edge_blend_cache: std::collections::HashMap<u64, (wgpu::Buffer, wgpu::BindGroup, u64)>,
+    /// Cache for edge blending texture bind groups (OutputID -> TextureBindGroup)
+    pub edge_blend_texture_cache: std::collections::HashMap<u64, wgpu::BindGroup>,
     /// Temporary textures for output rendering (OutputID -> Texture)
     pub output_temp_textures: std::collections::HashMap<u64, wgpu::Texture>,
     /// Cache for egui textures to avoid re-registering every frame ((ModuleId, PartId) -> (EguiId, View))
