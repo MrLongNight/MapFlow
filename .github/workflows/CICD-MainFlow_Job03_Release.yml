@@ -1,8 +1,11 @@
 name: "Stable Release"
+
+on:
+  push:
     tags:
       - "v*.*.*"
       - "*.*.*"
-  workflow_dispatch:
+  #workflow_dispatch:
     inputs:
       version:
         description: 'Version (e.g. v1.0.0)'
