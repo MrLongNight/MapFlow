@@ -13,11 +13,12 @@ use std::collections::{HashMap, HashSet};
 
 /// Lightweight module descriptor for timeline arrangement UI.
 #[derive(Debug, Clone)]
-pub struct TimelineModule {
+pub struct TimelineModule<'a> {
     /// Module ID
     pub id: ModuleId,
     /// Module display name
-    pub name: String,
+    // Optimization: Borrow name string to prevent allocation overhead in UI hot loop.
+    pub name: &'a str,
 }
 
 /// Show orchestration mode for module arrangement.
@@ -183,14 +184,14 @@ impl TimelineV2 {
         blocks.first().copied()
     }
 
-    fn module_name_map(modules: &[TimelineModule]) -> HashMap<ModuleId, String> {
-        modules.iter().map(|m| (m.id, m.name.clone())).collect()
+    fn module_name_map<'a>(modules: &[TimelineModule<'a>]) -> HashMap<ModuleId, &'a str> {
+        modules.iter().map(|m| (m.id, m.name)).collect()
     }
 
-    fn module_name(module_names: &HashMap<ModuleId, String>, module_id: ModuleId) -> String {
+    fn module_name(module_names: &HashMap<ModuleId, &str>, module_id: ModuleId) -> String {
         module_names
             .get(&module_id)
-            .cloned()
+            .map(|s| s.to_string())
             .unwrap_or_else(|| format!("Module {}", module_id))
     }
 
@@ -386,7 +387,7 @@ impl TimelineV2 {
         &mut self,
         ui: &mut Ui,
         animator: &mut EffectParameterAnimator,
-        modules: &[TimelineModule],
+        modules: &[TimelineModule<'_>],
     ) -> Option<TimelineAction> {
         let mut action = None;
         let module_names = Self::module_name_map(modules);
@@ -440,10 +441,125 @@ impl TimelineV2 {
                 self.zoom /= 1.2;
             }
 
-            // Loop toggle
-            let mut looping = animator.clip().looping;
-            if ui.checkbox(&mut looping, "Loop").changed() {
-                animator.set_looping(looping);
+            // Playback Mode selection
+            let mut current_mode = animator.clip().playback_mode;
+            let mut mode_changed = false;
+            egui::ComboBox::from_id_salt("playback_mode_combo")
+                .selected_text(format!("{:?}", current_mode))
+                .show_ui(ui, |ui| {
+                    if ui
+                        .selectable_value(
+                            &mut current_mode,
+                            mapmap_core::animation::PlaybackMode::Loop,
+                            "Loop",
+                        )
+                        .clicked()
+                    {
+                        mode_changed = true;
+                    }
+                    if ui
+                        .selectable_value(
+                            &mut current_mode,
+                            mapmap_core::animation::PlaybackMode::PingPong,
+                            "PingPong",
+                        )
+                        .clicked()
+                    {
+                        mode_changed = true;
+                    }
+                    if ui
+                        .selectable_value(
+                            &mut current_mode,
+                            mapmap_core::animation::PlaybackMode::OneShot,
+                            "OneShot",
+                        )
+                        .clicked()
+                    {
+                        mode_changed = true;
+                    }
+                });
+            if mode_changed {
+                animator.set_playback_mode(current_mode);
+            }
+
+            // Reverse playback
+            let mut reverse = animator.clip().reverse;
+            if ui.checkbox(&mut reverse, "Reverse").changed() {
+                animator.set_reverse(reverse);
+            }
+
+            ui.separator();
+
+            // BPM Sync
+            let mut bpm_sync = animator.clip().bpm_sync;
+            let mut bpm = animator.clip().bpm;
+            let mut beats = animator.clip().beats;
+            let mut bpm_changed = false;
+            if ui.checkbox(&mut bpm_sync, "BPM Sync").changed() {
+                bpm_changed = true;
+            }
+            if bpm_sync {
+                if ui
+                    .add(
+                        egui::DragValue::new(&mut bpm)
+                            .prefix("BPM: ")
+                            .speed(1.0)
+                            .range(1.0..=999.0),
+                    )
+                    .changed()
+                {
+                    bpm_changed = true;
+                }
+                if ui
+                    .add(
+                        egui::DragValue::new(&mut beats)
+                            .prefix("Beats: ")
+                            .speed(1.0)
+                            .range(1.0..=128.0),
+                    )
+                    .changed()
+                {
+                    bpm_changed = true;
+                }
+            }
+            if bpm_changed {
+                animator.set_bpm_sync(bpm_sync, bpm, beats);
+            }
+
+            ui.separator();
+
+            // In/Out Points
+            let mut in_pt = animator.clip().in_point.unwrap_or(0.0);
+            let mut out_pt = animator.clip().out_point.unwrap_or(animator.duration());
+            let mut pts_changed = false;
+
+            ui.label("In:");
+            if ui
+                .add(
+                    egui::DragValue::new(&mut in_pt)
+                        .speed(0.1)
+                        .range(0.0..=out_pt - 0.1),
+                )
+                .changed()
+            {
+                pts_changed = true;
+            }
+            ui.label("Out:");
+            if ui
+                .add(
+                    egui::DragValue::new(&mut out_pt)
+                        .speed(0.1)
+                        .range(in_pt + 0.1..=animator.duration()),
+                )
+                .changed()
+            {
+                pts_changed = true;
+            }
+
+            if ui.button("Clear I/O").clicked() {
+                animator.set_in_out_points(None, None);
+            } else if pts_changed {
+                animator.set_in_out_points(Some(in_pt), Some(out_pt));
             }
 
             ui.separator();
@@ -516,7 +632,7 @@ impl TimelineV2 {
                                 ui.selectable_value(
                                     &mut self.selected_module_id,
                                     Some(module.id),
-                                    &module.name,
+                                    module.name,
                                 );
                             }
                         });
@@ -556,7 +672,7 @@ impl TimelineV2 {
                         .show_ui(ui, |ui| {
                             for module in modules {
                                 if ui
-                                    .selectable_label(block.module_id == module.id, &module.name)
+                                    .selectable_label(block.module_id == module.id, module.name)
                                     .clicked()
                                 {
                                     block.module_id = module.id;

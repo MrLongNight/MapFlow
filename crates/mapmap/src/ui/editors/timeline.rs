@@ -13,7 +13,7 @@ pub struct TimelineContext<'a> {
 }
 
 /// Renders the timeline panel.
-pub fn show(ctx: &Context, context: TimelineContext) {
+pub fn show(ctx: &Context, mut context: TimelineContext) {
     if !context.ui_state.show_timeline {
         return;
     }
@@ -34,28 +34,31 @@ pub fn show(ctx: &Context, context: TimelineContext) {
             });
             ui.separator();
 
-            let timeline_modules = context
-                .state
+            let state = &mut context.state;
+            let animator = std::sync::Arc::make_mut(&mut state.effect_animator);
+            let timeline_modules = state
                 .module_manager
                 .modules()
                 .iter()
                 .map(|m| mapmap_ui::TimelineModule {
                     id: m.id,
-                    name: m.name.clone(),
+                    // Optimization: Borrow name string to prevent allocation overhead in UI hot loop.
+                    name: &m.name,
                 })
                 .collect::<Vec<_>>();
 
-            if let Some(action) = context.ui_state.timeline_panel.ui(
-                ui,
-                context.state.effect_animator_mut(),
-                &timeline_modules,
-            ) {
+            if let Some(action) =
+                context
+                    .ui_state
+                    .timeline_panel
+                    .ui(ui, animator, &timeline_modules)
+            {
                 use mapmap_ui::TimelineAction;
                 match action {
-                    TimelineAction::Play => context.state.effect_animator_mut().play(),
-                    TimelineAction::Pause => context.state.effect_animator_mut().pause(),
-                    TimelineAction::Stop => context.state.effect_animator_mut().stop(),
-                    TimelineAction::Seek(t) => context.state.effect_animator_mut().seek(t as f64),
+                    TimelineAction::Play => animator.play(),
+                    TimelineAction::Pause => animator.pause(),
+                    TimelineAction::Stop => animator.stop(),
+                    TimelineAction::Seek(t) => animator.seek(t as f64),
                     TimelineAction::SelectModule(module_id) => {
                         context
                             .ui_state

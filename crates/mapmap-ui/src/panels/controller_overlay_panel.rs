@@ -3,8 +3,10 @@
 //! Visual representation of the Ecler NUO 4 (or other MIDI controllers)
 //! with live state visualization and MIDI Learn functionality.
 
+#[allow(unused_imports)]
 use egui::{Color32, Pos2, Rect, Response, Sense, Stroke, TextureHandle, Ui, Vec2};
 
+#[allow(unused_imports)]
 use crate::config::{MidiAssignment, MidiAssignmentTarget, UserConfig};
 
 #[cfg(feature = "midi")]
@@ -13,6 +15,8 @@ use mapmap_control::midi::{
     MidiLearnManager, MidiMessage,
 };
 use mapmap_control::target::ControlTarget;
+use mapmap_core::runtime_paths;
+#[allow(unused_imports)]
 use std::collections::{HashMap, HashSet};
 
 #[allow(dead_code)]
@@ -64,9 +68,11 @@ pub struct ControllerOverlayPanel {
     pub last_active_time: Option<std::time::Instant>,
 
     /// Input field for Streamer.bot function
+    #[allow(dead_code)]
     streamerbot_function: String,
 
     /// Input field for Mixxx function
+    #[allow(dead_code)]
     mixxx_function: String,
 
     /// Show element labels
@@ -80,9 +86,11 @@ pub struct ControllerOverlayPanel {
     show_midi_info: bool,
 
     /// Selected element for editing
+    #[allow(dead_code)]
     selected_element: Option<String>,
 
     /// Hovered element
+    #[allow(dead_code)]
     hovered_element: Option<String>,
 
     /// Panel is expanded
@@ -107,9 +115,11 @@ pub struct ControllerOverlayPanel {
     pub is_edit_mode: bool,
 
     /// Clipboard for element size (width, height)
+    #[allow(dead_code)]
     clipboard_size: Option<[f32; 2]>,
 
     /// Loaded assets
+    #[allow(dead_code)]
     assets: HashMap<String, TextureHandle>,
 }
 
@@ -169,10 +179,8 @@ impl ControllerOverlayPanel {
         // Load Background
         if self.background_texture.is_none() {
             let bg_paths = [
-                "resources/controllers/ecler_nuo4/background.png",
-                "resources/controllers/ecler_nuo4/background.jpg",
-                "../resources/controllers/ecler_nuo4/background.png",
-                "../resources/controllers/ecler_nuo4/background.jpg",
+                runtime_paths::resource_path("controllers/ecler_nuo4/background.png"),
+                runtime_paths::resource_path("controllers/ecler_nuo4/background.jpg"),
             ];
             if let Some(tex) = self.load_texture_from_candidates(ctx, &bg_paths, "mixer_background")
             {
@@ -193,10 +201,9 @@ impl ControllerOverlayPanel {
 
             for asset_name in needed {
                 if !self.assets.contains_key(&asset_name) {
-                    let paths = [
-                        format!("resources/controllers/ecler_nuo4/{}", asset_name),
-                        format!("../resources/controllers/ecler_nuo4/{}", asset_name),
-                    ];
+                    let paths = [runtime_paths::resource_path(
+                        std::path::Path::new("controllers/ecler_nuo4").join(&asset_name),
+                    )];
                     if let Some(tex) = self.load_texture_from_candidates(ctx, &paths, &asset_name) {
                         self.assets.insert(asset_name, tex);
                     }
@@ -205,14 +212,14 @@ impl ControllerOverlayPanel {
         }
     }
 
-    fn load_texture_from_candidates<S: AsRef<str>>(
+    fn load_texture_from_candidates<P: AsRef<std::path::Path>>(
         &self,
         ctx: &egui::Context,
-        paths: &[S],
+        paths: &[P],
         name: &str,
     ) -> Option<TextureHandle> {
-        for path_str in paths {
-            let path = std::path::Path::new(path_str.as_ref());
+        for path in paths {
+            let path = path.as_ref();
             if path.exists() {
                 if let Ok(image_data) = std::fs::read(path) {
                     if let Ok(img) = image::load_from_memory(&image_data) {
@@ -598,6 +605,7 @@ impl ControllerOverlayPanel {
     }
 
     /// Show the visual overlay with mixer background
+    #[allow(unused_variables)]
     fn show_overlay_view(&mut self, ui: &mut Ui, assignments: &[MidiAssignment]) {
         let (base_w, base_h) = if let Some(tex) = &self.background_texture {
             let size = tex.size();
@@ -1008,26 +1016,20 @@ impl ControllerOverlayPanel {
     fn save_elements(&self) {
         #[cfg(feature = "midi")]
         if let Some(elements) = &self.elements {
-            let paths = [
-                "resources/controllers/ecler_nuo4/elements.json",
-                "../resources/controllers/ecler_nuo4/elements.json",
-            ];
-
-            for path_str in paths {
-                let path = std::path::Path::new(path_str);
-                if path.exists() {
-                    match serde_json::to_string_pretty(elements) {
-                        Ok(json) => {
-                            if let Err(e) = std::fs::write(path, json) {
-                                tracing::error!("Failed to save elements to {:?}: {}", path, e);
-                            } else {
-                                tracing::info!("Saved elements to {:?}", path);
-                            }
+            if let Some(path) =
+                runtime_paths::existing_resource_path("controllers/ecler_nuo4/elements.json")
+            {
+                match serde_json::to_string_pretty(elements) {
+                    Ok(json) => {
+                        if let Err(e) = std::fs::write(&path, json) {
+                            tracing::error!("Failed to save elements to {:?}: {}", path, e);
+                        } else {
+                            tracing::info!("Saved elements to {:?}", path);
                         }
-                        Err(e) => tracing::error!("Failed to serialize elements: {}", e),
                     }
-                    return;
+                    Err(e) => tracing::error!("Failed to serialize elements: {}", e),
                 }
+                return;
             }
             tracing::error!("Could not find elements.json to save to.");
         }
@@ -1076,6 +1078,7 @@ impl ControllerOverlayPanel {
         ui.separator();
 
         // Element table
+        #[allow(unused_mut)]
         let mut element_to_remove: Option<String> = None;
 
         egui::ScrollArea::vertical().show(ui, |ui| {
@@ -1144,6 +1147,7 @@ impl ControllerOverlayPanel {
 }
 
 /// Get current time in seconds for animations
+#[allow(dead_code)]
 fn ui_time_seconds() -> f64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)

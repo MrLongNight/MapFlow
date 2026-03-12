@@ -14,6 +14,14 @@ use tracing::{error, info};
 pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
     let actions = app.ui_state.take_actions();
     let mut needs_sync = false;
+    let visibility_before = (
+        app.ui_state.show_toolbar,
+        app.ui_state.show_left_sidebar,
+        app.ui_state.show_inspector,
+        app.ui_state.show_timeline,
+        app.ui_state.show_media_browser,
+        app.ui_state.show_module_canvas,
+    );
 
     for action in actions {
         match action {
@@ -99,13 +107,13 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 app.ui_state.show_controller_overlay = !app.ui_state.show_controller_overlay;
             }
             UIAction::ResetLayout => {
-                app.ui_state.show_left_sidebar = true;
-                app.ui_state.show_timeline = true;
-                app.ui_state.show_inspector = true;
-                app.ui_state.show_media_browser = true;
-                app.ui_state.show_module_canvas = false;
+                let active_layout_id = app.ui_state.user_config.active_layout_id.clone();
+                if let Some(layout) = app.ui_state.user_config.active_layout_mut() {
+                    *layout = mapmap_ui::core::config::LayoutProfile::default_profile();
+                    layout.id = active_layout_id;
+                }
+                app.ui_state.apply_active_layout();
                 app.ui_state.show_stats = true;
-                app.ui_state.show_toolbar = true;
                 app.ui_state.show_master_controls = true;
             }
             UIAction::Play => {
@@ -349,6 +357,11 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 if let Err(e) = receiver.connect(&source) {
                     error!("Failed to connect to NDI source: {}", e);
                 }
+            }
+            #[cfg(feature = "ndi")]
+            UIAction::DisconnectNdiSource { part_id } => {
+                info!("Disconnecting NDI source from part {}", part_id);
+                app.ndi_receivers.remove(&part_id);
             }
             UIAction::SetMidiAssignment(element_id, target_id) => {
                 #[cfg(feature = "midi")]
@@ -653,6 +666,20 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
     // Also process implicit MCP actions that were sent via UI actions?
     // The loop above already handles UI -> MCP Sender calls, and handle_mcp_actions pulls from Receiver.
     // So this is correct.
+
+    let visibility_after = (
+        app.ui_state.show_toolbar,
+        app.ui_state.show_left_sidebar,
+        app.ui_state.show_inspector,
+        app.ui_state.show_timeline,
+        app.ui_state.show_media_browser,
+        app.ui_state.show_module_canvas,
+    );
+
+    if visibility_before != visibility_after {
+        app.ui_state.sync_runtime_to_active_layout();
+        let _ = app.ui_state.user_config.save();
+    }
 
     Ok(needs_sync)
 }

@@ -325,6 +325,12 @@ impl ControlManager {
 
     /// Apply a control change
     pub fn apply_control(&mut self, target: ControlTarget, value: ControlValue) {
+        // SECURITY: Validate target to prevent injection/traversal in names
+        if let Err(e) = target.validate() {
+            warn!("Security violation in apply_control target: {}", e);
+            return;
+        }
+
         // SECURITY: Validate potential file paths to prevent traversal
         if let Err(e) = self.validate_security(&target, &value) {
             warn!("Security violation in apply_control: {}", e);
@@ -508,6 +514,14 @@ mod tests {
         manager.apply_control(
             ControlTarget::EffectParameter(0, "file_path".to_string()),
             ControlValue::String("../secret.txt".to_string()),
+        );
+        assert!(!called.load(std::sync::atomic::Ordering::SeqCst));
+        called.store(false, std::sync::atomic::Ordering::SeqCst);
+
+        // Test invalid target name (path traversal in name)
+        manager.apply_control(
+            ControlTarget::Custom("../secret".to_string()),
+            ControlValue::Float(1.0),
         );
         assert!(!called.load(std::sync::atomic::Ordering::SeqCst));
     }

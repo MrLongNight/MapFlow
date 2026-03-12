@@ -49,6 +49,10 @@
   color: "5319E7"
   description: "Pull request created by Jules AI agent"
 
+- name: "Todo-UserISU"
+  color: "d4c5f9"
+  description: "Waiting for user approval before Jules dispatch"
+
 # Phase Labels
 - name: "phase-0: foundation"
   color: "1d76db"

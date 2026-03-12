@@ -581,82 +581,8 @@ pub fn render_inspector_for_part(
                                     ui.end_row();
                                 });
                         }
-                        #[cfg(feature = "ndi")]
-                        SourceType::NdiInput { source_name } => {
-                            ui.label("\u{1F4E1} NDI Input");
-                            if source_name.is_none() && canvas.ndi_sources.is_empty() && canvas.ndi_discovery_rx.is_none()
-                            {
-                                ui.vertical_centered(|ui| {
-                                    ui.add_space(10.0);
-                                    if ui.add(egui::Button::new("🔍 Discover Sources").min_size(egui::vec2(150.0, 30.0))).clicked() {
-                                        let (tx, rx) = std::sync::mpsc::channel();
-                                        canvas.ndi_discovery_rx = Some(rx);
-                                        mapmap_io::ndi::NdiReceiver::discover_sources_async(tx);
-                                        canvas.ndi_sources.clear();
-                                        ui.ctx().request_repaint();
-                                    }
-                                    ui.label(egui::RichText::new("No NDI source selected").weak().italics());
-                                    ui.add_space(10.0);
-                                });
-                            } else {
-                                let display_name = source_name.clone().unwrap_or_else(|| "Not Connected".to_string());
-                                ui.label(format!("Current: {}", display_name));
-                                ui.horizontal(|ui| {
-                                    if ui.button("🔍 Discover Sources").clicked() {
-                                        let (tx, rx) = std::sync::mpsc::channel();
-                                        canvas.ndi_discovery_rx = Some(rx);
-                                        mapmap_io::ndi::NdiReceiver::discover_sources_async(tx);
-                                        canvas.ndi_sources.clear();
-                                        ui.ctx().request_repaint();
-                                    }
-                                    if let Some(rx) = &canvas.ndi_discovery_rx {
-                                        if let Ok(sources) = rx.try_recv() {
-                                            canvas.ndi_sources = sources;
-                                            canvas.ndi_discovery_rx = None;
-                                        }
-                                    }
-                                    if canvas.ndi_discovery_rx.is_some() {
-                                        ui.spinner();
-                                        ui.label("Searching...");
-                                    }
-                                });
-                                if !canvas.ndi_sources.is_empty() {
-                                    ui.separator();
-                                    ui.label("Available Sources:");
-                                    egui::ComboBox::from_id_salt("ndi_source_select").selected_text(display_name.clone()).show_ui(ui, |ui| {
-                                        if ui.selectable_label(source_name.is_none(), "❌ None (Disconnect)").clicked() { *source_name = None; }
-                                        for ndi_source in &canvas.ndi_sources {
-                                            let selected = source_name.as_ref() == Some(&ndi_source.name);
-                                            if ui.selectable_label(selected, &ndi_source.name).clicked() {
-                                                *source_name = Some(ndi_source.name.clone());
-                                                canvas.pending_ndi_connect = Some((part_id, ndi_source.clone()));
-                                            }
-                                        }
-                                    });
-                                    ui.label(format!("Found {} source(s)", canvas.ndi_sources.len()));
-                                } else if canvas.ndi_discovery_rx.is_none() {
-                                    ui.label("Click 'Discover' to find NDI sources");
-                                }
-                            }
-                        }
-                        #[cfg(not(feature = "ndi"))]
-                        SourceType::NdiInput { source_name } => {
-                            ui.label("\u{1F4E1} NDI Input");
-                            if source_name.is_none() {
-                                ui.vertical_centered(|ui| {
-                                    ui.add_space(10.0);
-                                    let btn = ui.add_enabled(false, egui::Button::new("🔍 Discover Sources").min_size(egui::vec2(150.0, 30.0)));
-                                    btn.on_hover_text("NDI feature disabled in build");
-                                    ui.label(egui::RichText::new("No NDI source selected").weak().italics());
-                                    ui.add_space(10.0);
-                                });
-                            } else {
-                                let display_name = source_name.clone().unwrap();
-                                ui.label(format!("Current: {}", display_name));
-                                ui.horizontal(|ui| {
-                                    ui.add_enabled(false, egui::Button::new("🔍 Discover Sources")).on_hover_text("NDI feature disabled in build");
-                                });
-                            }
+                        SourceType::NdiInput { .. } => {
+                            // Implemented in source.rs
                         }
                         #[cfg(target_os = "windows")]
                         SourceType::SpoutInput { sender_name } => {

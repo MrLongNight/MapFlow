@@ -45,6 +45,7 @@ pub mod module;
 pub mod module_eval;
 pub mod oscillator;
 pub mod recent_effect_configs;
+pub mod runtime_paths;
 pub mod shader_graph;
 pub mod state;
 pub mod trigger_system;

@@ -2,28 +2,26 @@ name: "CICD-DevFlow: Job01 Validation"
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
     paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'assets/**'
-      - '.vscode/**'
+      - "**.md"
+      - "docs/**"
+      - "assets/**"
+      - ".vscode/**"
   pull_request:
-    # Required status checks must always be created for PR heads.
-    # Trigger-level path filters can leave branch protection waiting forever.
   workflow_dispatch:
     inputs:
       toolchain:
-        description: 'Rust toolchain version'
+        description: "Rust toolchain version"
         required: true
-        default: 'stable'
+        default: "stable"
   workflow_call:
     inputs:
       toolchain:
-        description: 'Rust toolchain version'
+        description: "Rust toolchain version"
         required: false
         type: string
-        default: 'stable'
+        default: "stable"
 
 permissions:
   contents: write
@@ -72,9 +70,13 @@ jobs:
       - name: Install Tools
         uses: cargo-bins/cargo-binstall@main
       - name: Install cargo-deny
-        run: cargo binstall cargo-deny --no-confirm
+        run: |
+          cargo binstall -y cargo-deny --force
+          test -x "${CARGO_HOME}/bin/cargo-deny"
+          "${CARGO_HOME}/bin/cargo-deny" --version
       - name: Run Advisory Check
-        run: cargo deny check advisories
+        run: |
+          "${CARGO_HOME}/bin/cargo-deny" check advisories
 
   build-linux:
     name: "Build & Test (Linux)"
@@ -100,8 +102,8 @@ jobs:
     name: "Build & Test (Windows)"
     runs-on: windows-latest
     if: |
-      github.ref == 'refs/heads/main' ||
-      contains(github.event.pull_request.labels.*.name, 'test-windows')
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'test-windows'))
     steps:
       - uses: actions/checkout@v5
       - name: Set up Rust
@@ -113,10 +115,24 @@ jobs:
       - name: Build
         run: cargo build --release --verbose --no-default-features --features "audio"
 
+  build-macos:
+    name: "Build (macOS Beta)"
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ inputs.toolchain || github.event.inputs.toolchain || 'stable' }}
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+      - name: Build
+        run: cargo build --release -p mapmap --no-default-features --features "macos-beta"
+
   validation-success:
     name: "Validation Success"
     runs-on: ubuntu-latest
-    needs: [quality, security, build-linux, build-windows]
+    needs: [quality, security, build-linux, build-windows, build-macos]
     if: always()
     steps:
       - name: Check Results
@@ -125,9 +141,56 @@ jobs:
           echo "Security: ${{ needs.security.result }}"
           echo "Linux: ${{ needs.build-linux.result }}"
           echo "Windows: ${{ needs.build-windows.result }}"
+          echo "macOS: ${{ needs.build-macos.result }}"
 
           if [ "${{ needs.quality.result }}" != "success" ]; then exit 1; fi
           if [ "${{ needs.security.result }}" != "success" ]; then exit 1; fi
           if [ "${{ needs.build-linux.result }}" != "success" ]; then exit 1; fi
           if [ "${{ needs.build-windows.result }}" != "success" ] && [ "${{ needs.build-windows.result }}" != "skipped" ]; then exit 1; fi
-          echo "✅ All Validation Checks Passed"
+          if [ "${{ needs.build-macos.result }}" != "success" ]; then exit 1; fi
+          echo "All Validation Checks Passed"
+
+  publish-required-statuses:
+    name: "Publish Required Statuses"
+    runs-on: ubuntu-latest
+    needs: [quality, security, build-linux, validation-success]
+    if: always() && github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Mirror Required Checks To Commit Statuses
+        uses: actions/github-script@v7
+        env:
+          QUALITY_RESULT: ${{ needs.quality.result }}
+          SECURITY_RESULT: ${{ needs.security.result }}
+          BUILD_LINUX_RESULT: ${{ needs.build-linux.result }}
+          VALIDATION_SUCCESS_RESULT: ${{ needs.validation-success.result }}
+        with:
+          script: |
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            const resultToState = (result) => {
+              switch (result) {
+                case 'success':
+                  return 'success';
+                case 'cancelled':
+                  return 'error';
+                default:
+                  return 'failure';
+              }
+            };
+            const contexts = [
+              ['Quality Gate (Format & Lint)', process.env.QUALITY_RESULT],
+              ['Security Scan', process.env.SECURITY_RESULT],
+              ['Build & Test (Linux)', process.env.BUILD_LINUX_RESULT],
+              ['Validation Success', process.env.VALIDATION_SUCCESS_RESULT],
+            ];
+
+            for (const [statusContext, result] of contexts) {
+              await github.rest.repos.createCommitStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                sha: context.sha,
+                context: statusContext,
+                state: resultToState(result),
+                target_url: runUrl,
+                description: `workflow_dispatch result: ${result}`,
+              });
+            }

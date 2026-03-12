@@ -177,7 +177,7 @@ xcode-select --install
 # Install Homebrew (if not already installed)
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-# Install FFmpeg (optional, for video playback)
+# Optional for later media work, not required for the current beta baseline
 brew install ffmpeg
 ```
 
@@ -188,12 +188,19 @@ brew install ffmpeg
 git clone https://github.com/MrLongNight/MapFlow.git
 cd MapFlow
 
-# Build in release mode
-cargo build --release
+# Build the current macOS beta baseline
+cargo build --release -p mapmap --no-default-features --features macos-beta
 
 # Run the application
-cargo run --release
+cargo run --release -p mapmap --no-default-features --features macos-beta
+
+# Package a .app bundle from the built binary
+bash scripts/mapflow/package-macos-app.sh 0.2.0
 ```
+
+Notes:
+- The current macOS beta build uses the core UI and rendering path without the default Windows/Linux feature set.
+- The packaging script creates `target/release/MapFlow.app` and copies runtime `assets/` and `resources/` into the bundle.
 
 ---
 

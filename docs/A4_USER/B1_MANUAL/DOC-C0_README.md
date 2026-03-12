@@ -10,3 +10,4 @@ Detaillierte Anleitungen zur Bedienung von MapFlow.
 *   [**DOC-C4_UI_OVERVIEW.md**](./DOC-C4_UI_OVERVIEW.md): Erklärungen zu allen Panels und Reglern.
 *   [**DOC-C5_FEATURES.md**](./DOC-C5_FEATURES.md): Übersicht der Kernfunktionen.
 *   [**DOC-C6_SHORTCUTS.md**](./DOC-C6_SHORTCUTS.md): Effizientes Arbeiten via Tastatur.
+*   [**DOC-C7_MIDI_CONTROL.md**](./DOC-C7_MIDI_CONTROL.md): Einrichtung und Verwendung von MIDI-Controllern.

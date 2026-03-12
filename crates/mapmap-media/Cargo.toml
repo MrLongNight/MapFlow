@@ -10,7 +10,7 @@ repository.workspace = true
 [features]
 default = []
 ffmpeg = ["ffmpeg-next", "ffmpeg-sys-next"]
-libmpv = ["dep:libmpv2"] # MPV-based video playback
+libmpv = ["dep:libmpv2"]
 hap = ["snap", "ffmpeg"]
 
 [dependencies]

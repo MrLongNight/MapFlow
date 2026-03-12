@@ -3,11 +3,23 @@
 //! Phase 3: Effects Pipeline
 //! Provides keyframe animation for all animatable properties
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::BTreeMap;
 
 /// Time in seconds
 pub type TimePoint = f64;
+
+/// Playback behavior mode
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub enum PlaybackMode {
+    /// Loop playback infinitely
+    #[default]
+    Loop,
+    /// Play back and forth
+    PingPong,
+    /// Play once and stop
+    OneShot,
+}
 
 /// Interpolation mode for keyframes
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -253,7 +265,7 @@ impl AnimationTrack {
 }
 
 /// Animation clip - collection of tracks
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct AnimationClip {
     /// Name of the clip
     pub name: String,
@@ -261,8 +273,96 @@ pub struct AnimationClip {
     pub tracks: Vec<AnimationTrack>,
     /// Total duration of the clip in seconds
     pub duration: TimePoint,
-    /// Whether the animation loops
+    /// Legacy looping flag (use playback_mode)
     pub looping: bool,
+    /// Playback mode (Loop, PingPong, OneShot)
+    pub playback_mode: PlaybackMode,
+    /// Whether to play in reverse
+    pub reverse: bool,
+    /// In point (start time)
+    pub in_point: Option<TimePoint>,
+    /// Out point (end time)
+    pub out_point: Option<TimePoint>,
+    /// Sync to BPM
+    pub bpm_sync: bool,
+    /// Target BPM
+    pub bpm: f32,
+    /// Number of beats this clip takes
+    pub beats: f32,
+}
+
+#[derive(Debug, Deserialize)]
+struct AnimationClipSerde {
+    name: String,
+    tracks: Vec<AnimationTrack>,
+    duration: TimePoint,
+    looping: bool,
+    #[serde(default, deserialize_with = "deserialize_optional_playback_mode")]
+    playback_mode: Option<PlaybackMode>,
+    #[serde(default)]
+    reverse: bool,
+    #[serde(default)]
+    in_point: Option<TimePoint>,
+    #[serde(default)]
+    out_point: Option<TimePoint>,
+    #[serde(default)]
+    bpm_sync: bool,
+    #[serde(default = "default_animation_bpm")]
+    bpm: f32,
+    #[serde(default = "default_animation_beats")]
+    beats: f32,
+}
+
+impl From<AnimationClipSerde> for AnimationClip {
+    fn from(value: AnimationClipSerde) -> Self {
+        let playback_mode = value.playback_mode.unwrap_or({
+            if value.looping {
+                PlaybackMode::Loop
+            } else {
+                PlaybackMode::OneShot
+            }
+        });
+
+        Self {
+            name: value.name,
+            tracks: value.tracks,
+            duration: value.duration,
+            looping: value.looping,
+            playback_mode,
+            reverse: value.reverse,
+            in_point: value.in_point,
+            out_point: value.out_point,
+            bpm_sync: value.bpm_sync,
+            bpm: value.bpm,
+            beats: value.beats,
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for AnimationClip {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        AnimationClipSerde::deserialize(deserializer).map(Into::into)
+    }
+}
+
+fn deserialize_optional_playback_mode<'de, D>(
+    deserializer: D,
+) -> Result<Option<PlaybackMode>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    PlaybackMode::deserialize(deserializer).map(Some)
+}
+
+fn default_animation_bpm() -> f32 {
+    120.0
+}
+
+fn default_animation_beats() -> f32 {
+    4.0
 }
 
 impl AnimationClip {
@@ -273,6 +373,13 @@ impl AnimationClip {
             tracks: Vec::new(),
             duration: 10.0, // Default 10 seconds
             looping: false,
+            playback_mode: PlaybackMode::Loop,
+            reverse: false,
+            in_point: None,
+            out_point: None,
+            bpm_sync: false,
+            bpm: 120.0,
+            beats: 4.0,
         }
     }
 
@@ -293,7 +400,8 @@ impl AnimationClip {
 
     /// Evaluate all tracks at a given time
     pub fn evaluate(&self, time: TimePoint) -> Vec<(String, AnimValue)> {
-        let wrapped_time = if self.looping && self.duration > 0.0 {
+        let loops = self.looping || self.playback_mode == PlaybackMode::Loop;
+        let wrapped_time = if loops && self.duration > 0.0 {
             time % self.duration
         } else {
             time.min(self.duration)
@@ -321,7 +429,7 @@ impl AnimationClip {
 }
 
 /// Animation player state
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct AnimationPlayer {
     /// The animation clip being played
     pub clip: AnimationClip,
@@ -329,17 +437,69 @@ pub struct AnimationPlayer {
     pub current_time: TimePoint,
     /// Whether playback is active
     pub playing: bool,
+    /// Direction (-1.0 for backward, 1.0 for forward)
+    pub current_direction: f32,
     /// Playback speed multiplier (1.0 = normal)
     pub speed: f32,
+}
+
+#[derive(Debug, Deserialize)]
+struct AnimationPlayerSerde {
+    clip: AnimationClip,
+    current_time: TimePoint,
+    playing: bool,
+    #[serde(default, deserialize_with = "deserialize_optional_current_direction")]
+    current_direction: Option<f32>,
+    #[serde(default = "default_animation_speed")]
+    speed: f32,
+}
+
+impl From<AnimationPlayerSerde> for AnimationPlayer {
+    fn from(value: AnimationPlayerSerde) -> Self {
+        let current_direction =
+            value
+                .current_direction
+                .unwrap_or(if value.clip.reverse { -1.0 } else { 1.0 });
+
+        Self {
+            clip: value.clip,
+            current_time: value.current_time,
+            playing: value.playing,
+            current_direction,
+            speed: value.speed,
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for AnimationPlayer {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        AnimationPlayerSerde::deserialize(deserializer).map(Into::into)
+    }
+}
+
+fn deserialize_optional_current_direction<'de, D>(deserializer: D) -> Result<Option<f32>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    f32::deserialize(deserializer).map(Some)
+}
+
+fn default_animation_speed() -> f32 {
+    1.0
 }
 
 impl AnimationPlayer {
     /// Create a new animation player
     pub fn new(clip: AnimationClip) -> Self {
+        let dir = if clip.reverse { -1.0 } else { 1.0 };
         Self {
             clip,
             current_time: 0.0,
             playing: false,
+            current_direction: dir,
             speed: 1.0,
         }
     }
@@ -347,6 +507,25 @@ impl AnimationPlayer {
     /// Play the animation
     pub fn play(&mut self) {
         self.playing = true;
+
+        let in_pt = self.clip.in_point.unwrap_or(0.0).max(0.0);
+        let out_pt = self
+            .clip
+            .out_point
+            .unwrap_or(self.clip.duration)
+            .min(self.clip.duration)
+            .max(in_pt + 0.001);
+
+        // When we start playing, if we're at the very end of the bounds in the direction we want to go, loop around.
+        if self.clip.reverse && self.current_time <= in_pt {
+            self.current_time = out_pt;
+            self.current_direction = -1.0;
+        } else if !self.clip.reverse && self.current_time >= out_pt {
+            self.current_time = in_pt;
+            self.current_direction = 1.0;
+        } else if self.current_direction == 0.0 {
+            self.current_direction = if self.clip.reverse { -1.0 } else { 1.0 };
+        }
     }
 
     /// Pause the animation
@@ -357,21 +536,81 @@ impl AnimationPlayer {
     /// Stop and reset the animation
     pub fn stop(&mut self) {
         self.playing = false;
-        self.current_time = 0.0;
+        self.current_direction = if self.clip.reverse { -1.0 } else { 1.0 };
+
+        let in_pt = self.clip.in_point.unwrap_or(0.0).max(0.0);
+        let out_pt = self
+            .clip
+            .out_point
+            .unwrap_or(self.clip.duration)
+            .min(self.clip.duration)
+            .max(in_pt + 0.001);
+
+        self.current_time = if self.clip.reverse { out_pt } else { in_pt };
     }
 
     /// Update the player (call every frame)
     pub fn update(&mut self, delta_time: f64) -> Vec<(String, AnimValue)> {
-        if self.playing {
-            self.current_time += delta_time * self.speed as f64;
+        let in_pt = self.clip.in_point.unwrap_or(0.0).max(0.0);
+        let out_pt = self
+            .clip
+            .out_point
+            .unwrap_or(self.clip.duration)
+            .min(self.clip.duration)
+            .max(in_pt + 0.001);
 
-            if self.clip.looping {
-                if self.current_time >= self.clip.duration {
-                    self.current_time %= self.clip.duration;
+        if self.playing {
+            // Apply reverse strictly if NOT in ping-pong mode
+            if self.clip.playback_mode != PlaybackMode::PingPong {
+                self.current_direction = if self.clip.reverse { -1.0 } else { 1.0 };
+            }
+
+            let bpm_speed_multiplier =
+                if self.clip.bpm_sync && self.clip.bpm > 0.0 && self.clip.beats > 0.0 {
+                    let clip_duration_beats = out_pt - in_pt;
+                    let beat_duration_sec = 60.0 / self.clip.bpm as f64;
+                    let target_duration_sec = beat_duration_sec * self.clip.beats as f64;
+                    if target_duration_sec > 0.0 {
+                        clip_duration_beats / target_duration_sec
+                    } else {
+                        1.0
+                    }
+                } else {
+                    1.0
+                };
+
+            let step = delta_time * self.speed as f64 * bpm_speed_multiplier;
+            self.current_time += step * self.current_direction as f64;
+
+            let is_looping = self.clip.looping || self.clip.playback_mode == PlaybackMode::Loop;
+
+            match self.clip.playback_mode {
+                PlaybackMode::Loop if is_looping => {
+                    if self.current_direction > 0.0 && self.current_time >= out_pt {
+                        self.current_time = in_pt + (self.current_time - out_pt) % (out_pt - in_pt);
+                    } else if self.current_direction < 0.0 && self.current_time <= in_pt {
+                        self.current_time = out_pt - (in_pt - self.current_time) % (out_pt - in_pt);
+                    }
                 }
-            } else if self.current_time >= self.clip.duration {
-                self.current_time = self.clip.duration;
-                self.playing = false;
+                PlaybackMode::PingPong => {
+                    if self.current_time >= out_pt {
+                        self.current_time = out_pt - (self.current_time - out_pt);
+                        self.current_direction = -1.0;
+                    } else if self.current_time <= in_pt {
+                        self.current_time = in_pt + (in_pt - self.current_time);
+                        self.current_direction = 1.0;
+                    }
+                }
+                _ => {
+                    // OneShot or default non-looping
+                    if self.current_direction > 0.0 && self.current_time >= out_pt {
+                        self.current_time = out_pt;
+                        self.playing = false;
+                    } else if self.current_direction < 0.0 && self.current_time <= in_pt {
+                        self.current_time = in_pt;
+                        self.playing = false;
+                    }
+                }
             }
         }
 
@@ -380,7 +619,14 @@ impl AnimationPlayer {
 
     /// Seek to a specific time
     pub fn seek(&mut self, time: TimePoint) {
-        self.current_time = time.clamp(0.0, self.clip.duration);
+        let in_pt = self.clip.in_point.unwrap_or(0.0).max(0.0);
+        let out_pt = self
+            .clip
+            .out_point
+            .unwrap_or(self.clip.duration)
+            .min(self.clip.duration)
+            .max(in_pt + 0.001);
+        self.current_time = time.clamp(in_pt, out_pt);
     }
 }
 
@@ -421,6 +667,81 @@ mod tests {
         let values = clip.evaluate(1.0);
         assert_eq!(values.len(), 1);
         assert_eq!(values[0].0, "x");
+    }
+
+    #[test]
+    fn test_animation_clip_backward_compatibility_with_legacy_loop_flag() {
+        let legacy_clip = r#"
+            (
+                name: "legacy",
+                tracks: [],
+                duration: 2.0,
+                looping: false,
+            )
+        "#;
+
+        let clip: AnimationClip = ron::from_str(legacy_clip)
+            .expect("Should deserialize legacy clip without playback_mode");
+
+        assert!(!clip.looping);
+        assert_eq!(clip.playback_mode, PlaybackMode::OneShot);
+        assert!(!clip.reverse);
+        assert_eq!(clip.in_point, None);
+        assert_eq!(clip.out_point, None);
+        assert!(!clip.bpm_sync);
+        assert_eq!(clip.bpm, 120.0);
+        assert_eq!(clip.beats, 4.0);
+    }
+
+    #[test]
+    fn test_animation_clip_preserves_explicit_playback_mode() {
+        let clip_with_mode = r#"
+            (
+                name: "explicit",
+                tracks: [],
+                duration: 2.0,
+                looping: true,
+                playback_mode: PingPong,
+                reverse: false,
+                in_point: None,
+                out_point: None,
+                bpm_sync: false,
+                bpm: 120.0,
+                beats: 4.0,
+            )
+        "#;
+
+        let clip: AnimationClip = ron::from_str(clip_with_mode)
+            .expect("Should deserialize clip with explicit playback_mode");
+
+        assert!(clip.looping);
+        assert_eq!(clip.playback_mode, PlaybackMode::PingPong);
+    }
+
+    #[test]
+    fn test_animation_player_backward_compatibility_with_legacy_defaults() {
+        let legacy_player = r#"
+            (
+                clip: (
+                    name: "legacy",
+                    tracks: [],
+                    duration: 2.0,
+                    looping: false,
+                ),
+                current_time: 0.5,
+                playing: false,
+                speed: 1.0,
+            )
+        "#;
+
+        let player: AnimationPlayer =
+            ron::from_str(legacy_player).expect("Should deserialize legacy player");
+
+        assert_eq!(player.clip.playback_mode, PlaybackMode::OneShot);
+        assert_eq!(player.current_direction, 1.0);
+        assert_eq!(player.current_time, 0.5);
+        assert!(!player.playing);
+        assert_eq!(player.speed, 1.0);
     }
 
     #[test]

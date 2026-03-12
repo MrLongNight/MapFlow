@@ -289,3 +289,95 @@ impl Default for LayerManager {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_manager_with_composition() {
+        let comp = Composition {
+            master_opacity: 0.5,
+            ..Default::default()
+        };
+        let manager = LayerManager::with_composition(comp.clone());
+        assert_eq!(manager.composition.master_opacity, 0.5);
+    }
+
+    #[test]
+    fn test_create_group() {
+        let mut manager = LayerManager::new();
+        let id = manager.create_group("Group 1");
+        let group = manager.get_layer(id).unwrap();
+        assert!(group.is_group);
+    }
+
+    #[test]
+    fn test_remove_nonexistent_layer() {
+        let mut manager = LayerManager::new();
+        assert!(manager.remove_layer(999).is_none());
+    }
+
+    #[test]
+    fn test_swap_nonexistent_layers() {
+        let mut manager = LayerManager::new();
+        let id1 = manager.create_layer("Layer 1");
+
+        assert!(!manager.swap_layers(id1, 999));
+        assert!(!manager.swap_layers(999, id1));
+        assert!(!manager.swap_layers(888, 999));
+    }
+
+    #[test]
+    fn test_move_layer_to_out_of_bounds() {
+        let mut manager = LayerManager::new();
+        let id = manager.create_layer("Layer 1");
+
+        assert!(!manager.move_layer_to(id, 5));
+        assert!(!manager.move_layer_to(999, 0));
+    }
+
+    #[test]
+    fn test_move_layer_up_down_extremes() {
+        let mut manager = LayerManager::new();
+        let id1 = manager.create_layer("Layer 1");
+        let id2 = manager.create_layer("Layer 2");
+
+        // Layer 2 is at index 1 (top of stack). Moving up should fail.
+        assert!(!manager.move_layer_up(id2));
+
+        // Layer 1 is at index 0 (bottom of stack). Moving down should fail.
+        assert!(!manager.move_layer_down(id1));
+
+        // Non-existent layer
+        assert!(!manager.move_layer_up(999));
+        assert!(!manager.move_layer_down(999));
+    }
+
+    #[test]
+    fn test_duplicate_nonexistent_layer() {
+        let mut manager = LayerManager::new();
+        assert!(manager.duplicate_layer(999).is_none());
+    }
+
+    #[test]
+    fn test_rename_nonexistent_layer() {
+        let mut manager = LayerManager::new();
+        assert!(!manager.rename_layer(999, "New Name"));
+    }
+
+    #[test]
+    fn test_reparent_to_self() {
+        let mut manager = LayerManager::new();
+        let id = manager.create_layer("Layer 1");
+        manager.reparent_layer(id, Some(id));
+        assert_eq!(manager.get_layer(id).unwrap().parent_id, None);
+    }
+
+    #[test]
+    fn test_get_effective_speed() {
+        let mut manager = LayerManager::new();
+        manager.composition.master_speed = 2.5;
+        assert_eq!(manager.get_effective_speed(), 2.5);
+    }
+}
