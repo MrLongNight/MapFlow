@@ -79,3 +79,7 @@
 ## 2024-05-24 – [Empty State Visibility]
 **Learning:** Plain `ui.label("No data")` blends in with regular data points, creating visual confusion about whether data is missing or if "No data" is the actual value.
 **Action:** Enforce empty/no data states to use `egui::RichText::new("...").weak().italics()` across all modules (e.g., "No matching nodes found.", "No MIDI devices"). This provides immediate visual differentiation.
+
+## 2024-05-24 – [Empty State Consistency Update]
+**Learning:** Several empty/no data states in various panels and inspectors lacked the italicization required to clearly differentiate them from standard data points.
+**Action:** Applied `.weak().italics()` to these states across `layer.rs`, `source.rs`, `mapping_panel.rs`, and `effect_chain_panel.rs` to enforce consistency with the existing Cyber Dark theme guidelines.
