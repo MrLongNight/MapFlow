@@ -52,21 +52,9 @@ Dieses Dokument dient der zentralen Erfassung von Architektur-Problemen, monolit
 | Crate | Maßnahme | Status | Ergebnis |
 | :--- | :--- | :---: | :--- |
 | **mapmap-core** | TODO Resolution & Graph Validation | ✅ | Zyklus-Check & Auto-Disconnect implementiert. Clippy sauber. |
-<<<<<<< HEAD
-<<<<<<< HEAD
 | **mapmap-io** | NDI Activation & Test Stability | ✅ | NDI-Warnungen entfernt, Projekt-Roundtrip verifiziert. |
 | **mapmap-render** | Paint Image Loading | ✅ | Synchrones Laden von Bildern in GPU-Cache implementiert. |
 | **mapmap-ui** | ID Sync & Clippy Scrub | ✅ | Node-Editor ID-Synchronisation gefixt. Redundante Bindings entfernt. |
-=======
-| **mapmap-io** | NDI Activation & Test Stability | ✅ | NDI-Warnungen entfernt, Projekt-Roundtrip verifiziert. |
-| **mapmap-render** | Paint Image Loading | ✅ | Synchrones Laden von Bildern in GPU-Cache implementiert. |
-| **mapmap-ui** | ID Sync & Clippy Scrub | ✅ | Node-Editor ID-Synchronisation gefixt. Redundante Bindings entfernt. |
->>>>>>> remotes/origin/jules/bolt-optimize-history-vecdeque-15195946004347935531
-=======
-| **mapmap-io** | NDI Activation & Test Stability | ✅ | NDI-Warnungen entfernt, Projekt-Roundtrip verifiziert. |
-| **mapmap-render** | Paint Image Loading | ✅ | Synchrones Laden von Bildern in GPU-Cache implementiert. |
-| **mapmap-ui** | ID Sync & Clippy Scrub | ✅ | Node-Editor ID-Synchronisation gefixt. Redundante Bindings entfernt. |
->>>>>>> origin/jules/ui-muted-empty-states-1-176332392277018225
 | **mapmap-bevy** | Integration Audit | ✅ | Main-Loop und UI-Brücke validiert. |
 | **mapmap-mcp** | Protocol Audit | ✅ | JSON-Schnittstellen für AI-Tools stabilisiert. |
 

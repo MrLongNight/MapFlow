@@ -48,7 +48,6 @@ We want the 0 series to be backward-compatible. That means that a project create
 * **INSTALL**: Instructions to build and install the software.
 * **NEWS**: Release notes for each tag.
 * **README**: The short documentation at the root of the project
-* **TODO**: You can put things to do there, or use GitHub Issues.
 * **images/**: Images part of the GUI.
 * **prototypes/** : Contains prototypes. Please ask the project maintainer before removing some of these.
 * **docs/informations/*.md**: Markdown files to generate the About dialog
