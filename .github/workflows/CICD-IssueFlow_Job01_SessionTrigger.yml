@@ -2,7 +2,7 @@ name: "CICD-IssueFlow: Job01 SessionTrigger"
 
 on:
   issues:
-    types: [opened, labeled]
+    types: [labeled]
   workflow_dispatch:
     inputs:
       issue_number:
@@ -23,7 +23,7 @@ jobs:
   trigger-session:
     name: Start Jules Session
     runs-on: ubuntu-latest
-    if: github.event.label.name == 'jules-task' || contains(github.event.issue.labels.*.name, 'jules-task') || github.event_name == 'workflow_dispatch'
+    if: github.event.label.name == 'jules-task' || github.event_name == 'workflow_dispatch'
 
     concurrency:
       group: issue-flow-session-${{ github.repository }}
@@ -41,10 +41,21 @@ jobs:
           script: |
              if (process.env.JULES_AUTOMATION_ENABLED !== 'true') return;
 
+             const isManualDispatch = context.eventName === 'workflow_dispatch';
              const issueNumber = context.payload.issue?.number || context.payload.inputs?.issue_number;
              if (!issueNumber) { console.log("No issue identified."); return; }
 
              console.log(`🎯 Processing Issue #${issueNumber}`);
+
+             const issue = await github.rest.issues.get({ owner: context.repo.owner, repo: context.repo.repo, issue_number: issueNumber });
+             const issueLabels = issue.data.labels.map((label) => typeof label === 'string' ? label : label.name).filter(Boolean);
+             const hasApprovalLabel = issueLabels.includes('jules-task');
+             const hasUserQueueLabel = issueLabels.includes('Todo-UserISU');
+
+             if (!isManualDispatch && !hasApprovalLabel) {
+               console.log("Issue is not approved for Jules yet.");
+               return;
+             }
 
              // 1. Helper: Check if session exists (Parsing comments)
              const comments = await github.rest.issues.listComments({
@@ -65,13 +76,25 @@ jobs:
                return;
              }
 
+             if (hasUserQueueLabel) {
+               try {
+                 await github.rest.issues.removeLabel({
+                   owner: context.repo.owner,
+                   repo: context.repo.repo,
+                   issue_number: issueNumber,
+                   name: 'Todo-UserISU'
+                 });
+               } catch (error) {
+                 console.log(`Todo-UserISU label not removed: ${error.message}`);
+               }
+             }
+
              // 3. Create Session
              const fetch = globalThis.fetch ?? (await import('node-fetch')).default;
-             const issue = await github.rest.issues.get({ owner: context.repo.owner, repo: context.repo.repo, issue_number: issueNumber });
 
              const endpoint = 'https://jules.googleapis.com/v1alpha/sessions';
              const payload = {
-               prompt: `Issue #${issueNumber}: ${issue.data.title}\n\n${issue.data.body || ''}\n\n---\n**IMPORTANT:** When generating the Pull Request description for this issue-backed task, you MUST include this exact block with the real GitHub issue number:\n## Related Issue\nFixes #${issueNumber}\n\n## Tracking\n- Issue ID: #${issueNumber}\n\nDo not replace the GitHub issue number with a ROADMAP task ID like MF-123.`,
+               prompt: `Issue #${issueNumber}: ${issue.data.title}\n\n${issue.data.body || ''}\n\n---\n**IMPORTANT:** When generating the Pull Request description for this issue-backed task, you MUST include this exact block with the real GitHub issue number:\n## Verlinktes Issue\nFixes #${issueNumber}\n\nDo not replace the GitHub issue number with a ROADMAP task ID like MF-123.`,
                title: `Issue #${issueNumber}: ${issue.data.title}`.substring(0, 100),
                automationMode: 'AUTO_CREATE_PR',
                sourceContext: {
@@ -107,19 +130,4 @@ jobs:
                  body: `🤖 **Jules Session Triggered** — [Open Session](${sessionUrl})`
              });
 
-             // 4. Trigger Monitor
-             try {
-               await github.rest.actions.createWorkflowDispatch({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  workflow_id: 'CICD-IssueFlow_Job02_SessionMonitor.yml',
-                  ref: 'main',
-                  inputs: {
-                    issue_number: String(issueNumber),
-                    session_id: sessionId
-                  }
-               });
-               console.log("Triggered Monitor Workflow.");
-             } catch (e) {
-               console.error("Failed to trigger monitor: " + e.message);
-             }
+             console.log("Session created. Manual monitor workflow remains available if needed.");

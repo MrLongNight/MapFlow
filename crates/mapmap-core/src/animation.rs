@@ -3,7 +3,7 @@
 //! Phase 3: Effects Pipeline
 //! Provides keyframe animation for all animatable properties
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::BTreeMap;
 
 /// Time in seconds
@@ -265,7 +265,7 @@ impl AnimationTrack {
 }
 
 /// Animation clip - collection of tracks
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct AnimationClip {
     /// Name of the clip
     pub name: String,
@@ -289,6 +289,56 @@ pub struct AnimationClip {
     pub bpm: f32,
     /// Number of beats this clip takes
     pub beats: f32,
+}
+
+#[derive(Debug, Deserialize)]
+struct AnimationClipSerde {
+    name: String,
+    tracks: Vec<AnimationTrack>,
+    duration: TimePoint,
+    looping: bool,
+    playback_mode: Option<PlaybackMode>,
+    reverse: bool,
+    in_point: Option<TimePoint>,
+    out_point: Option<TimePoint>,
+    bpm_sync: bool,
+    bpm: f32,
+    beats: f32,
+}
+
+impl From<AnimationClipSerde> for AnimationClip {
+    fn from(value: AnimationClipSerde) -> Self {
+        let playback_mode = value.playback_mode.unwrap_or_else(|| {
+            if value.looping {
+                PlaybackMode::Loop
+            } else {
+                PlaybackMode::OneShot
+            }
+        });
+
+        Self {
+            name: value.name,
+            tracks: value.tracks,
+            duration: value.duration,
+            looping: value.looping,
+            playback_mode,
+            reverse: value.reverse,
+            in_point: value.in_point,
+            out_point: value.out_point,
+            bpm_sync: value.bpm_sync,
+            bpm: value.bpm,
+            beats: value.beats,
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for AnimationClip {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        AnimationClipSerde::deserialize(deserializer).map(Into::into)
+    }
 }
 
 impl AnimationClip {
@@ -545,6 +595,55 @@ mod tests {
         let values = clip.evaluate(1.0);
         assert_eq!(values.len(), 1);
         assert_eq!(values[0].0, "x");
+    }
+
+    #[test]
+    fn test_animation_clip_backward_compatibility_with_legacy_loop_flag() {
+        let legacy_clip = r#"
+            (
+                name: "legacy",
+                tracks: [],
+                duration: 2.0,
+                looping: false,
+                reverse: false,
+                in_point: None,
+                out_point: None,
+                bpm_sync: false,
+                bpm: 120.0,
+                beats: 4.0,
+            )
+        "#;
+
+        let clip: AnimationClip = ron::from_str(legacy_clip)
+            .expect("Should deserialize legacy clip without playback_mode");
+
+        assert!(!clip.looping);
+        assert_eq!(clip.playback_mode, PlaybackMode::OneShot);
+    }
+
+    #[test]
+    fn test_animation_clip_preserves_explicit_playback_mode() {
+        let clip_with_mode = r#"
+            (
+                name: "explicit",
+                tracks: [],
+                duration: 2.0,
+                looping: true,
+                playback_mode: PingPong,
+                reverse: false,
+                in_point: None,
+                out_point: None,
+                bpm_sync: false,
+                bpm: 120.0,
+                beats: 4.0,
+            )
+        "#;
+
+        let clip: AnimationClip = ron::from_str(clip_with_mode)
+            .expect("Should deserialize clip with explicit playback_mode");
+
+        assert!(clip.looping);
+        assert_eq!(clip.playback_mode, PlaybackMode::PingPong);
     }
 
     #[test]

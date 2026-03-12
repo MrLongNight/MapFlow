@@ -5407,6 +5407,7 @@ dependencies = [
  "proptest",
  "rand 0.10.0",
  "resvg 0.47.0",
+ "ron 0.12.0",
  "rustfft",
  "serde",
  "serde_json",

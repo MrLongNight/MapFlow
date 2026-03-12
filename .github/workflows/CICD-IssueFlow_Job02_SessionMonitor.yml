@@ -1,4 +1,4 @@
-name: "CICD-IssueFlow: Job02 SessionMonitor"
+name: "CICD-IssueFlow: Job02 SessionMonitor (manual diagnostic)"
 
 on:
   workflow_dispatch:
@@ -57,4 +57,4 @@ jobs:
                 // If status is DONE, verify PR exists.
              }
 
-             // Note: Full implementation would replicate CI-08's polling loop.
+             // Note: This workflow is currently kept only for manual diagnostics.
