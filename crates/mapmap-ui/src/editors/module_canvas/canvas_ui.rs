@@ -17,7 +17,22 @@ impl ModuleCanvas {
         locale: &LocaleManager,
         actions: &mut Vec<crate::UIAction>,
         meter_style: crate::config::AudioMeterStyle,
+        node_animations_enabled: bool,
+        short_circuit_animation_enabled: bool,
+        animation_profile: crate::config::AnimationProfile,
+        reduce_motion_enabled: bool,
     ) {
-        renderer::show(self, ui, manager, locale, actions, meter_style);
+        renderer::show(
+            self,
+            ui,
+            manager,
+            locale,
+            actions,
+            meter_style,
+            node_animations_enabled,
+            short_circuit_animation_enabled,
+            animation_profile,
+            reduce_motion_enabled,
+        );
     }
 }

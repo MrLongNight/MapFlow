@@ -137,6 +137,8 @@ pub fn draw_connections<F>(
     painter: &egui::Painter,
     module: &MapFlowModule,
     to_screen: &F,
+    node_animations_enabled: bool,
+    animation_profile: crate::config::AnimationProfile,
 ) -> Option<usize>
 where
     F: Fn(Pos2) -> Pos2,
@@ -273,9 +275,17 @@ where
                 cable_stroke,
             ));
 
-            if canvas.zoom > 0.6 {
+            if node_animations_enabled
+                && animation_profile != crate::config::AnimationProfile::Off
+                && canvas.zoom > 0.6
+            {
                 let time = ui.input(|i| i.time);
-                let flow_t = (time * 1.5).fract() as f32;
+                let flow_speed = match animation_profile {
+                    crate::config::AnimationProfile::Subtle => 1.2,
+                    crate::config::AnimationProfile::Cinematic => 2.2,
+                    crate::config::AnimationProfile::Off => 0.0,
+                };
+                let flow_t = (time * flow_speed).fract() as f32;
                 let flow_pos = geometry::calculate_cubic_bezier_point(
                     flow_t,
                     cable_start,
@@ -407,7 +417,7 @@ where
 
 #[allow(clippy::too_many_arguments)]
 pub fn draw_part_with_delete(
-    canvas: &ModuleCanvas,
+    canvas: &mut ModuleCanvas,
     ui: &Ui,
     painter: &egui::Painter,
     part: &ModulePart,
@@ -415,6 +425,8 @@ pub fn draw_part_with_delete(
     actions: &mut Vec<UIAction>,
     module_id: ModuleId,
     meter_style: crate::config::AudioMeterStyle,
+    node_animations_enabled: bool,
+    animation_profile: crate::config::AnimationProfile,
 ) {
     let (_bg_color, title_color, icon, name) = utils::get_part_style(&part.part_type);
     let category = utils::get_part_category(&part.part_type);
@@ -452,8 +464,15 @@ pub fn draw_part_with_delete(
         audio_trigger_value
     };
     let is_active = is_audio_active || is_generic_active;
-
     if is_active {
+        let now = ui.input(|i| i.time);
+        canvas.last_trigger_fire_time.insert(part.id, now);
+    }
+
+    if node_animations_enabled
+        && animation_profile != crate::config::AnimationProfile::Off
+        && is_active
+    {
         let glow_intensity = (trigger_value * 2.0).min(1.0);
         let base_color =
             Color32::from_rgba_unmultiplied(255, (160.0 * glow_intensity) as u8, 0, 255);
@@ -508,6 +527,65 @@ pub fn draw_part_with_delete(
 
     let neutral_bg = colors::DARK_GREY;
     painter.rect_filled(rect, 0.0, neutral_bg);
+
+    if node_animations_enabled && animation_profile != crate::config::AnimationProfile::Off {
+        let time = ui.input(|i| i.time) as f32;
+        let profile_scale = match animation_profile {
+            crate::config::AnimationProfile::Subtle => 0.8,
+            crate::config::AnimationProfile::Cinematic => 1.35,
+            crate::config::AnimationProfile::Off => 0.0,
+        };
+        let (anim_speed, anim_color) = match &part.part_type {
+            ModulePartType::Source(_) => (0.9, Color32::from_rgba_unmultiplied(0, 210, 255, 32)),
+            ModulePartType::Modulizer(_) => {
+                (1.6, Color32::from_rgba_unmultiplied(255, 100, 220, 28))
+            }
+            ModulePartType::Trigger(_) => (2.3, Color32::from_rgba_unmultiplied(255, 170, 80, 38)),
+            ModulePartType::Output(_) => (1.2, Color32::from_rgba_unmultiplied(140, 255, 140, 24)),
+            ModulePartType::Layer(_) | ModulePartType::Mask(_) => {
+                (1.35, Color32::from_rgba_unmultiplied(190, 170, 255, 24))
+            }
+            _ => (1.0, Color32::from_rgba_unmultiplied(180, 200, 255, 20)),
+        };
+        let phase = (time * (anim_speed * profile_scale) + part.id as f32 * 0.11)
+            .sin()
+            .abs();
+        let pulse_w = 1.2 * canvas.zoom + phase * (2.4 * profile_scale) * canvas.zoom;
+        painter.rect_stroke(
+            rect.expand(1.5 * canvas.zoom),
+            0.0,
+            Stroke::new(pulse_w, anim_color.gamma_multiply(0.45 + phase * 0.55)),
+            egui::StrokeKind::Middle,
+        );
+    }
+
+    if node_animations_enabled && matches!(part.part_type, ModulePartType::Trigger(_)) {
+        let now = ui.input(|i| i.time);
+        if let Some(last_fire) = canvas.last_trigger_fire_time.get(&part.id).copied() {
+            let age = (now - last_fire).max(0.0) as f32;
+            if age < 5.0 {
+                let heat = (1.0 - age / 5.0).clamp(0.0, 1.0);
+                let heat_color = Color32::from_rgba_unmultiplied(
+                    255,
+                    (140.0 + 90.0 * heat) as u8,
+                    (40.0 * (1.0 - heat)) as u8,
+                    (100.0 * heat) as u8,
+                );
+                painter.rect_filled(rect.shrink(3.0 * canvas.zoom), 0.0, heat_color);
+
+                if age < 1.2 {
+                    let ts = format!("{:.1}s", age);
+                    painter.text(
+                        rect.right_top() - Vec2::new(8.0 * canvas.zoom, -10.0 * canvas.zoom),
+                        egui::Align2::RIGHT_TOP,
+                        ts,
+                        egui::FontId::proportional(10.0 * canvas.zoom),
+                        Color32::from_rgb(255, 240, 190),
+                    );
+                }
+            }
+        }
+    }
 
     if let mapmap_core::module::ModulePartType::Source(
         mapmap_core::module::SourceType::MediaFile { .. },

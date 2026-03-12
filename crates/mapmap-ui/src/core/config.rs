@@ -8,6 +8,83 @@ use std::fmt;
 use std::fs;
 use std::path::PathBuf;
 
+/// Sichtbarkeitseinstellungen für das Hauptlayout.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub struct LayoutVisibility {
+    #[serde(default = "default_true")]
+    pub show_toolbar: bool,
+    #[serde(default = "default_true")]
+    pub show_left_sidebar: bool,
+    #[serde(default = "default_true")]
+    pub show_inspector: bool,
+    #[serde(default = "default_true")]
+    pub show_timeline: bool,
+    #[serde(default = "default_true")]
+    pub show_media_browser: bool,
+    #[serde(default)]
+    pub show_module_canvas: bool,
+}
+
+impl Default for LayoutVisibility {
+    fn default() -> Self {
+        Self {
+            show_toolbar: true,
+            show_left_sidebar: true,
+            show_inspector: true,
+            show_timeline: true,
+            show_media_browser: true,
+            show_module_canvas: false,
+        }
+    }
+}
+
+/// Größenparameter des Hauptlayouts.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub struct LayoutPanelSizes {
+    #[serde(default = "default_sidebar_width")]
+    pub left_sidebar_width: f32,
+    #[serde(default = "default_inspector_width")]
+    pub inspector_width: f32,
+    #[serde(default = "default_timeline_height")]
+    pub timeline_height: f32,
+}
+
+impl Default for LayoutPanelSizes {
+    fn default() -> Self {
+        Self {
+            left_sidebar_width: default_sidebar_width(),
+            inspector_width: default_inspector_width(),
+            timeline_height: default_timeline_height(),
+        }
+    }
+}
+
+/// Persistentes Layout-Profil für die Arbeitsoberfläche.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct LayoutProfile {
+    pub id: String,
+    pub name: String,
+    #[serde(default)]
+    pub visibility: LayoutVisibility,
+    #[serde(default)]
+    pub panel_sizes: LayoutPanelSizes,
+    #[serde(default)]
+    pub lock_layout: bool,
+}
+
+impl LayoutProfile {
+    /// Standardprofil, das dem bisherigen Dock-Layout entspricht.
+    pub fn default_profile() -> Self {
+        Self {
+            id: "default".to_string(),
+            name: "Default".to_string(),
+            visibility: LayoutVisibility::default(),
+            panel_sizes: LayoutPanelSizes::default(),
+            lock_layout: false,
+        }
+    }
+}
+
 /// Style for the audio meter
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum AudioMeterStyle {
@@ -42,6 +119,28 @@ pub enum ToolbarMetricMode {
     Always,
     /// Metric is available via hover/popover only
     Hover,
+}
+
+/// Globales Animationsprofil für UI-Bewegungen.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum AnimationProfile {
+    /// Animationen deaktiviert.
+    Off,
+    /// Subtile Animationen (Standard).
+    #[default]
+    Subtle,
+    /// Cinematische Animationen mit stärkerem Effekt.
+    Cinematic,
+}
+
+impl fmt::Display for AnimationProfile {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Off => write!(f, "Off"),
+            Self::Subtle => write!(f, "Subtle"),
+            Self::Cinematic => write!(f, "Cinematic"),
+        }
+    }
 }
 
 /// Per-metric visibility settings for toolbar telemetry
@@ -237,6 +336,41 @@ pub struct UserConfig {
     /// Toolbar telemetry visibility and disclosure settings
     #[serde(default)]
     pub toolbar_metrics: ToolbarMetricsConfig,
+
+    /// Enable animated node visuals in module canvas
+    #[serde(default = "default_true")]
+    pub node_animations_enabled: bool,
+
+    /// Enable startup intro animation.
+    #[serde(default = "default_true")]
+    pub startup_animation_enabled: bool,
+
+    /// Video path for startup intro animation.
+    #[serde(default = "default_startup_animation_path")]
+    pub startup_animation_path: String,
+
+    /// Reduziert Bewegungen/Animationen global für bessere Zugänglichkeit.
+    #[serde(default)]
+    pub reduce_motion_enabled: bool,
+
+    /// Deaktiviert Sounds bei App-Start-Sequenzen.
+    #[serde(default)]
+    pub silent_startup_enabled: bool,
+
+    /// Globales Profil für UI-Animationen.
+    #[serde(default)]
+    pub animation_profile: AnimationProfile,
+
+    /// Enable short-circuit effect for invalid node connections
+    #[serde(default = "default_true")]
+    pub short_circuit_animation_enabled: bool,
+
+    /// Verfügbare UI-Layoutprofile
+    #[serde(default = "default_layout_profiles")]
+    pub layouts: Vec<LayoutProfile>,
+    /// Aktives Layoutprofil (id)
+    #[serde(default = "default_active_layout_id")]
+    pub active_layout_id: String,
 }
 
 fn default_true() -> bool {
@@ -245,6 +379,30 @@ fn default_true() -> bool {
 
 fn default_ui_scale() -> f32 {
     1.0
+}
+
+fn default_startup_animation_path() -> String {
+    "resources/app_videos/MF-Mechanical_Cube_Logo_Splash_Animation.webm".to_string()
+}
+
+fn default_sidebar_width() -> f32 {
+    300.0
+}
+
+fn default_inspector_width() -> f32 {
+    360.0
+}
+
+fn default_timeline_height() -> f32 {
+    200.0
+}
+
+fn default_layout_profiles() -> Vec<LayoutProfile> {
+    vec![LayoutProfile::default_profile()]
+}
+
+fn default_active_layout_id() -> String {
+    "default".to_string()
 }
 
 impl Default for UserConfig {
@@ -280,6 +438,15 @@ impl Default for UserConfig {
             global_fullscreen: false,
             ui_scale: 1.0,
             toolbar_metrics: ToolbarMetricsConfig::default(),
+            node_animations_enabled: true,
+            startup_animation_enabled: true,
+            startup_animation_path: default_startup_animation_path(),
+            reduce_motion_enabled: false,
+            silent_startup_enabled: false,
+            animation_profile: AnimationProfile::Subtle,
+            short_circuit_animation_enabled: true,
+            layouts: default_layout_profiles(),
+            active_layout_id: default_active_layout_id(),
         }
     }
 }
@@ -296,7 +463,7 @@ impl UserConfig {
 
     /// Load configuration from disk
     pub fn load() -> Self {
-        Self::config_path()
+        let mut loaded: Self = Self::config_path()
             .and_then(|path| {
                 if path.exists() {
                     fs::read_to_string(&path).ok()
@@ -305,7 +472,10 @@ impl UserConfig {
                 }
             })
             .and_then(|content| serde_json::from_str(&content).ok())
-            .unwrap_or_default()
+            .unwrap_or_default();
+
+        loaded.ensure_layout_profiles();
+        loaded
     }
 
     /// Save configuration to disk
@@ -404,6 +574,51 @@ impl UserConfig {
             .collect();
         (mapflow, streamerbot, mixxx)
     }
+
+    /// Stellt sicher, dass mindestens ein valides Layoutprofil verfügbar ist.
+    pub fn ensure_layout_profiles(&mut self) {
+        if self.layouts.is_empty() {
+            self.layouts = default_layout_profiles();
+        }
+
+        if !self.layouts.iter().any(|l| l.id == self.active_layout_id) {
+            self.active_layout_id = self
+                .layouts
+                .first()
+                .map(|l| l.id.clone())
+                .unwrap_or_else(default_active_layout_id);
+        }
+    }
+
+    /// Liefert das aktive Layoutprofil.
+    pub fn active_layout(&self) -> Option<&LayoutProfile> {
+        self.layouts.iter().find(|l| l.id == self.active_layout_id)
+    }
+
+    /// Liefert das aktive Layoutprofil als mutable Referenz.
+    pub fn active_layout_mut(&mut self) -> Option<&mut LayoutProfile> {
+        self.layouts
+            .iter_mut()
+            .find(|l| l.id == self.active_layout_id)
+    }
+
+    /// Wechselt das aktive Layoutprofil.
+    pub fn set_active_layout(&mut self, layout_id: &str) -> bool {
+        if self.layouts.iter().any(|l| l.id == layout_id) {
+            self.active_layout_id = layout_id.to_string();
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Erstellt ein neues Layoutprofil als Kopie der übergebenen Daten.
+    pub fn add_layout_profile(&mut self, mut profile: LayoutProfile) {
+        if profile.id.trim().is_empty() {
+            profile.id = format!("layout-{}", self.layouts.len() + 1);
+        }
+        self.layouts.push(profile);
+    }
 }
 
 #[cfg(test)]
@@ -448,6 +663,15 @@ mod tests {
             global_fullscreen: true,
             ui_scale: 1.2,
             toolbar_metrics: ToolbarMetricsConfig::default(),
+            node_animations_enabled: true,
+            startup_animation_enabled: true,
+            startup_animation_path: default_startup_animation_path(),
+            reduce_motion_enabled: false,
+            silent_startup_enabled: false,
+            animation_profile: AnimationProfile::Subtle,
+            short_circuit_animation_enabled: true,
+            layouts: default_layout_profiles(),
+            active_layout_id: default_active_layout_id(),
         };
 
         let json = serde_json::to_string(&config).unwrap();
@@ -456,5 +680,35 @@ mod tests {
         assert_eq!(loaded.language, "de");
         assert_eq!(loaded.recent_files.len(), 2);
         assert_eq!(loaded.meter_style, AudioMeterStyle::Digital);
+    }
+
+    #[test]
+    fn test_ensure_layout_profiles_repairs_empty_state() {
+        let mut config = UserConfig {
+            layouts: Vec::new(),
+            active_layout_id: "missing".to_string(),
+            ..UserConfig::default()
+        };
+
+        config.ensure_layout_profiles();
+
+        assert!(!config.layouts.is_empty());
+        assert_eq!(config.active_layout_id, "default");
+    }
+
+    #[test]
+    fn test_set_active_layout() {
+        let mut config = UserConfig::default();
+        config.add_layout_profile(LayoutProfile {
+            id: "live".to_string(),
+            name: "Live".to_string(),
+            visibility: LayoutVisibility::default(),
+            panel_sizes: LayoutPanelSizes::default(),
+            lock_layout: false,
+        });
+
+        assert!(config.set_active_layout("live"));
+        assert_eq!(config.active_layout_id, "live");
+        assert!(!config.set_active_layout("does-not-exist"));
     }
 }

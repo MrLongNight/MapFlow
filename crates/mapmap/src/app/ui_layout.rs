@@ -1,6 +1,84 @@
 use crate::app::App;
 use mapmap_ui as ui;
 
+const STARTUP_OVERLAY_DURATION_SECS: f32 = 4.0;
+
+fn render_startup_animation_overlay(ctx: &egui::Context, app: &App) {
+    if !app.ui_state.user_config.startup_animation_enabled {
+        return;
+    }
+    if app.ui_state.user_config.reduce_motion_enabled {
+        return;
+    }
+
+    let elapsed = app.start_time.elapsed().as_secs_f32();
+    if elapsed >= STARTUP_OVERLAY_DURATION_SECS {
+        return;
+    }
+
+    let t = elapsed / STARTUP_OVERLAY_DURATION_SECS;
+    let fade_in = (t / 0.2).clamp(0.0, 1.0);
+    let fade_out = ((1.0 - t) / 0.25).clamp(0.0, 1.0);
+    let alpha = fade_in.min(fade_out);
+
+    let source_path = app.ui_state.user_config.startup_animation_path.trim();
+    let source_exists = !source_path.is_empty() && std::path::Path::new(source_path).exists();
+    let source_status = if source_exists {
+        "Startup-Quelle gefunden"
+    } else {
+        "Startup-Quelle fehlt"
+    };
+
+    let backdrop = egui::Color32::from_black_alpha((190.0 * alpha) as u8);
+    let frame_fill = egui::Color32::from_rgba_premultiplied(14, 18, 26, (230.0 * alpha) as u8);
+
+    egui::Area::new("startup_animation_overlay".into())
+        .order(egui::Order::Foreground)
+        .fixed_pos(ctx.content_rect().min)
+        .show(ctx, |ui| {
+            let rect = ctx.content_rect();
+            ui.painter().rect_filled(rect, 0.0, backdrop);
+
+            ui.scope_builder(egui::UiBuilder::new().max_rect(rect), |ui| {
+                ui.centered_and_justified(|ui| {
+                    egui::Frame::default()
+                        .fill(frame_fill)
+                        .corner_radius(egui::CornerRadius::same(12))
+                        .inner_margin(egui::Margin::symmetric(24, 18))
+                        .stroke(egui::Stroke::new(
+                            1.0,
+                            egui::Color32::from_rgba_premultiplied(
+                                111,
+                                188,
+                                255,
+                                (180.0 * alpha) as u8,
+                            ),
+                        ))
+                        .show(ui, |ui| {
+                            ui.vertical_centered(|ui| {
+                                ui.heading("MapFlow");
+                                ui.label("Startup Animation");
+                                ui.add_space(4.0);
+                                ui.label(source_status);
+                                if !source_path.is_empty() {
+                                    ui.label(egui::RichText::new(source_path).small().weak());
+                                }
+                                if app.ui_state.user_config.silent_startup_enabled {
+                                    ui.label(egui::RichText::new("Silent Startup aktiv").small());
+                                }
+                                ui.add_space(8.0);
+                                ui.add(
+                                    egui::ProgressBar::new(t)
+                                        .desired_width(280.0)
+                                        .show_percentage(),
+                                );
+                            });
+                        });
+                });
+            });
+        });
+}
+
 /// Main UI orchestration function.
 /// Renders the entire application UI layout using egui.
 pub fn show(ctx: &egui::Context, app: &mut App) {
@@ -10,8 +88,22 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
     let viewport_width = viewport_rect.width();
     let viewport_height = viewport_rect.height();
     let compact_height = viewport_height < 760.0;
-    let sidebar_default = (viewport_width * 0.22).clamp(220.0, 420.0);
-    let inspector_default = (viewport_width * 0.24).clamp(260.0, 520.0);
+    let active_layout = app.ui_state.user_config.active_layout().cloned();
+    let layout_sizes = active_layout
+        .as_ref()
+        .map(|layout| layout.panel_sizes)
+        .unwrap_or_default();
+    let layout_locked = active_layout
+        .as_ref()
+        .map(|layout| layout.lock_layout)
+        .unwrap_or(false);
+    let sidebar_default = layout_sizes
+        .left_sidebar_width
+        .clamp(220.0, (viewport_width * 0.45).max(340.0));
+    let inspector_default = layout_sizes
+        .inspector_width
+        .clamp(260.0, (viewport_width * 0.5).max(420.0));
+    let timeline_default = layout_sizes.timeline_height.clamp(100.0, 500.0);
 
     // 1. Global Menu Bar (Top-most)
     let menu_actions = ui::view::menu_bar::show(ctx, &mut app.ui_state);
@@ -22,7 +114,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
     // 2. Toolbar (Separate Panel below Menu)
     if app.ui_state.show_toolbar {
         egui::TopBottomPanel::top("toolbar_panel")
-            .resizable(true)
+            .resizable(!layout_locked)
             .min_height(if compact_height { 36.0 } else { 44.0 })
             .frame(
                 egui::Frame::default()
@@ -41,7 +133,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
     // 3. Left Panel: Sidebar (Collapsible & Resizable)
     if app.ui_state.show_left_sidebar {
         egui::SidePanel::left("left_sidebar_panel")
-            .resizable(true)
+            .resizable(!layout_locked)
             .default_width(sidebar_default)
             .min_width(220.0)
             .max_width((viewport_width * 0.45).max(340.0))
@@ -178,7 +270,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
     // 4. Right Panel: Inspector (Docked & Resizable)
     if app.ui_state.show_inspector {
         egui::SidePanel::right("right_panel")
-            .resizable(true)
+            .resizable(!layout_locked)
             .default_width(inspector_default)
             .min_width(260.0)
             .max_width((viewport_width * 0.5).max(420.0))
@@ -216,8 +308,8 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
     // 5. Bottom Panel: Timeline (Resizable)
     if app.ui_state.show_timeline {
         egui::TopBottomPanel::bottom("bottom_panel")
-            .resizable(true)
-            .default_height(if compact_height { 150.0 } else { 220.0 })
+            .resizable(!layout_locked)
+            .default_height(timeline_default)
             .min_height(if compact_height { 80.0 } else { 110.0 })
             .show(ctx, |ui_obj| {
                 ui_obj.heading(app.ui_state.i18n.t("timeline"));
@@ -360,6 +452,10 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
                     &app.ui_state.i18n,
                     &mut app.ui_state.actions,
                     app.ui_state.user_config.meter_style,
+                    app.ui_state.user_config.node_animations_enabled,
+                    app.ui_state.user_config.short_circuit_animation_enabled,
+                    app.ui_state.user_config.animation_profile,
+                    app.ui_state.user_config.reduce_motion_enabled,
                 );
             } else {
                 ui_obj.centered_and_justified(|ui_obj| {
@@ -463,4 +559,6 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
         .assignment_panel
         .show(ctx, &app.state.assignment_manager);
     app.ui_state.shortcut_editor.show(ctx, &app.ui_state.i18n);
+
+    render_startup_animation_overlay(ctx, app);
 }
