@@ -153,6 +153,19 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                 app.media_manager_ui.visible = !app.media_manager_ui.visible;
             }
 
+            UIAction::Export => {
+                if let Some(path) = FileDialog::new()
+                    .add_filter("MapFlow Project Export", &["zip"])
+                    .set_file_name("project_export.zip")
+                    .save_file()
+                {
+                    if let Err(e) = mapmap_io::project::export_project(&app.state, &path) {
+                        error!("Failed to export project: {}", e);
+                    } else {
+                        info!("Project exported to {:?}", path);
+                    }
+                }
+            }
             UIAction::SaveProjectAs => {
                 if let Some(path) = FileDialog::new()
                     .add_filter("MapFlow Project", &["mflow", "mapmap", "ron", "json"])

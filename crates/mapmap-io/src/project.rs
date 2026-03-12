@@ -59,6 +59,101 @@ pub fn load_project(path: &Path) -> Result<AppState> {
     Ok(project_file.app_state)
 }
 
+/// Exports the application state and media assets to a ZIP archive.
+///
+/// This function saves the project file and bundles it with all referenced
+/// media files into a single standalone ZIP archive.
+///
+/// # Arguments
+///
+/// * `state` - A reference to the `AppState` to be exported.
+/// * `path` - The file path where the exported ZIP archive will be saved.
+///
+/// # Returns
+///
+/// A `Result` indicating success or an `IoError` on failure.
+pub fn export_project(state: &AppState, path: &Path) -> Result<()> {
+    use mapmap_core::module::SourceType;
+    use std::collections::HashSet;
+    use std::fs::File;
+    use std::io::{Read, Write};
+    use zip::write::FileOptions;
+
+    let file = File::create(path)?;
+    let mut zip = zip::ZipWriter::new(file);
+    let options: FileOptions<'_, ()> = FileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated)
+        .unix_permissions(0o755);
+
+    // Deep clone the state so we can mutate the media paths to be relative for the export
+    let mut export_state = state.clone();
+
+    // Find all media files referenced in the project and rewrite paths to be relative
+    let mut media_files = HashSet::new();
+
+    if let Some(module_manager) = std::sync::Arc::get_mut(&mut export_state.module_manager) {
+        for module in module_manager.modules.values_mut() {
+            for part in &mut module.parts {
+                if let mapmap_core::module::ModulePartType::Source(
+                    SourceType::MediaFile {
+                        path: ref mut p, ..
+                    }
+                    | SourceType::VideoUni {
+                        path: ref mut p, ..
+                    }
+                    | SourceType::ImageUni {
+                        path: ref mut p, ..
+                    },
+                ) = &mut part.part_type
+                {
+                    if !p.is_empty() {
+                        let original_path = std::path::PathBuf::from(&p);
+                        media_files.insert(original_path.clone());
+
+                        if let Some(file_name) = original_path.file_name() {
+                            *p = format!("media/{}", file_name.to_string_lossy());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 1. Save project file to a temporary location
+    let temp_dir = tempfile::tempdir()?;
+    let project_path = temp_dir.path().join("project.mflow");
+    save_project(&export_state, &project_path)?;
+
+    // 2. Add project file to ZIP
+    zip.start_file("project.mflow", options)
+        .map_err(crate::IoError::from)?;
+    let mut project_file = File::open(&project_path)?;
+    let mut buffer = Vec::new();
+    project_file.read_to_end(&mut buffer)?;
+    zip.write_all(&buffer)?;
+
+    // 3. Add media files to ZIP
+    zip.add_directory("media/", options)
+        .map_err(crate::IoError::from)?;
+
+    for media_path in media_files {
+        if media_path.exists() {
+            if let Some(file_name) = media_path.file_name() {
+                let zip_path = format!("media/{}", file_name.to_string_lossy());
+                zip.start_file(zip_path, options)
+                    .map_err(crate::IoError::from)?;
+                let mut media_file = File::open(&media_path)?;
+                let mut buffer = Vec::new();
+                media_file.read_to_end(&mut buffer)?;
+                zip.write_all(&buffer)?;
+            }
+        }
+    }
+
+    zip.finish().map_err(crate::IoError::from)?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
