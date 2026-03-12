@@ -29,7 +29,7 @@ description: Pre-commit checks - run before every git commit to ensure code qual
 // turbo
 1. Run the pre-commit check script:
    ```powershell
-   .\scripts\pre-commit-check.ps1
+   .\scripts\codex-cli\prepare-pre-commit.ps1
    ```
 
 2. If the script reports errors:

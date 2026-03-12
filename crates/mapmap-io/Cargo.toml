@@ -10,23 +10,16 @@ repository.workspace = true
 [features]
 default = []
 # Individual features
-ffmpeg = ["stream"] # Alias for stream feature
-ndi = ["dep:grafton-ndi", "dep:tokio"] # NDI support (requires NDI SDK)
-decklink = [] # DeckLink SDI support (requires DeckLink SDK)
-spout = [
-    "dep:windows",
-    "dep:rusty-spout",
-] # Spout texture sharing (Windows only)
-syphon = [
-    "cocoa",
-    "core-foundation",
-    "objc",
-] # Syphon texture sharing (macOS only)
-stream = ["ffmpeg-next", "dep:tokio"] # RTMP/SRT streaming
-virtual-camera = [] # Virtual camera output
+ffmpeg = ["stream"]
+ndi = ["dep:grafton-ndi", "dep:tokio"]
+decklink = []
+spout = ["dep:windows", "dep:rusty-spout"]
+syphon = ["cocoa", "core-foundation", "objc"]
+stream = ["ffmpeg-next", "dep:tokio"]
+virtual-camera = []
 
 # Platform-specific Features
-texture-sharing = [] # Enable on platforms that support it
+texture-sharing = []
 
 # Convenience features
 all-io = ["ndi", "decklink", "syphon", "stream", "virtual-camera"]

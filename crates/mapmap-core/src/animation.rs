@@ -3,7 +3,7 @@
 //! Phase 3: Effects Pipeline
 //! Provides keyframe animation for all animatable properties
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::BTreeMap;
 
 /// Time in seconds
@@ -265,7 +265,7 @@ impl AnimationTrack {
 }
 
 /// Animation clip - collection of tracks
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct AnimationClip {
     /// Name of the clip
     pub name: String,
@@ -289,6 +289,80 @@ pub struct AnimationClip {
     pub bpm: f32,
     /// Number of beats this clip takes
     pub beats: f32,
+}
+
+#[derive(Debug, Deserialize)]
+struct AnimationClipSerde {
+    name: String,
+    tracks: Vec<AnimationTrack>,
+    duration: TimePoint,
+    looping: bool,
+    #[serde(default, deserialize_with = "deserialize_optional_playback_mode")]
+    playback_mode: Option<PlaybackMode>,
+    #[serde(default)]
+    reverse: bool,
+    #[serde(default)]
+    in_point: Option<TimePoint>,
+    #[serde(default)]
+    out_point: Option<TimePoint>,
+    #[serde(default)]
+    bpm_sync: bool,
+    #[serde(default = "default_animation_bpm")]
+    bpm: f32,
+    #[serde(default = "default_animation_beats")]
+    beats: f32,
+}
+
+impl From<AnimationClipSerde> for AnimationClip {
+    fn from(value: AnimationClipSerde) -> Self {
+        let playback_mode = value.playback_mode.unwrap_or({
+            if value.looping {
+                PlaybackMode::Loop
+            } else {
+                PlaybackMode::OneShot
+            }
+        });
+
+        Self {
+            name: value.name,
+            tracks: value.tracks,
+            duration: value.duration,
+            looping: value.looping,
+            playback_mode,
+            reverse: value.reverse,
+            in_point: value.in_point,
+            out_point: value.out_point,
+            bpm_sync: value.bpm_sync,
+            bpm: value.bpm,
+            beats: value.beats,
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for AnimationClip {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        AnimationClipSerde::deserialize(deserializer).map(Into::into)
+    }
+}
+
+fn deserialize_optional_playback_mode<'de, D>(
+    deserializer: D,
+) -> Result<Option<PlaybackMode>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    PlaybackMode::deserialize(deserializer).map(Some)
+}
+
+fn default_animation_bpm() -> f32 {
+    120.0
+}
+
+fn default_animation_beats() -> f32 {
+    4.0
 }
 
 impl AnimationClip {
@@ -355,7 +429,7 @@ impl AnimationClip {
 }
 
 /// Animation player state
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct AnimationPlayer {
     /// The animation clip being played
     pub clip: AnimationClip,
@@ -367,6 +441,54 @@ pub struct AnimationPlayer {
     pub current_direction: f32,
     /// Playback speed multiplier (1.0 = normal)
     pub speed: f32,
+}
+
+#[derive(Debug, Deserialize)]
+struct AnimationPlayerSerde {
+    clip: AnimationClip,
+    current_time: TimePoint,
+    playing: bool,
+    #[serde(default, deserialize_with = "deserialize_optional_current_direction")]
+    current_direction: Option<f32>,
+    #[serde(default = "default_animation_speed")]
+    speed: f32,
+}
+
+impl From<AnimationPlayerSerde> for AnimationPlayer {
+    fn from(value: AnimationPlayerSerde) -> Self {
+        let current_direction =
+            value
+                .current_direction
+                .unwrap_or(if value.clip.reverse { -1.0 } else { 1.0 });
+
+        Self {
+            clip: value.clip,
+            current_time: value.current_time,
+            playing: value.playing,
+            current_direction,
+            speed: value.speed,
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for AnimationPlayer {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        AnimationPlayerSerde::deserialize(deserializer).map(Into::into)
+    }
+}
+
+fn deserialize_optional_current_direction<'de, D>(deserializer: D) -> Result<Option<f32>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    f32::deserialize(deserializer).map(Some)
+}
+
+fn default_animation_speed() -> f32 {
+    1.0
 }
 
 impl AnimationPlayer {
@@ -545,6 +667,81 @@ mod tests {
         let values = clip.evaluate(1.0);
         assert_eq!(values.len(), 1);
         assert_eq!(values[0].0, "x");
+    }
+
+    #[test]
+    fn test_animation_clip_backward_compatibility_with_legacy_loop_flag() {
+        let legacy_clip = r#"
+            (
+                name: "legacy",
+                tracks: [],
+                duration: 2.0,
+                looping: false,
+            )
+        "#;
+
+        let clip: AnimationClip = ron::from_str(legacy_clip)
+            .expect("Should deserialize legacy clip without playback_mode");
+
+        assert!(!clip.looping);
+        assert_eq!(clip.playback_mode, PlaybackMode::OneShot);
+        assert!(!clip.reverse);
+        assert_eq!(clip.in_point, None);
+        assert_eq!(clip.out_point, None);
+        assert!(!clip.bpm_sync);
+        assert_eq!(clip.bpm, 120.0);
+        assert_eq!(clip.beats, 4.0);
+    }
+
+    #[test]
+    fn test_animation_clip_preserves_explicit_playback_mode() {
+        let clip_with_mode = r#"
+            (
+                name: "explicit",
+                tracks: [],
+                duration: 2.0,
+                looping: true,
+                playback_mode: PingPong,
+                reverse: false,
+                in_point: None,
+                out_point: None,
+                bpm_sync: false,
+                bpm: 120.0,
+                beats: 4.0,
+            )
+        "#;
+
+        let clip: AnimationClip = ron::from_str(clip_with_mode)
+            .expect("Should deserialize clip with explicit playback_mode");
+
+        assert!(clip.looping);
+        assert_eq!(clip.playback_mode, PlaybackMode::PingPong);
+    }
+
+    #[test]
+    fn test_animation_player_backward_compatibility_with_legacy_defaults() {
+        let legacy_player = r#"
+            (
+                clip: (
+                    name: "legacy",
+                    tracks: [],
+                    duration: 2.0,
+                    looping: false,
+                ),
+                current_time: 0.5,
+                playing: false,
+                speed: 1.0,
+            )
+        "#;
+
+        let player: AnimationPlayer =
+            ron::from_str(legacy_player).expect("Should deserialize legacy player");
+
+        assert_eq!(player.clip.playback_mode, PlaybackMode::OneShot);
+        assert_eq!(player.current_direction, 1.0);
+        assert_eq!(player.current_time, 0.5);
+        assert!(!player.playing);
+        assert_eq!(player.speed, 1.0);
     }
 
     #[test]

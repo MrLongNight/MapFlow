@@ -89,3 +89,6 @@ temp_373/
 
 .gemini/
 gha-creds-*.json
+
+# Jules memory: Log files generated with date suffixes
+scripts/archive/logs/

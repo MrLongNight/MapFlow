@@ -27,6 +27,17 @@ macro_rules! warn_once {
     };
 }
 
+/// Log an error message only once per session
+#[macro_export]
+macro_rules! error_once {
+    ($($arg:tt)+) => {
+        let msg = format!($($arg)+);
+        if $crate::macros::should_log(&msg) {
+            tracing::error!("{}", msg);
+        }
+    };
+}
+
 /// Log an info message only once per session
 #[macro_export]
 macro_rules! info_once {
@@ -38,13 +49,14 @@ macro_rules! info_once {
     };
 }
 
-/// Log an error message only once per session
-#[macro_export]
-macro_rules! error_once {
-    ($($arg:tt)+) => {
-        let msg = format!($($arg)+);
-        if $crate::macros::should_log(&msg) {
-            tracing::error!("{}", msg);
-        }
-    };
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_should_log_duplicate_messages() {
+        let msg = "test_unique_message_123";
+        assert!(should_log(msg));
+        assert!(!should_log(msg));
+    }
 }

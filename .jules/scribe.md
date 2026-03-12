@@ -28,3 +28,10 @@ I have addressed several broken links and outdated status indicators in the docu
 ## 2026-03-11 - Fixed broken legacy references across documentation
 **Observation:** Several documents (e.g. `CONTRIBUTING.md`, `DOC-C1_OVERVIEW.md`, `DOC-C10_PROJECT_PHASES.md` and `DOC-C6_DOCUMENTATION_AUDIT.md`) contained outdated file paths referring to legacy structures like `docs/project/general/CODE-OF-CONDUCT.md` or `docs/dev/architecture/MULTI-PC-FEASIBILITY.md`.
 **Action:** Re-linked to their new A-series documentation paths (`docs/A3_PROJECT/B5_GOVERNANCE/DOC-C1_CODE_OF_CONDUCT.md`, `../DOC-A1_MODULE_TREE.md`, etc) to reflect the 3-level folder architecture migration. Checked off tasks in `DOC-C6_DOCUMENTATION_AUDIT.md`.
+
+## 2026-03-12 - User Manual Updates and Cleanup
+**Observation:** `docs/A4_USER/B1_MANUAL/DOC-C0_README.md` was missing a link to `DOC-C7_MIDI_CONTROL.md`, and `DOC-C7_MIDI_CONTROL.md` had "TODO" placeholders in public documentation which should be avoided according to Scribe's rules. Also, there were Git merge conflict markers left in `docs/A3_PROJECT/B3_OPERATIONS/DOC-C2_TECHNICAL_DEBT_AND_BUGS.md`.
+**Action:**
+1. Added the link to `DOC-C7_MIDI_CONTROL.md` in `DOC-C0_README.md`.
+2. Cleaned up `DOC-C7_MIDI_CONTROL.md` by replacing "TODO" with "Einschränkungen" and rephrasing appropriately.
+3. Cleaned up Git merge conflict markers in `DOC-C2_TECHNICAL_DEBT_AND_BUGS.md`.

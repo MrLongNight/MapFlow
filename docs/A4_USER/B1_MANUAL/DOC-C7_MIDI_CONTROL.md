@@ -13,7 +13,7 @@
 3. [User Workflow: MIDI Einrichten](#user-workflow-midi-einrichten)
 4. [User Workflow: MIDI Learn](#user-workflow-midi-learn)
 5. [User Workflow: Controller Overlay](#user-workflow-controller-overlay)
-6. [Bekannte Probleme & TODOs](#bekannte-probleme--todos)
+6. [Bekannte Probleme & Einschränkungen](#bekannte-probleme--einschränkungen)
 7. [Technische Details](#technische-details)
 
 ---
@@ -201,17 +201,17 @@ Das Overlay kann über das Menü **View** → **MIDI Controller Overlay** (oder 
 
 ---
 
-## Bekannte Probleme & TODOs
+## Bekannte Probleme & Einschränkungen
 
 ### 🟡 Medium
 
-| Problem | Lösung |
+| Problem | Geplante Lösung |
 |---------|--------|
-| MIDI Learn nur für Trigger-Nodes | Erweitern auf alle Parameter |
+| MIDI Learn nur für Trigger-Nodes | Erweiterung auf alle Parameter in zukünftiger Version |
 
 ### 🟢 Low Priority
 
-| Problem | Lösung |
+| Problem | Geplante Lösung |
 |---------|--------|
 | MIDI-zu-Layer/Effect direkt | ControlTarget-Routing implementieren |
 | Multi-Device Support | Device-ID in Mapping speichern |
@@ -272,7 +272,3 @@ pub struct MidiInputHandler {
 ```
 
 ---
-
-## Nächste Schritte
-
-1. ⬜ **MIDI Learn** auf alle Parameter erweitern

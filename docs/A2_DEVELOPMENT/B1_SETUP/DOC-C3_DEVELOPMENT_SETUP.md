@@ -48,7 +48,6 @@ We want the 0 series to be backward-compatible. That means that a project create
 * **INSTALL**: Instructions to build and install the software.
 * **NEWS**: Release notes for each tag.
 * **README**: The short documentation at the root of the project
-* **TODO**: You can put things to do there, or use GitHub Issues.
 * **images/**: Images part of the GUI.
 * **prototypes/** : Contains prototypes. Please ask the project maintainer before removing some of these.
 * **docs/informations/*.md**: Markdown files to generate the About dialog
@@ -68,8 +67,8 @@ We want the 0 series to be backward-compatible. That means that a project create
 * Verify the version number in all relevant files: `VERSION.txt`, `DMGVERSION.txt`, `mapmap.pro`, `docs/Doxyfile`, `NEWS`, `src/core/MM.cpp`
 * Edit `NEWS` - update with the news for the release you are about to make
 * Run `./scripts/update-changelog.sh` and commit the changes
-* Maybe update `docs/informations/osc.md` and run `scripts/update-osc.sh` and commit the changes
-* Maybe update `docs/informations/CONTRIBUTORS.md` and run `scripts/update-contributors.sh` and commit the changes
+* Maybe update `docs/informations/osc.md` and run `scripts/docs/update-osc.sh` and commit the changes
+* Maybe update `docs/informations/CONTRIBUTORS.md` and run `scripts/docs/update-contributors.sh` and commit the changes
 * Run `make`
 * Run `sh_build_doc.sh`
 * Merge to `master`, or to the `major.minor` branch

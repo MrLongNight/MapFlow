@@ -133,3 +133,72 @@ pub fn check_module_integrity(module: &MapFlowModule) -> Vec<ModuleIssue> {
 
     issues
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::module::{MapFlowModule, ModulePlaybackMode, PartType};
+
+    #[test]
+    fn test_check_module_integrity_invalid_from_part() {
+        let mut module = MapFlowModule {
+            id: 1,
+            name: "Test".to_string(),
+            color: [0.0; 4],
+            parts: vec![],
+            connections: vec![],
+            playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+            next_part_id: 1,
+        };
+
+        // Add a connection with an invalid from_part and to_part
+        module.add_connection(999, 0, 1000, 0);
+
+        let issues = check_module_integrity(&module);
+        assert_eq!(issues.len(), 2); // missing from and to parts
+        assert_eq!(issues[0].severity, IssueSeverity::Error);
+        assert!(issues[0].message.contains("invalid FROM Part ID"));
+    }
+
+    #[test]
+    fn test_check_module_integrity_unconnected_output() {
+        let mut module = MapFlowModule {
+            id: 1,
+            name: "Test2".to_string(),
+            color: [0.0; 4],
+            parts: vec![],
+            connections: vec![],
+            playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+            next_part_id: 1,
+        };
+
+        // Add an output part using the builder
+        module.add_part(PartType::Output, (0.0, 0.0));
+
+        let issues = check_module_integrity(&module);
+        assert_eq!(issues.len(), 1); // 1 Warning for disconnected output
+        assert_eq!(issues[0].severity, IssueSeverity::Warning);
+        assert!(issues[0].message.contains("Output Node is not connected"));
+    }
+
+    #[test]
+    fn test_check_module_integrity_empty_source_path() {
+        let mut module = MapFlowModule {
+            id: 1,
+            name: "Test3".to_string(),
+            color: [0.0; 4],
+            parts: vec![],
+            connections: vec![],
+            playback_mode: ModulePlaybackMode::LoopUntilManualSwitch,
+            next_part_id: 1,
+        };
+
+        // Add an empty source node
+        module.add_part(PartType::Source, (0.0, 0.0));
+
+        let issues = check_module_integrity(&module);
+        assert_eq!(issues.len(), 1);
+        assert_eq!(issues[0].severity, IssueSeverity::Warning);
+        assert!(issues[0].message.contains("no file selected"));
+    }
+}

@@ -13,9 +13,9 @@ cargo clippy --fix --allow-dirty
 cargo test --workspace
 ```
 
-Oder nutze das Pre-PR Skript (falls vorhanden):
-```powershell
-.\scripts\pre-pr.ps1
+Oder nutze das Jules-Vorbereitungsskript:
+```bash
+bash ./scripts/jules/prepare-pre-commit.sh
 ```
 
 ---

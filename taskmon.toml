@@ -8,7 +8,7 @@ prompt = """Start the MapFlow monitor for the following request:
 
 Your task:
 1. Determine the monitor interval (in seconds) from the <user-request>. Default to 300 if not specified.
-2. Start the PowerShell script `C:/Users/Vinyl/Desktop/VJMapper/VjMapper/scripts/monitor_mapflow.ps1` in the background.
+2. Start the PowerShell script `C:/Users/Vinyl/Desktop/VJMapper/VjMapper/scripts/gemini-cli/monitor-mapflow.ps1` in the background.
 3. Pass the following arguments to the script:
    - `-Interval`: The determined interval.
    - `-SessionId`: Use the current session ID ($GEMINI_SESSION_ID).

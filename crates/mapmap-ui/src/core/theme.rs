@@ -83,7 +83,7 @@ impl ThemeConfig {
     /// Apply theme to egui context
     pub fn apply(&self, ctx: &egui::Context) {
         let mut style = Style::default();
-        let visuals = match self.theme {
+        let mut visuals = match self.theme {
             Theme::Dark => Self::dark_visuals(),
             Theme::Light => Self::light_visuals(),
             Theme::HighContrast => Self::high_contrast_visuals(),
@@ -96,15 +96,18 @@ impl ThemeConfig {
             Theme::Custom => self.custom_visuals(),
         };
 
+        // Harmonize interaction states across all themes for a modern, consistent UI language.
+        let radius = egui::CornerRadius::same(8);
+        visuals.widgets.noninteractive.corner_radius = radius;
+        visuals.widgets.inactive.corner_radius = radius;
+        visuals.widgets.hovered.corner_radius = radius;
+        visuals.widgets.active.corner_radius = radius;
+        visuals.widgets.open.corner_radius = radius;
+        visuals.widgets.hovered.expansion = 0.5;
+        visuals.widgets.active.expansion = 0.5;
+        visuals.selection.stroke.width = 1.5;
+        visuals.window_stroke.width = 1.0;
         style.visuals = visuals;
-
-        // Normalize modern component geometry across all themes for a consistent look.
-        let radius = egui::CornerRadius::same(6);
-        style.visuals.widgets.noninteractive.corner_radius = radius;
-        style.visuals.widgets.inactive.corner_radius = radius;
-        style.visuals.widgets.hovered.corner_radius = radius;
-        style.visuals.widgets.active.corner_radius = radius;
-        style.visuals.widgets.open.corner_radius = radius;
 
         // Base spacing for modern, less cramped layouts (responsive layer can override).
         style.spacing.item_spacing = egui::vec2(8.0, 6.0);

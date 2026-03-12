@@ -1,7 +1,7 @@
 name: Development Task
-description: Development task for MapFlow project (can be processed by Jules)
-title: "[Task]: "
-labels: ["enhancement", "jules-task"]
+description: Development task for MapFlow project (starts in user review queue)
+title: "MFuser_ "
+labels: ["enhancement", "Todo-UserISU"]
 assignees: []
 
 body:
@@ -9,7 +9,8 @@ body:
     attributes:
       value: |
         ## Development Task
-        This template is used for development tasks that can be automatically processed by Jules AI agent.
+        This template is used for development tasks that start in the user review queue and are only processed by Jules after explicit approval.
+        After creation, the title is automatically normalized to `MFuser_#<issue_number>-...`.
 
   - type: dropdown
     id: phase

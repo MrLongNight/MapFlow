@@ -3,8 +3,6 @@ name: "CICD-DevFlow: Job02 Auto-Merge"
 on:
   pull_request:
     types: [labeled, synchronize, opened, reopened]
-  check_suite:
-    types: [completed]
   workflow_run:
     workflows: ["CICD-DevFlow: Job01 Validation", "Security Analysis"]
     types: [completed]
@@ -19,6 +17,10 @@ on:
 env:
   AUTO_MERGE_ENABLED: true
 
+concurrency:
+  group: auto-merge-${{ github.event.pull_request.number || github.event.inputs.pr_number || github.event.workflow_run.head_sha || github.event.sha || github.run_id }}
+  cancel-in-progress: true
+
 permissions:
   actions: write
   contents: write
@@ -31,7 +33,7 @@ jobs:
   auto-merge:
     name: Auto-Merge
     runs-on: ubuntu-latest
-    if: github.event.pull_request != null || github.event.workflow_run != null || github.event.check_suite != null || github.event_name == 'status' || github.event_name == 'workflow_dispatch'
+    if: github.event.pull_request != null || github.event.workflow_run != null || github.event_name == 'status' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Auto-Merge Logic
         uses: actions/github-script@v7
@@ -53,6 +55,9 @@ jobs:
               prNumber = parsedPrNumber;
             }
             const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+            const AUTO_MERGE_RESULT_MARKER = '<!-- auto-merge-result -->';
+            const buildManagedCommentBody = (message) =>
+              `${AUTO_MERGE_RESULT_MARKER}\n${message}`;
             const MERGE_BLOCKING_CHECKS = [
               {
                 name: 'pre-commit.ci - pr',
@@ -113,6 +118,43 @@ jobs:
             ];
             const isActiveWorkflowRun = (run) =>
               ['queued', 'in_progress', 'pending', 'requested', 'waiting'].includes(run.status);
+            const upsertManagedComment = async (issueNumber, message) => {
+              const body = buildManagedCommentBody(message);
+              const comments = await github.paginate(github.rest.issues.listComments, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                per_page: 100,
+              });
+
+              const existingComment = [...comments]
+                .reverse()
+                .find((comment) => comment.body?.includes(AUTO_MERGE_RESULT_MARKER));
+
+              if (!existingComment) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  body,
+                });
+                console.log('Created managed auto-merge comment.');
+                return;
+              }
+
+              if (existingComment.body === body) {
+                console.log(`Managed auto-merge comment ${existingComment.id} is already current.`);
+                return;
+              }
+
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body,
+              });
+              console.log(`Updated managed auto-merge comment ${existingComment.id}.`);
+            };
             const findOpenPrByHeadSha = async (headSha) => {
               const prs = await github.rest.pulls.list({
                 owner: context.repo.owner,
@@ -296,6 +338,11 @@ jobs:
               }
             };
 
+            if (context.eventName === 'status' && context.payload.context !== 'pre-commit.ci - pr') {
+              console.log(`Ignoring status event for "${context.payload.context}".`);
+              return;
+            }
+
             if (!prNumber && context.payload.workflow_run) {
               const headBranch = context.payload.workflow_run.head_branch;
               const headSha = context.payload.workflow_run.head_sha;
@@ -314,21 +361,6 @@ jobs:
                 prNumber = match.number;
               } else if (prs.data.length > 0) {
                 prNumber = prs.data[0].number;
-              }
-            }
-
-            if (!prNumber && context.payload.check_suite) {
-              const associatedPrNumber = context.payload.check_suite.pull_requests?.[0]?.number;
-              if (associatedPrNumber) {
-                prNumber = associatedPrNumber;
-              }
-            }
-
-            if (!prNumber && context.payload.check_suite) {
-              const headSha = context.payload.check_suite.head_sha;
-              const match = await findOpenPrByHeadSha(headSha);
-              if (match) {
-                prNumber = match.number;
               }
             }
 
@@ -556,19 +588,15 @@ jobs:
 
               console.log('PR merged successfully.');
 
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body: 'Auto-merged by the CI pipeline after all checks passed.',
-              });
+              await upsertManagedComment(
+                prNumber,
+                'Auto-merged by the CI pipeline after all checks passed.',
+              );
             } catch (error) {
               console.log(`Merge failed: ${error.message}`);
 
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body: `Auto-merge failed: ${error.message}\n\nPlease merge manually.`,
-              });
+              await upsertManagedComment(
+                prNumber,
+                `Auto-merge failed: ${error.message}\n\nPlease merge manually.`,
+              );
             }

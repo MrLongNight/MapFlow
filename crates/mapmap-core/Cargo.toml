@@ -47,3 +47,4 @@ winit = { workspace = true, optional = true }
 
 [dev-dependencies]
 proptest = { workspace = true }
+ron = { workspace = true }
