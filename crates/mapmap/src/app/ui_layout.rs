@@ -10,8 +10,22 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
     let viewport_width = viewport_rect.width();
     let viewport_height = viewport_rect.height();
     let compact_height = viewport_height < 760.0;
-    let sidebar_default = (viewport_width * 0.22).clamp(220.0, 420.0);
-    let inspector_default = (viewport_width * 0.24).clamp(260.0, 520.0);
+    let active_layout = app.ui_state.user_config.active_layout().cloned();
+    let layout_sizes = active_layout
+        .as_ref()
+        .map(|layout| layout.panel_sizes)
+        .unwrap_or_default();
+    let layout_locked = active_layout
+        .as_ref()
+        .map(|layout| layout.lock_layout)
+        .unwrap_or(false);
+    let sidebar_default = layout_sizes
+        .left_sidebar_width
+        .clamp(220.0, (viewport_width * 0.45).max(340.0));
+    let inspector_default = layout_sizes
+        .inspector_width
+        .clamp(260.0, (viewport_width * 0.5).max(420.0));
+    let timeline_default = layout_sizes.timeline_height.clamp(100.0, 500.0);
 
     // 1. Global Menu Bar (Top-most)
     let menu_actions = ui::view::menu_bar::show(ctx, &mut app.ui_state);
@@ -22,7 +36,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
     // 2. Toolbar (Separate Panel below Menu)
     if app.ui_state.show_toolbar {
         egui::TopBottomPanel::top("toolbar_panel")
-            .resizable(true)
+            .resizable(!layout_locked)
             .min_height(if compact_height { 36.0 } else { 44.0 })
             .frame(
                 egui::Frame::default()
@@ -41,7 +55,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
     // 3. Left Panel: Sidebar (Collapsible & Resizable)
     if app.ui_state.show_left_sidebar {
         egui::SidePanel::left("left_sidebar_panel")
-            .resizable(true)
+            .resizable(!layout_locked)
             .default_width(sidebar_default)
             .min_width(220.0)
             .max_width((viewport_width * 0.45).max(340.0))
@@ -178,7 +192,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
     // 4. Right Panel: Inspector (Docked & Resizable)
     if app.ui_state.show_inspector {
         egui::SidePanel::right("right_panel")
-            .resizable(true)
+            .resizable(!layout_locked)
             .default_width(inspector_default)
             .min_width(260.0)
             .max_width((viewport_width * 0.5).max(420.0))
@@ -216,8 +230,8 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
     // 5. Bottom Panel: Timeline (Resizable)
     if app.ui_state.show_timeline {
         egui::TopBottomPanel::bottom("bottom_panel")
-            .resizable(true)
-            .default_height(if compact_height { 150.0 } else { 220.0 })
+            .resizable(!layout_locked)
+            .default_height(timeline_default)
             .min_height(if compact_height { 80.0 } else { 110.0 })
             .show(ctx, |ui_obj| {
                 ui_obj.heading(app.ui_state.i18n.t("timeline"));

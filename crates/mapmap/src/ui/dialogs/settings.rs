@@ -37,12 +37,14 @@ pub struct SettingsContext<'a> {
 /// Show settings dialog
 pub fn show(ctx: &Context, context: SettingsContext) {
     let mut show_settings = context.ui_state.show_settings;
-    let i18n = &context.ui_state.i18n;
 
     Window::new(
-        RichText::new(format!("⚙ {}", i18n.t("settings").to_uppercase()))
-            .strong()
-            .color(Color32::from_rgb(0, 255, 255)),
+        RichText::new(format!(
+            "⚙ {}",
+            context.ui_state.i18n.t("settings").to_uppercase()
+        ))
+        .strong()
+        .color(Color32::from_rgb(0, 255, 255)),
     )
     .open(&mut show_settings)
     .resizable(true)
@@ -52,7 +54,7 @@ pub fn show(ctx: &Context, context: SettingsContext) {
             ui.heading(RichText::new("General").color(Color32::WHITE));
             ui.add_space(4.0);
             ui.horizontal(|ui| {
-                ui.label(format!("{}:", i18n.t("language")));
+                ui.label(format!("{}:", context.ui_state.i18n.t("language")));
                 let current_lang = context.ui_state.user_config.language.clone();
                 let lang_name = if current_lang == "de" {
                     "Deutsch"
@@ -84,10 +86,10 @@ pub fn show(ctx: &Context, context: SettingsContext) {
             });
             ui.add_space(10.0);
             ui.separator();
-            ui.heading(RichText::new(i18n.t("appearance")).color(Color32::WHITE));
+            ui.heading(RichText::new(context.ui_state.i18n.t("appearance")).color(Color32::WHITE));
             ui.add_space(4.0);
             ui.horizontal(|ui| {
-                ui.label(format!("{}:", i18n.t("theme")));
+                ui.label(format!("{}:", context.ui_state.i18n.t("theme")));
                 let current_theme = context.ui_state.user_config.theme.theme;
                 egui::ComboBox::from_id_salt("theme_selector")
                     .selected_text(format!("{:?}", current_theme))
@@ -186,8 +188,8 @@ pub fn show(ctx: &Context, context: SettingsContext) {
             ui.heading(
                 RichText::new(format!(
                     "{} & {}",
-                    i18n.t("graphics"),
-                    i18n.t("performance")
+                    context.ui_state.i18n.t("graphics"),
+                    context.ui_state.i18n.t("performance")
                 ))
                 .color(Color32::WHITE),
             );
@@ -196,10 +198,10 @@ pub fn show(ctx: &Context, context: SettingsContext) {
                 .num_columns(2)
                 .spacing([20.0, 8.0])
                 .show(ui, |ui| {
-                    ui.label(format!("{}:", i18n.t("hw-accel")));
+                    ui.label(format!("{}:", context.ui_state.i18n.t("hw-accel")));
                     ui.label("Enabled");
                     ui.end_row();
-                    ui.label(format!("{}:", i18n.t("target-fps")));
+                    ui.label(format!("{}:", context.ui_state.i18n.t("target-fps")));
                     let mut fps = context.ui_state.user_config.target_fps.unwrap_or(60.0);
                     if ui
                         .add(egui::Slider::new(&mut fps, 24.0..=144.0).suffix(" FPS"))
@@ -253,15 +255,146 @@ pub fn show(ctx: &Context, context: SettingsContext) {
                 });
             ui.add_space(10.0);
             ui.separator();
-            ui.heading(RichText::new(i18n.t("audio")).color(Color32::WHITE));
+            ui.heading(RichText::new("Layout Profiles").color(Color32::WHITE));
+            ui.add_space(4.0);
+
+            let active_layout_before = context.ui_state.user_config.active_layout_id.clone();
+            let layout_items: Vec<(String, String)> = context
+                .ui_state
+                .user_config
+                .layouts
+                .iter()
+                .map(|l| (l.id.clone(), l.name.clone()))
+                .collect();
+
+            let mut selected_layout_id = active_layout_before.clone();
+            ui.horizontal(|ui| {
+                ui.label("Aktives Layout:");
+                egui::ComboBox::from_id_salt("layout_profile_selector")
+                    .selected_text(
+                        layout_items
+                            .iter()
+                            .find(|(id, _)| id == &selected_layout_id)
+                            .map(|(_, name)| name.clone())
+                            .unwrap_or_else(|| selected_layout_id.clone()),
+                    )
+                    .show_ui(ui, |ui| {
+                        for (id, name) in &layout_items {
+                            if ui
+                                .selectable_label(selected_layout_id == *id, name)
+                                .clicked()
+                            {
+                                selected_layout_id = id.clone();
+                            }
+                        }
+                    });
+
+                if ui.button("Duplizieren").clicked() {
+                    if let Some(active) = context.ui_state.user_config.active_layout().cloned() {
+                        let mut clone = active;
+                        let next = context.ui_state.user_config.layouts.len() + 1;
+                        clone.id = format!("layout-{}", next);
+                        clone.name = format!("{} {}", clone.name, next);
+                        context.ui_state.user_config.add_layout_profile(clone);
+                        let _ = context.ui_state.user_config.save();
+                    }
+                }
+
+                if ui.button("Zurücksetzen").clicked() {
+                    if let Some(layout) = context.ui_state.user_config.active_layout_mut() {
+                        let id = layout.id.clone();
+                        let name = layout.name.clone();
+                        *layout = mapmap_ui::core::config::LayoutProfile::default_profile();
+                        layout.id = id;
+                        layout.name = name;
+                    }
+                    context.ui_state.apply_active_layout();
+                    let _ = context.ui_state.user_config.save();
+                }
+            });
+
+            if selected_layout_id != active_layout_before
+                && context
+                    .ui_state
+                    .user_config
+                    .set_active_layout(&selected_layout_id)
+            {
+                context.ui_state.apply_active_layout();
+                let _ = context.ui_state.user_config.save();
+            }
+
+            ui.add_space(4.0);
+            ui.label("Panel-Sichtbarkeit");
+            let mut changed_visibility = false;
+            changed_visibility |= ui
+                .checkbox(&mut context.ui_state.show_toolbar, "Toolbar")
+                .changed();
+            changed_visibility |= ui
+                .checkbox(&mut context.ui_state.show_left_sidebar, "Left Sidebar")
+                .changed();
+            changed_visibility |= ui
+                .checkbox(&mut context.ui_state.show_inspector, "Inspector")
+                .changed();
+            changed_visibility |= ui
+                .checkbox(&mut context.ui_state.show_timeline, "Timeline")
+                .changed();
+            changed_visibility |= ui
+                .checkbox(&mut context.ui_state.show_media_browser, "Media Browser")
+                .changed();
+            changed_visibility |= ui
+                .checkbox(&mut context.ui_state.show_module_canvas, "Module Canvas")
+                .changed();
+
+            if changed_visibility {
+                context.ui_state.sync_runtime_to_active_layout();
+                let _ = context.ui_state.user_config.save();
+            }
+
+            if let Some(layout) = context.ui_state.user_config.active_layout_mut() {
+                ui.add_space(4.0);
+                ui.label("Panel-Größen");
+                let mut changed_sizes = false;
+                changed_sizes |= ui
+                    .add(
+                        egui::Slider::new(
+                            &mut layout.panel_sizes.left_sidebar_width,
+                            220.0..=640.0,
+                        )
+                        .text("Sidebar Breite"),
+                    )
+                    .changed();
+                changed_sizes |= ui
+                    .add(
+                        egui::Slider::new(&mut layout.panel_sizes.inspector_width, 260.0..=760.0)
+                            .text("Inspector Breite"),
+                    )
+                    .changed();
+                changed_sizes |= ui
+                    .add(
+                        egui::Slider::new(&mut layout.panel_sizes.timeline_height, 100.0..=500.0)
+                            .text("Timeline Höhe"),
+                    )
+                    .changed();
+                changed_sizes |= ui
+                    .checkbox(&mut layout.lock_layout, "Layout sperren")
+                    .changed();
+
+                if changed_sizes {
+                    let _ = context.ui_state.user_config.save();
+                }
+            }
+
+            ui.add_space(10.0);
+            ui.separator();
+            ui.heading(RichText::new(context.ui_state.i18n.t("audio")).color(Color32::WHITE));
             ui.add_space(4.0);
             ui.horizontal(|ui| {
-                ui.label(format!("{}:", i18n.t("label-device")));
+                ui.label(format!("{}:", context.ui_state.i18n.t("label-device")));
                 let current_device = context
                     .ui_state
                     .selected_audio_device
                     .clone()
-                    .unwrap_or_else(|| i18n.t("no-device"));
+                    .unwrap_or_else(|| context.ui_state.i18n.t("no-device"));
                 egui::ComboBox::from_id_salt("audio_device_selector")
                     .selected_text(&current_device)
                     .show_ui(ui, |ui| {
@@ -353,7 +486,7 @@ pub fn show(ctx: &Context, context: SettingsContext) {
             ui.vertical_centered(|ui| {
                 if ui
                     .button(
-                        RichText::new(i18n.t("restart-app"))
+                        RichText::new(context.ui_state.i18n.t("restart-app"))
                             .color(Color32::RED)
                             .strong(),
                     )
