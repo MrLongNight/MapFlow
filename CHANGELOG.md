@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2026-03-12: fix(ci): Correct the Windows MSI release step by replacing the unsupported `cargo wix --no-check-includes` flag with `--no-build` in the release workflow (follow-up to Windows release workflow regression, run 22958743385).
 - 2026-03-10: fix(ci): Fix Windows release `vcpkg` baseline checkout by replacing cached shallow `vcpkg` clones with full-history bootstraps, and restore `SetMeterStyle` action handling for release builds.
 - 2026-03-09: fix(ui): Standardize panel layout and resolve UI consistency gaps (MF-011).
 - 2026-03-08: feat(ui): Implement Toast Notification system for engine errors and status updates (MF-023).
