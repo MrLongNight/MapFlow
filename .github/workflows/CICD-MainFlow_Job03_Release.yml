@@ -122,7 +122,7 @@ jobs:
         run: |
           if (-not (Test-Path "vcpkg")) {
             git clone https://github.com/microsoft/vcpkg.git
-          } elseif (Test-Path "vcpkg\\.git\\shallow") {
+          } elseif (Test-Path "vcpkg\.git\shallow") {
             git -C vcpkg fetch --unshallow origin
           } else {
             git -C vcpkg fetch origin
@@ -216,12 +216,20 @@ jobs:
       - name: Build MSI Installer
         shell: pwsh
         run: |
-          cargo wix -p mapmap --no-build --release
+          # IMPORTANT:
+          # Do NOT pass `-- --release` here.
+          # That is interpreted by cargo-wix as a *path* and fails with:
+          #   "The '--release' path does not exist"
+          #
+          # We already built in release mode above, and keep --no-build here.
+          cargo wix -p mapmap --no-build --profile release
+
           $MsiPath = Get-ChildItem -Path "target/wix/*.msi" -File -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
           if (-not $MsiPath) {
             Write-Error "No MSI artifact was generated in target/wix."
             exit 1
           }
+
           Move-Item -Path $MsiPath -Destination "MapFlow-${{ needs.resolve-release.outputs.version }}-x64.msi"
 
       - name: Upload Artifacts
