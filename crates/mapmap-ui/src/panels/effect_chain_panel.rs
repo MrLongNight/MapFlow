@@ -519,7 +519,7 @@ impl EffectChainPanel {
                                             let configs = recent.get_recent(&type_name);
 
                                             if configs.is_empty() {
-                                                ui.label("No recent configs");
+                                                ui.label(egui::RichText::new("No recent configs").weak().italics());
                                             } else {
                                                 for config in configs {
                                                     if ui.button(config.name.to_string()).clone().on_hover_text(format!("{:?}", config.params)).clicked() {
