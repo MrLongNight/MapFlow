@@ -4,8 +4,6 @@ use std::ptr::NonNull;
 use wgpu::Texture;
 
 #[cfg(target_os = "windows")]
-use windows::core::Interface;
-#[cfg(target_os = "windows")]
 use windows::Win32::Foundation::HANDLE;
 #[cfg(target_os = "windows")]
 use windows::Win32::Graphics::Direct3D12::{ID3D12Device, ID3D12Resource};
@@ -101,7 +99,7 @@ pub unsafe fn shared_handle_from_texture(
             .CreateSharedHandle(resource, None, 0x10000000, name)
             .map_err(|_| "Failed to create shared handle from resource")?;
 
-        if let Some(ptr) = NonNull::new(handle.0 as *mut std::ffi::c_void) {
+        if let Some(ptr) = NonNull::new(handle.0) {
             return Ok(ptr);
         }
         return Err("Created handle was null");
