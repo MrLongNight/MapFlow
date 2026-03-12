@@ -64,3 +64,7 @@
 ## 2024-03-10 - Integer Math for YUV to RGB Conversion
 **Learning:** Floating-point operations in hot loops, like `yuv_to_rgb` processing every pixel in video frames, can be a major performance bottleneck.
 **Action:** When performing color space conversions or other pixel-level math, always prefer integer math approximations (e.g., multiplying by a constant and dividing by a power of two) over float operations to significantly reduce processing time.
+
+## 2024-05-23 - Avoid String Cloning in TimelineModule Iterators
+**Learning:** Structs collected into `Vec` inside UI hot loops (like `TimelineModule` in `mapmap/src/app/ui_layout.rs`) that own `String` fields cause massive per-frame allocation overhead.
+**Action:** Change UI presentation structs to borrow strings (`&'a str`) instead of owning them, reducing `clone()` allocations in rendering loops to zero.

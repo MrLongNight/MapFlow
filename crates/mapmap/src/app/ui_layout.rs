@@ -228,23 +228,21 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
             .min_height(100.0)
             .show(ctx, |ui_obj| {
                 ui_obj.heading(app.ui_state.i18n.t("timeline"));
-                let mut modules: Vec<ui::TimelineModule> = app
-                    .state
+                let state = &mut app.state;
+                let animator = std::sync::Arc::make_mut(&mut state.effect_animator);
+                let mut modules: Vec<ui::TimelineModule> = state
                     .module_manager
                     .modules()
                     .iter()
                     .map(|m| ui::TimelineModule {
                         id: m.id,
-                        name: m.name.clone(),
+                        // Optimization: Borrow name string to prevent allocation overhead in UI hot loop.
+                        name: &m.name,
                     })
                     .collect();
                 modules.sort_by_key(|m| m.id);
 
-                if let Some(action) = app.ui_state.timeline_panel.ui(
-                    ui_obj,
-                    app.state.effect_animator_mut(),
-                    &modules,
-                ) {
+                if let Some(action) = app.ui_state.timeline_panel.ui(ui_obj, animator, &modules) {
                     app.ui_state
                         .actions
                         .push(ui::UIAction::TimelineAction(action));

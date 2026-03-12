@@ -13,11 +13,12 @@ use std::collections::{HashMap, HashSet};
 
 /// Lightweight module descriptor for timeline arrangement UI.
 #[derive(Debug, Clone)]
-pub struct TimelineModule {
+pub struct TimelineModule<'a> {
     /// Module ID
     pub id: ModuleId,
     /// Module display name
-    pub name: String,
+    // Optimization: Borrow name string to prevent allocation overhead in UI hot loop.
+    pub name: &'a str,
 }
 
 /// Show orchestration mode for module arrangement.
@@ -183,14 +184,14 @@ impl TimelineV2 {
         blocks.first().copied()
     }
 
-    fn module_name_map(modules: &[TimelineModule]) -> HashMap<ModuleId, String> {
-        modules.iter().map(|m| (m.id, m.name.clone())).collect()
+    fn module_name_map<'a>(modules: &[TimelineModule<'a>]) -> HashMap<ModuleId, &'a str> {
+        modules.iter().map(|m| (m.id, m.name)).collect()
     }
 
-    fn module_name(module_names: &HashMap<ModuleId, String>, module_id: ModuleId) -> String {
+    fn module_name(module_names: &HashMap<ModuleId, &str>, module_id: ModuleId) -> String {
         module_names
             .get(&module_id)
-            .cloned()
+            .map(|s| s.to_string())
             .unwrap_or_else(|| format!("Module {}", module_id))
     }
 
@@ -386,7 +387,7 @@ impl TimelineV2 {
         &mut self,
         ui: &mut Ui,
         animator: &mut EffectParameterAnimator,
-        modules: &[TimelineModule],
+        modules: &[TimelineModule<'_>],
     ) -> Option<TimelineAction> {
         let mut action = None;
         let module_names = Self::module_name_map(modules);
@@ -631,7 +632,7 @@ impl TimelineV2 {
                                 ui.selectable_value(
                                     &mut self.selected_module_id,
                                     Some(module.id),
-                                    &module.name,
+                                    module.name,
                                 );
                             }
                         });
@@ -671,7 +672,7 @@ impl TimelineV2 {
                         .show_ui(ui, |ui| {
                             for module in modules {
                                 if ui
-                                    .selectable_label(block.module_id == module.id, &module.name)
+                                    .selectable_label(block.module_id == module.id, module.name)
                                     .clicked()
                                 {
                                     block.module_id = module.id;
