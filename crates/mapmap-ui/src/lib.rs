@@ -483,19 +483,19 @@ pub struct AppUI {
 impl Default for AppUI {
     fn default() -> Self {
         // Load user config once at initialization
-        let user_config = config::UserConfig::load();
+        let mut user_config = config::UserConfig::load();
+        user_config.ensure_layout_profiles();
+
+        let active_layout = user_config
+            .active_layout()
+            .cloned()
+            .unwrap_or_else(config::LayoutProfile::default_profile);
 
         // Extract values before moving user_config into struct
         let saved_audio_device = user_config.selected_audio_device.clone();
         let saved_recent_files = user_config.recent_files.clone();
         let saved_language = user_config.language.clone();
         let saved_target_fps = user_config.target_fps.unwrap_or(60.0);
-        // Panel visibility settings
-        let saved_show_left_sidebar = user_config.show_left_sidebar;
-        let saved_show_inspector = user_config.show_inspector;
-        let saved_show_timeline = user_config.show_timeline;
-        let saved_show_media_browser = user_config.show_media_browser;
-        let saved_show_module_canvas = user_config.show_module_canvas;
         let saved_show_controller_overlay = user_config.show_controller_overlay;
 
         Self {
@@ -542,26 +542,26 @@ impl Default for AppUI {
             effect_chain_panel: EffectChainPanel::default(),
             cue_panel: CuePanel::default(),
             timeline_panel: TimelineV2::default(),
-            show_timeline: saved_show_timeline, // Load from config
-            show_shader_graph: false,           // Advanced - hide by default
+            show_timeline: active_layout.visibility.show_timeline,
+            show_shader_graph: false, // Advanced - hide by default
             node_editor_panel: NodeEditor::default(),
             transform_panel: TransformPanel::default(),
             shortcut_editor: ShortcutEditor::new(),
-            show_toolbar: true,
+            show_toolbar: active_layout.visibility.show_toolbar,
             icon_manager: None, // Will be initialized with egui context
             icon_demo_panel: icon_demo_panel::IconDemoPanel::default(),
             user_config,
             show_settings: false,
             show_about: false,
-            show_media_browser: saved_show_media_browser, // Load from config
+            show_media_browser: active_layout.visibility.show_media_browser,
             media_browser: MediaBrowser::new(std::env::current_dir().unwrap_or_default()),
             inspector_panel: InspectorPanel::default(),
-            show_inspector: saved_show_inspector, // Load from config
+            show_inspector: active_layout.visibility.show_inspector,
             module_sidebar: ModuleSidebar::default(),
             show_module_sidebar: true, // Show when Module Canvas is active
             module_canvas: ModuleCanvas::default(),
-            show_module_canvas: saved_show_module_canvas, // Load from config
-            show_left_sidebar: saved_show_left_sidebar,   // Load from config
+            show_module_canvas: active_layout.visibility.show_module_canvas,
+            show_left_sidebar: active_layout.visibility.show_left_sidebar,
             current_audio_level: 0.0,
             current_fps: 60.0,
             current_frame_time_ms: 16.67,
@@ -588,6 +588,30 @@ impl Default for AppUI {
 }
 
 impl AppUI {
+    /// Wendet das aktive Layoutprofil auf die Runtime-Sichtbarkeitsflags an.
+    pub fn apply_active_layout(&mut self) {
+        if let Some(layout) = self.user_config.active_layout() {
+            self.show_toolbar = layout.visibility.show_toolbar;
+            self.show_left_sidebar = layout.visibility.show_left_sidebar;
+            self.show_inspector = layout.visibility.show_inspector;
+            self.show_timeline = layout.visibility.show_timeline;
+            self.show_media_browser = layout.visibility.show_media_browser;
+            self.show_module_canvas = layout.visibility.show_module_canvas;
+        }
+    }
+
+    /// Synchronisiert die Runtime-Sichtbarkeiten zurück in das aktive Layoutprofil.
+    pub fn sync_runtime_to_active_layout(&mut self) {
+        if let Some(layout) = self.user_config.active_layout_mut() {
+            layout.visibility.show_toolbar = self.show_toolbar;
+            layout.visibility.show_left_sidebar = self.show_left_sidebar;
+            layout.visibility.show_inspector = self.show_inspector;
+            layout.visibility.show_timeline = self.show_timeline;
+            layout.visibility.show_media_browser = self.show_media_browser;
+            layout.visibility.show_module_canvas = self.show_module_canvas;
+        }
+    }
+
     /// Update responsive styles based on viewport size
     ///
     /// Only updates every 500ms to preserve performance
