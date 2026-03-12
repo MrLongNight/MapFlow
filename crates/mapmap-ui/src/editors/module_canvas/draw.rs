@@ -1065,7 +1065,7 @@ pub fn draw_presets_popup(
                 .show(ui, |ui| {
                     let presets = canvas.presets.clone();
                     if presets.is_empty() {
-                        ui.label("No presets found.");
+                        ui.label(egui::RichText::new("No presets found.").weak().italics());
                     }
                     for preset in &presets {
                         ui.horizontal(|ui| {

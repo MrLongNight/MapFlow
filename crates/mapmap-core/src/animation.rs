@@ -315,6 +315,7 @@ struct AnimationClipSerde {
 
 impl From<AnimationClipSerde> for AnimationClip {
     fn from(value: AnimationClipSerde) -> Self {
+        #[allow(clippy::unnecessary_lazy_evaluations)]
         let playback_mode = value.playback_mode.unwrap_or_else(|| {
             if value.looping {
                 PlaybackMode::Loop
