@@ -21,8 +21,9 @@ This directory now stores the real script implementations in thematic subfolders
 
 ## Compatibility
 
-Several old top-level filenames remain as thin wrappers for a transition period.
-Use the subfolder paths for new documentation and automation.
+The `scripts/` root is now intentionally clean.
+Archived former top-level entrypoints live under `scripts/archive/entrypoints/`.
+Use the subfolder paths for active documentation and automation.
 
 ## Prepare Pre-Commit
 
