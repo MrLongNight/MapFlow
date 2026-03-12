@@ -2,7 +2,7 @@
 
 use egui::Ui;
 use mapmap_core::AppState;
-use mapmap_ui::AppUI;
+use mapmap_ui::{AppUI, ModuleCanvasRenderOptions};
 
 /// Context required to render the module canvas.
 pub struct ModuleCanvasContext<'a> {
@@ -28,10 +28,6 @@ pub fn show(ui: &mut Ui, context: ModuleCanvasContext) {
         context.state.module_manager_mut(),
         &context.ui_state.i18n,
         &mut context.ui_state.actions,
-        context.ui_state.user_config.meter_style,
-        context.ui_state.user_config.node_animations_enabled,
-        context.ui_state.user_config.short_circuit_animation_enabled,
-        context.ui_state.user_config.animation_profile,
-        context.ui_state.user_config.reduce_motion_enabled,
+        ModuleCanvasRenderOptions::from(&context.ui_state.user_config),
     );
 }

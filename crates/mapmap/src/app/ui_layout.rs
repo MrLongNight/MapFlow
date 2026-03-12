@@ -451,11 +451,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
                     std::sync::Arc::make_mut(&mut app.state.module_manager),
                     &app.ui_state.i18n,
                     &mut app.ui_state.actions,
-                    app.ui_state.user_config.meter_style,
-                    app.ui_state.user_config.node_animations_enabled,
-                    app.ui_state.user_config.short_circuit_animation_enabled,
-                    app.ui_state.user_config.animation_profile,
-                    app.ui_state.user_config.reduce_motion_enabled,
+                    mapmap_ui::ModuleCanvasRenderOptions::from(&app.ui_state.user_config),
                 );
             } else {
                 ui_obj.centered_and_justified(|ui_obj| {

@@ -4,6 +4,7 @@ use super::draw;
 use super::state::ModuleCanvas;
 use super::types::*;
 use super::utils;
+use super::ModuleCanvasRenderOptions;
 use crate::i18n::LocaleManager;
 use crate::UIAction;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, Ui, Vec2};
@@ -15,11 +16,7 @@ pub fn show(
     manager: &mut ModuleManager,
     locale: &LocaleManager,
     actions: &mut Vec<UIAction>,
-    meter_style: crate::config::AudioMeterStyle,
-    node_animations_enabled: bool,
-    short_circuit_animation_enabled: bool,
-    animation_profile: crate::config::AnimationProfile,
-    reduce_motion_enabled: bool,
+    options: ModuleCanvasRenderOptions,
 ) {
     if !canvas.selected_parts.is_empty()
         && !ui.memory(|m| m.focused().is_some())
@@ -77,19 +74,7 @@ pub fn show(
     }
 
     if let Some(module_id) = canvas.active_module_id {
-        render_canvas(
-            canvas,
-            ui,
-            manager,
-            module_id,
-            locale,
-            actions,
-            meter_style,
-            node_animations_enabled,
-            short_circuit_animation_enabled,
-            animation_profile,
-            reduce_motion_enabled,
-        );
+        render_canvas(canvas, ui, manager, module_id, locale, actions, options);
     } else {
         ui.centered_and_justified(|ui| {
             ui.vertical_centered(|ui| {
@@ -110,12 +95,16 @@ pub fn render_canvas(
     module_id: ModuleId,
     _locale: &LocaleManager,
     actions: &mut Vec<UIAction>,
-    meter_style: crate::config::AudioMeterStyle,
-    node_animations_enabled: bool,
-    short_circuit_animation_enabled: bool,
-    animation_profile: crate::config::AnimationProfile,
-    reduce_motion_enabled: bool,
+    options: ModuleCanvasRenderOptions,
 ) {
+    let ModuleCanvasRenderOptions {
+        meter_style,
+        node_animations_enabled,
+        short_circuit_animation_enabled,
+        animation_profile,
+        reduce_motion_enabled,
+    } = options;
+
     let module = if let Some(m) = manager.get_module_mut(module_id) {
         m
     } else {
