@@ -138,3 +138,91 @@ impl Layer {
         self.transform.to_matrix(content_size)
     }
 }
+
+#[cfg(test)]
+mod tests_guardian {
+    use super::*;
+    use crate::layer::types::BlendMode;
+
+    #[test]
+    fn test_layer_new_initialization() {
+        let layer = Layer::new(42, "My Layer");
+        assert_eq!(layer.id, 42);
+        assert_eq!(layer.name, "My Layer");
+        assert_eq!(layer.paint_id, None);
+        assert!(layer.mapping_ids.is_empty());
+        assert_eq!(layer.blend_mode, BlendMode::Normal);
+        assert_eq!(layer.opacity, 1.0);
+        assert!(layer.visible);
+        assert!(!layer.solo);
+        assert!(!layer.bypass);
+        assert!(!layer.locked);
+        assert_eq!(layer.parent_id, None);
+        assert!(!layer.is_group);
+    }
+
+    #[test]
+    fn test_layer_builder_methods() {
+        let layer = Layer::new(1, "Test")
+            .with_paint(100)
+            .with_blend_mode(BlendMode::Add)
+            .with_opacity(0.5);
+        assert_eq!(layer.paint_id, Some(100));
+        assert_eq!(layer.blend_mode, BlendMode::Add);
+        assert_eq!(layer.opacity, 0.5);
+
+        // Clamping logic
+        let over = Layer::new(2, "O").with_opacity(2.0);
+        assert_eq!(over.opacity, 1.0);
+        let under = Layer::new(3, "U").with_opacity(-1.0);
+        assert_eq!(under.opacity, 0.0);
+    }
+
+    #[test]
+    fn test_layer_mapping_management() {
+        let mut layer = Layer::new(1, "MappingTest");
+        layer.add_mapping(10);
+        layer.add_mapping(20);
+        layer.add_mapping(10); // Duplicate should be ignored
+        assert_eq!(layer.mapping_ids, vec![10, 20]);
+
+        layer.remove_mapping(10);
+        assert_eq!(layer.mapping_ids, vec![20]);
+
+        layer.remove_mapping(99); // Removing non-existent
+        assert_eq!(layer.mapping_ids, vec![20]);
+    }
+
+    #[test]
+    fn test_layer_should_render_logic() {
+        let mut layer = Layer::new(1, "RenderTest").with_paint(10);
+        assert!(layer.should_render());
+
+        layer.visible = false;
+        assert!(!layer.should_render());
+        layer.visible = true;
+
+        layer.bypass = true;
+        assert!(!layer.should_render());
+        layer.bypass = false;
+
+        layer.opacity = 0.0;
+        assert!(!layer.should_render());
+        layer.opacity = 1.0;
+
+        layer.paint_id = None;
+        assert!(!layer.should_render());
+    }
+
+    #[test]
+    fn test_layer_state_toggles() {
+        let mut layer = Layer::new(1, "ToggleTest");
+        assert!(!layer.solo);
+        layer.toggle_solo();
+        assert!(layer.solo);
+
+        assert!(!layer.bypass);
+        layer.toggle_bypass();
+        assert!(layer.bypass);
+    }
+}
