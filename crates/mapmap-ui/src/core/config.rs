@@ -1,5 +1,5 @@
 //! User configuration management
-//!
+//!.
 //! Handles saving and loading user preferences including language settings.
 
 use crate::theme::ThemeConfig;
@@ -102,6 +102,57 @@ impl fmt::Display for AudioMeterStyle {
     }
 }
 
+/// Anzeige-Modus für Toolbar-Metriken.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum ToolbarMetricMode {
+    /// Immer sichtbar.
+    #[default]
+    Always,
+    /// Nur via Hover/Popover sichtbar.
+    Hover,
+}
+
+/// Konfiguration für eine einzelne Toolbar-Metrik.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ToolbarMetricConfig {
+    /// Ob die Metrik angezeigt wird.
+    #[serde(default = "default_true")]
+    pub visible: bool,
+    /// Anzeige-Modus der Metrik.
+    #[serde(default)]
+    pub mode: ToolbarMetricMode,
+}
+
+impl Default for ToolbarMetricConfig {
+    fn default() -> Self {
+        Self {
+            visible: true,
+            mode: ToolbarMetricMode::Always,
+        }
+    }
+}
+
+/// Konfiguration aller Toolbar-Metriken.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+pub struct ToolbarMetricsConfig {
+    #[serde(default)]
+    pub bpm: ToolbarMetricConfig,
+    #[serde(default)]
+    pub audio_meter: ToolbarMetricConfig,
+    #[serde(default)]
+    pub status: ToolbarMetricConfig,
+    #[serde(default)]
+    pub fps: ToolbarMetricConfig,
+    #[serde(default)]
+    pub frame_time: ToolbarMetricConfig,
+    #[serde(default)]
+    pub cpu: ToolbarMetricConfig,
+    #[serde(default)]
+    pub gpu: ToolbarMetricConfig,
+    #[serde(default)]
+    pub ram: ToolbarMetricConfig,
+}
+
 /// Vertical Synchronization Mode
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum VSyncMode {
@@ -109,52 +160,6 @@ pub enum VSyncMode {
     Auto,
     On,
     Off,
-}
-
-/// Toolbar metric disclosure behavior
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
-pub enum ToolbarMetricMode {
-    /// Metric is visible directly in toolbar
-    #[default]
-    Always,
-    /// Metric is available via hover/popover only
-    Hover,
-}
-
-/// Per-metric visibility settings for toolbar telemetry
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct ToolbarMetricsConfig {
-    #[serde(default = "default_true")]
-    pub show_bpm: bool,
-    #[serde(default = "default_true")]
-    pub show_fps: bool,
-    #[serde(default = "default_true")]
-    pub show_frame_time: bool,
-    #[serde(default = "default_true")]
-    pub show_cpu: bool,
-    #[serde(default = "default_true")]
-    pub show_gpu: bool,
-    #[serde(default = "default_true")]
-    pub show_ram: bool,
-    #[serde(default = "default_true")]
-    pub show_overall_status: bool,
-    #[serde(default)]
-    pub mode: ToolbarMetricMode,
-}
-
-impl Default for ToolbarMetricsConfig {
-    fn default() -> Self {
-        Self {
-            show_bpm: true,
-            show_fps: true,
-            show_frame_time: true,
-            show_cpu: true,
-            show_gpu: true,
-            show_ram: true,
-            show_overall_status: true,
-            mode: ToolbarMetricMode::Always,
-        }
-    }
 }
 
 impl fmt::Display for VSyncMode {
@@ -167,15 +172,15 @@ impl fmt::Display for VSyncMode {
     }
 }
 
-/// Global animation profile for UI and canvas motion.
+/// Globales Animationsprofil für UI-Bewegungen.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum AnimationProfile {
-    /// Disable animations.
+    /// Animationen deaktiviert.
     Off,
-    /// Subtle animations (default).
+    /// Subtile Animationen (Standard).
     #[default]
     Subtle,
-    /// Stronger, more cinematic animations.
+    /// Cinematische Animationen mit stärkerem Effekt.
     Cinematic,
 }
 
@@ -266,6 +271,9 @@ pub struct UserConfig {
     /// Audio meter style
     #[serde(default)]
     pub meter_style: AudioMeterStyle,
+    /// Toolbar-Metriken (Sichtbarkeit + progressive Offenlegung)
+    #[serde(default)]
+    pub toolbar_metrics: ToolbarMetricsConfig,
     /// MIDI element assignments
     #[serde(default)]
     pub midi_assignments: Vec<MidiAssignment>,
@@ -333,27 +341,30 @@ pub struct UserConfig {
     #[serde(default = "default_ui_scale")]
     pub ui_scale: f32,
 
-    /// Toolbar telemetry visibility and disclosure settings
-    #[serde(default)]
-    pub toolbar_metrics: ToolbarMetricsConfig,
     /// Enable animated node visuals in module canvas
     #[serde(default = "default_true")]
     pub node_animations_enabled: bool,
+
     /// Enable startup intro animation.
     #[serde(default = "default_true")]
     pub startup_animation_enabled: bool,
+
     /// Video path for startup intro animation.
     #[serde(default = "default_startup_animation_path")]
     pub startup_animation_path: String,
-    /// Reduce motion globally for better accessibility.
+
+    /// Reduziert Bewegungen/Animationen global für bessere Zugänglichkeit.
     #[serde(default)]
     pub reduce_motion_enabled: bool,
-    /// Disable sounds during app startup sequences.
+
+    /// Deaktiviert Sounds bei App-Start-Sequenzen.
     #[serde(default)]
     pub silent_startup_enabled: bool,
-    /// Global profile for UI and canvas animations.
+
+    /// Globales Profil für UI-Animationen.
     #[serde(default)]
     pub animation_profile: AnimationProfile,
+
     /// Enable short-circuit effect for invalid node connections
     #[serde(default = "default_true")]
     pub short_circuit_animation_enabled: bool,
@@ -409,6 +420,7 @@ impl Default for UserConfig {
             preferred_gpu: None,
             vsync_mode: VSyncMode::default(),
             meter_style: AudioMeterStyle::default(),
+            toolbar_metrics: ToolbarMetricsConfig::default(),
             midi_assignments: Vec::new(),
             selected_audio_device: None,
             // Window geometry - None means use default
@@ -430,7 +442,6 @@ impl Default for UserConfig {
             hue_config: HueConfig::default(),
             global_fullscreen: false,
             ui_scale: 1.0,
-            toolbar_metrics: ToolbarMetricsConfig::default(),
             node_animations_enabled: true,
             startup_animation_enabled: true,
             startup_animation_path: default_startup_animation_path(),
@@ -636,6 +647,7 @@ mod tests {
             preferred_gpu: None,
             vsync_mode: VSyncMode::default(),
             meter_style: AudioMeterStyle::Digital,
+            toolbar_metrics: ToolbarMetricsConfig::default(),
             midi_assignments: Vec::new(),
             selected_audio_device: None,
             window_width: Some(1920),
@@ -655,7 +667,13 @@ mod tests {
             hue_config: HueConfig::default(),
             global_fullscreen: true,
             ui_scale: 1.2,
-            toolbar_metrics: ToolbarMetricsConfig::default(),
+            node_animations_enabled: true,
+            startup_animation_enabled: true,
+            startup_animation_path: default_startup_animation_path(),
+            reduce_motion_enabled: false,
+            silent_startup_enabled: false,
+            animation_profile: AnimationProfile::Subtle,
+            short_circuit_animation_enabled: true,
             layouts: default_layout_profiles(),
             active_layout_id: default_active_layout_id(),
         };

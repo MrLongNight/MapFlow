@@ -35,3 +35,7 @@ I have addressed several broken links and outdated status indicators in the docu
 1. Added the link to `DOC-C7_MIDI_CONTROL.md` in `DOC-C0_README.md`.
 2. Cleaned up `DOC-C7_MIDI_CONTROL.md` by replacing "TODO" with "Einschränkungen" and rephrasing appropriately.
 3. Cleaned up Git merge conflict markers in `DOC-C2_TECHNICAL_DEBT_AND_BUGS.md`.
+
+## 2026-03-13 - Broken Links in Crate READMEs
+**Erkenntnis:** The `crates/mapmap/README.md` was still pointing to the old documentation structure (`docs/user/getting-started/`, `docs/user/manual/`, `docs/dev/architecture/`).
+**Aktion:** Updated the markdown links in `crates/mapmap/README.md` to point to the new semantic paths `docs/A4_USER/B1_MANUAL/DOC-C2_QUICKSTART.md`, `docs/A4_USER/B1_MANUAL/DOC-C0_README.md`, and `docs/A1_SYSTEM/B1_ARCHITECTURE/DOC-C1_OVERVIEW.md`.

@@ -11,9 +11,9 @@ It initializes the engine, sets up the windowing system, and runs the main event
 
 Full project documentation is available in the [`docs/`](../../docs/) directory.
 
-- [Getting Started](../../docs/user/getting-started/)
-- [User Guide](../../docs/user/manual/)
-- [Architecture](../../docs/dev/architecture/)
+- [Getting Started](../../docs/A4_USER/B1_MANUAL/DOC-C2_QUICKSTART.md)
+- [User Guide](../../docs/A4_USER/B1_MANUAL/DOC-C0_README.md)
+- [Architecture](../../docs/A1_SYSTEM/B1_ARCHITECTURE/DOC-C1_OVERVIEW.md)
 
 ## Running MapFlow
 

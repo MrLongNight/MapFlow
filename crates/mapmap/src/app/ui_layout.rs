@@ -226,6 +226,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
     let viewport_width = viewport_rect.width();
     let viewport_height = viewport_rect.height();
     let compact_height = viewport_height < 760.0;
+
     let active_layout = app.ui_state.user_config.active_layout().cloned();
     let layout_sizes = active_layout
         .as_ref()
@@ -235,13 +236,29 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
         .as_ref()
         .map(|layout| layout.lock_layout)
         .unwrap_or(false);
-    let sidebar_default = layout_sizes
-        .left_sidebar_width
-        .clamp(220.0, (viewport_width * 0.45).max(340.0));
-    let inspector_default = layout_sizes
-        .inspector_width
-        .clamp(260.0, (viewport_width * 0.5).max(420.0));
-    let timeline_default = layout_sizes.timeline_height.clamp(100.0, 500.0);
+
+    let sidebar_default = if layout_sizes.left_sidebar_width > 0.0 {
+        layout_sizes.left_sidebar_width
+    } else {
+        (viewport_width * 0.2).clamp(240.0, 420.0)
+    }
+    .clamp(220.0, (viewport_width * 0.45).max(340.0));
+
+    let inspector_default = if layout_sizes.inspector_width > 0.0 {
+        layout_sizes.inspector_width
+    } else {
+        (viewport_width * 0.24).clamp(260.0, 520.0)
+    }
+    .clamp(260.0, (viewport_width * 0.5).max(420.0));
+
+    let timeline_default_height = if layout_sizes.timeline_height > 0.0 {
+        layout_sizes.timeline_height
+    } else if compact_height {
+        (viewport_height * 0.22).clamp(90.0, 150.0)
+    } else {
+        (viewport_height * 0.26).clamp(140.0, 300.0)
+    }
+    .clamp(100.0, 500.0);
 
     // 1. Global Menu Bar (Top-most)
     let menu_actions = ui::view::menu_bar::show(ctx, &mut app.ui_state);
@@ -264,7 +281,46 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
                     )),
             )
             .show(ctx, |ui_obj| {
-                ui::view::menu_bar::toolbar::show(ui_obj, &mut app.ui_state);
+                ui_obj.horizontal_wrapped(|ui_obj| {
+                    if ui_obj
+                        .small_button(if app.ui_state.show_left_sidebar {
+                            "◀ Sidebar"
+                        } else {
+                            "▶ Sidebar"
+                        })
+                        .clicked()
+                    {
+                        app.ui_state.show_left_sidebar = !app.ui_state.show_left_sidebar;
+                        app.ui_state.user_config.show_left_sidebar = app.ui_state.show_left_sidebar;
+                        let _ = app.ui_state.user_config.save();
+                    }
+                    if ui_obj
+                        .small_button(if app.ui_state.show_inspector {
+                            "Inspector ▶"
+                        } else {
+                            "Inspector ◀"
+                        })
+                        .clicked()
+                    {
+                        app.ui_state.show_inspector = !app.ui_state.show_inspector;
+                        app.ui_state.user_config.show_inspector = app.ui_state.show_inspector;
+                        let _ = app.ui_state.user_config.save();
+                    }
+                    if ui_obj
+                        .small_button(if app.ui_state.show_timeline {
+                            "▼ Timeline"
+                        } else {
+                            "▲ Timeline"
+                        })
+                        .clicked()
+                    {
+                        app.ui_state.show_timeline = !app.ui_state.show_timeline;
+                        app.ui_state.user_config.show_timeline = app.ui_state.show_timeline;
+                        let _ = app.ui_state.user_config.save();
+                    }
+                    ui_obj.separator();
+                    ui::view::menu_bar::toolbar::show(ui_obj, &mut app.ui_state);
+                });
             });
     }
 
@@ -273,14 +329,17 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
         egui::SidePanel::left("left_sidebar_panel")
             .resizable(!layout_locked)
             .default_width(sidebar_default)
-            .min_width(220.0)
+            .min_width(if compact_height { 180.0 } else { 220.0 })
             .max_width((viewport_width * 0.45).max(340.0))
             .show(ctx, |ui_obj| {
                 egui::TopBottomPanel::bottom("left_sidebar_preview")
                     .resizable(true)
-                    .default_height(180.0)
+                    .default_height(if compact_height { 120.0 } else { 180.0 })
                     .min_height(110.0)
                     .show_inside(ui_obj, |ui_obj| {
+                        ui_obj.horizontal(|ui| {
+                            ui.heading(app.ui_state.i18n.t("preview"));
+                        });
                         if app.ui_state.show_preview_panel {
                             use mapmap_core::module::{ModulePartType, OutputType};
                             let preview_outputs = app
@@ -410,36 +469,53 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
         egui::SidePanel::right("right_panel")
             .resizable(!layout_locked)
             .default_width(inspector_default)
-            .min_width(260.0)
+            .min_width(if compact_height { 220.0 } else { 260.0 })
             .max_width((viewport_width * 0.5).max(420.0))
             .show(ctx, |ui_obj| {
-                // Render the unified Inspector
-                app.ui_state.render_inspector(
-                    ui_obj,
-                    std::sync::Arc::make_mut(&mut app.state.module_manager),
-                    &app.state.layer_manager,
-                    &app.state.output_manager,
-                    &app.state.mapping_manager,
-                );
+                ui_obj.horizontal(|ui| {
+                    ui.heading(app.ui_state.i18n.t("inspector"));
+                    if ui
+                        .small_button("✕")
+                        .on_hover_text("Inspector ausblenden")
+                        .clicked()
+                    {
+                        app.ui_state.show_inspector = false;
+                        app.ui_state.user_config.show_inspector = false;
+                        let _ = app.ui_state.user_config.save();
+                    }
+                });
 
-                // Legacy panels (can be toggled separately or integrated)
-                if app.ui_state.show_transforms {
-                    app.ui_state.transform_panel.render(ctx, &app.ui_state.i18n);
-                }
+                ui_obj.separator();
 
-                // Effect chain integrated into inspector side
-                egui::TopBottomPanel::bottom("inspector_effect_chain_split")
-                    .resizable(true)
-                    .default_height(240.0)
-                    .min_height(120.0)
-                    .show_inside(ui_obj, |_ui| {
-                        app.ui_state.effect_chain_panel.ui(
-                            ctx,
-                            &app.ui_state.i18n,
-                            app.ui_state.icon_manager.as_ref(),
-                            Some(&mut app.recent_effect_configs),
-                        );
-                    });
+                egui::ScrollArea::vertical().show(ui_obj, |ui_obj| {
+                    // Render the unified Inspector
+                    app.ui_state.render_inspector(
+                        ui_obj,
+                        std::sync::Arc::make_mut(&mut app.state.module_manager),
+                        &app.state.layer_manager,
+                        &app.state.output_manager,
+                        &app.state.mapping_manager,
+                    );
+
+                    // Legacy panels (can be toggled separately or integrated)
+                    if app.ui_state.show_transforms {
+                        app.ui_state.transform_panel.render(ctx, &app.ui_state.i18n);
+                    }
+
+                    // Effect chain integrated into inspector side
+                    egui::TopBottomPanel::bottom("inspector_effect_chain_split")
+                        .resizable(true)
+                        .default_height(if compact_height { 180.0 } else { 240.0 })
+                        .min_height(120.0)
+                        .show_inside(ui_obj, |_ui| {
+                            app.ui_state.effect_chain_panel.ui(
+                                ctx,
+                                &app.ui_state.i18n,
+                                app.ui_state.icon_manager.as_ref(),
+                                Some(&mut app.recent_effect_configs),
+                            );
+                        });
+                });
             });
     }
 
@@ -447,10 +523,22 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
     if app.ui_state.show_timeline {
         egui::TopBottomPanel::bottom("bottom_panel")
             .resizable(!layout_locked)
-            .default_height(timeline_default)
-            .min_height(if compact_height { 80.0 } else { 110.0 })
+            .default_height(timeline_default_height)
+            .min_height(if compact_height { 80.0 } else { 100.0 })
             .show(ctx, |ui_obj| {
-                ui_obj.heading(app.ui_state.i18n.t("timeline"));
+                ui_obj.horizontal(|ui| {
+                    ui.heading(app.ui_state.i18n.t("timeline"));
+                    if ui
+                        .small_button("✕")
+                        .on_hover_text("Timeline ausblenden")
+                        .clicked()
+                    {
+                        app.ui_state.show_timeline = false;
+                        app.ui_state.user_config.show_timeline = false;
+                        let _ = app.ui_state.user_config.save();
+                    }
+                });
+
                 let state = &mut app.state;
                 let animator = std::sync::Arc::make_mut(&mut state.effect_animator);
                 let mut modules: Vec<ui::TimelineModule> = state
@@ -598,7 +686,8 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
             }
         });
 
-    // 8. Other Overlays (Shader Graph, Audio, MIDI)
+    // 8. Overlays (Shader Graph, Audio, MIDI, Startup)
+    render_startup_animation_overlay(ctx, app);
 
     crate::ui::panels::output::show(
         ctx,
@@ -693,5 +782,4 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
         .assignment_panel
         .show(ctx, &app.state.assignment_manager);
     app.ui_state.shortcut_editor.show(ctx, &app.ui_state.i18n);
-    render_startup_animation_overlay(ctx, app);
 }

@@ -129,8 +129,12 @@ impl CuePanel {
             ui.separator();
 
             ui.label(i18n.t("label-jump-to"));
-            ui.text_edit_singleline(&mut self.jump_target_id);
-            if ui.button(i18n.t("btn-jump")).clicked() {
+            let text_response = ui.text_edit_singleline(&mut self.jump_target_id);
+            let btn_response = ui.button(i18n.t("btn-jump"));
+
+            let enter_pressed =
+                text_response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
+            if btn_response.clicked() || enter_pressed {
                 if let Ok(id) = self.jump_target_id.parse::<u32>() {
                     actions.push(UIAction::GoCue(id));
                 }

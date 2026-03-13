@@ -3,10 +3,6 @@ use crate::core::config::ToolbarMetricMode;
 use crate::icons::AppIcon;
 use crate::{AppUI, UIAction};
 
-fn metric_entry(ui: &mut egui::Ui, label: impl Into<egui::WidgetText>) {
-    ui.label(label);
-}
-
 pub fn show(ui: &mut egui::Ui, ui_state: &mut AppUI) {
     let mut actions = Vec::new();
 
@@ -18,6 +14,8 @@ pub fn show(ui: &mut egui::Ui, ui_state: &mut AppUI) {
                 ui.style_mut().spacing.item_spacing.y = 0.0;
 
                 let icon_size = 32.0;
+                let is_hovering_toolbar = ui.rect_contains_pointer(ui.max_rect());
+
                 let mut icon_btn = |icon: AppIcon, tooltip: &str| -> bool {
                     if let Some(mgr) = &ui_state.icon_manager {
                         if let Some(img) = mgr.image(icon, icon_size) {
@@ -50,25 +48,28 @@ pub fn show(ui: &mut egui::Ui, ui_state: &mut AppUI) {
 
                 ui.separator();
 
-                let bpm = ui_state.current_bpm;
-                let bpm_text = if let Some(tempo) = bpm.filter(|tempo| *tempo > 0.0) {
-                    format!("{tempo:.0} BPM")
-                } else {
-                    "--- BPM".to_string()
+                let metrics = &ui_state.user_config.toolbar_metrics;
+                let show_metric = |cfg: &crate::core::config::ToolbarMetricConfig| {
+                    cfg.visible
+                        && (cfg.mode == ToolbarMetricMode::Always
+                            || (cfg.mode == ToolbarMetricMode::Hover && is_hovering_toolbar))
                 };
 
-                if ui_state.user_config.toolbar_metrics.show_bpm
-                    && ui_state.user_config.toolbar_metrics.mode == ToolbarMetricMode::Always
-                {
-                    ui.add(
-                        egui::Label::new(
-                            egui::RichText::new(bpm_text.clone())
-                                .size(16.0)
-                                .color(egui::Color32::from_rgb(255, 200, 0))
-                                .strong(),
-                        )
-                        .sense(egui::Sense::hover()),
-                    )
+                if show_metric(&metrics.bpm) {
+                    let bpm = ui_state.current_bpm;
+                    let bpm_text = if let Some(tempo) = bpm.filter(|tempo| *tempo > 0.0) {
+                        format!("{tempo:.0} BPM")
+                    } else {
+                        "--- BPM".to_string()
+                    };
+
+                    ui.add(egui::Label::new(
+                        egui::RichText::new(bpm_text)
+                            .size(16.0)
+                            .color(egui::Color32::from_rgb(255, 200, 0))
+                            .strong(),
+                    ))
+                    .clone()
                     .on_hover_text("Erkanntes Tempo (Beats per Minute)");
                     ui.separator();
                 }
@@ -116,19 +117,22 @@ pub fn show(ui: &mut egui::Ui, ui_state: &mut AppUI) {
                     }
                 }
 
-                ui.separator();
+                if show_metric(&metrics.audio_meter) {
+                    ui.separator();
+                    let audio_level = ui_state.current_audio_level;
+                    let db = if audio_level > 0.0001 {
+                        20.0 * audio_level.log10()
+                    } else {
+                        -60.0
+                    };
 
-                let audio_level = ui_state.current_audio_level;
-                let db = if audio_level > 0.0001 {
-                    20.0 * audio_level.log10()
-                } else {
-                    -60.0
-                };
-                ui.label("🔊");
-                let meter_height = ui.available_height().clamp(16.0, 28.0);
-                ui.add(
-                    AudioMeter::new(ui_state.user_config.meter_style, db, db).height(meter_height),
-                );
+                    ui.label("🔊");
+                    let meter_height = ui.available_height().clamp(16.0, 28.0);
+                    ui.add(
+                        AudioMeter::new(ui_state.user_config.meter_style, db, db)
+                            .height(meter_height),
+                    );
+                }
 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     let fps = ui_state.current_fps;
@@ -157,71 +161,37 @@ pub fn show(ui: &mut egui::Ui, ui_state: &mut AppUI) {
                         egui::Color32::from_rgb(255, 50, 50)
                     };
 
-                    let overall_color = if cpu >= 90.0 || gpu >= 90.0 || fps_ratio < 0.8 {
-                        egui::Color32::from_rgb(255, 50, 50)
-                    } else if cpu >= 70.0 || gpu >= 70.0 || fps_ratio < 0.95 {
-                        egui::Color32::from_rgb(255, 200, 50)
-                    } else {
-                        egui::Color32::from_rgb(50, 200, 50)
-                    };
+                    if show_metric(&metrics.status) {
+                        let overall_color = if cpu >= 90.0 || gpu >= 90.0 || fps_ratio < 0.8 {
+                            egui::Color32::from_rgb(255, 50, 50)
+                        } else if cpu >= 70.0 || gpu >= 70.0 || fps_ratio < 0.95 {
+                            egui::Color32::from_rgb(255, 200, 50)
+                        } else {
+                            egui::Color32::from_rgb(50, 200, 50)
+                        };
+                        let (rect, _) =
+                            ui.allocate_exact_size(egui::vec2(14.0, 14.0), egui::Sense::hover());
+                        ui.painter()
+                            .circle_filled(rect.center(), 7.0, overall_color);
+                    }
 
-                    if ui_state.user_config.toolbar_metrics.mode == ToolbarMetricMode::Hover {
-                        ui.menu_button("Metrics", |ui| {
-                            if ui_state.user_config.toolbar_metrics.show_bpm {
-                                metric_entry(ui, bpm_text);
-                            }
-                            if ui_state.user_config.toolbar_metrics.show_fps {
-                                metric_entry(ui, format!("{fps:.0}/{target_fps:.0}FPS"));
-                            }
-                            if ui_state.user_config.toolbar_metrics.show_frame_time {
-                                metric_entry(ui, format!("{frame_time:.1}ms/f"));
-                            }
-                            if ui_state.user_config.toolbar_metrics.show_cpu {
-                                ui.colored_label(
-                                    traffic_light(cpu, 70.0, 90.0),
-                                    format!("CPU:{cpu:.0}%"),
-                                );
-                            }
-                            if ui_state.user_config.toolbar_metrics.show_gpu {
-                                ui.colored_label(
-                                    traffic_light(gpu, 70.0, 90.0),
-                                    format!("GPU:{gpu:.0}%"),
-                                );
-                            }
-                            if ui_state.user_config.toolbar_metrics.show_ram {
-                                metric_entry(ui, format!("RAM:{ram:.0}MB"));
-                            }
-                        });
-                    } else {
-                        if ui_state.user_config.toolbar_metrics.show_overall_status {
-                            let (rect, _) = ui
-                                .allocate_exact_size(egui::vec2(14.0, 14.0), egui::Sense::hover());
-                            ui.painter()
-                                .circle_filled(rect.center(), 7.0, overall_color);
-                        }
-                        if ui_state.user_config.toolbar_metrics.show_ram {
-                            metric_entry(ui, format!("RAM:{ram:.0}MB"));
-                        }
-                        if ui_state.user_config.toolbar_metrics.show_gpu {
-                            ui.colored_label(
-                                traffic_light(gpu, 70.0, 90.0),
-                                format!("GPU:{gpu:.0}%"),
-                            );
-                        }
-                        if ui_state.user_config.toolbar_metrics.show_cpu {
-                            ui.colored_label(
-                                traffic_light(cpu, 70.0, 90.0),
-                                format!("CPU:{cpu:.0}%"),
-                            );
-                        }
-                        ui.separator();
-                        if ui_state.user_config.toolbar_metrics.show_frame_time {
-                            ui.label(format!("{frame_time:.1}ms/f"))
-                                .on_hover_text("Millisekunden pro Frame");
-                        }
-                        if ui_state.user_config.toolbar_metrics.show_fps {
-                            ui.colored_label(fps_color, format!("{fps:.0}/{target_fps:.0}FPS"));
-                        }
+                    if show_metric(&metrics.ram) {
+                        ui.label(format!("RAM:{ram:.0}MB"));
+                    }
+                    if show_metric(&metrics.gpu) {
+                        let gpu_color = traffic_light(gpu, 70.0, 90.0);
+                        ui.colored_label(gpu_color, format!("Load:{gpu:.0}%"));
+                    }
+                    if show_metric(&metrics.cpu) {
+                        let cpu_color = traffic_light(cpu, 70.0, 90.0);
+                        ui.colored_label(cpu_color, format!("CPU:{cpu:.0}%"));
+                    }
+                    if show_metric(&metrics.frame_time) {
+                        ui.label(format!("{frame_time:.1}ms/f"))
+                            .on_hover_text("Millisekunden pro Frame");
+                    }
+                    if show_metric(&metrics.fps) {
+                        ui.colored_label(fps_color, format!("{fps:.0}/{target_fps:.0}FPS"));
                     }
                 });
             });

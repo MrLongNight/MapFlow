@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2026-03-13: docs: Update mapmap crate README to point to new semantic documentation structure.
 - 2026-03-12: fix(ci): Fix pre-commit checks after UI config additions (#1029)
 - 2026-03-12: fix(ci): Fix the Windows MSI release step by removing the stray `-- --release` from the `cargo wix` invocation so WiX packages the existing release build correctly (follow-up to Windows release workflow regression, run 22981970147).
 - 2026-03-12: fix(ci): Correct the Windows MSI release step by replacing the unsupported `cargo wix --no-check-includes` flag with `--no-build` in the release workflow (follow-up to Windows release workflow regression, run 22958743385).

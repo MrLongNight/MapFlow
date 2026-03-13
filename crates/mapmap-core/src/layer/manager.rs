@@ -380,4 +380,89 @@ mod tests {
         manager.composition.master_speed = 2.5;
         assert_eq!(manager.get_effective_speed(), 2.5);
     }
+
+    #[test]
+    fn test_manager_remove_group_orphans_children() {
+        let mut manager = LayerManager::new();
+        let group_id = manager.create_group("Group");
+        let child_id = manager.create_layer("Child");
+        manager.reparent_layer(child_id, Some(group_id));
+
+        assert_eq!(
+            manager.get_layer(child_id).unwrap().parent_id,
+            Some(group_id)
+        );
+        manager.remove_layer(group_id);
+
+        // Child should still exist but be orphaned
+        assert!(manager.get_layer(child_id).is_some());
+        assert_eq!(manager.get_layer(child_id).unwrap().parent_id, None);
+    }
+
+    #[test]
+    fn test_manager_reparent_prevents_cycles() {
+        let mut manager = LayerManager::new();
+        let parent_id = manager.create_group("Parent");
+        let child_id = manager.create_group("Child");
+        let grand_child_id = manager.create_layer("GrandChild");
+
+        manager.reparent_layer(child_id, Some(parent_id));
+        manager.reparent_layer(grand_child_id, Some(child_id));
+
+        // Attempt to parent Parent to GrandChild (cycle)
+        manager.reparent_layer(parent_id, Some(grand_child_id));
+
+        // Should have failed
+        assert_eq!(manager.get_layer(parent_id).unwrap().parent_id, None);
+    }
+
+    #[test]
+    fn test_manager_effective_opacity_hierarchy() {
+        let mut manager = LayerManager::new();
+        manager.composition.master_opacity = 0.5;
+
+        let parent_id = manager.create_group("Parent");
+        let child_id = manager.create_layer("Child");
+
+        manager.get_layer_mut(parent_id).unwrap().opacity = 0.8;
+        manager.get_layer_mut(child_id).unwrap().opacity = 0.5;
+        manager.reparent_layer(child_id, Some(parent_id));
+
+        let child_layer = manager.get_layer(child_id).unwrap();
+        // 0.5 (child) * 0.8 (parent) * 0.5 (master) = 0.2
+        assert!((manager.get_effective_opacity(child_layer) - 0.2).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_manager_effective_opacity_master_blackout() {
+        let mut manager = LayerManager::new();
+        let layer_id = manager.create_layer("Layer");
+
+        let layer = manager.get_layer(layer_id).unwrap();
+        assert_eq!(manager.get_effective_opacity(layer), 1.0);
+
+        manager.composition.master_blackout = true;
+        let layer_after = manager.get_layer(layer_id).unwrap();
+        assert_eq!(manager.get_effective_opacity(layer_after), 0.0);
+    }
+
+    #[test]
+    fn test_manager_visible_layers_solo_logic() {
+        let mut manager = LayerManager::new();
+        let id1 = manager.create_layer("Layer 1");
+        let id2 = manager.create_layer("Layer 2");
+        let id3 = manager.create_layer("Layer 3");
+
+        manager.get_layer_mut(id1).unwrap().paint_id = Some(1);
+        manager.get_layer_mut(id2).unwrap().paint_id = Some(2);
+        manager.get_layer_mut(id3).unwrap().paint_id = Some(3);
+
+        assert_eq!(manager.visible_layers().count(), 3);
+
+        manager.get_layer_mut(id2).unwrap().solo = true;
+
+        let visible: Vec<_> = manager.visible_layers().collect();
+        assert_eq!(visible.len(), 1);
+        assert_eq!(visible[0].id, id2);
+    }
 }
