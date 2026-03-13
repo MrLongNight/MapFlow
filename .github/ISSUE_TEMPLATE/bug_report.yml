@@ -1,6 +1,6 @@
 name: Bug Report
 description: Report a bug or unexpected behavior (starts in user review queue)
-title: ""
+title: "MFuser_ "
 labels: ["bug", "Todo-UserISU"]
 assignees: []
 
@@ -11,7 +11,7 @@ body:
         ## Bug Report
         Please provide detailed information about the bug you encountered.
         This issue starts in the user review queue and will only be handed to Jules after explicit approval.
-        Use a normal human-readable title. Numeric or roadmap prefixes are removed automatically if present.
+        After creation, the title is automatically normalized to `MFuser_#<issue_number>-...`.
 
   - type: textarea
     id: description

@@ -264,11 +264,7 @@ pub fn handle_tool_call(
                     }
                 }
             }
-            Some(crate::server::error_response(
-                id,
-                -32602,
-                "Missing cue_id",
-            ))
+            Some(crate::server::error_response(id, -32602, "Missing cue_id"))
         }
         "cue_next" => {
             if let Some(sender) = &server.action_sender {
@@ -364,11 +360,7 @@ pub fn handle_tool_call(
                     Ok(val) => server.handle_send_osc(id, &val),
                     Err(e) => {
                         error!("Failed to serialize arguments for send_osc: {}", e);
-                        Some(crate::server::error_response(
-                            id,
-                            -32603,
-                            "Internal error",
-                        ))
+                        Some(crate::server::error_response(id, -32603, "Internal error"))
                     }
                 }
             } else {
@@ -379,10 +371,6 @@ pub fn handle_tool_call(
                 ))
             }
         }
-        _ => Some(crate::server::error_response(
-            id,
-            -32601,
-            "Tool not found",
-        )),
+        _ => Some(crate::server::error_response(id, -32601, "Tool not found")),
     }
 }

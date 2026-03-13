@@ -97,17 +97,7 @@ cd MapFlow
 cargo run --release
 ```
 
-### 3. Verify Your Local Development Setup
-
-Before opening a pull request, run the standard quality checks and let long-running commands finish completely:
-
-```bash
-cargo fmt --all -- --check
-cargo clippy --workspace --all-targets --all-features -- -D warnings
-cargo test --workspace
-```
-
-### 4. Usage
+### 3. Usage
 
 * Check the [**Quick Start Guide**](docs/A4_USER/B1_MANUAL/DOC-C2_QUICKSTART.md) to create your first composition.
 * Explore the [**User Manual**](docs/A4_USER/B1_MANUAL/DOC-C0_README.md) for detailed control explanations.

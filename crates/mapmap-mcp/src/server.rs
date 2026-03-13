@@ -292,7 +292,10 @@ impl McpServer {
     }
 }
 
-pub fn success_response(id: Option<serde_json::Value>, result: serde_json::Value) -> JsonRpcResponse {
+pub fn success_response(
+    id: Option<serde_json::Value>,
+    result: serde_json::Value,
+) -> JsonRpcResponse {
     JsonRpcResponse {
         jsonrpc: "2.0".to_string(),
         result: Some(result),

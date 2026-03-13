@@ -10,20 +10,6 @@ use mapmap_core::OutputId;
 #[cfg(feature = "ndi")]
 use std::sync::atomic::{AtomicBool, Ordering};
 
-const PREVIEW_FLAG: u64 = 1u64 << 63;
-
-fn normalize_output_id(output_id: u64) -> (bool, u64) {
-    ((output_id & PREVIEW_FLAG) != 0, output_id & !PREVIEW_FLAG)
-}
-
-fn render_op_targets_output(op: &mapmap_core::module_eval::RenderOp, output_id: u64) -> bool {
-    let (_, real_output_id) = normalize_output_id(output_id);
-    match &op.output_type {
-        Projector { id, .. } => *id == real_output_id,
-        _ => op.output_part_id == real_output_id,
-    }
-}
-
 /// Renders the UI or content for the given output ID.
 pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
     // Clone device Arc to create encoder without borrowing self
@@ -135,7 +121,6 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
             RenderContext {
                 device: &app.backend.device,
                 queue: &app.backend.queue,
-                target_format: window_context.surface_config.format,
                 render_ops: &app.render_ops,
                 output_manager: &app.state.output_manager,
                 edge_blend_renderer: &app.edge_blend_renderer,
@@ -292,7 +277,6 @@ pub fn render(app: &mut App, output_id: OutputId) -> Result<()> {
 struct RenderContext<'a> {
     device: &'a wgpu::Device,
     queue: &'a wgpu::Queue,
-    target_format: wgpu::TextureFormat,
     render_ops: &'a Vec<(
         mapmap_core::module::ModulePartId,
         mapmap_core::module_eval::RenderOp,
@@ -328,12 +312,17 @@ fn render_content(
     let mesh_renderer = ctx.mesh_renderer;
     let egui_renderer = ctx.egui_renderer;
 
-    let (is_preview_output, real_output_id) = normalize_output_id(output_id);
+    const PREVIEW_FLAG: u64 = 1u64 << 63;
+    let is_preview_output = (output_id & PREVIEW_FLAG) != 0;
+    let real_output_id = output_id & !PREVIEW_FLAG;
 
     let mut target_ops: Vec<(u64, mapmap_core::module_eval::RenderOp)> = ctx
         .render_ops
         .iter()
-        .filter(|(_, op)| render_op_targets_output(op, output_id))
+        .filter(|(_, op)| match &op.output_type {
+            Projector { id, .. } => *id == real_output_id,
+            _ => op.output_part_id == real_output_id,
+        })
         .map(|(mid, op)| (*mid, op.clone()))
         .collect();
 
@@ -359,19 +348,20 @@ fn render_content(
         return Ok(());
     }
 
-    let output_config_opt = ctx.output_manager.get_output(real_output_id).cloned();
+    let output_config_opt = ctx.output_manager.get_output(output_id).cloned();
     let use_edge_blend = output_config_opt
         .as_ref()
-        .map(has_active_edge_blend)
+        .map(|cfg| {
+            cfg.edge_blend.left.enabled
+                || cfg.edge_blend.right.enabled
+                || cfg.edge_blend.top.enabled
+                || cfg.edge_blend.bottom.enabled
+        })
         .unwrap_or(false)
         && ctx.edge_blend_renderer.is_some();
-    // Color calibration detection stays separate, but we do not route frames
-    // through a calibration-only post-process path until that flow is stable.
-    let _color_calibration_requested = output_config_opt
-        .as_ref()
-        .map(has_active_color_calibration)
-        .unwrap_or(false)
-        && ctx.color_calibration_renderer.is_some();
+    // Currently we only support edge blending for post-processing safely.
+    // Color calibration is temporarily ignored here to prevent black screen regressions.
+    let _use_color_calib = output_config_opt.is_some() && ctx.color_calibration_renderer.is_some();
 
     let needs_post_processing = use_edge_blend;
 
@@ -382,7 +372,7 @@ fn render_content(
                 &intermediate_tex_name,
                 config.resolution.0,
                 config.resolution.1,
-                ctx.target_format,
+                wgpu::TextureFormat::Rgba8Unorm, // Always supported for RENDER_ATTACHMENT and TEXTURE_BINDING
                 wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
             );
         }
@@ -682,26 +672,6 @@ fn render_content(
     Ok(())
 }
 
-fn has_active_edge_blend(config: &mapmap_core::OutputConfig) -> bool {
-    config.edge_blend.left.enabled
-        || config.edge_blend.right.enabled
-        || config.edge_blend.top.enabled
-        || config.edge_blend.bottom.enabled
-}
-
-fn has_active_color_calibration(config: &mapmap_core::OutputConfig) -> bool {
-    const EPSILON: f32 = 0.0001;
-
-    let calibration = &config.color_calibration;
-    calibration.brightness.abs() > EPSILON
-        || (calibration.contrast - 1.0).abs() > EPSILON
-        || (calibration.gamma.x - 1.0).abs() > EPSILON
-        || (calibration.gamma.y - 1.0).abs() > EPSILON
-        || (calibration.gamma_b - 1.0).abs() > EPSILON
-        || (calibration.color_temp - 6500.0).abs() > EPSILON
-        || (calibration.saturation - 1.0).abs() > EPSILON
-}
-
 #[allow(clippy::manual_is_multiple_of)]
 fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
     // 1. THROTTLING: Only update previews every 5 frames to save GPU time
@@ -736,108 +706,115 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
 
     for (_mid, output_id, _name) in &app.cached_output_infos {
         let output_id = *output_id;
-        if !app
-            .render_ops
-            .iter()
-            .any(|(_, op)| render_op_targets_output(op, output_id))
+        if let Some(texture_name) = app
+            .output_assignments
+            .get(&output_id)
+            .and_then(|v| v.last())
+            .cloned()
         {
-            continue;
-        }
+            if app.texture_pool.has_texture(&texture_name) {
+                let preview_width = 256;
+                let preview_height = 144;
 
-        let preview_width = 256;
-        let preview_height = 144;
-
-        let needs_recreate = if let Some(tex) = app.output_temp_textures.get(&output_id) {
-            tex.width() != preview_width || tex.height() != preview_height
-        } else {
-            true
-        };
-
-        if needs_recreate {
-            let texture = app.backend.device.create_texture(&wgpu::TextureDescriptor {
-                label: Some(&format!("Preview Tex {}", output_id)),
-                size: wgpu::Extent3d {
-                    width: preview_width,
-                    height: preview_height,
-                    depth_or_array_layers: 1,
-                },
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
-                format: app.backend.surface_format(),
-                usage: wgpu::TextureUsages::RENDER_ATTACHMENT
-                    | wgpu::TextureUsages::TEXTURE_BINDING,
-                view_formats: &[],
-            });
-            app.output_temp_textures.insert(output_id, texture);
-        }
-
-        let target_tex = app.output_temp_textures.get(&output_id).unwrap();
-
-        use std::collections::hash_map::Entry;
-        let current_view_arc = match app.output_preview_cache.entry(output_id) {
-            Entry::Occupied(mut e) => {
-                let (id, old_view) = e.get_mut();
-                if needs_recreate {
-                    let target_view =
-                        target_tex.create_view(&wgpu::TextureViewDescriptor::default());
-                    let target_view_arc = std::sync::Arc::new(target_view);
-                    app.egui_renderer.update_egui_texture_from_wgpu_texture(
-                        &app.backend.device,
-                        &target_view_arc,
-                        wgpu::FilterMode::Linear,
-                        *id,
-                    );
-                    *e.get_mut() = (*id, target_view_arc.clone());
-                    target_view_arc
+                let needs_recreate = if let Some(tex) = app.output_temp_textures.get(&output_id) {
+                    tex.width() != preview_width || tex.height() != preview_height
                 } else {
-                    old_view.clone()
+                    true
+                };
+
+                if needs_recreate {
+                    let texture = app.backend.device.create_texture(&wgpu::TextureDescriptor {
+                        label: Some(&format!("Preview Tex {}", output_id)),
+                        size: wgpu::Extent3d {
+                            width: preview_width,
+                            height: preview_height,
+                            depth_or_array_layers: 1,
+                        },
+                        mip_level_count: 1,
+                        sample_count: 1,
+                        dimension: wgpu::TextureDimension::D2,
+                        format: app.backend.surface_format(),
+                        usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                            | wgpu::TextureUsages::TEXTURE_BINDING,
+                        view_formats: &[],
+                    });
+                    app.output_temp_textures.insert(output_id, texture);
+                }
+
+                let target_tex = app.output_temp_textures.get(&output_id).unwrap();
+
+                use std::collections::hash_map::Entry;
+                let current_view_arc = match app.output_preview_cache.entry(output_id) {
+                    Entry::Occupied(mut e) => {
+                        let (id, old_view) = e.get_mut();
+                        if needs_recreate {
+                            let target_view =
+                                target_tex.create_view(&wgpu::TextureViewDescriptor::default());
+                            let target_view_arc = std::sync::Arc::new(target_view);
+                            app.egui_renderer.update_egui_texture_from_wgpu_texture(
+                                &app.backend.device,
+                                &target_view_arc,
+                                wgpu::FilterMode::Linear,
+                                *id,
+                            );
+                            *e.get_mut() = (*id, target_view_arc.clone());
+                            target_view_arc
+                        } else {
+                            old_view.clone()
+                        }
+                    }
+                    Entry::Vacant(e) => {
+                        let target_view =
+                            target_tex.create_view(&wgpu::TextureViewDescriptor::default());
+                        let target_view_arc = std::sync::Arc::new(target_view);
+                        let id = app.egui_renderer.register_native_texture(
+                            &app.backend.device,
+                            &target_view_arc,
+                            wgpu::FilterMode::Linear,
+                        );
+                        e.insert((id, target_view_arc.clone()));
+                        target_view_arc
+                    }
+                };
+
+                {
+                    let transform = glam::Mat4::IDENTITY;
+                    let uniform_bind_group = app.mesh_renderer.get_uniform_bind_group(
+                        &app.backend.queue,
+                        transform,
+                        1.0,
+                    );
+                    let source_view = app.texture_pool.get_view(&texture_name);
+                    let texture_bind_group = app.mesh_renderer.get_texture_bind_group(&source_view);
+
+                    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("Preview Render Pass"),
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            depth_slice: None,
+                            view: &current_view_arc,
+                            resolve_target: None,
+
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                store: wgpu::StoreOp::Store,
+                            },
+                        })],
+                        depth_stencil_attachment: None,
+                        timestamp_writes: None,
+                        occlusion_query_set: None,
+                    });
+
+                    app.mesh_renderer.draw(
+                        &mut render_pass,
+                        &app.preview_quad_buffers.0,
+                        &app.preview_quad_buffers.1,
+                        app.preview_quad_buffers.2,
+                        &uniform_bind_group,
+                        &texture_bind_group,
+                        false,
+                    );
                 }
             }
-            Entry::Vacant(e) => {
-                let target_view = target_tex.create_view(&wgpu::TextureViewDescriptor::default());
-                let target_view_arc = std::sync::Arc::new(target_view);
-                let id = app.egui_renderer.register_native_texture(
-                    &app.backend.device,
-                    &target_view_arc,
-                    wgpu::FilterMode::Linear,
-                );
-                e.insert((id, target_view_arc.clone()));
-                target_view_arc
-            }
-        };
-
-        let preview_output_id = output_id | PREVIEW_FLAG;
-        if let Err(e) = render_content(
-            RenderContext {
-                device: &app.backend.device,
-                queue: &app.backend.queue,
-                target_format: app.backend.surface_format(),
-                render_ops: &app.render_ops,
-                output_manager: &app.state.output_manager,
-                edge_blend_renderer: &app.edge_blend_renderer,
-                color_calibration_renderer: &app.color_calibration_renderer,
-                edge_blend_cache: &mut app.edge_blend_cache,
-                edge_blend_texture_cache: &mut app.edge_blend_texture_cache,
-                mesh_renderer: &mut app.mesh_renderer,
-                effect_chain_renderer: &mut app.effect_chain_renderer,
-                preview_effect_chain_renderer: &mut app.preview_effect_chain_renderer,
-                shader_graph_manager: &app.shader_graph_manager,
-                texture_pool: &app.texture_pool,
-                _dummy_view: &app.dummy_view,
-                mesh_buffer_cache: &mut app.mesh_buffer_cache,
-                egui_renderer: &mut app.egui_renderer,
-            },
-            preview_output_id,
-            encoder,
-            current_view_arc.as_ref(),
-            None,
-        ) {
-            tracing::warn!(
-                "Failed to render preview texture for output {}: {}",
-                output_id,
-                e
-            );
         }
     }
 
@@ -1037,78 +1014,5 @@ fn draw_digit(
                 }
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{
-        has_active_color_calibration, has_active_edge_blend, render_op_targets_output, PREVIEW_FLAG,
-    };
-    use mapmap_core::module::{MeshType, OutputType};
-    use mapmap_core::{CanvasRegion, OutputConfig, RenderOp, SourceProperties};
-
-    fn output_config() -> OutputConfig {
-        OutputConfig::new(
-            1,
-            "Projector".to_string(),
-            CanvasRegion::new(0.0, 0.0, 1.0, 1.0),
-            (1920, 1080),
-        )
-    }
-
-    #[test]
-    fn default_output_has_no_active_post_processing() {
-        let config = output_config();
-
-        assert!(!has_active_edge_blend(&config));
-        assert!(!has_active_color_calibration(&config));
-    }
-
-    #[test]
-    fn modified_output_enables_post_processing() {
-        let mut config = output_config();
-        config.edge_blend.left.enabled = true;
-        config.color_calibration.saturation = 1.2;
-
-        assert!(has_active_edge_blend(&config));
-        assert!(has_active_color_calibration(&config));
-    }
-
-    fn projector_render_op(projector_id: u64) -> RenderOp {
-        RenderOp {
-            output_part_id: 99,
-            output_type: OutputType::Projector {
-                id: projector_id,
-                name: format!("Output {}", projector_id),
-                hide_cursor: false,
-                target_screen: 0,
-                show_in_preview_panel: true,
-                extra_preview_window: false,
-                output_width: 0,
-                output_height: 0,
-                output_fps: 60.0,
-                ndi_enabled: false,
-                ndi_stream_name: String::new(),
-            },
-            layer_part_id: 7,
-            mesh: MeshType::default(),
-            opacity: 1.0,
-            blend_mode: None,
-            mapping_mode: false,
-            source_part_id: Some(5),
-            source_props: SourceProperties::default_identity(),
-            effects: Vec::new(),
-            masks: Vec::new(),
-        }
-    }
-
-    #[test]
-    fn preview_flag_targets_same_projector_render_ops() {
-        let op = projector_render_op(7);
-
-        assert!(render_op_targets_output(&op, 7));
-        assert!(render_op_targets_output(&op, PREVIEW_FLAG | 7));
-        assert!(!render_op_targets_output(&op, 8));
     }
 }

@@ -121,28 +121,6 @@ pub enum ToolbarMetricMode {
     Hover,
 }
 
-/// Globales Animationsprofil für UI-Bewegungen.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
-pub enum AnimationProfile {
-    /// Animationen deaktiviert.
-    Off,
-    /// Subtile Animationen (Standard).
-    #[default]
-    Subtle,
-    /// Cinematische Animationen mit stärkerem Effekt.
-    Cinematic,
-}
-
-impl fmt::Display for AnimationProfile {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Off => write!(f, "Off"),
-            Self::Subtle => write!(f, "Subtle"),
-            Self::Cinematic => write!(f, "Cinematic"),
-        }
-    }
-}
-
 /// Per-metric visibility settings for toolbar telemetry
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ToolbarMetricsConfig {
@@ -337,34 +315,6 @@ pub struct UserConfig {
     #[serde(default)]
     pub toolbar_metrics: ToolbarMetricsConfig,
 
-    /// Enable animated node visuals in module canvas
-    #[serde(default = "default_true")]
-    pub node_animations_enabled: bool,
-
-    /// Enable startup intro animation.
-    #[serde(default = "default_true")]
-    pub startup_animation_enabled: bool,
-
-    /// Video path for startup intro animation.
-    #[serde(default = "default_startup_animation_path")]
-    pub startup_animation_path: String,
-
-    /// Reduziert Bewegungen/Animationen global für bessere Zugänglichkeit.
-    #[serde(default)]
-    pub reduce_motion_enabled: bool,
-
-    /// Deaktiviert Sounds bei App-Start-Sequenzen.
-    #[serde(default)]
-    pub silent_startup_enabled: bool,
-
-    /// Globales Profil für UI-Animationen.
-    #[serde(default)]
-    pub animation_profile: AnimationProfile,
-
-    /// Enable short-circuit effect for invalid node connections
-    #[serde(default = "default_true")]
-    pub short_circuit_animation_enabled: bool,
-
     /// Verfügbare UI-Layoutprofile
     #[serde(default = "default_layout_profiles")]
     pub layouts: Vec<LayoutProfile>,
@@ -379,10 +329,6 @@ fn default_true() -> bool {
 
 fn default_ui_scale() -> f32 {
     1.0
-}
-
-fn default_startup_animation_path() -> String {
-    "resources/app_videos/MF-Mechanical_Cube_Logo_Splash_Animation.webm".to_string()
 }
 
 fn default_sidebar_width() -> f32 {
@@ -438,13 +384,6 @@ impl Default for UserConfig {
             global_fullscreen: false,
             ui_scale: 1.0,
             toolbar_metrics: ToolbarMetricsConfig::default(),
-            node_animations_enabled: true,
-            startup_animation_enabled: true,
-            startup_animation_path: default_startup_animation_path(),
-            reduce_motion_enabled: false,
-            silent_startup_enabled: false,
-            animation_profile: AnimationProfile::Subtle,
-            short_circuit_animation_enabled: true,
             layouts: default_layout_profiles(),
             active_layout_id: default_active_layout_id(),
         }
@@ -663,13 +602,6 @@ mod tests {
             global_fullscreen: true,
             ui_scale: 1.2,
             toolbar_metrics: ToolbarMetricsConfig::default(),
-            node_animations_enabled: true,
-            startup_animation_enabled: true,
-            startup_animation_path: default_startup_animation_path(),
-            reduce_motion_enabled: false,
-            silent_startup_enabled: false,
-            animation_profile: AnimationProfile::Subtle,
-            short_circuit_animation_enabled: true,
             layouts: default_layout_profiles(),
             active_layout_id: default_active_layout_id(),
         };
