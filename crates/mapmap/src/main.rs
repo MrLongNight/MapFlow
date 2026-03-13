@@ -37,6 +37,14 @@ use crate::app::core::app_struct::App;
 use crate::cli::{CliArgs, Mode};
 use clap::Parser;
 
+fn should_redraw_all_windows(
+    has_modules: bool,
+    has_projector_windows: bool,
+    is_timeline_playing: bool,
+) -> bool {
+    has_modules && (is_timeline_playing || has_projector_windows)
+}
+
 struct MapFlowApp {
     app: Option<App>,
 }
@@ -171,14 +179,14 @@ impl App {
                     }
                     self.last_update = now;
 
-                    // Avoid expensive continuous redraws while idle.
-                    // - During playback: redraw all windows (main + projector outputs)
-                    // - While idle/editing: redraw only main window, output windows stay static
+                    // Projector windows must keep rendering even outside timeline playback,
+                    // otherwise media/audio-driven outputs go stale while only the main UI updates.
                     if has_modules {
-                        if is_playing {
-                            for context in self.window_manager.iter() {
-                                context.window.request_redraw();
-                            }
+                        let has_projector_windows =
+                            self.window_manager.window_ids().any(|&id| id != 0);
+                        if should_redraw_all_windows(has_modules, has_projector_windows, is_playing)
+                        {
+                            self.window_manager.request_redraw_all();
                         } else if let Some(main_window) = self.window_manager.get(0) {
                             main_window.window.request_redraw();
                         }
@@ -370,6 +378,21 @@ impl App {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::should_redraw_all_windows;
+
+    #[test]
+    fn redraws_all_windows_when_projector_outputs_exist() {
+        assert!(should_redraw_all_windows(true, true, false));
+    }
+
+    #[test]
+    fn keeps_main_window_only_when_idle_without_projectors() {
+        assert!(!should_redraw_all_windows(true, false, false));
     }
 }
 
