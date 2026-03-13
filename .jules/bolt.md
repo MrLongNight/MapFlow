@@ -68,3 +68,7 @@
 ## 2024-05-23 - Avoid String Cloning in TimelineModule Iterators
 **Learning:** Structs collected into `Vec` inside UI hot loops (like `TimelineModule` in `mapmap/src/app/ui_layout.rs`) that own `String` fields cause massive per-frame allocation overhead.
 **Action:** Change UI presentation structs to borrow strings (`&'a str`) instead of owning them, reducing `clone()` allocations in rendering loops to zero.
+
+## 2024-05-19 - Avoid .cloned() on primitive iterators
+**Learning:** Using `.cloned()` on iterators of trivially copyable primitive types (like `f32`) before operations like `.fold()` adds an unnecessary abstraction layer. While the compiler often optimizes this away in release builds, it makes the unoptimized path slower and the code slightly more convoluted than necessary.
+**Action:** When folding over slices or vectors of primitives to find a min/max or sum, use the reference directly in the closure (e.g., `values.iter().fold(0.0, |acc, &val| f32::max(acc, val))`) instead of chaining `.cloned()`.

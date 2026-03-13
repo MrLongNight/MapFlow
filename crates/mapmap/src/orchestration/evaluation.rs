@@ -28,7 +28,8 @@ pub fn perform_evaluation(
             );
 
             for (part_id, values) in &eval_result.trigger_values {
-                let max_val = values.iter().cloned().fold(0.0, f32::max);
+                // ⚡ Bolt: Removed .cloned() to avoid unnecessary cloning of f32, using f32::max directly on references
+                let max_val = values.iter().fold(0.0, |acc, &val| f32::max(acc, val));
                 node_triggers.insert((*module_id, *part_id), max_val);
             }
 
