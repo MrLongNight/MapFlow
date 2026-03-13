@@ -25,6 +25,57 @@ impl fmt::Display for AudioMeterStyle {
     }
 }
 
+/// Anzeige-Modus für Toolbar-Metriken.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum ToolbarMetricMode {
+    /// Immer sichtbar.
+    #[default]
+    Always,
+    /// Nur via Hover/Popover sichtbar.
+    Hover,
+}
+
+/// Konfiguration für eine einzelne Toolbar-Metrik.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ToolbarMetricConfig {
+    /// Ob die Metrik angezeigt wird.
+    #[serde(default = "default_true")]
+    pub visible: bool,
+    /// Anzeige-Modus der Metrik.
+    #[serde(default)]
+    pub mode: ToolbarMetricMode,
+}
+
+impl Default for ToolbarMetricConfig {
+    fn default() -> Self {
+        Self {
+            visible: true,
+            mode: ToolbarMetricMode::Always,
+        }
+    }
+}
+
+/// Konfiguration aller Toolbar-Metriken.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ToolbarMetricsConfig {
+    #[serde(default)]
+    pub bpm: ToolbarMetricConfig,
+    #[serde(default)]
+    pub audio_meter: ToolbarMetricConfig,
+    #[serde(default)]
+    pub status: ToolbarMetricConfig,
+    #[serde(default)]
+    pub fps: ToolbarMetricConfig,
+    #[serde(default)]
+    pub frame_time: ToolbarMetricConfig,
+    #[serde(default)]
+    pub cpu: ToolbarMetricConfig,
+    #[serde(default)]
+    pub gpu: ToolbarMetricConfig,
+    #[serde(default)]
+    pub ram: ToolbarMetricConfig,
+}
+
 /// Vertical Synchronization Mode
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum VSyncMode {
@@ -121,6 +172,9 @@ pub struct UserConfig {
     /// Audio meter style
     #[serde(default)]
     pub meter_style: AudioMeterStyle,
+    /// Toolbar-Metriken (Sichtbarkeit + progressive Offenlegung)
+    #[serde(default)]
+    pub toolbar_metrics: ToolbarMetricsConfig,
     /// MIDI element assignments
     #[serde(default)]
     pub midi_assignments: Vec<MidiAssignment>,
@@ -200,6 +254,7 @@ impl Default for UserConfig {
             preferred_gpu: None,
             vsync_mode: VSyncMode::default(),
             meter_style: AudioMeterStyle::default(),
+            toolbar_metrics: ToolbarMetricsConfig::default(),
             midi_assignments: Vec::new(),
             selected_audio_device: None,
             // Window geometry - None means use default
@@ -368,6 +423,7 @@ mod tests {
             preferred_gpu: None,
             vsync_mode: VSyncMode::default(),
             meter_style: AudioMeterStyle::Digital,
+            toolbar_metrics: ToolbarMetricsConfig::default(),
             midi_assignments: Vec::new(),
             selected_audio_device: None,
             window_width: Some(1920),

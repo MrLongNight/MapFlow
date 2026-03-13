@@ -2,7 +2,7 @@ use egui::{Color32, Context, RichText, Window};
 use mapmap_control::hue::controller::HueController;
 use mapmap_core::AppState;
 use mapmap_render::WgpuBackend;
-use mapmap_ui::{AppUI, UIAction};
+use mapmap_ui::{core::config::ToolbarMetricMode, AppUI, UIAction};
 
 #[cfg(feature = "midi")]
 use mapmap_control::midi::MidiInputHandler;
@@ -115,6 +115,120 @@ pub fn show(ctx: &Context, context: SettingsContext) {
                         }
                     });
             });
+
+            ui.add_space(10.0);
+            ui.separator();
+            ui.heading(RichText::new("UI Density").color(Color32::WHITE));
+            ui.add_space(4.0);
+
+            ui.horizontal(|ui| {
+                ui.label("Schriftgröße:");
+                let mut font_scale_percent =
+                    (context.ui_state.user_config.theme.font_size / 14.0 * 100.0).round() as i32;
+                if ui
+                    .add(
+                        egui::Slider::new(&mut font_scale_percent, 80..=140)
+                            .text("%")
+                            .suffix("%"),
+                    )
+                    .changed()
+                {
+                    context.ui_state.user_config.theme.font_size =
+                        14.0 * (font_scale_percent as f32 / 100.0);
+                    context.ui_state.user_config.theme.apply(ctx);
+                    let _ = context.ui_state.user_config.save();
+                }
+            });
+
+            ui.add_space(6.0);
+            ui.collapsing("Toolbar-Metriken", |ui| {
+                let mut save_needed = false;
+                let mut metric_row = |ui: &mut egui::Ui,
+                                      label: &str,
+                                      config: &mut mapmap_ui::core::config::ToolbarMetricConfig,
+                                      id: &str| {
+                    ui.horizontal(|ui| {
+                        save_needed |= ui.checkbox(&mut config.visible, label).changed();
+                        ui.add_enabled_ui(config.visible, |ui| {
+                            egui::ComboBox::from_id_salt(id)
+                                .selected_text(match config.mode {
+                                    ToolbarMetricMode::Always => "Permanent",
+                                    ToolbarMetricMode::Hover => "Nur Hover/Popover",
+                                })
+                                .show_ui(ui, |ui| {
+                                    save_needed |= ui
+                                        .selectable_value(
+                                            &mut config.mode,
+                                            ToolbarMetricMode::Always,
+                                            "Permanent",
+                                        )
+                                        .changed();
+                                    save_needed |= ui
+                                        .selectable_value(
+                                            &mut config.mode,
+                                            ToolbarMetricMode::Hover,
+                                            "Nur Hover/Popover",
+                                        )
+                                        .changed();
+                                });
+                        });
+                    });
+                };
+
+                metric_row(
+                    ui,
+                    "BPM",
+                    &mut context.ui_state.user_config.toolbar_metrics.bpm,
+                    "tb_metric_bpm",
+                );
+                metric_row(
+                    ui,
+                    "Audio-Meter",
+                    &mut context.ui_state.user_config.toolbar_metrics.audio_meter,
+                    "tb_metric_audio",
+                );
+                metric_row(
+                    ui,
+                    "Status-LED",
+                    &mut context.ui_state.user_config.toolbar_metrics.status,
+                    "tb_metric_status",
+                );
+                metric_row(
+                    ui,
+                    "FPS",
+                    &mut context.ui_state.user_config.toolbar_metrics.fps,
+                    "tb_metric_fps",
+                );
+                metric_row(
+                    ui,
+                    "Frame-Time",
+                    &mut context.ui_state.user_config.toolbar_metrics.frame_time,
+                    "tb_metric_ft",
+                );
+                metric_row(
+                    ui,
+                    "CPU",
+                    &mut context.ui_state.user_config.toolbar_metrics.cpu,
+                    "tb_metric_cpu",
+                );
+                metric_row(
+                    ui,
+                    "GPU",
+                    &mut context.ui_state.user_config.toolbar_metrics.gpu,
+                    "tb_metric_gpu",
+                );
+                metric_row(
+                    ui,
+                    "RAM",
+                    &mut context.ui_state.user_config.toolbar_metrics.ram,
+                    "tb_metric_ram",
+                );
+
+                if save_needed {
+                    let _ = context.ui_state.user_config.save();
+                }
+            });
+
             ui.add_space(10.0);
             ui.separator();
             ui.heading(

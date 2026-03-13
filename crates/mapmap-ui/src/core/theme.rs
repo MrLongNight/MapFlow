@@ -98,6 +98,25 @@ impl ThemeConfig {
 
         style.visuals = visuals;
 
+        // Konsistente moderne Interaktionszustände über alle Themes.
+        let accent = if style.visuals.dark_mode {
+            colors::CYAN_ACCENT
+        } else {
+            Color32::from_rgb(40, 120, 220)
+        };
+        let active_accent = if style.visuals.dark_mode {
+            colors::MINT_ACCENT
+        } else {
+            Color32::from_rgb(20, 95, 200)
+        };
+
+        style.visuals.widgets.hovered.bg_stroke = egui::Stroke::new(1.2, accent);
+        style.visuals.widgets.active.bg_stroke = egui::Stroke::new(1.2, active_accent);
+        style.visuals.widgets.active.fg_stroke = egui::Stroke::new(1.8, Color32::WHITE);
+        style.visuals.widgets.inactive.expansion = 0.0;
+        style.visuals.widgets.hovered.expansion = 1.0;
+        style.visuals.widgets.active.expansion = 1.0;
+
         // Normalize modern component geometry across all themes for a consistent look.
         let radius = egui::CornerRadius::same(6);
         style.visuals.widgets.noninteractive.corner_radius = radius;

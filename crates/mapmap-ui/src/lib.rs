@@ -601,7 +601,7 @@ impl AppUI {
         let layout = crate::core::responsive::ResponsiveLayout::new(ctx);
 
         let mut style = (*ctx.style()).clone();
-        let base_font_size = 14.0;
+        let base_font_size = self.user_config.theme.font_size.max(10.0);
 
         // Scale font sizes
         let scaled_size = layout.scale_font(base_font_size);

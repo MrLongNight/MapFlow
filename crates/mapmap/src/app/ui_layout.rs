@@ -8,7 +8,14 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
 
     let viewport_width = ctx.content_rect().width();
     let sidebar_default = (viewport_width * 0.2).clamp(240.0, 420.0);
-    let inspector_default = (viewport_width * 0.24).clamp(280.0, 520.0);
+    let inspector_default = (viewport_width * 0.24).clamp(260.0, 520.0);
+    let viewport_height = ctx.content_rect().height();
+    let compact_height = viewport_height < 760.0;
+    let timeline_default_height = if compact_height {
+        (viewport_height * 0.22).clamp(90.0, 150.0)
+    } else {
+        (viewport_height * 0.26).clamp(140.0, 300.0)
+    };
 
     // 1. Global Menu Bar (Top-most)
     let menu_actions = ui::view::menu_bar::show(ctx, &mut app.ui_state);
@@ -20,7 +27,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
     if app.ui_state.show_toolbar {
         egui::TopBottomPanel::top("toolbar_panel")
             .resizable(true)
-            .min_height(44.0)
+            .min_height(if compact_height { 36.0 } else { 44.0 })
             .frame(
                 egui::Frame::default()
                     .fill(ctx.style().visuals.window_fill())
@@ -31,7 +38,46 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
                     )),
             )
             .show(ctx, |ui_obj| {
-                ui::view::menu_bar::toolbar::show(ui_obj, &mut app.ui_state);
+                ui_obj.horizontal_wrapped(|ui_obj| {
+                    if ui_obj
+                        .small_button(if app.ui_state.show_left_sidebar {
+                            "◀ Sidebar"
+                        } else {
+                            "▶ Sidebar"
+                        })
+                        .clicked()
+                    {
+                        app.ui_state.show_left_sidebar = !app.ui_state.show_left_sidebar;
+                        app.ui_state.user_config.show_left_sidebar = app.ui_state.show_left_sidebar;
+                        let _ = app.ui_state.user_config.save();
+                    }
+                    if ui_obj
+                        .small_button(if app.ui_state.show_inspector {
+                            "Inspector ▶"
+                        } else {
+                            "Inspector ◀"
+                        })
+                        .clicked()
+                    {
+                        app.ui_state.show_inspector = !app.ui_state.show_inspector;
+                        app.ui_state.user_config.show_inspector = app.ui_state.show_inspector;
+                        let _ = app.ui_state.user_config.save();
+                    }
+                    if ui_obj
+                        .small_button(if app.ui_state.show_timeline {
+                            "▼ Timeline"
+                        } else {
+                            "▲ Timeline"
+                        })
+                        .clicked()
+                    {
+                        app.ui_state.show_timeline = !app.ui_state.show_timeline;
+                        app.ui_state.user_config.show_timeline = app.ui_state.show_timeline;
+                        let _ = app.ui_state.user_config.save();
+                    }
+                    ui_obj.separator();
+                    ui::view::menu_bar::toolbar::show(ui_obj, &mut app.ui_state);
+                });
             });
     }
 
@@ -40,15 +86,15 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
         egui::SidePanel::left("left_sidebar_panel")
             .resizable(true)
             .default_width(sidebar_default)
-            .min_width(220.0)
+                        .min_width(if compact_height { 180.0 } else { 220.0 })
             .max_width((viewport_width * 0.45).max(340.0))
             .show(ctx, |ui_obj| {
-                egui::TopBottomPanel::bottom("left_sidebar_preview")
+                egui::TopBottomPanel::top("left_sidebar_preview")
                     .resizable(true)
-                    .default_height(180.0)
+                                        .default_height(if compact_height { 120.0 } else { 180.0 })
                     .min_height(110.0)
                     .show_inside(ui_obj, |ui_obj| {
-                        if app.ui_state.show_preview_panel {
+                        {
                             use mapmap_core::module::{ModulePartType, OutputType};
                             let preview_outputs = app
                                 .state
@@ -187,7 +233,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
         egui::SidePanel::right("right_panel")
             .resizable(true)
             .default_width(inspector_default)
-            .min_width(260.0)
+            .min_width(if compact_height { 200.0 } else { 260.0 })
             .max_width((viewport_width * 0.5).max(420.0))
             .show(ctx, |ui_obj| {
                 // Render the unified Inspector
@@ -224,10 +270,21 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
     if app.ui_state.show_timeline {
         egui::TopBottomPanel::bottom("bottom_panel")
             .resizable(true)
-            .default_height(200.0)
-            .min_height(100.0)
+            .default_height(timeline_default_height)
+            .min_height(if compact_height { 80.0 } else { 100.0 })
             .show(ctx, |ui_obj| {
-                ui_obj.heading(app.ui_state.i18n.t("timeline"));
+                ui_obj.horizontal(|ui| {
+                    ui.heading(app.ui_state.i18n.t("timeline"));
+                    if ui
+                        .small_button("✕")
+                        .on_hover_text("Timeline ausblenden")
+                        .clicked()
+                    {
+                        app.ui_state.show_timeline = false;
+                        app.ui_state.user_config.show_timeline = false;
+                        let _ = app.ui_state.user_config.save();
+                    }
+                });
                 let mut modules: Vec<ui::TimelineModule> = app
                     .state
                     .module_manager
