@@ -1,20 +1,20 @@
-name: "CICD-IssueFlow: Job00 NormalizeUserIssues"
+name: "CICD-IssueFlow: Job00 PrefixUserIssues"
 
 on:
   issues:
-    types: [opened, edited, labeled]
+    types: [opened, labeled]
 
 permissions:
   issues: write
 
 jobs:
-  normalize-user-issue:
+  prefix-user-issue:
     name: Normalize queued user issue title
     runs-on: ubuntu-latest
-    if: github.event.action == 'opened' || github.event.action == 'edited' || github.event.label.name == 'Todo-UserISU'
+    if: github.event.action == 'opened' || github.event.label.name == 'Todo-UserISU'
 
     steps:
-      - name: Normalize Todo-UserISU issue title
+      - name: Prefix Todo-UserISU issue
         uses: actions/github-script@v7
         with:
           script: |
@@ -33,16 +33,23 @@ jobs:
               return;
             }
 
-            let normalizedTitle = String(issue.title || '')
-              .replace(/^\s*(?:MFuser_|MFusr_|MFsub_|MF_)\s*#?\d+\s*[-:_ ]\s*/i, '')
-              .replace(/^\s*#\d+\s*[-:_ ]\s*/i, '')
+            const preservedPrefixes = ['MFuser_#', 'MFusr_#', 'MF_#', 'MFsub_#'];
+            if (preservedPrefixes.some((prefix) => issue.title.startsWith(prefix))) {
+              console.log('Issue title already uses a managed prefix.');
+              return;
+            }
+
+            let baseTitle = issue.title
+              .replace(/^MFuser_\s*/i, '')
               .replace(/^\[(Bug|Feature|Task)\]:\s*/i, '')
               .replace(/\s+/g, ' ')
               .trim();
 
-            if (!normalizedTitle) {
-              normalizedTitle = 'User Issue';
+            if (!baseTitle) {
+              baseTitle = 'User-Issue';
             }
+
+            const normalizedTitle = `MFuser_#${issue.number}-${baseTitle}`;
 
             if (normalizedTitle === issue.title) {
               console.log('Issue title already normalized.');

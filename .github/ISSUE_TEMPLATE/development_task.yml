@@ -1,6 +1,6 @@
 name: Development Task
 description: Development task for MapFlow project (starts in user review queue)
-title: ""
+title: "MFuser_ "
 labels: ["enhancement", "Todo-UserISU"]
 assignees: []
 
@@ -10,7 +10,7 @@ body:
       value: |
         ## Development Task
         This template is used for development tasks that start in the user review queue and are only processed by Jules after explicit approval.
-        Use a normal human-readable title. Numeric or roadmap prefixes are removed automatically if present.
+        After creation, the title is automatically normalized to `MFuser_#<issue_number>-...`.
 
   - type: dropdown
     id: phase

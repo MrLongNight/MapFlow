@@ -4,7 +4,6 @@ use super::draw;
 use super::state::ModuleCanvas;
 use super::types::*;
 use super::utils;
-use super::ModuleCanvasRenderOptions;
 use crate::i18n::LocaleManager;
 use crate::UIAction;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, Ui, Vec2};
@@ -16,7 +15,7 @@ pub fn show(
     manager: &mut ModuleManager,
     locale: &LocaleManager,
     actions: &mut Vec<UIAction>,
-    options: ModuleCanvasRenderOptions,
+    meter_style: crate::config::AudioMeterStyle,
 ) {
     if !canvas.selected_parts.is_empty()
         && !ui.memory(|m| m.focused().is_some())
@@ -74,7 +73,7 @@ pub fn show(
     }
 
     if let Some(module_id) = canvas.active_module_id {
-        render_canvas(canvas, ui, manager, module_id, locale, actions, options);
+        render_canvas(canvas, ui, manager, module_id, locale, actions, meter_style);
     } else {
         ui.centered_and_justified(|ui| {
             ui.vertical_centered(|ui| {
@@ -95,16 +94,8 @@ pub fn render_canvas(
     module_id: ModuleId,
     _locale: &LocaleManager,
     actions: &mut Vec<UIAction>,
-    options: ModuleCanvasRenderOptions,
+    meter_style: crate::config::AudioMeterStyle,
 ) {
-    let ModuleCanvasRenderOptions {
-        meter_style,
-        node_animations_enabled,
-        short_circuit_animation_enabled,
-        animation_profile,
-        reduce_motion_enabled,
-    } = options;
-
     let module = if let Some(m) = manager.get_module_mut(module_id) {
         m
     } else {
@@ -190,32 +181,7 @@ pub fn render_canvas(
     let to_screen = move |pos: Pos2| -> Pos2 { pos * zoom + pan_offset + canvas_min };
     let from_screen = move |pos: Pos2| -> Pos2 { (pos - pan_offset - canvas_min) / zoom };
 
-    let animation_profile = {
-        use crate::config::AnimationProfile;
-        if reduce_motion_enabled {
-            AnimationProfile::Off
-        } else {
-            let dt = ui.input(|i| i.stable_dt).max(0.0001);
-            let fps = 1.0 / dt;
-            match animation_profile {
-                AnimationProfile::Cinematic if fps < 40.0 => AnimationProfile::Subtle,
-                AnimationProfile::Subtle | AnimationProfile::Cinematic if fps < 28.0 => {
-                    AnimationProfile::Off
-                }
-                p => p,
-            }
-        }
-    };
-
-    let remove_conn_idx = draw::draw_connections(
-        canvas,
-        ui,
-        &painter,
-        module,
-        &to_screen,
-        node_animations_enabled,
-        animation_profile,
-    );
+    let remove_conn_idx = draw::draw_connections(canvas, ui, &painter, module, &to_screen);
     if let Some(idx) = remove_conn_idx {
         if idx < module.connections.len() {
             module.connections.remove(idx);
@@ -327,8 +293,6 @@ pub fn render_canvas(
             actions,
             module.id,
             meter_style,
-            node_animations_enabled,
-            animation_profile,
         );
 
         let part_id = part.id;
@@ -467,16 +431,7 @@ pub fn render_canvas(
                             && c.to_socket == in_idx
                     });
 
-                    let compatible = target.socket_type
-                        == module
-                            .parts
-                            .iter()
-                            .find(|p| p.id == out_part)
-                            .and_then(|p| p.outputs.get(out_idx))
-                            .map(|s| s.socket_type)
-                            .unwrap_or(target.socket_type);
-
-                    if !exists && compatible {
+                    if !exists {
                         module
                             .connections
                             .push(mapmap_core::module::ModuleConnection {
@@ -485,11 +440,6 @@ pub fn render_canvas(
                                 to_part: in_part,
                                 to_socket: in_idx,
                             });
-                        ui.ctx().request_repaint();
-                    } else if !compatible && short_circuit_animation_enabled {
-                        canvas.short_circuit_fx_pos = Some(target.position);
-                        let now = ui.input(|i| i.time);
-                        canvas.short_circuit_fx_until = now + 0.45;
                         ui.ctx().request_repaint();
                     }
                 }
@@ -552,53 +502,6 @@ pub fn render_canvas(
 
             painter.line_segment([start_pos, pointer_pos], Stroke::new(3.0, color));
             painter.circle_filled(pointer_pos, 5.0, color);
-        }
-    }
-
-    if short_circuit_animation_enabled {
-        let now = ui.input(|i| i.time);
-        if now < canvas.short_circuit_fx_until {
-            if let Some(pos) = canvas.short_circuit_fx_pos {
-                let t = ((canvas.short_circuit_fx_until - now) / 0.45).clamp(0.0, 1.0) as f32;
-                let radius = (40.0 * canvas.zoom) * (1.0 - t * 0.65);
-                let alpha = (220.0 * t).round() as u8;
-                painter.circle_stroke(
-                    pos,
-                    radius,
-                    Stroke::new(
-                        3.0 * canvas.zoom,
-                        Color32::from_rgba_unmultiplied(255, 80, 30, alpha),
-                    ),
-                );
-                painter.line_segment(
-                    [
-                        pos + Vec2::new(-radius * 0.55, -radius * 0.1),
-                        pos + Vec2::new(radius * 0.2, radius * 0.15),
-                    ],
-                    Stroke::new(
-                        2.0 * canvas.zoom,
-                        Color32::from_rgba_unmultiplied(255, 200, 120, alpha),
-                    ),
-                );
-                painter.line_segment(
-                    [
-                        pos + Vec2::new(radius * 0.2, radius * 0.15),
-                        pos + Vec2::new(-radius * 0.05, radius * 0.55),
-                    ],
-                    Stroke::new(
-                        2.0 * canvas.zoom,
-                        Color32::from_rgba_unmultiplied(255, 200, 120, alpha),
-                    ),
-                );
-                painter.text(
-                    pos + Vec2::new(0.0, -radius * 0.75),
-                    egui::Align2::CENTER_CENTER,
-                    "⚡ INVALID LINK",
-                    egui::FontId::proportional(11.0 * canvas.zoom),
-                    Color32::from_rgba_unmultiplied(255, 170, 120, alpha),
-                );
-                ui.ctx().request_repaint();
-            }
         }
     }
 

@@ -650,9 +650,8 @@ impl AppUI {
 
         // Scale spacing
         let spacing_scale = (layout.scale_font(1.0) / 14.0) * user_scale; // Normalize scale factor
-        style.spacing.item_spacing = egui::vec2(10.0, 8.0) * spacing_scale;
-        style.spacing.button_padding = egui::vec2(12.0, 7.0) * spacing_scale;
-        style.spacing.interact_size = egui::vec2(30.0, 26.0) * spacing_scale;
+        style.spacing.item_spacing = egui::vec2(8.0, 6.0) * spacing_scale;
+        style.spacing.button_padding = egui::vec2(8.0, 4.0) * spacing_scale;
 
         ctx.set_style(style);
     }

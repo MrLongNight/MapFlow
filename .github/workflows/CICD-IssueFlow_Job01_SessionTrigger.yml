@@ -30,6 +30,8 @@ jobs:
       cancel-in-progress: false
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Execute Trigger Logic
         id: flow
         uses: actions/github-script@v7
@@ -37,125 +39,95 @@ jobs:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
         with:
           script: |
-            if (process.env.JULES_AUTOMATION_ENABLED !== 'true') return;
+             if (process.env.JULES_AUTOMATION_ENABLED !== 'true') return;
 
-            const TRACKER_COMMENT_MARKER = '<!-- maestro-jules-session -->';
-            const today = new Date().toISOString().slice(0, 10);
-            const isManualDispatch = context.eventName === 'workflow_dispatch';
-            const issueNumber = context.payload.issue?.number || context.payload.inputs?.issue_number;
-            if (!issueNumber) {
-              console.log('No issue identified.');
-              return;
-            }
+             const isManualDispatch = context.eventName === 'workflow_dispatch';
+             const issueNumber = context.payload.issue?.number || context.payload.inputs?.issue_number;
+             if (!issueNumber) { console.log("No issue identified."); return; }
 
-            const issue = await github.rest.issues.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: issueNumber,
-            });
-            const issueLabels = issue.data.labels.map((label) => typeof label === 'string' ? label : label.name).filter(Boolean);
-            const hasApprovalLabel = issueLabels.includes('jules-task');
-            const hasUserQueueLabel = issueLabels.includes('Todo-UserISU');
+             console.log(`🎯 Processing Issue #${issueNumber}`);
 
-            if (!isManualDispatch && !hasApprovalLabel) {
-              console.log('Issue is not approved for Jules yet.');
-              return;
-            }
+             const issue = await github.rest.issues.get({ owner: context.repo.owner, repo: context.repo.repo, issue_number: issueNumber });
+             const issueLabels = issue.data.labels.map((label) => typeof label === 'string' ? label : label.name).filter(Boolean);
+             const hasApprovalLabel = issueLabels.includes('jules-task');
+             const hasUserQueueLabel = issueLabels.includes('Todo-UserISU');
 
-            const comments = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: issueNumber,
-              per_page: 100,
-            });
-            const existingTracker = comments.data.find((comment) => (comment.body || '').includes(TRACKER_COMMENT_MARKER));
-            const existingLegacySession = comments.data.find((comment) => /Jules Session Triggered|Jules session created/i.test(comment.body || ''));
-            if (existingTracker || existingLegacySession) {
-              console.log('Session already tracked on this issue.');
-              return;
-            }
+             if (!isManualDispatch && !hasApprovalLabel) {
+               console.log("Issue is not approved for Jules yet.");
+               return;
+             }
 
-            if (!process.env.JULES_API_KEY) {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issueNumber,
-                body: 'JULES_API_KEY missing. Cannot start session.',
-              });
-              return;
-            }
+             // 1. Helper: Check if session exists (Parsing comments)
+             const comments = await github.rest.issues.listComments({
+               owner: context.repo.owner, repo: context.repo.repo, issue_number: issueNumber
+             });
+             const hasSession = comments.data.some(c => c.body.includes('Jules Session Triggered') || c.body.includes('Jules session created'));
+             if (hasSession) {
+               console.log("Session already exists.");
+               return;
+             }
 
-            if (hasUserQueueLabel) {
-              try {
-                await github.rest.issues.removeLabel({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: issueNumber,
-                  name: 'Todo-UserISU',
-                });
-              } catch (error) {
-                console.log(`Todo-UserISU label not removed: ${error.message}`);
-              }
-            }
+             // 2. Validate Key
+             if (!process.env.JULES_API_KEY) {
+               await github.rest.issues.createComment({
+                 owner: context.repo.owner, repo: context.repo.repo, issue_number: issueNumber,
+                 body: "⚠️ JULES_API_KEY missing. Cannot start session."
+               });
+               return;
+             }
 
-            const fetch = globalThis.fetch ?? (await import('node-fetch')).default;
-            const preferredBranch = `jules/issue-${issueNumber}`;
-            const endpoint = 'https://jules.googleapis.com/v1alpha/sessions';
-            const payload = {
-              prompt: `Issue #${issueNumber}: ${issue.data.title}\n\n${issue.data.body || ''}\n\n---\n## Verlinktes Issue\nFixes #${issueNumber}\n\nUse the real GitHub issue number, not a roadmap ID.\nIf Jules can influence the work branch name, prefer \`${preferredBranch}\`.`,
-              title: `Issue #${issueNumber}: ${issue.data.title}`.substring(0, 100),
-              automationMode: 'AUTO_CREATE_PR',
-              sourceContext: {
-                source: `sources/github/${context.repo.owner}/${context.repo.repo}`,
-                githubRepoContext: { startingBranch: 'main' },
-              },
-            };
+             if (hasUserQueueLabel) {
+               try {
+                 await github.rest.issues.removeLabel({
+                   owner: context.repo.owner,
+                   repo: context.repo.repo,
+                   issue_number: issueNumber,
+                   name: 'Todo-UserISU'
+                 });
+               } catch (error) {
+                 console.log(`Todo-UserISU label not removed: ${error.message}`);
+               }
+             }
 
-            console.log('Sending API request to Jules...');
-            const res = await fetch(endpoint, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-Goog-Api-Key': process.env.JULES_API_KEY,
-              },
-              body: JSON.stringify(payload),
-            });
+             // 3. Create Session
+             const fetch = globalThis.fetch ?? (await import('node-fetch')).default;
 
-            if (!res.ok) {
-              const txt = await res.text();
-              console.error(`Status ${res.status}: ${txt}`);
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issueNumber,
-                body: `Jules API error: ${res.status}`,
-              });
-              throw new Error('API failed');
-            }
+             const endpoint = 'https://jules.googleapis.com/v1alpha/sessions';
+             const payload = {
+               prompt: `Issue #${issueNumber}: ${issue.data.title}\n\n${issue.data.body || ''}\n\n---\n**IMPORTANT:** When generating the Pull Request description for this issue-backed task, you MUST include this exact block with the real GitHub issue number:\n## Verlinktes Issue\nFixes #${issueNumber}\n\nDo not replace the GitHub issue number with a ROADMAP task ID like MF-123.`,
+               title: `Issue #${issueNumber}: ${issue.data.title}`.substring(0, 100),
+               automationMode: 'AUTO_CREATE_PR',
+               sourceContext: {
+                 source: `sources/github/${context.repo.owner}/${context.repo.repo}`,
+                 githubRepoContext: { startingBranch: 'main' }
+               }
+             };
 
-            const json = await res.json();
-            const outputs = Array.isArray(json.outputs) ? json.outputs : [];
-            const prOutput = outputs.find((entry) => entry?.pullRequest?.url)?.pullRequest || null;
-            const sessionUrl = json.url || '';
-            const sessionId = json.name || json.id || '';
-            const workBranch = json.branch || json.branchName || prOutput?.headRefName || '';
-            const prUrl = prOutput?.url || '';
-            const trackerBody = [
-              TRACKER_COMMENT_MARKER,
-              '## Jules Session Tracking',
-              `- Session ID: ${sessionId ? `\`${sessionId}\`` : 'pending'}`,
-              `- Session URL: ${sessionUrl ? `[Open Session](${sessionUrl})` : 'pending'}`,
-              `- Pull Request: ${prUrl || 'pending'}`,
-              `- Work Branch: ${workBranch ? `\`${workBranch}\`` : 'pending'}`,
-              '- Remote State: jules_created',
-              `- Last Update: ${today}`,
-            ].join('\n');
+             console.log("Sending API Request to Jules...");
+             const res = await fetch(endpoint, {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': process.env.JULES_API_KEY },
+               body: JSON.stringify(payload)
+             });
 
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: issueNumber,
-              body: trackerBody,
-            });
+             if (!res.ok) {
+               const txt = await res.text();
+               console.error(`Status ${res.status}: ${txt}`);
+               await github.rest.issues.createComment({
+                 owner: context.repo.owner, repo: context.repo.repo, issue_number: issueNumber,
+                 body: `⚠️ Jules API Error: ${res.status}`
+               });
+               throw new Error("API Failed");
+             }
 
-            console.log(`Session created: ${sessionId}`);
+             const json = await res.json();
+             const sessionUrl = json.url || '';
+             const sessionId = json.name || json.id;
+
+             console.log(`✅ Session created: ${sessionId}`);
+             await github.rest.issues.createComment({
+                 owner: context.repo.owner, repo: context.repo.repo, issue_number: issueNumber,
+                 body: `🤖 **Jules Session Triggered** — [Open Session](${sessionUrl})`
+             });
+
+             console.log("Session created. Manual monitor workflow remains available if needed.");

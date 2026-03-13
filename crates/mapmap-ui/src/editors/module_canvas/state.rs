@@ -99,8 +99,6 @@ pub struct ModuleCanvas {
     pub hue_status_message: Option<String>,
     /// Last known trigger values for visualization (Part ID -> Value 0.0-1.0)
     pub last_trigger_values: std::collections::HashMap<ModulePartId, f32>,
-    /// Letzter Trigger-Fire-Zeitpunkt (egui time) je Part
-    pub last_trigger_fire_time: std::collections::HashMap<ModulePartId, f64>,
 
     /// Advanced Mesh Editor instance
     pub mesh_editor: MeshEditor,
@@ -121,11 +119,6 @@ pub struct ModuleCanvas {
 
     /// Snapshot of a part before editing, used to create Undo/Redo commands when an edit finishes.
     pub edit_snapshot: Option<mapmap_core::module::ModulePart>,
-
-    /// Last short-circuit FX position (screen coordinates)
-    pub short_circuit_fx_pos: Option<Pos2>,
-    /// Absolute egui time when short-circuit FX expires
-    pub short_circuit_fx_until: f64,
 }
 
 impl Default for ModuleCanvas {
@@ -171,7 +164,6 @@ impl Default for ModuleCanvas {
             hue_discovery_rx: None,
             hue_status_message: None,
             last_trigger_values: std::collections::HashMap::new(),
-            last_trigger_fire_time: std::collections::HashMap::new(),
             mesh_editor: MeshEditor::new(),
             show_mesh_editor: false,
             last_mesh_edit_id: None,
@@ -180,8 +172,6 @@ impl Default for ModuleCanvas {
             quick_create_pos: Pos2::ZERO,
             quick_create_selected_index: 0,
             edit_snapshot: None,
-            short_circuit_fx_pos: None,
-            short_circuit_fx_until: 0.0,
         }
     }
 }

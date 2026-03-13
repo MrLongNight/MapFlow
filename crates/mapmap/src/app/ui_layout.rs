@@ -1,84 +1,6 @@
 use crate::app::App;
 use mapmap_ui as ui;
 
-const STARTUP_OVERLAY_DURATION_SECS: f32 = 4.0;
-
-fn render_startup_animation_overlay(ctx: &egui::Context, app: &App) {
-    if !app.ui_state.user_config.startup_animation_enabled {
-        return;
-    }
-    if app.ui_state.user_config.reduce_motion_enabled {
-        return;
-    }
-
-    let elapsed = app.start_time.elapsed().as_secs_f32();
-    if elapsed >= STARTUP_OVERLAY_DURATION_SECS {
-        return;
-    }
-
-    let t = elapsed / STARTUP_OVERLAY_DURATION_SECS;
-    let fade_in = (t / 0.2).clamp(0.0, 1.0);
-    let fade_out = ((1.0 - t) / 0.25).clamp(0.0, 1.0);
-    let alpha = fade_in.min(fade_out);
-
-    let source_path = app.ui_state.user_config.startup_animation_path.trim();
-    let source_exists = !source_path.is_empty() && std::path::Path::new(source_path).exists();
-    let source_status = if source_exists {
-        "Startup-Quelle gefunden"
-    } else {
-        "Startup-Quelle fehlt"
-    };
-
-    let backdrop = egui::Color32::from_black_alpha((190.0 * alpha) as u8);
-    let frame_fill = egui::Color32::from_rgba_premultiplied(14, 18, 26, (230.0 * alpha) as u8);
-
-    egui::Area::new("startup_animation_overlay".into())
-        .order(egui::Order::Foreground)
-        .fixed_pos(ctx.content_rect().min)
-        .show(ctx, |ui| {
-            let rect = ctx.content_rect();
-            ui.painter().rect_filled(rect, 0.0, backdrop);
-
-            ui.scope_builder(egui::UiBuilder::new().max_rect(rect), |ui| {
-                ui.centered_and_justified(|ui| {
-                    egui::Frame::default()
-                        .fill(frame_fill)
-                        .corner_radius(egui::CornerRadius::same(12))
-                        .inner_margin(egui::Margin::symmetric(24, 18))
-                        .stroke(egui::Stroke::new(
-                            1.0,
-                            egui::Color32::from_rgba_premultiplied(
-                                111,
-                                188,
-                                255,
-                                (180.0 * alpha) as u8,
-                            ),
-                        ))
-                        .show(ui, |ui| {
-                            ui.vertical_centered(|ui| {
-                                ui.heading("MapFlow");
-                                ui.label("Startup Animation");
-                                ui.add_space(4.0);
-                                ui.label(source_status);
-                                if !source_path.is_empty() {
-                                    ui.label(egui::RichText::new(source_path).small().weak());
-                                }
-                                if app.ui_state.user_config.silent_startup_enabled {
-                                    ui.label(egui::RichText::new("Silent Startup aktiv").small());
-                                }
-                                ui.add_space(8.0);
-                                ui.add(
-                                    egui::ProgressBar::new(t)
-                                        .desired_width(280.0)
-                                        .show_percentage(),
-                                );
-                            });
-                        });
-                });
-            });
-        });
-}
-
 /// Main UI orchestration function.
 /// Renders the entire application UI layout using egui.
 pub fn show(ctx: &egui::Context, app: &mut App) {
@@ -451,7 +373,7 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
                     std::sync::Arc::make_mut(&mut app.state.module_manager),
                     &app.ui_state.i18n,
                     &mut app.ui_state.actions,
-                    mapmap_ui::ModuleCanvasRenderOptions::from(&app.ui_state.user_config),
+                    app.ui_state.user_config.meter_style,
                 );
             } else {
                 ui_obj.centered_and_justified(|ui_obj| {
@@ -555,6 +477,4 @@ pub fn show(ctx: &egui::Context, app: &mut App) {
         .assignment_panel
         .show(ctx, &app.state.assignment_manager);
     app.ui_state.shortcut_editor.show(ctx, &app.ui_state.i18n);
-
-    render_startup_animation_overlay(ctx, app);
 }
