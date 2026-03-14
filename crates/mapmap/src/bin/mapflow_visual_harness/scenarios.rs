@@ -52,8 +52,24 @@ fn checkerboard() -> ScenarioSpec {
         24,
         [0, 0, 0, 255],
     );
-    fill_rect(&mut pixels, WIDTH, 0, HEIGHT - 16, WIDTH, 16, [0, 76, 190, 255]);
-    fill_rect(&mut pixels, WIDTH, WIDTH - 16, 0, 16, HEIGHT, [255, 190, 32, 255]);
+    fill_rect(
+        &mut pixels,
+        WIDTH,
+        0,
+        HEIGHT - 16,
+        WIDTH,
+        16,
+        [0, 76, 190, 255],
+    );
+    fill_rect(
+        &mut pixels,
+        WIDTH,
+        WIDTH - 16,
+        0,
+        16,
+        HEIGHT,
+        [255, 190, 32, 255],
+    );
 
     ScenarioSpec {
         title: "MapFlow Visual Harness - Checkerboard",
@@ -91,9 +107,25 @@ fn gradient() -> ScenarioSpec {
 fn alpha_overlay() -> ScenarioSpec {
     let mut source = blank_rgba(WIDTH, HEIGHT, [0, 0, 0, 0]);
 
-    fill_rect(&mut source, WIDTH, 20, 20, WIDTH - 40, HEIGHT - 40, [36, 96, 224, 255]);
+    fill_rect(
+        &mut source,
+        WIDTH,
+        20,
+        20,
+        WIDTH - 40,
+        HEIGHT - 40,
+        [36, 96, 224, 255],
+    );
     fill_rect(&mut source, WIDTH, 56, 56, 144, 144, [255, 64, 64, 128]);
-    fill_rect(&mut source, WIDTH, 0, HEIGHT - 32, WIDTH, 12, [255, 255, 0, 192]);
+    fill_rect(
+        &mut source,
+        WIDTH,
+        0,
+        HEIGHT - 32,
+        WIDTH,
+        12,
+        [255, 255, 0, 192],
+    );
 
     let expected = blend_over_black(&source);
 

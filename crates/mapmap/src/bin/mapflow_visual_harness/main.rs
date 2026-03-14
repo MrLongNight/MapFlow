@@ -23,7 +23,11 @@ use winit::{
 };
 
 #[derive(Parser)]
-#[command(author, version, about = "Local visible visual regression harness for MapFlow")]
+#[command(
+    author,
+    version,
+    about = "Local visible visual regression harness for MapFlow"
+)]
 struct Cli {
     #[command(subcommand)]
     command: Command,
@@ -55,8 +59,12 @@ fn main() {
 fn run() -> Result<()> {
     let cli = Cli::parse();
     match cli.command {
-        Command::Capture { scenario, output } => capture_scenario(build_scenario(scenario), &output),
-        Command::Reference { scenario, output } => write_reference_image(&build_scenario(scenario), &output),
+        Command::Capture { scenario, output } => {
+            capture_scenario(build_scenario(scenario), &output)
+        }
+        Command::Reference { scenario, output } => {
+            write_reference_image(&build_scenario(scenario), &output)
+        }
     }
 }
 
@@ -285,9 +293,8 @@ fn queue_readback_copy(
 ) -> (wgpu::Buffer, u32) {
     let bytes_per_pixel = 4;
     let unpadded_bytes_per_row = width * bytes_per_pixel;
-    let padded_bytes_per_row =
-        unpadded_bytes_per_row.div_ceil(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT)
-            * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
+    let padded_bytes_per_row = unpadded_bytes_per_row.div_ceil(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT)
+        * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
     let buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("Visual Harness Readback Buffer"),
         size: (padded_bytes_per_row * height) as u64,
@@ -341,7 +348,10 @@ fn save_readback_buffer(
     let mapped = slice.get_mapped_range();
     let mut rgba = Vec::with_capacity((width * height * 4) as usize);
 
-    for row in mapped.chunks_exact(padded_bytes_per_row as usize).take(height as usize) {
+    for row in mapped
+        .chunks_exact(padded_bytes_per_row as usize)
+        .take(height as usize)
+    {
         for pixel in row[..(width * 4) as usize].chunks_exact(4) {
             match format {
                 wgpu::TextureFormat::Bgra8Unorm | wgpu::TextureFormat::Bgra8UnormSrgb => {

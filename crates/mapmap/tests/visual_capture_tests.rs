@@ -52,15 +52,28 @@ fn run_visual_regression(scenario: &str) {
     );
 
     compare_images(&expected_path, &actual_path, &diff_path);
-    println!("Visual capture '{scenario}' saved to {}", actual_path.display());
+    println!(
+        "Visual capture '{scenario}' saved to {}",
+        actual_path.display()
+    );
 }
 
 fn compare_images(expected_path: &Path, actual_path: &Path, diff_path: &Path) {
     let expected = image::open(expected_path)
-        .unwrap_or_else(|err| panic!("Failed to open reference image '{}': {err}", expected_path.display()))
+        .unwrap_or_else(|err| {
+            panic!(
+                "Failed to open reference image '{}': {err}",
+                expected_path.display()
+            )
+        })
         .to_rgba8();
     let actual = image::open(actual_path)
-        .unwrap_or_else(|err| panic!("Failed to open actual image '{}': {err}", actual_path.display()))
+        .unwrap_or_else(|err| {
+            panic!(
+                "Failed to open actual image '{}': {err}",
+                actual_path.display()
+            )
+        })
         .to_rgba8();
 
     assert_eq!(
@@ -102,9 +115,9 @@ fn compare_images(expected_path: &Path, actual_path: &Path, diff_path: &Path) {
     }
 
     if mismatched_pixels > max_mismatched_pixels {
-        diff_image
-            .save(diff_path)
-            .unwrap_or_else(|err| panic!("Failed to save diff image '{}': {err}", diff_path.display()));
+        diff_image.save(diff_path).unwrap_or_else(|err| {
+            panic!("Failed to save diff image '{}': {err}", diff_path.display())
+        });
         panic!(
             "Scenario mismatch.\nreference: {}\nactual: {}\ndiff: {}\nmax_channel_diff: {}\nmismatched_pixels: {} (allowed: {})",
             expected_path.display(),

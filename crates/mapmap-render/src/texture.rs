@@ -128,7 +128,9 @@ impl TexturePool {
         let name_owned = name.to_string();
 
         self.textures.write().insert(name_owned.clone(), handle);
-        self.views.write().insert(name_owned.clone(), (view_arc, last_used));
+        self.views
+            .write()
+            .insert(name_owned.clone(), (view_arc, last_used));
 
         name_owned
     }
@@ -262,9 +264,10 @@ impl TexturePool {
                 handle.mark_used(self.start_time);
 
                 let new_view = handle.create_view();
-                self.views
-                    .write()
-                    .insert(name.to_string(), (Arc::new(new_view), handle.last_used.clone()));
+                self.views.write().insert(
+                    name.to_string(),
+                    (Arc::new(new_view), handle.last_used.clone()),
+                );
             }
         }
     }
