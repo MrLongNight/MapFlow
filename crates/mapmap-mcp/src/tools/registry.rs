@@ -537,5 +537,209 @@ pub fn get_tools() -> Vec<Tool> {
                 "required": ["preset_id"]
             }),
         },
+        Tool {
+            name: "set_module_source_path".to_string(),
+            description: Some("Set module source path for async file picking".to_string()),
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "module_id": { "type": "integer" },
+                    "part_id": { "type": "integer" },
+                    "path": { "type": "string" }
+                },
+                "required": ["module_id", "part_id", "path"]
+            }),
+        },
+        Tool {
+            name: "media_library_list".to_string(),
+            description: Some("List available media in library".to_string()),
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": { "folder": { "type": "string" } }
+            }),
+        },
+        Tool {
+            name: "media_import".to_string(),
+            description: Some("Import media file into library".to_string()),
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "source_path": { "type": "string" },
+                    "destination_folder": { "type": "string" }
+                },
+                "required": ["source_path"]
+            }),
+        },
+        Tool {
+            name: "audio_unbind_param".to_string(),
+            description: Some("Remove an audio parameter binding".to_string()),
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": { "binding_id": { "type": "integer" } },
+                "required": ["binding_id"]
+            }),
+        },
+        Tool {
+            name: "effect_chain_get".to_string(),
+            description: Some("Get the effect chain for a layer".to_string()),
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": { "layer_id": { "type": "integer" } },
+                "required": ["layer_id"]
+            }),
+        },
+        Tool {
+            name: "shader_set_uniform".to_string(),
+            description: Some("Set a shader uniform value".to_string()),
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "layer_id": { "type": "integer" },
+                    "uniform_name": { "type": "string" },
+                    "value": { "type": "number" }
+                },
+                "required": ["layer_id", "uniform_name", "value"]
+            }),
+        },
+        Tool {
+            name: "timeline_get_keyframes".to_string(),
+            description: Some("Get keyframes for a layer parameter".to_string()),
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "layer_id": { "type": "integer" },
+                    "param": { "type": "string" }
+                },
+                "required": ["layer_id", "param"]
+            }),
+        },
+        Tool {
+            name: "timeline_set_duration".to_string(),
+            description: Some("Set the timeline duration".to_string()),
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": { "duration_seconds": { "type": "number", "minimum": 0.0 } },
+                "required": ["duration_seconds"]
+            }),
+        },
+        Tool {
+            name: "surface_delete".to_string(),
+            description: Some("Delete a mapping surface".to_string()),
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": { "surface_id": { "type": "integer" } },
+                "required": ["surface_id"]
+            }),
+        },
+        Tool {
+            name: "surface_assign_layer".to_string(),
+            description: Some("Assign a layer to a surface".to_string()),
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "surface_id": { "type": "integer" },
+                    "layer_id": { "type": "integer" }
+                },
+                "required": ["surface_id", "layer_id"]
+            }),
+        },
+        Tool {
+            name: "mask_edit".to_string(),
+            description: Some("Edit mask points".to_string()),
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "mask_id": { "type": "integer" },
+                    "points": { "type": "string" }
+                },
+                "required": ["mask_id", "points"]
+            }),
+        },
+        Tool {
+            name: "scene_create".to_string(),
+            description: Some("Create a new scene".to_string()),
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": { "name": { "type": "string" } },
+                "required": ["name"]
+            }),
+        },
+        Tool {
+            name: "scene_switch".to_string(),
+            description: Some("Switch to a different scene".to_string()),
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "scene_id": { "type": "integer" },
+                    "transition": { "type": "string" },
+                    "duration": { "type": "number" }
+                },
+                "required": ["scene_id"]
+            }),
+        },
+        Tool {
+            name: "preset_save".to_string(),
+            description: Some("Save current state as a preset".to_string()),
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "name": { "type": "string" },
+                    "scope": { "type": "string" }
+                },
+                "required": ["name"]
+            }),
+        },
+        Tool {
+            name: "preset_load".to_string(),
+            description: Some("Load a saved preset".to_string()),
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "preset_id": { "type": "integer" },
+                    "target": { "type": "string" }
+                },
+                "required": ["preset_id"]
+            }),
+        },
+        Tool {
+            name: "audio_analysis_config".to_string(),
+            description: Some("Configure audio analysis parameters".to_string()),
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "fft_size": { "type": "integer" },
+                    "smoothing": { "type": "number" },
+                    "bands": { "type": "integer" }
+                }
+            }),
+        },
+        Tool {
+            name: "timeline_set_loop".to_string(),
+            description: Some("Set timeline loop region".to_string()),
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "start": { "type": "number" },
+                    "end": { "type": "number" },
+                    "enabled": { "type": "boolean" }
+                },
+                "required": ["start", "end", "enabled"]
+            }),
+        },
+        Tool {
+            name: "audio_bindings_list".to_string(),
+            description: Some("List all active audio bindings".to_string()),
+            input_schema: serde_json::json!({ "type": "object", "properties": {} }),
+        },
+        Tool {
+            name: "effect_list".to_string(),
+            description: Some("List all available effects".to_string()),
+            input_schema: serde_json::json!({ "type": "object", "properties": {} }),
+        },
+        Tool {
+            name: "scene_list".to_string(),
+            description: Some("List all scenes".to_string()),
+            input_schema: serde_json::json!({ "type": "object", "properties": {} }),
+        },
     ]
 }
