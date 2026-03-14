@@ -1,6 +1,6 @@
 use crate::app::App;
-use mapmap_ui as ui;
 use mapmap_media::LoopMode;
+use mapmap_ui as ui;
 
 const STARTUP_OVERLAY_DURATION_SECS: f32 = 4.0;
 
@@ -16,7 +16,8 @@ fn resolve_startup_animation_source(source_path: &str) -> Option<std::path::Path
     }
 
     if let Ok(relative_to_resources) = direct_path.strip_prefix("resources") {
-        if let Some(resolved) = mapmap_core::runtime_paths::existing_resource_path(relative_to_resources)
+        if let Some(resolved) =
+            mapmap_core::runtime_paths::existing_resource_path(relative_to_resources)
         {
             return Some(resolved);
         }
@@ -119,7 +120,9 @@ fn fit_size_within(source_size: egui::Vec2, max_size: egui::Vec2) -> egui::Vec2 
 }
 
 fn render_startup_animation_overlay(ctx: &egui::Context, app: &mut App) {
-    if !app.ui_state.user_config.startup_animation_enabled || app.ui_state.user_config.reduce_motion_enabled {
+    if !app.ui_state.user_config.startup_animation_enabled
+        || app.ui_state.user_config.reduce_motion_enabled
+    {
         app.startup_animation.reset();
         return;
     }
@@ -135,7 +138,12 @@ fn render_startup_animation_overlay(ctx: &egui::Context, app: &mut App) {
     let fade_out = ((1.0 - t) / 0.25).clamp(0.0, 1.0);
     let alpha = fade_in.min(fade_out);
 
-    let source_path = app.ui_state.user_config.startup_animation_path.trim().to_string();
+    let source_path = app
+        .ui_state
+        .user_config
+        .startup_animation_path
+        .trim()
+        .to_string();
     load_startup_animation(app, &source_path);
 
     let source_status = app

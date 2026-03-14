@@ -320,8 +320,7 @@ struct RenderContext<'a> {
     _dummy_view: &'a Option<std::sync::Arc<wgpu::TextureView>>,
     mesh_buffer_cache: &'a mut mapmap_render::MeshBufferCache,
     egui_renderer: &'a mut egui_wgpu::Renderer,
-    video_diagnostic_log_times:
-        &'a mut std::collections::HashMap<String, std::time::Instant>,
+    video_diagnostic_log_times: &'a mut std::collections::HashMap<String, std::time::Instant>,
 }
 
 fn render_content(
@@ -357,7 +356,11 @@ fn render_content(
 
     let empty_ops_issue_key = format!(
         "video-output-empty-ops:{real_output_id}:{}",
-        if is_preview_output { "preview" } else { "output" }
+        if is_preview_output {
+            "preview"
+        } else {
+            "output"
+        }
     );
     if target_ops.is_empty() {
         if output_id != 0 && should_log_video_issue(video_log_times, empty_ops_issue_key.clone()) {
@@ -817,7 +820,8 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
             Entry::Occupied(mut e) => {
                 let (id, old_view) = e.get_mut();
                 if needs_recreate {
-                    let target_view = target_tex.create_view(&wgpu::TextureViewDescriptor::default());
+                    let target_view =
+                        target_tex.create_view(&wgpu::TextureViewDescriptor::default());
                     let target_view_arc = std::sync::Arc::new(target_view);
                     app.egui_renderer.update_egui_texture_from_wgpu_texture(
                         &app.backend.device,
@@ -971,10 +975,7 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
                     if app.media_players.contains_key(&(active_id, part_id)) {
                         let issue_key =
                             format!("node-preview-missing-texture:{active_id}:{part_id}");
-                        if should_log_video_issue(
-                            &mut app.video_diagnostic_log_times,
-                            issue_key,
-                        ) {
+                        if should_log_video_issue(&mut app.video_diagnostic_log_times, issue_key) {
                             tracing::warn!(
                                 "Fehler in Videoausgabe: Node-Vorschau fuer Modul {} / Part {} bleibt leer, weil fuer '{}' noch keine Textur '{}' vorliegt.",
                                 active_id,
@@ -986,10 +987,7 @@ fn prepare_texture_previews(app: &mut App, encoder: &mut wgpu::CommandEncoder) {
                     } else {
                         let issue_key =
                             format!("node-preview-missing-player:{active_id}:{part_id}");
-                        if should_log_video_issue(
-                            &mut app.video_diagnostic_log_times,
-                            issue_key,
-                        ) {
+                        if should_log_video_issue(&mut app.video_diagnostic_log_times, issue_key) {
                             tracing::warn!(
                                 "Fehler in Videoausgabe: Node-Vorschau fuer Modul {} / Part {} bleibt leer, weil kein MediaPlayer fuer '{}' aktiv ist.",
                                 active_id,

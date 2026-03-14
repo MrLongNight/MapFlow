@@ -255,11 +255,17 @@ pub fn sync_media_players(app: &mut App) {
         if app.media_players.contains_key(&key) {
             clear_video_issue(
                 &mut app.video_diagnostic_log_times,
-                format!("video-output-missing-player:{}:{}", desired.module_id, desired.part_id),
+                format!(
+                    "video-output-missing-player:{}:{}",
+                    desired.module_id, desired.part_id
+                ),
             );
             clear_video_issue(
                 &mut app.video_diagnostic_log_times,
-                format!("video-output-open-failed:{}:{}", desired.module_id, desired.part_id),
+                format!(
+                    "video-output-open-failed:{}:{}",
+                    desired.module_id, desired.part_id
+                ),
             );
             continue;
         }
@@ -302,11 +308,17 @@ pub fn sync_media_players(app: &mut App) {
                 app.media_players.insert(key, handle);
                 clear_video_issue(
                     &mut app.video_diagnostic_log_times,
-                    format!("video-output-missing-player:{}:{}", desired.module_id, desired.part_id),
+                    format!(
+                        "video-output-missing-player:{}:{}",
+                        desired.module_id, desired.part_id
+                    ),
                 );
                 clear_video_issue(
                     &mut app.video_diagnostic_log_times,
-                    format!("video-output-open-failed:{}:{}", desired.module_id, desired.part_id),
+                    format!(
+                        "video-output-open-failed:{}:{}",
+                        desired.module_id, desired.part_id
+                    ),
                 );
             }
             Err(err) => {
