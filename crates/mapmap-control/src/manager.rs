@@ -6,6 +6,7 @@
 //! Refactored to remove legacy learn modes and use simplified mapping.
 
 use crate::error::{ControlError, Result};
+use crate::router::{TriggerAction, TriggerRouter};
 use crate::shortcuts::{Action, Key, KeyBindings, Modifiers};
 use crate::target::{ControlTarget, ControlValue};
 use std::sync::{Arc, Mutex};
@@ -35,6 +36,9 @@ pub struct ControlManager {
     #[cfg(feature = "osc")]
     /// Configuration mapping OSC addresses to internal control targets.
     pub osc_mapping: OscMapping,
+
+    /// Trigger router for timeline and show control
+    pub trigger_router: TriggerRouter,
 
     /// Service for transmitting DMX data over the network via Art-Net.
     pub artnet_sender: Option<ArtNetSender>,
@@ -80,6 +84,8 @@ impl ControlManager {
 
             cue_list: CueList::new(),
             key_bindings: KeyBindings::new(),
+
+            trigger_router: TriggerRouter::new(),
 
             raw_midi_events: Vec::new(),
             raw_osc_events: Vec::new(),
@@ -180,14 +186,23 @@ impl ControlManager {
     }
 
     /// Update all control systems (call every frame)
-    pub fn update(&mut self) -> (Vec<crate::midi::MidiMessage>, Vec<rosc::OscPacket>) {
+    pub fn update(
+        &mut self,
+    ) -> (
+        Vec<crate::midi::MidiMessage>,
+        Vec<rosc::OscPacket>,
+        Vec<TriggerAction>,
+    ) {
         let midi_events;
         let osc_events;
+        let mut trigger_actions = Vec::new();
 
         // Process MIDI messages
         #[cfg(feature = "midi")]
         {
-            midi_events = self.process_midi_messages();
+            let (events, triggers) = self.process_midi_messages();
+            midi_events = events;
+            trigger_actions.extend(triggers);
         }
         #[cfg(not(feature = "midi"))]
         {
@@ -197,7 +212,9 @@ impl ControlManager {
         // Process OSC messages
         #[cfg(feature = "osc")]
         {
-            osc_events = self.process_osc_messages();
+            let (events, triggers) = self.process_osc_messages();
+            osc_events = events;
+            trigger_actions.extend(triggers);
         }
         #[cfg(not(feature = "osc"))]
         {
@@ -207,15 +224,16 @@ impl ControlManager {
         // Update cue system
         self.cue_list.update();
 
-        (midi_events, osc_events)
+        (midi_events, osc_events, trigger_actions)
     }
 
     /// Process MIDI messages
     #[cfg(feature = "midi")]
-    fn process_midi_messages(&mut self) -> Vec<crate::midi::MidiMessage> {
+    fn process_midi_messages(&mut self) -> (Vec<crate::midi::MidiMessage>, Vec<TriggerAction>) {
         // Collect messages to process to avoid borrow checker issues
         let mut controls_to_apply = Vec::new();
         let mut events = Vec::new();
+        let mut triggers = Vec::new();
 
         if let Some(midi_input) = &self.midi_input {
             while let Some(message) = midi_input.poll_message() {
@@ -242,6 +260,9 @@ impl ControlManager {
                         controls_to_apply.push((target, value));
                     }
                 }
+
+                // Run through trigger router
+                triggers.extend(self.trigger_router.process_midi(&message));
             }
         }
 
@@ -250,14 +271,15 @@ impl ControlManager {
             self.apply_control(target, value);
         }
 
-        events
+        (events, triggers)
     }
 
     /// Process OSC messages
     #[cfg(feature = "osc")]
-    fn process_osc_messages(&mut self) -> Vec<rosc::OscPacket> {
+    fn process_osc_messages(&mut self) -> (Vec<rosc::OscPacket>, Vec<TriggerAction>) {
         let mut controls_to_apply = Vec::new();
         let mut events = Vec::new();
+        let mut triggers = Vec::new();
 
         if let Some(osc_server) = &mut self.osc_server {
             while let Some(packet) = osc_server.poll_packet() {
@@ -282,6 +304,9 @@ impl ControlManager {
                             controls_to_apply.push((target.clone(), value));
                         }
                     }
+
+                    // Run through trigger router
+                    triggers.extend(self.trigger_router.process_osc(&msg.addr, &msg.args));
                 }
             }
         }
@@ -290,7 +315,7 @@ impl ControlManager {
             self.apply_control(target, value);
         }
 
-        events
+        (events, triggers)
     }
 
     /// Validate control value for security issues (e.g. path traversal)

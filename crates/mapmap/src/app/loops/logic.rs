@@ -59,7 +59,7 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     app.module_evaluator.update_keys(&active_keys);
 
     // --- Control System Update ---
-    let (midi_events, osc_packets) = app.control_manager.update();
+    let (midi_events, osc_packets, trigger_actions) = app.control_manager.update();
 
     // Update shared media state with active events for trigger nodes
     {
@@ -104,6 +104,38 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
                     .collect();
                 shared.active_osc_messages.insert(msg.addr.clone(), vals);
             }
+        }
+    }
+
+    // Process Trackline/Timeline Trigger Actions
+    for action in trigger_actions {
+        match action {
+            mapmap_control::router::TriggerAction::TimelineGotoMarker(_name) => {
+                // TODO: Implement Trackline markers once marker system is built
+            }
+            mapmap_control::router::TriggerAction::TimelineGotoIndex(_idx) => {
+                // TODO: Implement Trackline markers once marker system is built
+            }
+            mapmap_control::router::TriggerAction::TimelineNextMarker => {
+                // TODO: Implement Trackline markers once marker system is built
+            }
+            mapmap_control::router::TriggerAction::TimelinePrevMarker => {
+                // TODO: Implement Trackline markers once marker system is built
+            }
+            mapmap_control::router::TriggerAction::TimelinePlayPause => {
+                let playing = app.state.effect_animator.is_playing();
+                if playing {
+                    app.state.effect_animator_mut().pause();
+                } else {
+                    app.state.effect_animator_mut().play();
+                }
+            }
+            mapmap_control::router::TriggerAction::ParameterOverride { target, value } => {
+                // ControlManager already handles parameters by default, but this offers
+                // explicit parameter overrides synced with the timeline logic if needed.
+                app.control_manager.apply_control(target, value);
+            }
+            _ => {}
         }
     }
 
