@@ -55,9 +55,7 @@ pub fn render_mask_ui(ui: &mut Ui, mask: &mut MaskType) {
             if path.is_empty() {
                 ui.vertical_centered(|ui| {
                     ui.add_space(10.0);
-                    if ui.add(egui::Button::new("\u{1F4C2} Select Mask File")
-                        .min_size(egui::vec2(150.0, 30.0)))
-                        .clicked()
+                    if ui.button("\u{1F4C2} Select Mask File").clicked()
                     {
                         if let Some(picked) = rfd::FileDialog::new()
                             .add_filter(

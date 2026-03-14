@@ -117,7 +117,7 @@ pub fn render_source_ui(
             if path.is_empty() {
                 ui.vertical_centered(|ui| {
                     ui.add_space(10.0);
-                    if ui.add(egui::Button::new("\u{1F4C2} Select Media File").min_size(egui::vec2(150.0, 30.0))).clicked() {
+                    if ui.button("\u{1F4C2} Select Media File").clicked() {
                         actions.push(UIAction::PickMediaFile(module_id, part_id, "".to_string()));
                     }
                     ui.label(egui::RichText::new("No media loaded").weak().italics());
@@ -239,7 +239,7 @@ pub fn render_source_ui(
             if path.is_empty() {
                 ui.vertical_centered(|ui| {
                     ui.add_space(10.0);
-                    if ui.add(egui::Button::new("\u{1F4C2} Select Image File").min_size(egui::vec2(150.0, 30.0))).clicked() {
+                    if ui.button("\u{1F4C2} Select Image File").clicked() {
                         actions.push(crate::UIAction::PickMediaFile(module_id, part_id, "".to_string()));
                     }
                     ui.label(egui::RichText::new("No image loaded").weak().italics());
