@@ -158,7 +158,15 @@ fn empty_project() -> ScenarioSpec {
 
     // Simulate some panels
     fill_rect(&mut pixels, WIDTH, 0, 0, WIDTH, 24, [40, 40, 40, 255]); // Top bar
-    fill_rect(&mut pixels, WIDTH, 0, 24, 64, HEIGHT - 24, [20, 20, 20, 255]); // Sidebar
+    fill_rect(
+        &mut pixels,
+        WIDTH,
+        0,
+        24,
+        64,
+        HEIGHT - 24,
+        [20, 20, 20, 255],
+    ); // Sidebar
 
     ScenarioSpec {
         title: "MapFlow Visual Harness - Empty Project",
@@ -180,7 +188,15 @@ fn test_grid() -> ScenarioSpec {
         }
     }
 
-    fill_rect(&mut pixels, WIDTH, WIDTH / 2 - 8, HEIGHT / 2 - 8, 16, 16, [255, 0, 0, 255]);
+    fill_rect(
+        &mut pixels,
+        WIDTH,
+        WIDTH / 2 - 8,
+        HEIGHT / 2 - 8,
+        16,
+        16,
+        [255, 0, 0, 255],
+    );
 
     ScenarioSpec {
         title: "MapFlow Visual Harness - Test Grid",
@@ -214,8 +230,24 @@ fn projector_warp() -> ScenarioSpec {
 fn media_playback() -> ScenarioSpec {
     let mut pixels = blank_rgba(WIDTH, HEIGHT, [0, 0, 0, 255]);
 
-    fill_rect(&mut pixels, WIDTH, 32, 32, WIDTH - 64, HEIGHT - 64, [0, 0, 255, 255]);
-    fill_rect(&mut pixels, WIDTH, WIDTH / 2 - 16, HEIGHT / 2 - 16, 32, 32, [255, 255, 0, 255]);
+    fill_rect(
+        &mut pixels,
+        WIDTH,
+        32,
+        32,
+        WIDTH - 64,
+        HEIGHT - 64,
+        [0, 0, 255, 255],
+    );
+    fill_rect(
+        &mut pixels,
+        WIDTH,
+        WIDTH / 2 - 16,
+        HEIGHT / 2 - 16,
+        32,
+        32,
+        [255, 255, 0, 255],
+    );
 
     ScenarioSpec {
         title: "MapFlow Visual Harness - Media Playback",
