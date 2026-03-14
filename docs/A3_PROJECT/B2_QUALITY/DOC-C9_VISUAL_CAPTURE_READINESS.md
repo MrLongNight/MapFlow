@@ -149,13 +149,6 @@ Sinnvolle Metadaten pro Artefakt:
 - Timestamp
 - optional Hash oder Build-Info
 
-Das feste Artefaktschema sieht wie folgt aus:
-`{testfall}_win-{fenster-typ}_f{frame-index}_{laufkontext}.{typ}.png`
-Die gueltigen Dateitypen (`typ`) sind `actual`, `reference` und `diff`.
-Beispiel: `checkerboard_win-main_f001_1234_1700000000.actual.png`.
-
-Der Standard-Ausgabeordner ist `artifacts/visual-capture` (konfigurierbar ueber `MAPFLOW_VISUAL_CAPTURE_OUTPUT_DIR`).
-
 ### Phase 3: Deterministische Testfaelle definieren
 
 Noetig:
@@ -217,6 +210,28 @@ Zusaetzlich sicherstellen:
 3. einen ersten sichtbaren Smoke-Test fuer das Hauptfenster erstellen
 4. Artefakte als CI-Artefakte ablegen
 5. erst danach Serienaufnahme oder multimodale Auswertung erweitern
+
+### Lokale Nutzung des Automation-Modus
+
+Der neue `run_app`-basierte Automationsmodus kann lokal zum Erstellen von deterministischen Screenshots verwendet werden.
+
+Die benoetigten CLI-Parameter sind:
+
+*   `--mode automation`: Aktiviert den Automationsmodus, welcher schwergewichtige Dienste wie MIDI, Hue, MCP und Audio-Ausgabe umgeht.
+*   `--fixture <PFAD_ZUM_PROJEKT>`: (Optional) Laedt sofort beim Start die angegebene `.mflow` Projektdatei.
+*   `--exit-after-frames <ANZAHL>`: (Optional) Beendet die Applikation automatisch, nachdem exakt diese Anzahl an Frames gerendert wurde.
+*   `--screenshot-dir <PFAD_ZUM_ORDNER>`: (Optional) Wenn angegeben, wird *direkt vor dem automatischen Beenden* (also nach `exit-after-frames`) ein Frame-Buffer-Readback ausgeloest und das Bild als `automation_frame_<ANZAHL>.png` in diesem Ordner abgelegt. Alternativ kann die Umgebungsvariable `MAPFLOW_VISUAL_CAPTURE_OUTPUT_DIR` verwendet werden.
+
+**Beispielaufruf lokal:**
+
+```bash
+cargo run --bin mapflow -- --mode automation \
+  --fixture ./tests/fixtures/test_project.mflow \
+  --exit-after-frames 60 \
+  --screenshot-dir ./scripts/archive/logs/screenshots
+```
+
+Damit laedt MapFlow das Test-Projekt, laesst es 60 Frames laufen (ausreichend, um sicherzustellen, dass Texturen und Shader geladen und berechnet sind), speichert einen Screenshot und beendet sich vollautomatisch, ohne auf Benutzereingaben zu warten.
 
 ## Pragmatische Empfehlung
 

@@ -31,6 +31,8 @@ pub enum ShowMode {
     SemiAutomated,
     /// Module switching is manual only (timeline acts as arrangement board).
     Manual,
+    /// Hybrid mode (time + trigger combination).
+    Hybrid,
 }
 
 impl ShowMode {
@@ -39,6 +41,7 @@ impl ShowMode {
             Self::FullyAutomated => "Fully Auto",
             Self::SemiAutomated => "Semi Auto",
             Self::Manual => "Manual",
+            Self::Hybrid => "Hybrid",
         }
     }
 }
@@ -101,6 +104,8 @@ pub struct TimelineV2 {
     pub semi_auto_pending_block_id: Option<u64>,
     /// Full-auto last block.
     pub full_auto_current_block_id: Option<u64>,
+    /// Hybrid mode current block.
+    pub hybrid_current_block_id: Option<u64>,
 }
 
 impl Default for TimelineV2 {
@@ -123,6 +128,7 @@ impl Default for TimelineV2 {
             semi_auto_current_block_id: None,
             semi_auto_pending_block_id: None,
             full_auto_current_block_id: None,
+            hybrid_current_block_id: None,
         }
     }
 }
@@ -203,6 +209,7 @@ impl TimelineV2 {
         self.semi_auto_current_block_id = None;
         self.semi_auto_pending_block_id = None;
         self.full_auto_current_block_id = None;
+        self.hybrid_current_block_id = None;
     }
 
     fn cleanup_missing_modules(&mut self, available_module_ids: &[ModuleId]) {
@@ -225,6 +232,9 @@ impl TimelineV2 {
         }
         if !has_block(self.full_auto_current_block_id, &self.module_arrangement) {
             self.full_auto_current_block_id = None;
+        }
+        if !has_block(self.hybrid_current_block_id, &self.module_arrangement) {
+            self.hybrid_current_block_id = None;
         }
     }
 
@@ -306,6 +316,13 @@ impl TimelineV2 {
                     self.manual_current_block_id = self.first_enabled_block_id();
                 }
                 self.module_for_block_id(self.manual_current_block_id)
+            }
+            ShowMode::Hybrid => {
+                // In Hybrid mode, time defines current scope, but triggers can jump.
+                // For now, behave like full auto but keep separate state.
+                let active_id = self.active_block_for_time(current_time).map(|b| b.id);
+                self.hybrid_current_block_id = active_id;
+                self.module_for_block_id(active_id)
             }
         }
     }
@@ -415,6 +432,13 @@ impl TimelineV2 {
                 action = Some(TimelineAction::Stop);
             }
 
+            if ui.button("⏮").on_hover_text("Previous Marker").clicked() {
+                action = Some(TimelineAction::JumpPrevMarker);
+            }
+            if ui.button("⏭").on_hover_text("Next Marker").clicked() {
+                action = Some(TimelineAction::JumpNextMarker);
+            }
+
             ui.separator();
 
             ui.label(format!("Time: {:.2}s", self.playhead));
@@ -475,6 +499,16 @@ impl TimelineV2 {
                             &mut current_mode,
                             mapmap_core::animation::PlaybackMode::OneShot,
                             "OneShot",
+                        )
+                        .clicked()
+                    {
+                        mode_changed = true;
+                    }
+                    if ui
+                        .selectable_value(
+                            &mut current_mode,
+                            mapmap_core::animation::PlaybackMode::Trackline,
+                            "Trackline",
                         )
                         .clicked()
                     {
@@ -587,6 +621,11 @@ impl TimelineV2 {
                             ShowMode::Manual,
                             ShowMode::Manual.label(),
                         );
+                        ui.selectable_value(
+                            &mut self.show_mode,
+                            ShowMode::Hybrid,
+                            ShowMode::Hybrid.label(),
+                        );
                     });
 
                 match self.show_mode {
@@ -609,7 +648,7 @@ impl TimelineV2 {
                             }
                         }
                     }
-                    ShowMode::FullyAutomated => {}
+                    ShowMode::FullyAutomated | ShowMode::Hybrid => {}
                 }
             }
         });
@@ -769,6 +808,67 @@ impl TimelineV2 {
             let ruler_rect = Rect::from_min_size(rect.min, Vec2::new(rect.width(), 30.0));
             painter.rect_filled(ruler_rect, 0.0, Color32::from_rgb(40, 40, 40));
 
+            // Draw markers
+            let mut marker_to_remove = None;
+            let mut marker_to_toggle_pause = None;
+
+            for marker in clip.markers() {
+                let x = rect.min.x + (marker.time as f32) * self.zoom;
+                if x >= rect.min.x && x <= rect.max.x {
+                    // Marker line
+                    let color = if marker.pause_at {
+                        Color32::from_rgb(255, 150, 50)
+                    } else {
+                        Color32::from_rgb(100, 200, 255)
+                    };
+                    painter.line_segment(
+                        [Pos2::new(x, ruler_rect.min.y), Pos2::new(x, rect.max.y)],
+                        Stroke::new(1.0, color.linear_multiply(0.5)),
+                    );
+
+                    // Marker handle (triangle)
+                    let handle_rect = Rect::from_center_size(
+                        Pos2::new(x, ruler_rect.min.y + 6.0),
+                        Vec2::new(12.0, 12.0),
+                    );
+
+                    let points = vec![
+                        Pos2::new(x - 6.0, ruler_rect.min.y),
+                        Pos2::new(x + 6.0, ruler_rect.min.y),
+                        Pos2::new(x, ruler_rect.min.y + 12.0),
+                    ];
+
+                    painter.add(egui::Shape::convex_polygon(
+                        points,
+                        color,
+                        Stroke::new(1.0, Color32::WHITE),
+                    ));
+
+                    // Check interaction with marker handle
+                    let interact_rect = handle_rect.expand(2.0);
+                    let handle_response = ui.interact(
+                        interact_rect,
+                        ui.id().with(format!("marker_{}", marker.time)),
+                        Sense::click(),
+                    );
+                    let handle_response = handle_response.on_hover_ui(|ui| {
+                        ui.label(format!("Marker: {}", marker.name));
+                        ui.label(format!("Time: {:.2}s", marker.time));
+                        ui.label(if marker.pause_at {
+                            "Pauses playback"
+                        } else {
+                            "Does not pause playback"
+                        });
+                        ui.label("Right-click to toggle pause, Shift+Click to remove");
+                    });
+                    if handle_response.secondary_clicked() {
+                        marker_to_toggle_pause = Some(marker.time as f32);
+                    } else if handle_response.clicked() && ui.input(|i| i.modifiers.shift) {
+                        marker_to_remove = Some(marker.time as f32);
+                    }
+                }
+            }
+
             // Draw time ticks
             let tick_interval = if self.zoom > 100.0 { 0.1 } else { 1.0 };
             let mut time = 0.0;
@@ -815,17 +915,33 @@ impl TimelineV2 {
             // Handle ruler scrubbing
             if response.hovered() || response.dragged() {
                 if let Some(pos) = response.interact_pointer_pos() {
-                    if pos.y <= ruler_rect.max.y && response.is_pointer_button_down_on() {
-                        let time = (pos.x - rect.min.x) / self.zoom;
-                        let snapped = if ui.input(|i| i.modifiers.shift) {
-                            time // Bypass snap
-                        } else {
-                            self.snap_time(time)
-                        };
+                    if pos.y <= ruler_rect.max.y {
+                        if response.is_pointer_button_down_on() {
+                            let time = (pos.x - rect.min.x) / self.zoom;
+                            let snapped = if ui.input(|i| i.modifiers.shift) {
+                                time // Bypass snap
+                            } else {
+                                self.snap_time(time)
+                            };
 
-                        action = Some(TimelineAction::Seek(snapped));
+                            action = Some(TimelineAction::Seek(snapped));
+                        } else if response.secondary_clicked() {
+                            let time = (pos.x - rect.min.x) / self.zoom;
+                            let snapped = if ui.input(|i| i.modifiers.shift) {
+                                time // Bypass snap
+                            } else {
+                                self.snap_time(time)
+                            };
+                            action = Some(TimelineAction::AddMarker(snapped));
+                        }
                     }
                 }
+            }
+
+            if let Some(time) = marker_to_remove {
+                action = Some(TimelineAction::RemoveMarker(time));
+            } else if let Some(time) = marker_to_toggle_pause {
+                action = Some(TimelineAction::ToggleMarkerPause(time));
             }
 
             // Access immutable clip for drawing tracks
@@ -970,7 +1086,7 @@ impl TimelineV2 {
             }
 
             if module_track_height > 0.0 {
-                let module_track_y = track_start_y + (visible_lanes_count as f32 * 60.0);
+                let module_track_y = track_start_y + (current_lane_index as f32 * 60.0);
                 let module_rect = Rect::from_min_size(
                     Pos2::new(rect.min.x, module_track_y),
                     Vec2::new(rect.width(), module_track_height),
@@ -1007,6 +1123,7 @@ impl TimelineV2 {
                     ShowMode::FullyAutomated => self.full_auto_current_block_id,
                     ShowMode::SemiAutomated => self.semi_auto_current_block_id,
                     ShowMode::Manual => self.manual_current_block_id,
+                    ShowMode::Hybrid => self.hybrid_current_block_id,
                 };
 
                 for block in self.sorted_enabled_blocks() {
@@ -1059,4 +1176,9 @@ pub enum TimelineAction {
     Stop,
     Seek(f32),
     SelectModule(ModuleId),
+    AddMarker(f32),
+    RemoveMarker(f32),
+    ToggleMarkerPause(f32),
+    JumpNextMarker,
+    JumpPrevMarker,
 }
