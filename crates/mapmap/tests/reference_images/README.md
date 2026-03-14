@@ -30,7 +30,10 @@ Fenster-, Swapchain-, Present- und Screenshot-Pfad verwenden. Sie testen den tat
 visuellen Output, bei dem minimale Abweichungen durch Hardwareskalierung zulaessig sein koennen
 (Toleranz: `CHANNEL_TOLERANCE` <= 2, max mismatch <= 0.1%).
 
-## Referenzbilder neu erzeugen
+## Referenzbilder bewusst neu erzeugen
+
+Die Referenzbilder duerfen nur dann neu erzeugt werden, wenn eine **bewusste, gewollte visuelle Aenderung** im Render-Code stattgefunden hat.
+Sie duerfen niemals einfach ueberschrieben werden, um einen fehlschlagenden Test "gruen" zu machen, ohne die Ursache des Fehlers zu verstehen!
 
 Von der Repo-Wurzel aus:
 
