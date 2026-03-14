@@ -7,7 +7,7 @@ on:
     inputs:
       pr_number:
         description: "Merged PR number to validate on the self-hosted runner"
-        required: false
+        required: true
         type: string
 
 permissions:

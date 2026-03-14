@@ -27,10 +27,38 @@ fn gradient_matches_reference() {
     run_visual_regression("gradient");
 }
 
+#[test]
+#[ignore = "Requires a local interactive Windows GPU/desktop session"]
+fn empty_project_matches_reference() {
+    run_visual_regression("empty_project");
+}
+
+#[test]
+#[ignore = "Requires a local interactive Windows GPU/desktop session"]
+fn test_grid_matches_reference() {
+    run_visual_regression("test_grid");
+}
+
+#[test]
+#[ignore = "Requires a local interactive Windows GPU/desktop session"]
+fn projector_warp_matches_reference() {
+    run_visual_regression("projector_warp");
+}
+
+#[test]
+#[ignore = "Requires a local interactive Windows GPU/desktop session"]
+fn media_playback_matches_reference() {
+    run_visual_regression("media_playback");
+}
+
+#[test]
+#[ignore = "Requires a local interactive Windows GPU/desktop session"]
+fn timeline_step_matches_reference() {
+    run_visual_regression("timeline_step");
+}
+
 fn run_visual_regression(scenario: &str) {
-    let output_root = unique_output_dir(scenario);
-    let actual_path = output_root.join(format!("{scenario}.actual.png"));
-    let diff_path = output_root.join(format!("{scenario}.diff.png"));
+    let (actual_path, diff_path) = unique_output_paths(scenario);
     let expected_path = reference_image_path(scenario);
 
     if let Some(parent) = actual_path.parent() {
@@ -119,13 +147,15 @@ fn compare_images(expected_path: &Path, actual_path: &Path, diff_path: &Path) {
             panic!("Failed to save diff image '{}': {err}", diff_path.display())
         });
         panic!(
-            "Scenario mismatch.\nreference: {}\nactual: {}\ndiff: {}\nmax_channel_diff: {}\nmismatched_pixels: {} (allowed: {})",
+            "Scenario mismatch.\nreference: {}\nactual: {}\ndiff: {}\nmax_channel_diff: {} (allowed: {})\nmismatched_pixels: {} (allowed: {}, ratio: {})",
             expected_path.display(),
             actual_path.display(),
             diff_path.display(),
             max_channel_diff,
+            CHANNEL_TOLERANCE,
             mismatched_pixels,
             max_mismatched_pixels,
+            MAX_MISMATCH_RATIO,
         );
     }
 }
@@ -137,17 +167,21 @@ fn reference_image_path(scenario: &str) -> PathBuf {
         .join(format!("{scenario}.png"))
 }
 
-fn unique_output_dir(scenario: &str) -> PathBuf {
+fn unique_output_paths(scenario: &str) -> (PathBuf, PathBuf) {
     let timestamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("System clock drifted before UNIX_EPOCH")
         .as_millis();
     let root = capture_output_root();
-    root.join(format!(
-        "mapflow_visual_capture_{scenario}_{}_{}",
-        std::process::id(),
-        timestamp
-    ))
+    let run_context = format!("{}_{}", std::process::id(), timestamp);
+
+    // Schema: {test_case}_win-{window_type}_f{frame_index}_{run_context}.{type}.png
+    let base_name = format!("{scenario}_win-main_f001_{run_context}");
+
+    let actual_path = root.join(format!("{base_name}.actual.png"));
+    let diff_path = root.join(format!("{base_name}.diff.png"));
+
+    (actual_path, diff_path)
 }
 
 fn capture_output_root() -> PathBuf {
@@ -160,7 +194,7 @@ fn capture_output_root() -> PathBuf {
                 workspace_root().join(path)
             }
         }
-        None => std::env::temp_dir(),
+        None => workspace_root().join("artifacts").join("visual-capture"),
     }
 }
 
