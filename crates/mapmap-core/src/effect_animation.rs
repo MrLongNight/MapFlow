@@ -239,6 +239,48 @@ impl EffectParameterAnimator {
             .collect()
     }
 
+    /// Add a marker to the timeline
+    pub fn add_marker(&mut self, marker: crate::animation::Marker) {
+        self.clip.add_marker(marker);
+        self.player = AnimationPlayer::new(self.clip.clone());
+        self.player.current_time = self.get_current_time();
+    }
+
+    /// Remove a marker from the timeline
+    pub fn remove_marker(&mut self, time: f64) {
+        if self.clip.remove_marker(time) {
+            self.player = AnimationPlayer::new(self.clip.clone());
+            self.player.current_time = self.get_current_time();
+        }
+    }
+
+    /// Toggle pause state of a marker
+    pub fn toggle_marker_pause(&mut self, time: f64) {
+        let epsilon = 0.001;
+        let mut changed = false;
+        for marker in &mut self.clip.markers {
+            if (marker.time - time).abs() < epsilon {
+                marker.pause_at = !marker.pause_at;
+                changed = true;
+                break;
+            }
+        }
+        if changed {
+            self.player = AnimationPlayer::new(self.clip.clone());
+            self.player.current_time = self.get_current_time();
+        }
+    }
+
+    /// Jump to the next marker
+    pub fn jump_next_marker(&mut self) {
+        self.player.jump_to_next_marker();
+    }
+
+    /// Jump to the previous marker
+    pub fn jump_prev_marker(&mut self) {
+        self.player.jump_to_prev_marker();
+    }
+
     /// Set the animation clip duration
     pub fn set_duration(&mut self, duration: f64) {
         self.clip.duration = duration;

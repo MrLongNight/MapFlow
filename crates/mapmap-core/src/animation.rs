@@ -19,6 +19,8 @@ pub enum PlaybackMode {
     PingPong,
     /// Play once and stop
     OneShot,
+    /// Play until the next marker and pause
+    Trackline,
 }
 
 /// Interpolation mode for keyframes
@@ -264,6 +266,28 @@ impl AnimationTrack {
     }
 }
 
+/// Timeline marker for navigation and playback control
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Marker {
+    /// Time of the marker in seconds
+    pub time: TimePoint,
+    /// Name or label of the marker
+    pub name: String,
+    /// Whether playback should pause when reaching this marker in Trackline mode
+    pub pause_at: bool,
+}
+
+impl Marker {
+    /// Create a new marker
+    pub fn new(time: TimePoint, name: String) -> Self {
+        Self {
+            time,
+            name,
+            pause_at: true,
+        }
+    }
+}
+
 /// Animation clip - collection of tracks
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct AnimationClip {
@@ -271,6 +295,8 @@ pub struct AnimationClip {
     pub name: String,
     /// Collection of animation tracks
     pub tracks: Vec<AnimationTrack>,
+    /// Timeline markers
+    pub markers: Vec<Marker>,
     /// Total duration of the clip in seconds
     pub duration: TimePoint,
     /// Legacy looping flag (use playback_mode)
@@ -295,6 +321,8 @@ pub struct AnimationClip {
 struct AnimationClipSerde {
     name: String,
     tracks: Vec<AnimationTrack>,
+    #[serde(default)]
+    markers: Vec<Marker>,
     duration: TimePoint,
     looping: bool,
     #[serde(default, deserialize_with = "deserialize_optional_playback_mode")]
@@ -323,9 +351,13 @@ impl From<AnimationClipSerde> for AnimationClip {
             }
         });
 
+        let mut markers = value.markers;
+        markers.sort_by(|a, b| a.time.total_cmp(&b.time));
+
         Self {
             name: value.name,
             tracks: value.tracks,
+            markers,
             duration: value.duration,
             looping: value.looping,
             playback_mode,
@@ -371,6 +403,7 @@ impl AnimationClip {
         Self {
             name,
             tracks: Vec::new(),
+            markers: Vec::new(),
             duration: 10.0, // Default 10 seconds
             looping: false,
             playback_mode: PlaybackMode::Loop,
@@ -386,6 +419,25 @@ impl AnimationClip {
     /// Add a track
     pub fn add_track(&mut self, track: AnimationTrack) {
         self.tracks.push(track);
+    }
+
+    /// Add a marker to the timeline
+    pub fn add_marker(&mut self, marker: Marker) {
+        self.markers.push(marker);
+        self.markers.sort_by(|a, b| a.time.total_cmp(&b.time));
+    }
+
+    /// Remove a marker by exact time (within a small epsilon)
+    pub fn remove_marker(&mut self, time: TimePoint) -> bool {
+        let epsilon = 0.001;
+        let initial_len = self.markers.len();
+        self.markers.retain(|m| (m.time - time).abs() > epsilon);
+        self.markers.len() < initial_len
+    }
+
+    /// Get all markers
+    pub fn markers(&self) -> &[Marker] {
+        &self.markers
     }
 
     /// Get a track by name
@@ -565,6 +617,8 @@ impl AnimationPlayer {
                 self.current_direction = if self.clip.reverse { -1.0 } else { 1.0 };
             }
 
+            let old_time = self.current_time;
+
             let bpm_speed_multiplier =
                 if self.clip.bpm_sync && self.clip.bpm > 0.0 && self.clip.beats > 0.0 {
                     let clip_duration_beats = out_pt - in_pt;
@@ -601,6 +655,69 @@ impl AnimationPlayer {
                         self.current_direction = 1.0;
                     }
                 }
+                PlaybackMode::Trackline => {
+                    // Check if we crossed any pause marker
+                    let mut crossed_marker = None;
+                    for marker in &self.clip.markers {
+                        if !marker.pause_at {
+                            continue;
+                        }
+
+                        let crossed = if self.current_direction > 0.0 {
+                            // Forward playback: crossed if old_time < m.time <= current_time
+                            // Or wrapped around (old_time > current_time) and (m.time > old_time OR m.time <= current_time)
+                            if old_time <= self.current_time {
+                                old_time < marker.time && self.current_time >= marker.time
+                            } else {
+                                marker.time > old_time || marker.time <= self.current_time
+                            }
+                        } else {
+                            // Backward playback: crossed if old_time > m.time >= current_time
+                            if old_time >= self.current_time {
+                                old_time > marker.time && self.current_time <= marker.time
+                            } else {
+                                marker.time < old_time || marker.time >= self.current_time
+                            }
+                        };
+
+                        if crossed {
+                            crossed_marker = Some(marker);
+                            // If playing forward, we want the first marker we cross.
+                            // If playing backward, we want the first one we cross going backward (the one with largest time).
+                            // But since markers are sorted by time, we can handle it:
+                            if self.current_direction > 0.0 {
+                                break;
+                            }
+                            // for backward, we keep going so crossed_marker ends up being the last one (which is the first one hit backwards)
+                        }
+                    }
+
+                    if let Some(marker) = crossed_marker {
+                        self.current_time = marker.time;
+                        self.playing = false;
+                    }
+
+                    // Check bounds if we haven't paused
+                    if self.playing {
+                        if self.current_direction > 0.0 && self.current_time >= out_pt {
+                            if is_looping {
+                                self.current_time =
+                                    in_pt + (self.current_time - out_pt) % (out_pt - in_pt);
+                            } else {
+                                self.current_time = out_pt;
+                                self.playing = false;
+                            }
+                        } else if self.current_direction < 0.0 && self.current_time <= in_pt {
+                            if is_looping {
+                                self.current_time =
+                                    out_pt - (in_pt - self.current_time) % (out_pt - in_pt);
+                            } else {
+                                self.current_time = in_pt;
+                                self.playing = false;
+                            }
+                        }
+                    }
+                }
                 _ => {
                     // OneShot or default non-looping
                     if self.current_direction > 0.0 && self.current_time >= out_pt {
@@ -615,6 +732,40 @@ impl AnimationPlayer {
         }
 
         self.clip.evaluate(self.current_time)
+    }
+
+    /// Jump to the next marker (Trackline mode)
+    pub fn jump_to_next_marker(&mut self) {
+        if let Some(marker) = self
+            .clip
+            .markers
+            .iter()
+            .find(|m| m.time > self.current_time)
+        {
+            self.current_time = marker.time;
+        } else {
+            // Jump to out point if no marker found
+            let out_pt = self.clip.out_point.unwrap_or(self.clip.duration);
+            self.current_time = out_pt;
+        }
+    }
+
+    /// Jump to the previous marker (Trackline mode)
+    pub fn jump_to_prev_marker(&mut self) {
+        let mut prev_marker = None;
+        for marker in &self.clip.markers {
+            if marker.time < self.current_time {
+                prev_marker = Some(marker);
+            }
+        }
+
+        if let Some(marker) = prev_marker {
+            self.current_time = marker.time;
+        } else {
+            // Jump to in point if no marker found
+            let in_pt = self.clip.in_point.unwrap_or(0.0);
+            self.current_time = in_pt;
+        }
     }
 
     /// Seek to a specific time
@@ -649,6 +800,33 @@ mod tests {
         } else {
             panic!("Expected Float value");
         }
+    }
+
+    #[test]
+    fn test_trackline_mode_pauses_at_marker() {
+        let mut clip = AnimationClip::new("test".into());
+        clip.duration = 10.0;
+        clip.playback_mode = PlaybackMode::Trackline;
+        clip.add_marker(Marker::new(2.0, "Pause 1".into()));
+        clip.add_marker(Marker::new(5.0, "Pause 2".into()));
+
+        let mut player = AnimationPlayer::new(clip);
+        player.play();
+
+        // Update past the first marker
+        player.update(2.5);
+
+        // Should have paused exactly at 2.0
+        assert_eq!(player.current_time, 2.0);
+        assert!(!player.playing);
+
+        // Play again, update past second marker
+        player.play();
+        player.update(4.0);
+
+        // Should have paused exactly at 5.0
+        assert_eq!(player.current_time, 5.0);
+        assert!(!player.playing);
     }
 
     #[test]
