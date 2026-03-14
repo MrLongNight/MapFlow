@@ -76,6 +76,7 @@ pub fn export_project(state: &AppState, path: &Path) -> Result<()> {
     use mapmap_core::module::SourceType;
     use std::collections::HashSet;
     use std::fs::File;
+    use std::io::{Read, Write};
     use zip::write::FileOptions;
 
     let file = File::create(path)?;
@@ -127,7 +128,9 @@ pub fn export_project(state: &AppState, path: &Path) -> Result<()> {
     zip.start_file("project.mflow", options)
         .map_err(crate::IoError::from)?;
     let mut project_file = File::open(&project_path)?;
-    std::io::copy(&mut project_file, &mut zip)?;
+    let mut buffer = Vec::new();
+    project_file.read_to_end(&mut buffer)?;
+    zip.write_all(&buffer)?;
 
     // 3. Add media files to ZIP
     zip.add_directory("media/", options)
@@ -140,7 +143,9 @@ pub fn export_project(state: &AppState, path: &Path) -> Result<()> {
                 zip.start_file(zip_path, options)
                     .map_err(crate::IoError::from)?;
                 let mut media_file = File::open(&media_path)?;
-                std::io::copy(&mut media_file, &mut zip)?;
+                let mut buffer = Vec::new();
+                media_file.read_to_end(&mut buffer)?;
+                zip.write_all(&buffer)?;
             }
         }
     }

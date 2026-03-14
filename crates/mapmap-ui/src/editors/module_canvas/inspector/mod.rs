@@ -251,7 +251,11 @@ fn render_layer_preview_panel(
     }
 
     ui.group(|ui| {
-        ui.label(egui::RichText::new("No preview available yet.").weak().italics());
+        ui.label(
+            egui::RichText::new("No preview available yet.")
+                .weak()
+                .italics(),
+        );
         if preview_context.output_ids.is_empty() {
             ui.small("This layer is not linked to a projector output yet.");
         } else {
@@ -266,9 +270,19 @@ fn render_layer_preview_panel(
             ));
         }
         if preview_context.upstream_source_part_ids.is_empty() {
-            ui.label(egui::RichText::new("No upstream source node was found for this layer.").weak().italics());
+            ui.label(
+                egui::RichText::new("No upstream source node was found for this layer.")
+                    .weak()
+                    .italics(),
+            );
         } else {
-            ui.label(egui::RichText::new("Upstream source exists, but no preview texture reached the inspector.").weak().italics());
+            ui.label(
+                egui::RichText::new(
+                    "Upstream source exists, but no preview texture reached the inspector.",
+                )
+                .weak()
+                .italics(),
+            );
         }
     });
 }
