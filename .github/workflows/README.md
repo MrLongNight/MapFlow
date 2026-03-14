@@ -418,7 +418,6 @@ gh workflow run CI-06_update-changelog.yml
 ## 🔗 Related Documentation
 
 - [Issue Templates](../ISSUE_TEMPLATE/)
-- [Pull Request Template](../pull_request_template.md)
 - [ROADMAP.md](../../ROADMAP.md)
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
 
