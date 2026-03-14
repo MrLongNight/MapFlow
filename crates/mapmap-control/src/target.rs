@@ -18,6 +18,14 @@ pub enum ControlTarget {
     LayerRotation(u32),
     /// Layer visibility (layer_id)
     LayerVisibility(u32),
+    /// Layer media load (layer_id)
+    LayerMediaLoad(u32),
+    /// Layer playback time (layer_id)
+    LayerPlaybackTime(u32),
+    /// Layer playback speed (layer_id)
+    LayerPlaybackSpeed(u32),
+    /// Layer loop mode (layer_id)
+    LayerLoopMode(u32),
     /// Paint parameter (paint_id, param_name)
     PaintParameter(u32, String),
     /// Effect parameter (effect_id, param_name)
@@ -26,6 +34,10 @@ pub enum ControlTarget {
     PlaybackSpeed(Option<u32>),
     /// Playback position (0.0-1.0)
     PlaybackPosition,
+    /// Timeline position
+    TimelinePosition,
+    /// Timeline duration
+    TimelineDuration,
     /// Output brightness (output_id, brightness: 0.0-1.0)
     OutputBrightness(u32),
     /// Output edge blend (output_id, edge, width: 0.0-1.0)
@@ -47,11 +59,17 @@ impl ControlTarget {
             ControlTarget::LayerScale(id) => format!("Layer {} Scale", id),
             ControlTarget::LayerRotation(id) => format!("Layer {} Rotation", id),
             ControlTarget::LayerVisibility(id) => format!("Layer {} Visibility", id),
+            ControlTarget::LayerMediaLoad(id) => format!("Layer {} Media Load", id),
+            ControlTarget::LayerPlaybackTime(id) => format!("Layer {} Playback Time", id),
+            ControlTarget::LayerPlaybackSpeed(id) => format!("Layer {} Playback Speed", id),
+            ControlTarget::LayerLoopMode(id) => format!("Layer {} Loop Mode", id),
             ControlTarget::PaintParameter(id, name) => format!("Paint {} {}", id, name),
             ControlTarget::EffectParameter(id, name) => format!("Effect {} {}", id, name),
             ControlTarget::PlaybackSpeed(Some(id)) => format!("Layer {} Speed", id),
             ControlTarget::PlaybackSpeed(None) => "Global Speed".to_string(),
             ControlTarget::PlaybackPosition => "Global Position".to_string(),
+            ControlTarget::TimelinePosition => "Timeline Position".to_string(),
+            ControlTarget::TimelineDuration => "Timeline Duration".to_string(),
             ControlTarget::OutputBrightness(id) => format!("Output {} Brightness", id),
             ControlTarget::OutputEdgeBlend(id, _) => format!("Output {} Edge Blend", id),
             ControlTarget::MasterOpacity => "Master Opacity".to_string(),
@@ -71,11 +89,17 @@ impl ControlTarget {
             ControlTarget::LayerScale(id) => format!("layer/{}/scale", id),
             ControlTarget::LayerRotation(id) => format!("layer/{}/rotation", id),
             ControlTarget::LayerVisibility(id) => format!("layer/{}/visibility", id),
+            ControlTarget::LayerMediaLoad(id) => format!("layer/{}/media/load", id),
+            ControlTarget::LayerPlaybackTime(id) => format!("layer/{}/playback/time", id),
+            ControlTarget::LayerPlaybackSpeed(id) => format!("layer/{}/playback/speed", id),
+            ControlTarget::LayerLoopMode(id) => format!("layer/{}/loop_mode", id),
             ControlTarget::PaintParameter(id, name) => format!("paint/{}/{}", id, name),
             ControlTarget::EffectParameter(id, name) => format!("effect/{}/{}", id, name),
             ControlTarget::PlaybackSpeed(Some(id)) => format!("layer/{}/speed", id),
             ControlTarget::PlaybackSpeed(None) => "playback/speed".to_string(),
             ControlTarget::PlaybackPosition => "playback/position".to_string(),
+            ControlTarget::TimelinePosition => "timeline/position".to_string(),
+            ControlTarget::TimelineDuration => "timeline/duration".to_string(),
             ControlTarget::OutputBrightness(id) => format!("output/{}/brightness", id),
             ControlTarget::OutputEdgeBlend(id, edge) => format!("output/{}/blend/{:?}", id, edge),
             ControlTarget::MasterOpacity => "master/opacity".to_string(),
