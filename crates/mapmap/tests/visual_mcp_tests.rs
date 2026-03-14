@@ -1,6 +1,6 @@
-use std::process::Command;
-use std::path::PathBuf;
 use std::fs;
+use std::path::PathBuf;
+use std::process::Command;
 
 #[test]
 fn test_mcp_visual_capture() {
@@ -25,10 +25,18 @@ fn test_mcp_visual_capture() {
 
     let bin_path = env!("CARGO_BIN_EXE_MapFlow");
     let runner_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent().unwrap().parent().unwrap()
-        .join("scripts").join("test").join("mcp_test_runner.py");
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("scripts")
+        .join("test")
+        .join("mcp_test_runner.py");
 
-    let script_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests").join("artifacts").join("pilot_script.json");
+    let script_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("artifacts")
+        .join("pilot_script.json");
 
     let _status = Command::new("python3")
         .arg(&runner_path)
@@ -46,8 +54,13 @@ fn test_mcp_visual_capture() {
     }
 
     let script_compare_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent().unwrap().parent().unwrap()
-        .join("scripts").join("test").join("visual_compare.py");
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("scripts")
+        .join("test")
+        .join("visual_compare.py");
 
     let status_compare = Command::new("python3")
         .arg(&script_compare_path)
@@ -57,5 +70,9 @@ fn test_mcp_visual_capture() {
         .status()
         .expect("Failed to execute visual_compare script");
 
-    assert!(status_compare.success(), "Visual comparison failed for test case: {}", test_name);
+    assert!(
+        status_compare.success(),
+        "Visual comparison failed for test case: {}",
+        test_name
+    );
 }
