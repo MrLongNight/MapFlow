@@ -7,7 +7,3 @@
 **Vulnerability:** The `apply_control` method validated the `ControlValue` for path traversal, but failed to call `target.validate()` on the `ControlTarget`, allowing potentially malicious target names with path traversals or control characters to bypass validation.
 **Learning:** Validation methods on complex types must be explicitly called at the boundary where they are ingested or applied; do not assume they are implicitly validated.
 **Prevention:** Always trace the data flow of user-controlled complex types (like enums with string variants) and ensure their inherent `.validate()` methods are executed before the data is used.
-## 2024-03-14 - Fix DoS Vulnerability in Project Export
-**Vulnerability:** The project exporter was loading entire files (including potentially massive media assets) into memory using `read_to_end` before writing them to the zip archive, leading to a Memory Exhaustion/DoS vulnerability on large projects.
-**Learning:** Using `Vec<u8>` to buffer whole files inside operations that handle arbitrarily large media files causes memory usage to scale linearly with file size, crashing the process.
-**Prevention:** Always use streaming I/O (`std::io::copy`) when transferring data between file handles or external sinks to maintain a constant, low memory footprint.
