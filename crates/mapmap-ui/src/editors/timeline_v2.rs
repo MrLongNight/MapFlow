@@ -806,8 +806,85 @@ impl TimelineV2 {
             let tracks = &animator.clip().tracks;
             let track_start_y = ruler_rect.max.y;
 
+            if module_track_height > 0.0 {
+                let module_track_y = track_start_y;
+                let module_rect = Rect::from_min_size(
+                    Pos2::new(rect.min.x, module_track_y),
+                    Vec2::new(rect.width(), module_track_height),
+                );
+                painter.rect_filled(module_rect, 0.0, Color32::from_rgb(22, 22, 22));
+                painter.text(
+                    Pos2::new(module_rect.min.x + 5.0, module_rect.min.y + 6.0),
+                    egui::Align2::LEFT_TOP,
+                    "Module Track",
+                    egui::FontId::proportional(13.0),
+                    Color32::from_rgb(200, 220, 255),
+                );
+
+                let active_module = self.runtime_show_module(
+                    self.playhead,
+                    animator.is_playing(),
+                    &available_module_ids,
+                );
+
+                // TRIGGER ACTION IF CHANGED
+                if let Some(mod_id) = active_module {
+                    // Check if we need to emit a select action (only if not already the active one in the app)
+                    // We use a simple heuristic: if it's the first frame or the ID changed.
+                    // For now, we just emit it, the handler in actions.rs should be idempotent.
+                    if action.is_none()
+                        && animator.is_playing()
+                        && self.show_mode == ShowMode::FullyAutomated
+                    {
+                        action = Some(TimelineAction::SelectModule(mod_id));
+                    }
+                }
+
+                let active_block_id = match self.show_mode {
+                    ShowMode::FullyAutomated => self.full_auto_current_block_id,
+                    ShowMode::SemiAutomated => self.semi_auto_current_block_id,
+                    ShowMode::Manual => self.manual_current_block_id,
+                };
+
+                for block in self.sorted_enabled_blocks() {
+                    let block_x = rect.min.x + block.start_time * self.zoom;
+                    let block_w = (block.duration * self.zoom).max(8.0);
+                    let block_rect = Rect::from_min_size(
+                        Pos2::new(block_x, module_rect.min.y + 24.0),
+                        Vec2::new(block_w, 28.0),
+                    );
+
+                    let color = if self.semi_auto_pending_block_id == Some(block.id) {
+                        Color32::from_rgb(255, 170, 0)
+                    } else if active_block_id == Some(block.id) {
+                        Color32::from_rgb(40, 180, 80)
+                    } else if active_module == Some(block.module_id) {
+                        Color32::from_rgb(55, 130, 200)
+                    } else {
+                        Color32::from_rgb(70, 70, 90)
+                    };
+
+                    painter.rect_filled(block_rect, 3.0, color);
+                    painter.rect_stroke(
+                        block_rect,
+                        3.0,
+                        Stroke::new(1.0, Color32::from_rgb(230, 230, 230)),
+                        egui::StrokeKind::Middle,
+                    );
+
+                    let label = Self::module_name(&module_names, block.module_id);
+                    painter.text(
+                        Pos2::new(block_rect.min.x + 4.0, block_rect.min.y + 6.0),
+                        egui::Align2::LEFT_TOP,
+                        label,
+                        egui::FontId::proportional(12.0),
+                        Color32::WHITE,
+                    );
+                }
+            }
+
             for (i, track) in tracks.iter().enumerate() {
-                let track_y = track_start_y + (i as f32 * 60.0);
+                let track_y = track_start_y + module_track_height + (i as f32 * 60.0);
                 let track_rect = Rect::from_min_size(
                     Pos2::new(rect.min.x, track_y),
                     Vec2::new(rect.width(), 60.0),
@@ -886,82 +963,6 @@ impl TimelineV2 {
                 }
             }
 
-            if module_track_height > 0.0 {
-                let module_track_y = track_start_y + (track_count as f32 * 60.0);
-                let module_rect = Rect::from_min_size(
-                    Pos2::new(rect.min.x, module_track_y),
-                    Vec2::new(rect.width(), module_track_height),
-                );
-                painter.rect_filled(module_rect, 0.0, Color32::from_rgb(22, 22, 22));
-                painter.text(
-                    Pos2::new(module_rect.min.x + 5.0, module_rect.min.y + 6.0),
-                    egui::Align2::LEFT_TOP,
-                    "Module Show",
-                    egui::FontId::proportional(13.0),
-                    Color32::from_rgb(200, 220, 255),
-                );
-
-                let active_module = self.runtime_show_module(
-                    self.playhead,
-                    animator.is_playing(),
-                    &available_module_ids,
-                );
-
-                // TRIGGER ACTION IF CHANGED
-                if let Some(mod_id) = active_module {
-                    // Check if we need to emit a select action (only if not already the active one in the app)
-                    // We use a simple heuristic: if it's the first frame or the ID changed.
-                    // For now, we just emit it, the handler in actions.rs should be idempotent.
-                    if action.is_none()
-                        && animator.is_playing()
-                        && self.show_mode == ShowMode::FullyAutomated
-                    {
-                        action = Some(TimelineAction::SelectModule(mod_id));
-                    }
-                }
-
-                let active_block_id = match self.show_mode {
-                    ShowMode::FullyAutomated => self.full_auto_current_block_id,
-                    ShowMode::SemiAutomated => self.semi_auto_current_block_id,
-                    ShowMode::Manual => self.manual_current_block_id,
-                };
-
-                for block in self.sorted_enabled_blocks() {
-                    let block_x = rect.min.x + block.start_time * self.zoom;
-                    let block_w = (block.duration * self.zoom).max(8.0);
-                    let block_rect = Rect::from_min_size(
-                        Pos2::new(block_x, module_rect.min.y + 24.0),
-                        Vec2::new(block_w, 28.0),
-                    );
-
-                    let color = if self.semi_auto_pending_block_id == Some(block.id) {
-                        Color32::from_rgb(255, 170, 0)
-                    } else if active_block_id == Some(block.id) {
-                        Color32::from_rgb(40, 180, 80)
-                    } else if active_module == Some(block.module_id) {
-                        Color32::from_rgb(55, 130, 200)
-                    } else {
-                        Color32::from_rgb(70, 70, 90)
-                    };
-
-                    painter.rect_filled(block_rect, 3.0, color);
-                    painter.rect_stroke(
-                        block_rect,
-                        3.0,
-                        Stroke::new(1.0, Color32::from_rgb(230, 230, 230)),
-                        egui::StrokeKind::Middle,
-                    );
-
-                    let label = Self::module_name(&module_names, block.module_id);
-                    painter.text(
-                        Pos2::new(block_rect.min.x + 4.0, block_rect.min.y + 6.0),
-                        egui::Align2::LEFT_TOP,
-                        label,
-                        egui::FontId::proportional(12.0),
-                        Color32::WHITE,
-                    );
-                }
-            }
         });
 
         action
