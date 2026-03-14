@@ -33,7 +33,7 @@ bindgen = { workspace = true }
 bytemuck = { workspace = true }
 cbindgen = { workspace = true }
 cc = { workspace = true }
-clap = { version = "4.5.60", features = ["derive"] }
+clap = { version = "4.5.60", features = ["derive", "env"] }
 cpal = { workspace = true }
 criterion = { workspace = true }
 crossbeam-channel = { workspace = true }

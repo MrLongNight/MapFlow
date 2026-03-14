@@ -666,6 +666,27 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                         .ui_state
                         .module_canvas
                         .set_active_module(Some(module_id)),
+                    TimelineAction::AddMarker(t) => {
+                        let animator = std::sync::Arc::make_mut(&mut app.state.effect_animator);
+                        let name = format!("Marker {:.1}s", t);
+                        animator.add_marker(mapmap_core::animation::Marker::new(t as f64, name));
+                    }
+                    TimelineAction::RemoveMarker(t) => {
+                        let animator = std::sync::Arc::make_mut(&mut app.state.effect_animator);
+                        animator.remove_marker(t as f64);
+                    }
+                    TimelineAction::ToggleMarkerPause(t) => {
+                        let animator = std::sync::Arc::make_mut(&mut app.state.effect_animator);
+                        animator.toggle_marker_pause(t as f64);
+                    }
+                    TimelineAction::JumpNextMarker => {
+                        let animator = std::sync::Arc::make_mut(&mut app.state.effect_animator);
+                        animator.jump_next_marker();
+                    }
+                    TimelineAction::JumpPrevMarker => {
+                        let animator = std::sync::Arc::make_mut(&mut app.state.effect_animator);
+                        animator.jump_prev_marker();
+                    }
                 }
             }
             _ => {
