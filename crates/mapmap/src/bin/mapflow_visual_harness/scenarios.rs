@@ -9,16 +9,6 @@ pub enum ScenarioName {
     Gradient,
     #[value(name = "alpha_overlay")]
     AlphaOverlay,
-    #[value(name = "empty_project")]
-    EmptyProject,
-    #[value(name = "test_grid")]
-    TestGrid,
-    #[value(name = "projector_warp")]
-    ProjectorWarp,
-    #[value(name = "media_playback")]
-    MediaPlayback,
-    #[value(name = "timeline_step")]
-    TimelineStep,
 }
 
 pub struct ScenarioSpec {
@@ -34,11 +24,6 @@ pub fn build_scenario(name: ScenarioName) -> ScenarioSpec {
         ScenarioName::Checkerboard => checkerboard(),
         ScenarioName::Gradient => gradient(),
         ScenarioName::AlphaOverlay => alpha_overlay(),
-        ScenarioName::EmptyProject => empty_project(),
-        ScenarioName::TestGrid => test_grid(),
-        ScenarioName::ProjectorWarp => projector_warp(),
-        ScenarioName::MediaPlayback => media_playback(),
-        ScenarioName::TimelineStep => timeline_step(),
     }
 }
 
@@ -150,125 +135,6 @@ fn alpha_overlay() -> ScenarioSpec {
         height: HEIGHT,
         source_pixels: source,
         expected_pixels: expected,
-    }
-}
-
-fn empty_project() -> ScenarioSpec {
-    let mut pixels = blank_rgba(WIDTH, HEIGHT, [30, 30, 30, 255]);
-
-    // Simulate some panels
-    fill_rect(&mut pixels, WIDTH, 0, 0, WIDTH, 24, [40, 40, 40, 255]); // Top bar
-    fill_rect(
-        &mut pixels,
-        WIDTH,
-        0,
-        24,
-        64,
-        HEIGHT - 24,
-        [20, 20, 20, 255],
-    ); // Sidebar
-
-    ScenarioSpec {
-        title: "MapFlow Visual Harness - Empty Project",
-        width: WIDTH,
-        height: HEIGHT,
-        source_pixels: pixels.clone(),
-        expected_pixels: pixels,
-    }
-}
-
-fn test_grid() -> ScenarioSpec {
-    let mut pixels = blank_rgba(WIDTH, HEIGHT, [255, 255, 255, 255]);
-
-    for y in 0..HEIGHT {
-        for x in 0..WIDTH {
-            if x % 32 == 0 || y % 32 == 0 {
-                set_pixel(&mut pixels, WIDTH, x, y, [0, 0, 0, 255]);
-            }
-        }
-    }
-
-    fill_rect(
-        &mut pixels,
-        WIDTH,
-        WIDTH / 2 - 8,
-        HEIGHT / 2 - 8,
-        16,
-        16,
-        [255, 0, 0, 255],
-    );
-
-    ScenarioSpec {
-        title: "MapFlow Visual Harness - Test Grid",
-        width: WIDTH,
-        height: HEIGHT,
-        source_pixels: pixels.clone(),
-        expected_pixels: pixels,
-    }
-}
-
-fn projector_warp() -> ScenarioSpec {
-    let mut pixels = blank_rgba(WIDTH, HEIGHT, [0, 0, 0, 255]);
-
-    for y in 0..HEIGHT {
-        for x in 0..WIDTH {
-            if x > y && WIDTH - x > y {
-                set_pixel(&mut pixels, WIDTH, x, y, [100, 100, 100, 255]);
-            }
-        }
-    }
-
-    ScenarioSpec {
-        title: "MapFlow Visual Harness - Projector Warp",
-        width: WIDTH,
-        height: HEIGHT,
-        source_pixels: pixels.clone(),
-        expected_pixels: pixels,
-    }
-}
-
-fn media_playback() -> ScenarioSpec {
-    let mut pixels = blank_rgba(WIDTH, HEIGHT, [0, 0, 0, 255]);
-
-    fill_rect(
-        &mut pixels,
-        WIDTH,
-        32,
-        32,
-        WIDTH - 64,
-        HEIGHT - 64,
-        [0, 0, 255, 255],
-    );
-    fill_rect(
-        &mut pixels,
-        WIDTH,
-        WIDTH / 2 - 16,
-        HEIGHT / 2 - 16,
-        32,
-        32,
-        [255, 255, 0, 255],
-    );
-
-    ScenarioSpec {
-        title: "MapFlow Visual Harness - Media Playback",
-        width: WIDTH,
-        height: HEIGHT,
-        source_pixels: pixels.clone(),
-        expected_pixels: pixels,
-    }
-}
-
-fn timeline_step() -> ScenarioSpec {
-    let mut pixels = blank_rgba(WIDTH, HEIGHT, [0, 0, 0, 255]);
-
-    fill_rect(&mut pixels, WIDTH, 16, 16, 64, 64, [0, 255, 0, 255]);
-
-    ScenarioSpec {
-        title: "MapFlow Visual Harness - Timeline Step",
-        width: WIDTH,
-        height: HEIGHT,
-        source_pixels: pixels.clone(),
-        expected_pixels: pixels,
     }
 }
 
