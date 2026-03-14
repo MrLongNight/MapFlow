@@ -81,6 +81,8 @@ pub struct TimelineV2 {
     pub selected_keyframes: Vec<(String, u64)>,
     /// Show curve editor
     pub show_curve_editor: bool,
+    /// Expanded automation tracks/groups
+    pub expanded_tracks: HashSet<String>,
     /// Enable module arrangement show-control.
     pub show_control_enabled: bool,
     /// Selected show mode.
@@ -111,6 +113,7 @@ impl Default for TimelineV2 {
             snap_interval: 0.1, // 100ms default snap
             selected_keyframes: Vec::new(),
             show_curve_editor: false,
+            expanded_tracks: HashSet::new(),
             show_control_enabled: true,
             show_mode: ShowMode::FullyAutomated,
             module_arrangement: Vec::new(),
@@ -722,14 +725,37 @@ impl TimelineV2 {
         // Timeline area
         egui::ScrollArea::both().show(ui, |ui| {
             let clip = animator.clip(); // Get immutable ref first to calculate size
-            let track_count = clip.tracks.len();
+
+            // Group tracks by "lane" (e.g. `Blur_0` from `Blur_0.radius`)
+            let mut track_groups: std::collections::BTreeMap<
+                String,
+                Vec<&mapmap_core::animation::AnimationTrack>,
+            > = std::collections::BTreeMap::new();
+            for track in &clip.tracks {
+                let parts: Vec<&str> = track.name.split('.').collect();
+                let group_name = if parts.len() > 1 {
+                    parts[0].to_string()
+                } else {
+                    "General".to_string()
+                };
+                track_groups.entry(group_name).or_default().push(track);
+            }
+
+            let mut visible_lanes_count = 0;
+            for (group_name, tracks) in &track_groups {
+                visible_lanes_count += 1; // Group header
+                if self.expanded_tracks.contains(group_name) {
+                    visible_lanes_count += tracks.len(); // Expanded tracks
+                }
+            }
+
             let module_track_height = if self.module_arrangement.is_empty() {
                 0.0
             } else {
                 64.0
             };
 
-            let available_height = 50.0 + (track_count as f32 * 60.0) + module_track_height;
+            let available_height = 50.0 + (visible_lanes_count as f32 * 60.0) + module_track_height;
             let available_width = (duration * self.zoom).max(ui.available_width());
 
             let (response, painter) = ui.allocate_painter(
@@ -803,91 +829,148 @@ impl TimelineV2 {
             }
 
             // Access immutable clip for drawing tracks
-            let tracks = &animator.clip().tracks;
             let track_start_y = ruler_rect.max.y;
+            let mut current_lane_index = 0;
 
-            for (i, track) in tracks.iter().enumerate() {
-                let track_y = track_start_y + (i as f32 * 60.0);
-                let track_rect = Rect::from_min_size(
-                    Pos2::new(rect.min.x, track_y),
+            for (group_name, tracks) in &track_groups {
+                let is_expanded = self.expanded_tracks.contains(group_name);
+                let header_y = track_start_y + (current_lane_index as f32 * 60.0);
+                let header_rect = Rect::from_min_size(
+                    Pos2::new(rect.min.x, header_y),
                     Vec2::new(rect.width(), 60.0),
                 );
 
-                // Alternating background
-                let bg_color = if i % 2 == 0 {
-                    Color32::from_rgb(30, 30, 30)
-                } else {
-                    Color32::from_rgb(35, 35, 35)
-                };
-                painter.rect_filled(track_rect, 0.0, bg_color);
+                // Draw header lane
+                let header_bg_color = Color32::from_rgb(45, 45, 45);
+                painter.rect_filled(header_rect, 0.0, header_bg_color);
 
-                // Track name
-                painter.text(
-                    Pos2::new(track_rect.min.x + 5.0, track_rect.min.y + 10.0),
-                    egui::Align2::LEFT_TOP,
-                    &track.name,
-                    egui::FontId::proportional(14.0),
-                    Color32::from_rgb(200, 200, 200),
-                );
+                let fold_icon = if is_expanded { "▼" } else { "▶" };
+                let header_label = format!("{} {}", fold_icon, group_name);
 
-                // Draw keyframes and curves
-                let keyframes = track.keyframes_ordered();
-
-                if keyframes.len() >= 2 {
-                    let mut points = Vec::new();
-                    for kf in &keyframes {
-                        let t = kf.time as f32;
-                        let val = match &kf.value {
-                            AnimValue::Float(v) => *v,
-                            AnimValue::Vec3(v) => v[0],
-                            AnimValue::Vec4(v) => v[0],
-                            AnimValue::Color(v) => v[0],
-                            _ => 0.0,
-                        };
-
-                        let normalized = val.clamp(0.0, 1.0);
-                        let x = rect.min.x + t * self.zoom;
-                        let y = track_rect.max.y - 10.0 - (normalized * 40.0);
-                        points.push(Pos2::new(x, y));
-                    }
-
-                    if !points.is_empty() {
-                        painter.add(egui::Shape::line(
-                            points,
-                            Stroke::new(2.0, Color32::from_rgb(100, 200, 255)),
-                        ));
+                // Make header interactive for folding/unfolding
+                let header_response =
+                    ui.interact(header_rect, ui.id().with(group_name), Sense::click());
+                if header_response.clicked() {
+                    if is_expanded {
+                        self.expanded_tracks.remove(group_name);
+                    } else {
+                        self.expanded_tracks.insert(group_name.clone());
                     }
                 }
 
-                for kf in &keyframes {
-                    let kf_time = kf.time as f32;
-                    let val = match &kf.value {
-                        AnimValue::Float(v) => *v,
-                        _ => 0.0,
-                    };
-                    let normalized = val.clamp(0.0, 1.0);
+                let text_color = if header_response.hovered() {
+                    Color32::WHITE
+                } else {
+                    Color32::from_rgb(220, 220, 220)
+                };
 
-                    let x = rect.min.x + kf_time * self.zoom;
-                    let y = track_rect.max.y - 10.0 - (normalized * 40.0);
+                painter.text(
+                    Pos2::new(header_rect.min.x + 10.0, header_rect.min.y + 22.0),
+                    egui::Align2::LEFT_TOP,
+                    header_label,
+                    egui::FontId::proportional(14.0),
+                    text_color,
+                );
 
-                    let diamond_size = 6.0;
-                    let diamond = vec![
-                        Pos2::new(x, y - diamond_size),
-                        Pos2::new(x + diamond_size, y),
-                        Pos2::new(x, y + diamond_size),
-                        Pos2::new(x - diamond_size, y),
-                    ];
+                current_lane_index += 1;
 
-                    painter.add(egui::Shape::convex_polygon(
-                        diamond,
-                        Color32::YELLOW,
-                        Stroke::new(1.0, Color32::WHITE),
-                    ));
+                if is_expanded {
+                    for track in tracks {
+                        let track_y = track_start_y + (current_lane_index as f32 * 60.0);
+                        let track_rect = Rect::from_min_size(
+                            Pos2::new(rect.min.x, track_y),
+                            Vec2::new(rect.width(), 60.0),
+                        );
+
+                        // Alternating background for automation tracks
+                        let bg_color = if current_lane_index % 2 == 0 {
+                            Color32::from_rgb(30, 30, 30)
+                        } else {
+                            Color32::from_rgb(35, 35, 35)
+                        };
+                        painter.rect_filled(track_rect, 0.0, bg_color);
+
+                        // Draw track tree line
+                        painter.line_segment(
+                            [
+                                Pos2::new(track_rect.min.x + 15.0, track_rect.min.y),
+                                Pos2::new(track_rect.min.x + 15.0, track_rect.max.y),
+                            ],
+                            Stroke::new(1.0, Color32::from_rgb(80, 80, 80)),
+                        );
+
+                        // Track name (parameter)
+                        let param_name = track.name.split('.').next_back().unwrap_or(&track.name);
+                        painter.text(
+                            Pos2::new(track_rect.min.x + 25.0, track_rect.min.y + 10.0),
+                            egui::Align2::LEFT_TOP,
+                            param_name,
+                            egui::FontId::proportional(13.0),
+                            Color32::from_rgb(180, 180, 180),
+                        );
+
+                        // Draw keyframes and curves
+                        let keyframes = track.keyframes_ordered();
+
+                        if keyframes.len() >= 2 {
+                            let mut points = Vec::new();
+                            for kf in &keyframes {
+                                let t = kf.time as f32;
+                                let val = match &kf.value {
+                                    AnimValue::Float(v) => *v,
+                                    AnimValue::Vec3(v) => v[0],
+                                    AnimValue::Vec4(v) => v[0],
+                                    AnimValue::Color(v) => v[0],
+                                    _ => 0.0,
+                                };
+
+                                let normalized = val.clamp(0.0, 1.0);
+                                let x = rect.min.x + t * self.zoom;
+                                let y = track_rect.max.y - 10.0 - (normalized * 40.0);
+                                points.push(Pos2::new(x, y));
+                            }
+
+                            if !points.is_empty() {
+                                painter.add(egui::Shape::line(
+                                    points,
+                                    Stroke::new(2.0, Color32::from_rgb(100, 200, 255)),
+                                ));
+                            }
+                        }
+
+                        for kf in &keyframes {
+                            let kf_time = kf.time as f32;
+                            let val = match &kf.value {
+                                AnimValue::Float(v) => *v,
+                                _ => 0.0,
+                            };
+                            let normalized = val.clamp(0.0, 1.0);
+
+                            let x = rect.min.x + kf_time * self.zoom;
+                            let y = track_rect.max.y - 10.0 - (normalized * 40.0);
+
+                            let diamond_size = 6.0;
+                            let diamond = vec![
+                                Pos2::new(x, y - diamond_size),
+                                Pos2::new(x + diamond_size, y),
+                                Pos2::new(x, y + diamond_size),
+                                Pos2::new(x - diamond_size, y),
+                            ];
+
+                            painter.add(egui::Shape::convex_polygon(
+                                diamond,
+                                Color32::YELLOW,
+                                Stroke::new(1.0, Color32::WHITE),
+                            ));
+                        }
+
+                        current_lane_index += 1;
+                    }
                 }
             }
 
             if module_track_height > 0.0 {
-                let module_track_y = track_start_y + (track_count as f32 * 60.0);
+                let module_track_y = track_start_y + (visible_lanes_count as f32 * 60.0);
                 let module_rect = Rect::from_min_size(
                     Pos2::new(rect.min.x, module_track_y),
                     Vec2::new(rect.width(), module_track_height),
