@@ -52,6 +52,7 @@ pub fn parse_osc_address(address: &str) -> Result<ControlTarget> {
         "paint" => parse_paint_address(&parts[2..]),
         "effect" => parse_effect_address(&parts[2..]),
         "playback" => parse_playback_address(&parts[2..]),
+        "timeline" => parse_timeline_address(&parts[2..]),
         "output" => parse_output_address(&parts[2..]),
         _ => Err(ControlError::InvalidMessage(format!(
             "Unknown OSC category: {}",
@@ -98,6 +99,16 @@ fn parse_layer_address(parts: &[&str]) -> Result<ControlTarget> {
         "rotation" => Ok(ControlTarget::LayerRotation(layer_id)),
         "scale" => Ok(ControlTarget::LayerScale(layer_id)),
         "visibility" => Ok(ControlTarget::LayerVisibility(layer_id)),
+        "media" if parts.len() > 2 && parts[2] == "load" => {
+            Ok(ControlTarget::LayerMediaLoad(layer_id))
+        }
+        "playback" if parts.len() > 2 && parts[2] == "time" => {
+            Ok(ControlTarget::LayerPlaybackTime(layer_id))
+        }
+        "playback" if parts.len() > 2 && parts[2] == "speed" => {
+            Ok(ControlTarget::LayerPlaybackSpeed(layer_id))
+        }
+        "loop_mode" => Ok(ControlTarget::LayerLoopMode(layer_id)),
         _ => Err(ControlError::InvalidMessage(format!(
             "Unknown layer parameter: {}",
             parts[1]
@@ -159,6 +170,23 @@ fn parse_effect_address(parts: &[&str]) -> Result<ControlTarget> {
     Ok(ControlTarget::EffectParameter(effect_id, name.to_string()))
 }
 
+fn parse_timeline_address(parts: &[&str]) -> Result<ControlTarget> {
+    if parts.len() < 2 {
+        return Err(ControlError::InvalidMessage(
+            "Missing timeline parameter".to_string(),
+        ));
+    }
+
+    match parts[1] {
+        "position" => Ok(ControlTarget::TimelinePosition),
+        "duration" => Ok(ControlTarget::TimelineDuration),
+        _ => Err(ControlError::InvalidMessage(format!(
+            "Unknown timeline parameter: {}",
+            parts[1]
+        ))),
+    }
+}
+
 fn parse_playback_address(parts: &[&str]) -> Result<ControlTarget> {
     if parts.is_empty() {
         return Err(ControlError::InvalidMessage(
@@ -210,6 +238,10 @@ pub fn control_target_to_address(target: &ControlTarget) -> String {
         ControlTarget::LayerScale(id) => format!("/mapmap/layer/{}/scale", id),
         ControlTarget::LayerRotation(id) => format!("/mapmap/layer/{}/rotation", id),
         ControlTarget::LayerVisibility(id) => format!("/mapmap/layer/{}/visibility", id),
+        ControlTarget::LayerMediaLoad(id) => format!("/mapmap/layer/{}/media/load", id),
+        ControlTarget::LayerPlaybackTime(id) => format!("/mapmap/layer/{}/playback/time", id),
+        ControlTarget::LayerPlaybackSpeed(id) => format!("/mapmap/layer/{}/playback/speed", id),
+        ControlTarget::LayerLoopMode(id) => format!("/mapmap/layer/{}/loop_mode", id),
         ControlTarget::PaintParameter(id, name) => {
             format!("/mapmap/paint/{}/parameter/{}", id, name)
         }
@@ -218,6 +250,8 @@ pub fn control_target_to_address(target: &ControlTarget) -> String {
         }
         ControlTarget::PlaybackSpeed(_) => "/mapmap/playback/speed".to_string(),
         ControlTarget::PlaybackPosition => "/mapmap/playback/position".to_string(),
+        ControlTarget::TimelinePosition => "/mapmap/timeline/position".to_string(),
+        ControlTarget::TimelineDuration => "/mapmap/timeline/duration".to_string(),
         ControlTarget::OutputBrightness(id) => format!("/mapmap/output/{}/brightness", id),
         ControlTarget::OutputEdgeBlend(id, edge) => {
             format!("/mapmap/output/{}/edge_blend/{:?}", id, edge)
