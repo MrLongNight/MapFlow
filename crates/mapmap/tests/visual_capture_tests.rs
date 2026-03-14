@@ -27,6 +27,36 @@ fn gradient_matches_reference() {
     run_visual_regression("gradient");
 }
 
+#[test]
+#[ignore = "Requires a local interactive Windows GPU/desktop session"]
+fn empty_project_matches_reference() {
+    run_visual_regression("empty_project");
+}
+
+#[test]
+#[ignore = "Requires a local interactive Windows GPU/desktop session"]
+fn test_grid_matches_reference() {
+    run_visual_regression("test_grid");
+}
+
+#[test]
+#[ignore = "Requires a local interactive Windows GPU/desktop session"]
+fn projector_warp_matches_reference() {
+    run_visual_regression("projector_warp");
+}
+
+#[test]
+#[ignore = "Requires a local interactive Windows GPU/desktop session"]
+fn media_playback_matches_reference() {
+    run_visual_regression("media_playback");
+}
+
+#[test]
+#[ignore = "Requires a local interactive Windows GPU/desktop session"]
+fn timeline_step_matches_reference() {
+    run_visual_regression("timeline_step");
+}
+
 fn run_visual_regression(scenario: &str) {
     let (actual_path, diff_path) = unique_output_paths(scenario);
     let expected_path = reference_image_path(scenario);
