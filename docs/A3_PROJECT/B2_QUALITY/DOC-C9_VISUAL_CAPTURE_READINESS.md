@@ -149,6 +149,13 @@ Sinnvolle Metadaten pro Artefakt:
 - Timestamp
 - optional Hash oder Build-Info
 
+Das feste Artefaktschema sieht wie folgt aus:
+`{testfall}_win-{fenster-typ}_f{frame-index}_{laufkontext}.{typ}.png`
+Die gueltigen Dateitypen (`typ`) sind `actual`, `reference` und `diff`.
+Beispiel: `checkerboard_win-main_f001_1234_1700000000.actual.png`.
+
+Der Standard-Ausgabeordner ist `artifacts/visual-capture` (konfigurierbar ueber `MAPFLOW_VISUAL_CAPTURE_OUTPUT_DIR`).
+
 ### Phase 3: Deterministische Testfaelle definieren
 
 Noetig:

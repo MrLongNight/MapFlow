@@ -15,7 +15,10 @@ Diese PNG-Dateien sind die Referenzbilder fuer die lokalen visuellen Regressions
 Diese drei Faelle liefern mehr Signal als reine Logik- oder offscreen-Tests, weil sie den echten
 Fenster-, Swapchain-, Present- und Screenshot-Pfad verwenden.
 
-## Referenzbilder neu erzeugen
+## Referenzbilder bewusst neu erzeugen
+
+Die Referenzbilder duerfen nur dann neu erzeugt werden, wenn eine **bewusste, gewollte visuelle Aenderung** im Render-Code stattgefunden hat.
+Sie duerfen niemals einfach ueberschrieben werden, um einen fehlschlagenden Test "gruen" zu machen, ohne die Ursache des Fehlers zu verstehen!
 
 Von der Repo-Wurzel aus:
 
