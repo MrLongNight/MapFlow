@@ -23,6 +23,7 @@ concurrency:
 
 env:
   SELF_HOSTED_POST_MERGE_ENABLED: ${{ vars.MAPFLOW_ENABLE_SELF_HOSTED_POST_MERGE || 'false' }}
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   resolve-context:
@@ -57,8 +58,28 @@ jobs:
               prNumber = Number.parseInt(process.env.INPUT_PR_NUMBER, 10);
             }
 
+            // Fallback to latest merged PR if no number provided on workflow_dispatch
+            if (!prNumber) {
+              core.info('No PR number provided. Searching for the latest merged PR on main...');
+              const { data: mergedPrs } = await github.rest.pulls.list({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'closed',
+                base: 'main',
+                sort: 'updated',
+                direction: 'desc',
+                per_page: 10
+              });
+
+              const latestMerged = mergedPrs.find(p => p.merged_at);
+              if (latestMerged) {
+                prNumber = latestMerged.number;
+                core.info(`Found latest merged PR: #${prNumber}`);
+              }
+            }
+
             if (!Number.isInteger(prNumber) || prNumber <= 0) {
-              core.setFailed('No valid merged PR number was provided.');
+              core.setFailed('No valid merged PR context could be determined.');
               return;
             }
 
