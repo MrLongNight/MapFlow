@@ -962,7 +962,6 @@ impl TimelineV2 {
                     ));
                 }
             }
-
         });
 
         action
