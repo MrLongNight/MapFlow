@@ -19,6 +19,10 @@ pub use anyhow::Result;
 /// Actions internally triggered by the MCP Server to be handled by the main application.
 #[derive(Debug, Clone)]
 pub enum McpAction {
+    // === Application Diagnostics & Testing ===
+    /// Captures a screenshot of the main application window or render output.
+    ApplicationCaptureScreenshot(String),
+
     // === Project Management ===
     /// Save the project.
     SaveProject(PathBuf),
