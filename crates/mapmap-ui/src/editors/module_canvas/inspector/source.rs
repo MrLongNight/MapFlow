@@ -368,13 +368,7 @@ pub fn render_source_ui(
                         canvas.ndi_sources.clear();
                         ui.ctx().request_repaint();
                     }
-                    ui.label(
-                        egui::RichText::new(
-                            "No NDI source selected",
-                        )
-                        .weak()
-                        .italics(),
-                    );
+                    ui.label(egui::RichText::new("No NDI source selected").weak().italics());
                     ui.add_space(10.0);
                 });
             } else {
