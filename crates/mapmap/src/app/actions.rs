@@ -759,7 +759,12 @@ pub fn handle_mcp_actions(app: &mut App) {
                 if let Some((data, width, height)) = runner.get_image_data() {
                     let output_dir = std::env::var_os("MAPFLOW_VISUAL_CAPTURE_OUTPUT_DIR")
                         .map(std::path::PathBuf::from)
-                        .unwrap_or_else(|| std::env::current_dir().unwrap_or_default().join("tests").join("artifacts"));
+                        .unwrap_or_else(|| {
+                            std::env::current_dir()
+                                .unwrap_or_default()
+                                .join("tests")
+                                .join("artifacts")
+                        });
                     let path = output_dir.join(format!("{}_actual.png", test_name));
 
                     if let Some(parent) = path.parent() {

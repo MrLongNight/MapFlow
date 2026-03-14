@@ -26,20 +26,52 @@ def run_test_script(mapflow_exe, script_path):
         else:
             print("DISPLAY not set and xvfb-run not found. GUI launch might fail.")
 
-    proc = subprocess.Popen(cmd, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+    proc = subprocess.Popen(cmd, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 
-    # Wait for the server to spin up
-    time.sleep(2)
+    # Wait for the server to spin up by monitoring stdout for a ready signal, or timeout
+    ready_timeout = 15.0
+    start_wait = time.time()
+    is_ready = False
+
+    import select
+    print("Waiting for MapFlow MCP server to initialize...")
+    while time.time() - start_wait < ready_timeout:
+        # Check if process died early
+        if proc.poll() is not None:
+            print(f"MapFlow process died prematurely with exit code {proc.returncode}")
+            stdout, _ = proc.communicate()
+            print(f"Process output:\n{stdout}")
+            sys.exit(1)
+
+        r, _, _ = select.select([proc.stdout], [], [], 0.1)
+        if r:
+            line = proc.stdout.readline()
+            if line:
+                print(f"[MapFlow] {line.strip()}")
+                # MapFlow typically prints "Starting MapFlow" or "McpServer" when ready
+                # We'll consider it ready after it starts outputting logs and stays alive for a bit
+                if "Starting MapFlow" in line or "MCP" in line or "Starting" in line:
+                    is_ready = True
+                    # Small buffer time to ensure it's fully up after log
+                    time.sleep(1.0)
+                    break
+
+    if not is_ready:
+        print("Warning: Did not see an explicit 'Starting' log. Proceeding anyway assuming it's up.")
+        time.sleep(1)
 
     commands = test_script.get('commands', [])
     test_name = test_script.get('name', 'unknown_test')
 
     # Send commands via stdio json-rpc (assuming the MCP server reads from stdin when launched, or we configure it to)
-    # Looking at the codebase, MapFlow might start an MCP server on a port or stdio depending on config.
-    # Usually MCP implies JSON-RPC over stdio.
-    # Let's send the commands.
-
     for i, cmd in enumerate(commands):
+        # Abort if process died
+        if proc.poll() is not None:
+            print(f"MapFlow process died before command could be sent. Exit code {proc.returncode}")
+            stdout, _ = proc.communicate()
+            print(f"Process output:\n{stdout}")
+            sys.exit(1)
+
         request = {
             "jsonrpc": "2.0",
             "id": i + 1,
@@ -51,13 +83,21 @@ def run_test_script(mapflow_exe, script_path):
         try:
             proc.stdin.write(req_str + "\n")
             proc.stdin.flush()
+        except BrokenPipeError:
+            print(f"Failed to send command {cmd['method']}: Broken pipe (MapFlow process likely crashed)")
+            stdout, _ = proc.communicate()
+            print(f"Process output:\n{stdout}")
+            sys.exit(1)
         except Exception as e:
             print(f"Failed to send command {cmd['method']}: {e}")
             break
         time.sleep(0.5) # Wait for processing
 
-    # Wait for the capture file to be generated
-    expected_output = f"tests/artifacts/{test_name}_actual.png"
+    # Determine expected output path
+    output_dir = os.environ.get("MAPFLOW_VISUAL_CAPTURE_OUTPUT_DIR")
+    if not output_dir:
+        output_dir = os.path.join(os.getcwd(), "tests", "artifacts")
+    expected_output = os.path.join(output_dir, f"{test_name}_actual.png")
     timeout = 10
     start = time.time()
     found = False

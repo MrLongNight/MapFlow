@@ -57,7 +57,9 @@ fn test_mcp_visual_capture() {
             panic!("Failed to run MapFlow with mcp_test_runner locally.");
         } else {
             // In CI, it's likely a headless/xvfb issue that we want to safely bypass for the pilot test.
-            println!("CI environment detected. Tolerating runner failure and proceeding to fallback.");
+            println!(
+                "CI environment detected. Tolerating runner failure and proceeding to fallback."
+            );
         }
     }
 
@@ -70,11 +72,15 @@ fn test_mcp_visual_capture() {
 
     // Auto-generate reference image on first run
     if !reference_path.exists() {
-        println!("Reference image not found. Auto-generating Gold Standard at {:?}", reference_path);
+        println!(
+            "Reference image not found. Auto-generating Gold Standard at {:?}",
+            reference_path
+        );
         if let Some(parent) = reference_path.parent() {
             let _ = fs::create_dir_all(parent);
         }
-        fs::copy(&actual_path, &reference_path).expect("Failed to copy actual image to reference path");
+        fs::copy(&actual_path, &reference_path)
+            .expect("Failed to copy actual image to reference path");
     }
 
     let script_compare_path = env!("CARGO_BIN_EXE_mapflow_visual_compare");
