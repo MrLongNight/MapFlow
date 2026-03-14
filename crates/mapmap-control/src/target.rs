@@ -82,9 +82,15 @@ impl ControlTarget {
             ControlTarget::TimelineSpeed => "Timeline Speed".to_string(),
             ControlTarget::TimelineLoop => "Timeline Loop".to_string(),
             ControlTarget::EffectAdd(id) => format!("Layer {} Effect Add", id),
-            ControlTarget::EffectRemove(layer, effect) => format!("Layer {} Effect {} Remove", layer, effect),
-            ControlTarget::LayerEffectParameter(layer, effect, name) => format!("Layer {} Effect {} {}", layer, effect, name),
-            ControlTarget::SurfaceCornerPosition(id, corner) => format!("Surface {} Corner {}", id, corner),
+            ControlTarget::EffectRemove(layer, effect) => {
+                format!("Layer {} Effect {} Remove", layer, effect)
+            }
+            ControlTarget::LayerEffectParameter(layer, effect, name) => {
+                format!("Layer {} Effect {} {}", layer, effect, name)
+            }
+            ControlTarget::SurfaceCornerPosition(id, corner) => {
+                format!("Surface {} Corner {}", id, corner)
+            }
             ControlTarget::SceneSwitch(id) => format!("Scene Switch {}", id),
             ControlTarget::CueTrigger(id) => format!("Cue Trigger {}", id),
         }
@@ -116,9 +122,15 @@ impl ControlTarget {
             ControlTarget::TimelineSpeed => "timeline/speed".to_string(),
             ControlTarget::TimelineLoop => "timeline/loop".to_string(),
             ControlTarget::EffectAdd(id) => format!("layer/{}/effect/add", id),
-            ControlTarget::EffectRemove(layer, effect) => format!("layer/{}/effect/{}/remove", layer, effect),
-            ControlTarget::LayerEffectParameter(layer, effect, name) => format!("layer/{}/effect/{}/parameter/{}", layer, effect, name),
-            ControlTarget::SurfaceCornerPosition(id, corner) => format!("surface/{}/corner/{}/position", id, corner),
+            ControlTarget::EffectRemove(layer, effect) => {
+                format!("layer/{}/effect/{}/remove", layer, effect)
+            }
+            ControlTarget::LayerEffectParameter(layer, effect, name) => {
+                format!("layer/{}/effect/{}/parameter/{}", layer, effect, name)
+            }
+            ControlTarget::SurfaceCornerPosition(id, corner) => {
+                format!("surface/{}/corner/{}/position", id, corner)
+            }
             ControlTarget::SceneSwitch(id) => format!("scene/switch/{}", id),
             ControlTarget::CueTrigger(id) => format!("cue/trigger/{}", id),
         }
