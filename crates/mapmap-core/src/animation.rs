@@ -9,6 +9,31 @@ use std::collections::BTreeMap;
 /// Time in seconds
 pub type TimePoint = f64;
 
+/// A marker on the timeline, used for play/pause points or notes
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TimelineMarker {
+    /// Unique ID for the marker
+    pub id: u64,
+    /// Time of the marker in seconds
+    pub time: TimePoint,
+    /// Optional name/label for the marker
+    pub name: String,
+    /// Optional color for visualization
+    pub color: Option<[f32; 4]>,
+}
+
+impl TimelineMarker {
+    /// Create a new timeline marker
+    pub fn new(id: u64, time: TimePoint, name: String) -> Self {
+        Self {
+            id,
+            time,
+            name,
+            color: None,
+        }
+    }
+}
+
 /// Playback behavior mode
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum PlaybackMode {
@@ -271,6 +296,9 @@ pub struct AnimationClip {
     pub name: String,
     /// Collection of animation tracks
     pub tracks: Vec<AnimationTrack>,
+    /// Markers on the timeline
+    #[serde(default)]
+    pub markers: Vec<TimelineMarker>,
     /// Total duration of the clip in seconds
     pub duration: TimePoint,
     /// Legacy looping flag (use playback_mode)
@@ -295,6 +323,8 @@ pub struct AnimationClip {
 struct AnimationClipSerde {
     name: String,
     tracks: Vec<AnimationTrack>,
+    #[serde(default)]
+    markers: Vec<TimelineMarker>,
     duration: TimePoint,
     looping: bool,
     #[serde(default, deserialize_with = "deserialize_optional_playback_mode")]
@@ -326,6 +356,7 @@ impl From<AnimationClipSerde> for AnimationClip {
         Self {
             name: value.name,
             tracks: value.tracks,
+            markers: value.markers,
             duration: value.duration,
             looping: value.looping,
             playback_mode,
@@ -371,6 +402,7 @@ impl AnimationClip {
         Self {
             name,
             tracks: Vec::new(),
+            markers: Vec::new(),
             duration: 10.0, // Default 10 seconds
             looping: false,
             playback_mode: PlaybackMode::Loop,
@@ -441,6 +473,8 @@ pub struct AnimationPlayer {
     pub current_direction: f32,
     /// Playback speed multiplier (1.0 = normal)
     pub speed: f32,
+    /// If true, playback automatically pauses when it hits a marker (used for Trackline mode)
+    pub pause_at_markers: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -452,6 +486,8 @@ struct AnimationPlayerSerde {
     current_direction: Option<f32>,
     #[serde(default = "default_animation_speed")]
     speed: f32,
+    #[serde(default)]
+    pause_at_markers: bool,
 }
 
 impl From<AnimationPlayerSerde> for AnimationPlayer {
@@ -467,6 +503,7 @@ impl From<AnimationPlayerSerde> for AnimationPlayer {
             playing: value.playing,
             current_direction,
             speed: value.speed,
+            pause_at_markers: value.pause_at_markers,
         }
     }
 }
@@ -501,6 +538,7 @@ impl AnimationPlayer {
             playing: false,
             current_direction: dir,
             speed: 1.0,
+            pause_at_markers: false,
         }
     }
 
@@ -580,7 +618,37 @@ impl AnimationPlayer {
                 };
 
             let step = delta_time * self.speed as f64 * bpm_speed_multiplier;
-            self.current_time += step * self.current_direction as f64;
+            let next_time = self.current_time + step * self.current_direction as f64;
+
+            if self.pause_at_markers && !self.clip.markers.is_empty() {
+                // Check if we crossed any marker between self.current_time and next_time
+                // We use an epsilon to avoid pausing at the exact start if we just pressed play on a marker
+                let epsilon = 0.0001;
+                let mut crossed_marker: Option<f64> = None;
+                for marker in &self.clip.markers {
+                    let t = marker.time;
+                    if self.current_direction > 0.0 {
+                        if t > self.current_time + epsilon && t <= next_time {
+                            crossed_marker = Some(t);
+                            break;
+                        }
+                    } else {
+                        if t < self.current_time - epsilon && t >= next_time {
+                            crossed_marker = Some(t);
+                            break;
+                        }
+                    }
+                }
+
+                if let Some(marker_time) = crossed_marker {
+                    self.current_time = marker_time;
+                    self.playing = false;
+                } else {
+                    self.current_time = next_time;
+                }
+            } else {
+                self.current_time = next_time;
+            }
 
             let is_looping = self.clip.looping || self.clip.playback_mode == PlaybackMode::Loop;
 

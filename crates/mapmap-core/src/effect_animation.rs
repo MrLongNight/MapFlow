@@ -187,6 +187,11 @@ impl EffectParameterAnimator {
         self.player.speed = speed;
     }
 
+    /// Set whether playback should pause at markers
+    pub fn set_pause_at_markers(&mut self, pause_at_markers: bool) {
+        self.player.pause_at_markers = pause_at_markers;
+    }
+
     /// Update the animator (call every frame)
     ///
     /// Returns a list of (effect_type, effect_instance, parameter_name, value) tuples
@@ -289,6 +294,11 @@ impl EffectParameterAnimator {
     /// Get the underlying clip (for serialization)
     pub fn clip(&self) -> &AnimationClip {
         &self.clip
+    }
+
+    /// Get the underlying clip mutably
+    pub fn clip_mut(&mut self) -> &mut AnimationClip {
+        &mut self.clip
     }
 }
 

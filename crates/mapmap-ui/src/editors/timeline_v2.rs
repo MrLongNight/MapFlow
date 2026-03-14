@@ -31,6 +31,8 @@ pub enum ShowMode {
     SemiAutomated,
     /// Module switching is manual only (timeline acts as arrangement board).
     Manual,
+    /// Playback stops at markers, waiting for explicit trigger to continue.
+    Trackline,
 }
 
 impl ShowMode {
@@ -39,6 +41,7 @@ impl ShowMode {
             Self::FullyAutomated => "Fully Auto",
             Self::SemiAutomated => "Semi Auto",
             Self::Manual => "Manual",
+            Self::Trackline => "Trackline",
         }
     }
 }
@@ -99,6 +102,8 @@ pub struct TimelineV2 {
     pub semi_auto_pending_block_id: Option<u64>,
     /// Full-auto last block.
     pub full_auto_current_block_id: Option<u64>,
+    /// Selected marker ID.
+    pub selected_marker_id: Option<u64>,
 }
 
 impl Default for TimelineV2 {
@@ -120,6 +125,7 @@ impl Default for TimelineV2 {
             semi_auto_current_block_id: None,
             semi_auto_pending_block_id: None,
             full_auto_current_block_id: None,
+            selected_marker_id: None,
         }
     }
 }
@@ -271,7 +277,7 @@ impl TimelineV2 {
         }
 
         match self.show_mode {
-            ShowMode::FullyAutomated => {
+            ShowMode::FullyAutomated | ShowMode::Trackline => {
                 let active_id = self.active_block_for_time(current_time).map(|b| b.id);
                 self.full_auto_current_block_id = active_id;
                 self.manual_current_block_id = active_id;
@@ -393,6 +399,9 @@ impl TimelineV2 {
         let module_names = Self::module_name_map(modules);
         let available_module_ids: Vec<ModuleId> = modules.iter().map(|m| m.id).collect();
 
+        // Ensure pause_at_markers reflects the current ShowMode
+        animator.set_pause_at_markers(self.show_mode == ShowMode::Trackline);
+
         // Sync local playhead with animator
         self.playhead = animator.get_current_time() as f32;
 
@@ -439,6 +448,12 @@ impl TimelineV2 {
             }
             if ui.button("-").clicked() {
                 self.zoom /= 1.2;
+            }
+
+            ui.separator();
+
+            if ui.button("Add Marker").clicked() {
+                action = Some(TimelineAction::AddMarker(self.playhead));
             }
 
             // Playback Mode selection
@@ -606,7 +621,7 @@ impl TimelineV2 {
                             }
                         }
                     }
-                    ShowMode::FullyAutomated => {}
+                    ShowMode::FullyAutomated | ShowMode::Trackline => {}
                 }
             }
         });
@@ -776,6 +791,63 @@ impl TimelineV2 {
                 time += tick_interval;
             }
 
+            // Draw markers
+            let mut remove_marker_id: Option<u64> = None;
+            for marker in &animator.clip().markers {
+                let x = rect.min.x + (marker.time as f32) * self.zoom;
+                if x >= rect.min.x && x <= rect.max.x {
+                    // Marker line
+                    painter.line_segment(
+                        [
+                            Pos2::new(x, ruler_rect.min.y),
+                            Pos2::new(x, rect.max.y),
+                        ],
+                        Stroke::new(1.0, Color32::from_rgb(100, 200, 100)),
+                    );
+
+                    // Marker flag
+                    let flag_rect = Rect::from_min_size(
+                        Pos2::new(x, ruler_rect.min.y),
+                        Vec2::new(14.0, 14.0),
+                    );
+                    let is_selected = self.selected_marker_id == Some(marker.id);
+                    let flag_color = if is_selected {
+                        Color32::from_rgb(150, 255, 150)
+                    } else {
+                        Color32::from_rgb(50, 150, 50)
+                    };
+
+                    painter.rect_filled(flag_rect, 2.0, flag_color);
+                    painter.text(
+                        Pos2::new(x + 2.0, ruler_rect.min.y + 1.0),
+                        egui::Align2::LEFT_TOP,
+                        "M",
+                        egui::FontId::proportional(10.0),
+                        Color32::WHITE,
+                    );
+
+                    let interact_rect = Rect::from_min_size(
+                        Pos2::new(x - 5.0, ruler_rect.min.y),
+                        Vec2::new(20.0, 16.0),
+                    );
+                    let marker_response = ui.interact(interact_rect, ui.id().with(marker.id), Sense::click());
+
+                    if marker_response.clicked() {
+                        self.selected_marker_id = Some(marker.id);
+                        action = Some(TimelineAction::Seek(marker.time as f32));
+                    }
+                    if marker_response.secondary_clicked() {
+                        remove_marker_id = Some(marker.id);
+                    }
+
+                    // Tooltip
+                    marker_response.on_hover_text(format!("Marker: {}\nRight-click to remove", marker.name));
+                }
+            }
+            if let Some(id) = remove_marker_id {
+                action = Some(TimelineAction::RemoveMarker(id));
+            }
+
             // Draw playhead
             let playhead_x = rect.min.x + self.playhead * self.zoom;
             painter.line_segment(
@@ -921,7 +993,7 @@ impl TimelineV2 {
                 }
 
                 let active_block_id = match self.show_mode {
-                    ShowMode::FullyAutomated => self.full_auto_current_block_id,
+                    ShowMode::FullyAutomated | ShowMode::Trackline => self.full_auto_current_block_id,
                     ShowMode::SemiAutomated => self.semi_auto_current_block_id,
                     ShowMode::Manual => self.manual_current_block_id,
                 };
@@ -976,4 +1048,6 @@ pub enum TimelineAction {
     Stop,
     Seek(f32),
     SelectModule(ModuleId),
+    AddMarker(f32),
+    RemoveMarker(u64),
 }

@@ -666,6 +666,18 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                         .ui_state
                         .module_canvas
                         .set_active_module(Some(module_id)),
+                    TimelineAction::AddMarker(time) => {
+                        let animator = app.state.effect_animator_mut();
+                        let new_id = animator.clip().markers.iter().map(|m| m.id).max().unwrap_or(0) + 1;
+                        animator.clip_mut().markers.push(mapmap_core::animation::TimelineMarker::new(
+                            new_id,
+                            time as f64,
+                            format!("Marker {}", new_id),
+                        ));
+                    }
+                    TimelineAction::RemoveMarker(id) => {
+                        app.state.effect_animator_mut().clip_mut().markers.retain(|m| m.id != id);
+                    }
                 }
             }
             _ => {

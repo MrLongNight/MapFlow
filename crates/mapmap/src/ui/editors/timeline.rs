@@ -65,6 +65,17 @@ pub fn show(ctx: &Context, mut context: TimelineContext) {
                             .module_canvas
                             .set_active_module(Some(module_id));
                     }
+                    TimelineAction::AddMarker(time) => {
+                        let new_id = animator.clip().markers.iter().map(|m| m.id).max().unwrap_or(0) + 1;
+                        animator.clip_mut().markers.push(mapmap_core::animation::TimelineMarker::new(
+                            new_id,
+                            time as f64,
+                            format!("Marker {}", new_id),
+                        ));
+                    }
+                    TimelineAction::RemoveMarker(id) => {
+                        animator.clip_mut().markers.retain(|m| m.id != id);
+                    }
                 }
             }
         });
