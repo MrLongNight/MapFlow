@@ -1,10 +1,10 @@
 use super::controller;
 use super::diagnostics;
 use super::draw;
-use super::ModuleCanvasRenderOptions;
 use super::state::ModuleCanvas;
 use super::types::*;
 use super::utils;
+use super::ModuleCanvasRenderOptions;
 use crate::i18n::LocaleManager;
 use crate::UIAction;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, Ui, Vec2};

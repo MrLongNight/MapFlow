@@ -152,16 +152,17 @@ impl App {
                 let dt = dt.min(0.1);
 
                 let has_modules = !self.state.module_manager.modules().is_empty();
-                let has_projector_outputs = self.state.module_manager.modules().iter().any(|module| {
-                    module.parts.iter().any(|part| {
-                        matches!(
-                            part.part_type,
-                            mapmap_core::module::ModulePartType::Output(
-                                mapmap_core::module::OutputType::Projector { .. }
+                let has_projector_outputs =
+                    self.state.module_manager.modules().iter().any(|module| {
+                        module.parts.iter().any(|part| {
+                            matches!(
+                                part.part_type,
+                                mapmap_core::module::ModulePartType::Output(
+                                    mapmap_core::module::OutputType::Projector { .. }
+                                )
                             )
-                        )
-                    })
-                });
+                        })
+                    });
                 let is_playing = self.state.effect_animator.is_playing();
                 let configured_fps = self.ui_state.target_fps.max(1.0);
                 let tick_fps = if !has_modules {

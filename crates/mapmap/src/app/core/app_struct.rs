@@ -24,6 +24,7 @@ use mapmap_ui::AppUI;
 use std::collections::{HashMap, VecDeque};
 
 /// Runtime state for the startup animation overlay.
+#[derive(Default)]
 pub struct StartupAnimationState {
     /// Configured startup animation path as entered by the user.
     pub requested_path: String,
@@ -37,19 +38,6 @@ pub struct StartupAnimationState {
     pub last_update: Option<std::time::Instant>,
     /// Last startup animation loading or decoding error.
     pub error: Option<String>,
-}
-
-impl Default for StartupAnimationState {
-    fn default() -> Self {
-        Self {
-            requested_path: String::new(),
-            resolved_path: None,
-            player: None,
-            texture: None,
-            last_update: None,
-            error: None,
-        }
-    }
 }
 
 impl StartupAnimationState {
