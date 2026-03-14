@@ -64,11 +64,13 @@ impl Default for TextureDescriptor {
     }
 }
 
+type TextureViewEntry = (Arc<wgpu::TextureView>, Arc<AtomicU64>);
+
 /// Texture pool for reusing allocations
 pub struct TexturePool {
     device: Arc<wgpu::Device>,
     textures: RwLock<HashMap<String, TextureHandle>>,
-    views: RwLock<HashMap<String, Arc<wgpu::TextureView>>>,
+    views: RwLock<HashMap<String, TextureViewEntry>>,
     start_time: Instant,
 }
 
@@ -117,7 +119,7 @@ impl TexturePool {
             width,
             height,
             format,
-            last_used,
+            last_used: last_used.clone(),
         };
 
         let view = handle.create_view();
@@ -126,24 +128,25 @@ impl TexturePool {
         let name_owned = name.to_string();
 
         self.textures.write().insert(name_owned.clone(), handle);
-        self.views.write().insert(name_owned.clone(), view_arc);
+        self.views.write().insert(name_owned.clone(), (view_arc, last_used));
 
         name_owned
     }
 
     /// Get a texture view by name.
     pub fn get_view(&self, name: &str) -> Arc<wgpu::TextureView> {
-        // Refresh usage timestamp
+        // Fast path: check views cache
+        if let Some((view, last_used)) = self.views.read().get(name).cloned() {
+            let now_secs = self.start_time.elapsed().as_secs();
+            last_used.store(now_secs, Ordering::Relaxed);
+            return view;
+        }
+
+        // Refresh usage timestamp and create from handle (slow path)
         if let Some(handle) = self.textures.read().get(name) {
             handle.mark_used(self.start_time);
         }
 
-        // Fast path: check views cache
-        if let Some(view) = self.views.read().get(name).cloned() {
-            return view;
-        }
-
-        // Slow path: create from handle
         let view = self
             .textures
             .read()
@@ -176,8 +179,8 @@ impl TexturePool {
                 .write()
                 .insert(dest_name.to_string(), handle_clone);
 
-            if let Some(view) = self.views.read().get(src_name).cloned() {
-                self.views.write().insert(dest_name.to_string(), view);
+            if let Some(entry) = self.views.read().get(src_name).cloned() {
+                self.views.write().insert(dest_name.to_string(), entry);
             }
             true
         } else {
@@ -261,7 +264,7 @@ impl TexturePool {
                 let new_view = handle.create_view();
                 self.views
                     .write()
-                    .insert(name.to_string(), Arc::new(new_view));
+                    .insert(name.to_string(), (Arc::new(new_view), handle.last_used.clone()));
             }
         }
     }

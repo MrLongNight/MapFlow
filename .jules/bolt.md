@@ -68,3 +68,7 @@
 ## 2024-05-23 - Avoid String Cloning in TimelineModule Iterators
 **Learning:** Structs collected into `Vec` inside UI hot loops (like `TimelineModule` in `mapmap/src/app/ui_layout.rs`) that own `String` fields cause massive per-frame allocation overhead.
 **Action:** Change UI presentation structs to borrow strings (`&'a str`) instead of owning them, reducing `clone()` allocations in rendering loops to zero.
+
+## 2024-03-14 - Optimize TexturePool view fast path
+**Learning:** In the `mapmap-render` crate, caching wgpu resources like `TextureView` in `RwLock<HashMap>` can cause lock contention on the hot path if multiple locks are acquired (e.g., locking a textures map just to update a "last used" timestamp before acquiring a lock on the views map).
+**Action:** Store an `Arc<AtomicU64>` timestamp alongside the cached resource (e.g., in `TextureViewEntry = (Arc<wgpu::TextureView>, Arc<AtomicU64>)`). This allows fetching the view and updating the timestamp atomically with a single read lock on the view cache, bypassing the textures map lock entirely in the fast path.
