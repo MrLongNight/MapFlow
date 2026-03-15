@@ -18,6 +18,10 @@ on:
         type: string
         default: "stable"
 
+concurrency:
+  group: validation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
   checks: write

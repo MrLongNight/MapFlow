@@ -349,6 +349,22 @@ fn main() -> Result<()> {
         .with(file_layer)
         .init();
 
+    // Set a global panic hook to ensure thread panics are captured in the log file
+    std::panic::set_hook(Box::new(|panic_info| {
+        let payload = panic_info.payload();
+        let msg = if let Some(s) = payload.downcast_ref::<&str>() {
+            *s
+        } else if let Some(s) = payload.downcast_ref::<String>() {
+            s.as_str()
+        } else {
+            "Unknown panic payload"
+        };
+        
+        let location = panic_info.location().map_or("Unknown location".to_string(), |l| format!("{}:{}", l.file(), l.line()));
+        
+        tracing::error!("CRITICAL: Thread panicked at {}: {}", location, msg);
+    }));
+
     info!("Starting MapFlow in {:?} mode...", args.mode);
     info!(
         "Configured log level from user settings: {}",
