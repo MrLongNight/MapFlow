@@ -38,7 +38,6 @@
 // Core modules
 pub mod error;
 pub mod manager;
-pub mod router;
 pub mod target;
 
 // Control system modules
@@ -63,7 +62,6 @@ pub mod shortcuts;
 // Re-exports
 pub use error::{ControlError, Result};
 pub use manager::ControlManager;
-pub use router::{ExternalTriggerSource, TriggerAction, TriggerMapping, TriggerRouter};
 pub use target::{ControlTarget, ControlValue, EdgeSide};
 
 #[cfg(feature = "midi")]
