@@ -29,7 +29,10 @@ use tracing::{error, info, warn};
 
 impl App {
     /// Creates a new `App`.
-    pub async fn new(elwt: &winit::event_loop::ActiveEventLoop) -> Result<Self> {
+    pub async fn new(
+        elwt: &winit::event_loop::ActiveEventLoop,
+        is_automation: bool,
+    ) -> Result<Self> {
         // Load user config early to get preferences
         let saved_config = mapmap_ui::config::UserConfig::load();
 
@@ -324,11 +327,16 @@ impl App {
         // Set the selected device in UI state
         ui_state.selected_audio_device = device_to_use.clone();
 
-        let mut audio_backend = match CpalBackend::new(device_to_use) {
-            Ok(backend) => Some(backend),
-            Err(e) => {
-                error!("Failed to initialize audio backend: {}", e);
-                None
+        let mut audio_backend: Option<CpalBackend> = if is_automation {
+            info!("Automation mode: Skipping audio backend initialization");
+            None
+        } else {
+            match CpalBackend::new(device_to_use) {
+                Ok(backend) => Some(backend),
+                Err(e) => {
+                    error!("Failed to initialize audio backend: {}", e);
+                    None
+                }
             }
         };
 
@@ -346,20 +354,24 @@ impl App {
         let (mcp_sender, mcp_receiver) = unbounded();
         let action_sender = mcp_sender.clone();
 
-        thread::spawn(move || {
-            // Create a Tokio runtime for the MCP server
-            let rt = tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .unwrap();
+        if !is_automation {
+            thread::spawn(move || {
+                // Create a Tokio runtime for the MCP server
+                let rt = tokio::runtime::Builder::new_current_thread()
+                    .enable_all()
+                    .build()
+                    .unwrap();
 
-            rt.block_on(async {
-                let server = McpServer::new(Some(mcp_sender));
-                if let Err(e) = server.run_stdio().await {
-                    error!("MCP Server error: {}", e);
-                }
+                rt.block_on(async {
+                    let server = McpServer::new(Some(mcp_sender));
+                    if let Err(e) = server.run_stdio().await {
+                        error!("MCP Server error: {}", e);
+                    }
+                });
             });
-        });
+        } else {
+            info!("Automation mode: Skipping MCP Server initialization");
+        }
 
         // Initialize egui
         let egui_context = egui::Context::default();
@@ -433,13 +445,16 @@ impl App {
         let mut hue_controller = HueController::new(control_hue_conf);
 
         // Try to connect if IP is set and auto-connect is enabled
-        if !ui_state.user_config.hue_config.bridge_ip.is_empty()
+        if !is_automation
+            && !ui_state.user_config.hue_config.bridge_ip.is_empty()
             && ui_state.user_config.hue_config.auto_connect
         {
             info!("Initializing Hue Controller...");
             if let Err(e) = tokio_runtime.block_on(hue_controller.connect()) {
                 warn!("Hue Controller initial connection failed: {}", e);
             }
+        } else if is_automation {
+            info!("Automation mode: Skipping Hue Controller connection");
         }
 
         let control_manager = ControlManager::new();
@@ -467,23 +482,28 @@ impl App {
 
         #[cfg(feature = "midi")]
         let midi_handler = {
-            match MidiInputHandler::new() {
-                Ok(mut handler) => {
-                    info!("MIDI initialized");
-                    if let Ok(ports) = MidiInputHandler::list_ports() {
-                        info!("Available MIDI ports: {:?}", ports);
-                        // Auto-connect to first port if available
-                        if !ports.is_empty() {
-                            if let Err(e) = handler.connect(0) {
-                                error!("Failed to auto-connect MIDI: {}", e);
+            if is_automation {
+                info!("Automation mode: Skipping MIDI initialization");
+                None
+            } else {
+                match MidiInputHandler::new() {
+                    Ok(mut handler) => {
+                        info!("MIDI initialized");
+                        if let Ok(ports) = MidiInputHandler::list_ports() {
+                            info!("Available MIDI ports: {:?}", ports);
+                            // Auto-connect to first port if available
+                            if !ports.is_empty() {
+                                if let Err(e) = handler.connect(0) {
+                                    error!("Failed to auto-connect MIDI: {}", e);
+                                }
                             }
                         }
+                        Some(handler)
                     }
-                    Some(handler)
-                }
-                Err(e) => {
-                    error!("Failed to init MIDI: {}", e);
-                    None
+                    Err(e) => {
+                        error!("Failed to init MIDI: {}", e);
+                        None
+                    }
                 }
             }
         };

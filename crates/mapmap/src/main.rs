@@ -39,15 +39,38 @@ use clap::Parser;
 
 struct MapFlowApp {
     app: Option<App>,
+    is_automation: bool,
+    fixture: Option<String>,
+    exit_after_frames: Option<u64>,
+    screenshot_dir: Option<String>,
 }
 
 impl ApplicationHandler for MapFlowApp {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         if self.app.is_none() {
             info!("Initializing MapFlow...");
-            self.app = Some(
-                pollster::block_on(App::new(event_loop)).expect("Failed to initialize application"),
-            );
+            let mut app = pollster::block_on(App::new(event_loop, self.is_automation))
+                .expect("Failed to initialize application");
+
+            // Automation mode: load fixture if specified
+            if self.is_automation {
+                if let Some(fixture_path) = &self.fixture {
+                    info!("Automation mode: Loading fixture {}", fixture_path);
+                    match mapmap_io::load_project(std::path::Path::new(fixture_path)) {
+                        Ok(loaded_state) => {
+                            app.state = loaded_state;
+                            app.state.dirty = true;
+                            info!("Fixture loaded successfully.");
+                        }
+                        Err(e) => {
+                            error!("Automation mode: Failed to load fixture: {}", e);
+                            event_loop.exit();
+                        }
+                    }
+                }
+            }
+
+            self.app = Some(app);
         }
     }
 
@@ -68,6 +91,121 @@ impl ApplicationHandler for MapFlowApp {
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
         if let Some(app) = &mut self.app {
             let _ = app.handle_event(winit::event::Event::AboutToWait, event_loop);
+
+            if self.is_automation {
+                if let Some(exit_frames) = self.exit_after_frames {
+                    if app.frame_counter >= exit_frames {
+                        if let Some(dir) = &self.screenshot_dir {
+                            let path = std::path::PathBuf::from(dir);
+                            std::fs::create_dir_all(&path).unwrap_or_else(|e| {
+                                error!("Failed to create screenshot directory: {}", e);
+                            });
+
+                            let file_path =
+                                path.join(format!("automation_frame_{}.png", exit_frames));
+                            info!("Automation mode: Saving screenshot to {:?}", file_path);
+
+                            // Trigger capture
+                            let main_window_context = app.window_manager.get(0).unwrap();
+                            let format = main_window_context.surface_config.format;
+                            let width = main_window_context.surface_config.width;
+                            let height = main_window_context.surface_config.height;
+
+                            let mut encoder = app.backend.device.create_command_encoder(
+                                &wgpu::CommandEncoderDescriptor {
+                                    label: Some("Automation Screenshot Encoder"),
+                                },
+                            );
+
+                            let texture = app
+                                .texture_pool
+                                .get_texture("composite")
+                                .expect("Could not find composite texture for automation capture");
+
+                            let bytes_per_pixel = 4;
+                            let unpadded_bytes_per_row = width * bytes_per_pixel;
+                            let padded_bytes_per_row = unpadded_bytes_per_row
+                                .div_ceil(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT)
+                                * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
+
+                            let buffer =
+                                app.backend.device.create_buffer(&wgpu::BufferDescriptor {
+                                    label: Some("Automation Readback Buffer"),
+                                    size: (padded_bytes_per_row * height) as u64,
+                                    usage: wgpu::BufferUsages::COPY_DST
+                                        | wgpu::BufferUsages::MAP_READ,
+                                    mapped_at_creation: false,
+                                });
+
+                            encoder.copy_texture_to_buffer(
+                                wgpu::TexelCopyTextureInfo {
+                                    texture: &texture,
+                                    mip_level: 0,
+                                    origin: wgpu::Origin3d::ZERO,
+                                    aspect: wgpu::TextureAspect::All,
+                                },
+                                wgpu::TexelCopyBufferInfo {
+                                    buffer: &buffer,
+                                    layout: wgpu::TexelCopyBufferLayout {
+                                        offset: 0,
+                                        bytes_per_row: Some(padded_bytes_per_row),
+                                        rows_per_image: Some(height),
+                                    },
+                                },
+                                wgpu::Extent3d {
+                                    width,
+                                    height,
+                                    depth_or_array_layers: 1,
+                                },
+                            );
+
+                            app.backend.queue.submit(std::iter::once(encoder.finish()));
+
+                            let slice = buffer.slice(..);
+                            slice.map_async(wgpu::MapMode::Read, |_| {});
+
+                            app.backend
+                                .device
+                                .poll(wgpu::PollType::Wait {
+                                    submission_index: None,
+                                    timeout: None,
+                                })
+                                .unwrap();
+
+                            let mapped = slice.get_mapped_range();
+                            let mut rgba = Vec::with_capacity((width * height * 4) as usize);
+
+                            for row in mapped
+                                .chunks_exact(padded_bytes_per_row as usize)
+                                .take(height as usize)
+                            {
+                                for pixel in row[..(width * 4) as usize].chunks_exact(4) {
+                                    match format {
+                                        wgpu::TextureFormat::Bgra8Unorm
+                                        | wgpu::TextureFormat::Bgra8UnormSrgb => {
+                                            rgba.extend_from_slice(&[
+                                                pixel[2], pixel[1], pixel[0], pixel[3],
+                                            ]);
+                                        }
+                                        _ => rgba.extend_from_slice(pixel),
+                                    }
+                                }
+                            }
+                            drop(mapped);
+                            buffer.unmap();
+
+                            let img = image::RgbaImage::from_raw(width, height, rgba).unwrap();
+                            img.save(&file_path).unwrap();
+                        }
+
+                        info!(
+                            "Automation mode: Reached frame limit ({}). Exiting.",
+                            exit_frames
+                        );
+                        event_loop.exit();
+                    }
+                }
+            }
         }
     }
 }
@@ -349,26 +487,6 @@ fn main() -> Result<()> {
         .with(file_layer)
         .init();
 
-    // Set a global panic hook to ensure thread panics are captured in the log file
-    std::panic::set_hook(Box::new(|panic_info| {
-        let payload = panic_info.payload();
-        let msg = if let Some(s) = payload.downcast_ref::<&str>() {
-            *s
-        } else if let Some(s) = payload.downcast_ref::<String>() {
-            s.as_str()
-        } else {
-            "Unknown panic payload"
-        };
-
-        let location = panic_info
-            .location()
-            .map_or("Unknown location".to_string(), |l| {
-                format!("{}:{}", l.file(), l.line())
-            });
-
-        tracing::error!("CRITICAL: Thread panicked at {}: {}", location, msg);
-    }));
-
     info!("Starting MapFlow in {:?} mode...", args.mode);
     info!(
         "Configured log level from user settings: {}",
@@ -377,6 +495,7 @@ fn main() -> Result<()> {
 
     match args.mode {
         Mode::Editor => run_editor()?,
+        Mode::Automation => run_automation(&args)?,
         Mode::PlayerNdi => run_player_ndi(&args)?,
         Mode::PlayerDist => run_player_dist(&args)?,
         Mode::PlayerLegacy => run_player_legacy(&args)?,
@@ -389,7 +508,29 @@ fn main() -> Result<()> {
 fn run_editor() -> Result<()> {
     info!("Starting Editor mode...");
     let event_loop = EventLoop::new()?;
-    let mut app_handler = MapFlowApp { app: None };
+    let mut app_handler = MapFlowApp {
+        app: None,
+        is_automation: false,
+        fixture: None,
+        exit_after_frames: None,
+        screenshot_dir: None,
+    };
+
+    event_loop.run_app(&mut app_handler)?;
+
+    Ok(())
+}
+
+fn run_automation(args: &CliArgs) -> Result<()> {
+    info!("Starting Automation mode...");
+    let event_loop = EventLoop::new()?;
+    let mut app_handler = MapFlowApp {
+        app: None,
+        is_automation: true,
+        fixture: args.fixture.clone(),
+        exit_after_frames: args.exit_after_frames,
+        screenshot_dir: args.screenshot_dir.clone(),
+    };
 
     event_loop.run_app(&mut app_handler)?;
 

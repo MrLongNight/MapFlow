@@ -65,6 +65,18 @@ pub fn show(ctx: &Context, mut context: TimelineContext) {
                             .module_canvas
                             .set_active_module(Some(module_id));
                     }
+                    TimelineAction::AddMarker(t) => {
+                        let name = format!("Marker {:.1}s", t);
+                        animator.add_marker(mapmap_core::animation::Marker::new(t as f64, name));
+                    }
+                    TimelineAction::RemoveMarker(t) => {
+                        animator.remove_marker(t as f64);
+                    }
+                    TimelineAction::ToggleMarkerPause(t) => {
+                        animator.toggle_marker_pause(t as f64);
+                    }
+                    TimelineAction::JumpNextMarker => animator.jump_next_marker(),
+                    TimelineAction::JumpPrevMarker => animator.jump_prev_marker(),
                 }
             }
         });

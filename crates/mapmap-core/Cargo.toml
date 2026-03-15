@@ -48,4 +48,4 @@ winit = { workspace = true, optional = true }
 [dev-dependencies]
 proptest = { workspace = true }
 ron = { workspace = true }
-tempfile = "3.27"
+tempfile = "3.10"

@@ -42,9 +42,6 @@ impl TextureHandle {
     }
 }
 
-/// A cached texture view with its last usage timestamp
-pub type CachedTextureView = (Arc<wgpu::TextureView>, Arc<AtomicU64>);
-
 /// Texture descriptor
 #[derive(Debug, Clone, Copy)]
 pub struct TextureDescriptor {
@@ -71,7 +68,7 @@ impl Default for TextureDescriptor {
 pub struct TexturePool {
     device: Arc<wgpu::Device>,
     textures: RwLock<HashMap<String, TextureHandle>>,
-    views: RwLock<HashMap<String, CachedTextureView>>,
+    views: RwLock<HashMap<String, Arc<wgpu::TextureView>>>,
     start_time: Instant,
 }
 
@@ -120,7 +117,7 @@ impl TexturePool {
             width,
             height,
             format,
-            last_used: last_used.clone(),
+            last_used,
         };
 
         let view = handle.create_view();
@@ -129,26 +126,21 @@ impl TexturePool {
         let name_owned = name.to_string();
 
         self.textures.write().insert(name_owned.clone(), handle);
-        self.views
-            .write()
-            .insert(name_owned.clone(), (view_arc, last_used));
+        self.views.write().insert(name_owned.clone(), view_arc);
 
         name_owned
     }
 
     /// Get a texture view by name.
     pub fn get_view(&self, name: &str) -> Arc<wgpu::TextureView> {
-        // Fast path: check views cache
-        // We store the atomic timestamp alongside the view to avoid taking a lock on `self.textures`
-        // just to update the "last used" timestamp on the hot path.
-        if let Some((view, last_used)) = self.views.read().get(name).cloned() {
-            last_used.store(self.start_time.elapsed().as_secs(), Ordering::Relaxed);
-            return view;
-        }
-
-        // Refresh usage timestamp (fallback)
+        // Refresh usage timestamp
         if let Some(handle) = self.textures.read().get(name) {
             handle.mark_used(self.start_time);
+        }
+
+        // Fast path: check views cache
+        if let Some(view) = self.views.read().get(name).cloned() {
+            return view;
         }
 
         // Slow path: create from handle
@@ -184,8 +176,8 @@ impl TexturePool {
                 .write()
                 .insert(dest_name.to_string(), handle_clone);
 
-            if let Some(view_tuple) = self.views.read().get(src_name).cloned() {
-                self.views.write().insert(dest_name.to_string(), view_tuple);
+            if let Some(view) = self.views.read().get(src_name).cloned() {
+                self.views.write().insert(dest_name.to_string(), view);
             }
             true
         } else {
@@ -267,10 +259,9 @@ impl TexturePool {
                 handle.mark_used(self.start_time);
 
                 let new_view = handle.create_view();
-                self.views.write().insert(
-                    name.to_string(),
-                    (Arc::new(new_view), handle.last_used.clone()),
-                );
+                self.views
+                    .write()
+                    .insert(name.to_string(), Arc::new(new_view));
             }
         }
     }

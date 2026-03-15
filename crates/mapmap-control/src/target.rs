@@ -36,26 +36,6 @@ pub enum ControlTarget {
     MasterBlackout,
     /// Custom parameter (name)
     Custom(String),
-    /// Timeline Play
-    TimelinePlay,
-    /// Timeline Stop
-    TimelineStop,
-    /// Timeline Speed
-    TimelineSpeed,
-    /// Timeline Loop
-    TimelineLoop,
-    /// Effect Add (layer_id)
-    EffectAdd(u32),
-    /// Effect Remove (layer_id, effect_id)
-    EffectRemove(u32, u32),
-    /// Layer Effect Parameter (layer_id, effect_id, param_name)
-    LayerEffectParameter(u32, u32, String),
-    /// Surface Corner Position (surface_id, corner_index)
-    SurfaceCornerPosition(u32, u32),
-    /// Scene Switch (scene_id)
-    SceneSwitch(u32),
-    /// Cue Trigger (cue_id)
-    CueTrigger(u32),
 }
 
 impl ControlTarget {
@@ -77,22 +57,6 @@ impl ControlTarget {
             ControlTarget::MasterOpacity => "Master Opacity".to_string(),
             ControlTarget::MasterBlackout => "Master Blackout".to_string(),
             ControlTarget::Custom(name) => name.clone(),
-            ControlTarget::TimelinePlay => "Timeline Play".to_string(),
-            ControlTarget::TimelineStop => "Timeline Stop".to_string(),
-            ControlTarget::TimelineSpeed => "Timeline Speed".to_string(),
-            ControlTarget::TimelineLoop => "Timeline Loop".to_string(),
-            ControlTarget::EffectAdd(id) => format!("Layer {} Effect Add", id),
-            ControlTarget::EffectRemove(layer, effect) => {
-                format!("Layer {} Effect {} Remove", layer, effect)
-            }
-            ControlTarget::LayerEffectParameter(layer, effect, name) => {
-                format!("Layer {} Effect {} {}", layer, effect, name)
-            }
-            ControlTarget::SurfaceCornerPosition(id, corner) => {
-                format!("Surface {} Corner {}", id, corner)
-            }
-            ControlTarget::SceneSwitch(id) => format!("Scene Switch {}", id),
-            ControlTarget::CueTrigger(id) => format!("Cue Trigger {}", id),
         }
     }
 
@@ -117,22 +81,6 @@ impl ControlTarget {
             ControlTarget::MasterOpacity => "master/opacity".to_string(),
             ControlTarget::MasterBlackout => "master/blackout".to_string(),
             ControlTarget::Custom(name) => format!("custom/{}", name),
-            ControlTarget::TimelinePlay => "timeline/play".to_string(),
-            ControlTarget::TimelineStop => "timeline/stop".to_string(),
-            ControlTarget::TimelineSpeed => "timeline/speed".to_string(),
-            ControlTarget::TimelineLoop => "timeline/loop".to_string(),
-            ControlTarget::EffectAdd(id) => format!("layer/{}/effect/add", id),
-            ControlTarget::EffectRemove(layer, effect) => {
-                format!("layer/{}/effect/{}/remove", layer, effect)
-            }
-            ControlTarget::LayerEffectParameter(layer, effect, name) => {
-                format!("layer/{}/effect/{}/parameter/{}", layer, effect, name)
-            }
-            ControlTarget::SurfaceCornerPosition(id, corner) => {
-                format!("surface/{}/corner/{}/position", id, corner)
-            }
-            ControlTarget::SceneSwitch(id) => format!("scene/switch/{}", id),
-            ControlTarget::CueTrigger(id) => format!("cue/trigger/{}", id),
         }
     }
 

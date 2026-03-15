@@ -969,15 +969,6 @@ pub fn render_inspector_for_part(
                     }
                 }
                 ModulePartType::Mask(mask) => {
-                    if canvas.show_inspector_previews {
-                        render_inspector_preview_toggle(canvas, ui);
-                        if let Some(tex_id) = canvas.node_previews.get(&(module_id, part_id)) {
-                            let size = egui::Vec2::new(ui.available_width(), ui.available_width() * 9.0 / 16.0);
-                            ui.image((*tex_id, size));
-                        }
-                    }
-                    ui.add_space(4.0);
-
                     ui.label("Mask Type:");
                     match mask {
                         MaskType::File { path } => {
@@ -1022,15 +1013,6 @@ pub fn render_inspector_for_part(
                     }
                 }
                 ModulePartType::Modulizer(mod_type) => {
-                    if canvas.show_inspector_previews {
-                        render_inspector_preview_toggle(canvas, ui);
-                        if let Some(tex_id) = canvas.node_previews.get(&(module_id, part_id)) {
-                            let size = egui::Vec2::new(ui.available_width(), ui.available_width() * 9.0 / 16.0);
-                            ui.image((*tex_id, size));
-                        }
-                    }
-                    ui.add_space(4.0);
-
                     ui.label("Modulator:");
                     match mod_type {
                         ModulizerType::Effect { effect_type: effect, params } => {
@@ -1147,28 +1129,8 @@ pub fn render_inspector_for_part(
                         LayerType::All { opacity, .. } => { ui.label("🎚️ Master"); ui.add(egui::Slider::new(opacity, 0.0..=1.0).text("Opacity")); }
                     }
                 }
-                ModulePartType::Mesh(mesh) => {
-                    if canvas.show_inspector_previews {
-                        render_inspector_preview_toggle(canvas, ui);
-                        if let Some(tex_id) = canvas.node_previews.get(&(module_id, part_id)) {
-                            let size = egui::Vec2::new(ui.available_width(), ui.available_width() * 9.0 / 16.0);
-                            ui.image((*tex_id, size));
-                        }
-                    }
-                    ui.add_space(4.0);
-
-                    ui.label("🕸️ Mesh Node"); ui.separator(); mesh::render_mesh_editor_ui(mesh_editor, last_mesh_edit_id, ui, mesh, part_id, part_id);
-                }
+                ModulePartType::Mesh(mesh) => { ui.label("🕸️ Mesh Node"); ui.separator(); mesh::render_mesh_editor_ui(mesh_editor, last_mesh_edit_id, ui, mesh, part_id, part_id); }
                 ModulePartType::Output(output) => {
-                    if canvas.show_inspector_previews {
-                        render_inspector_preview_toggle(canvas, ui);
-                        if let Some(tex_id) = canvas.node_previews.get(&(module_id, part_id)) {
-                            let size = egui::Vec2::new(ui.available_width(), ui.available_width() * 9.0 / 16.0);
-                            ui.image((*tex_id, size));
-                        }
-                    }
-                    ui.add_space(4.0);
-
                     ui.label("Output:");
                     match output {
                         OutputType::Projector { id, name, hide_cursor, target_screen, show_in_preview_panel, extra_preview_window, ndi_enabled: _ndi_enabled, ndi_stream_name: _ndi_stream_name, .. } => {

@@ -53,75 +53,11 @@ pub fn parse_osc_address(address: &str) -> Result<ControlTarget> {
         "effect" => parse_effect_address(&parts[2..]),
         "playback" => parse_playback_address(&parts[2..]),
         "output" => parse_output_address(&parts[2..]),
-        "timeline" => parse_timeline_address(&parts[2..]),
-        "surface" => parse_surface_address(&parts[2..]),
-        "scene" => parse_scene_address(&parts[2..]),
-        "cue" => parse_cue_address(&parts[2..]),
         _ => Err(ControlError::InvalidMessage(format!(
             "Unknown OSC category: {}",
             parts[1]
         ))),
     }
-}
-
-fn parse_timeline_address(parts: &[&str]) -> Result<ControlTarget> {
-    if parts.is_empty() {
-        return Err(ControlError::InvalidMessage(
-            "Missing timeline parameter".to_string(),
-        ));
-    }
-    match parts[0] {
-        "play" => Ok(ControlTarget::TimelinePlay),
-        "stop" => Ok(ControlTarget::TimelineStop),
-        "speed" => Ok(ControlTarget::TimelineSpeed),
-        "loop" => Ok(ControlTarget::TimelineLoop),
-        _ => Err(ControlError::InvalidMessage(format!(
-            "Unknown timeline parameter: {}",
-            parts[0]
-        ))),
-    }
-}
-
-fn parse_surface_address(parts: &[&str]) -> Result<ControlTarget> {
-    if parts.len() < 4 || parts[1] != "corner" || parts[3] != "position" {
-        return Err(ControlError::InvalidMessage(
-            "Invalid surface address".to_string(),
-        ));
-    }
-    let surface_id: u32 = parts[0]
-        .parse()
-        .map_err(|_| ControlError::InvalidMessage(format!("Invalid surface ID: {}", parts[0])))?;
-    let corner_index: u32 = parts[2]
-        .parse()
-        .map_err(|_| ControlError::InvalidMessage(format!("Invalid corner index: {}", parts[2])))?;
-    Ok(ControlTarget::SurfaceCornerPosition(
-        surface_id,
-        corner_index,
-    ))
-}
-
-fn parse_scene_address(parts: &[&str]) -> Result<ControlTarget> {
-    if parts.len() < 2 || parts[0] != "switch" {
-        return Err(ControlError::InvalidMessage(
-            "Invalid scene address".to_string(),
-        ));
-    }
-    let scene_id: u32 = parts[1]
-        .parse()
-        .map_err(|_| ControlError::InvalidMessage(format!("Invalid scene ID: {}", parts[1])))?;
-    Ok(ControlTarget::SceneSwitch(scene_id))
-}
-
-fn parse_cue_address(parts: &[&str]) -> Result<ControlTarget> {
-    if parts.len() < 2 || parts[0] != "trigger" {
-        return Err(ControlError::InvalidMessage(
-            "Invalid cue address".to_string(),
-        ));
-    }
-    let cue_id: u32 = parts[1]
-        .parse()
-        .map_err(|_| ControlError::InvalidMessage(format!("Invalid cue ID: {}", parts[1])))?;
-    Ok(ControlTarget::CueTrigger(cue_id))
 }
 
 fn parse_master_address(parts: &[&str]) -> Result<ControlTarget> {
@@ -162,45 +98,6 @@ fn parse_layer_address(parts: &[&str]) -> Result<ControlTarget> {
         "rotation" => Ok(ControlTarget::LayerRotation(layer_id)),
         "scale" => Ok(ControlTarget::LayerScale(layer_id)),
         "visibility" => Ok(ControlTarget::LayerVisibility(layer_id)),
-        "effect" => {
-            if parts.len() < 3 {
-                return Err(ControlError::InvalidMessage(
-                    "Missing effect action".to_string(),
-                ));
-            }
-            match parts[2] {
-                "add" => Ok(ControlTarget::EffectAdd(layer_id)),
-                effect_id_str => {
-                    let effect_id: u32 = effect_id_str.parse().map_err(|_| {
-                        ControlError::InvalidMessage(format!(
-                            "Invalid effect ID: {}",
-                            effect_id_str
-                        ))
-                    })?;
-                    if parts.len() == 4 && parts[3] == "remove" {
-                        Ok(ControlTarget::EffectRemove(layer_id, effect_id))
-                    } else if parts.len() == 5 && parts[3] == "parameter" {
-                        let name = parts[4];
-                        if name.len() > MAX_NAME_LENGTH {
-                            return Err(ControlError::InvalidMessage(format!(
-                                "Parameter name too long (max {} chars)",
-                                MAX_NAME_LENGTH
-                            )));
-                        }
-                        Ok(ControlTarget::LayerEffectParameter(
-                            layer_id,
-                            effect_id,
-                            name.to_string(),
-                        ))
-                    } else {
-                        Err(ControlError::InvalidMessage(format!(
-                            "Unknown layer effect parameter: {:?}",
-                            parts
-                        )))
-                    }
-                }
-            }
-        }
         _ => Err(ControlError::InvalidMessage(format!(
             "Unknown layer parameter: {}",
             parts[1]
@@ -328,23 +225,6 @@ pub fn control_target_to_address(target: &ControlTarget) -> String {
         ControlTarget::MasterOpacity => "/mapmap/master/opacity".to_string(),
         ControlTarget::MasterBlackout => "/mapmap/master/blackout".to_string(),
         ControlTarget::Custom(name) => format!("/mapmap/custom/{}", name),
-        ControlTarget::TimelinePlay => "/mapmap/timeline/play".to_string(),
-        ControlTarget::TimelineStop => "/mapmap/timeline/stop".to_string(),
-        ControlTarget::TimelineSpeed => "/mapmap/timeline/speed".to_string(),
-        ControlTarget::TimelineLoop => "/mapmap/timeline/loop".to_string(),
-        ControlTarget::EffectAdd(id) => format!("/mapmap/layer/{}/effect/add", id),
-        ControlTarget::EffectRemove(layer, effect) => {
-            format!("/mapmap/layer/{}/effect/{}/remove", layer, effect)
-        }
-        ControlTarget::LayerEffectParameter(layer, effect, name) => format!(
-            "/mapmap/layer/{}/effect/{}/parameter/{}",
-            layer, effect, name
-        ),
-        ControlTarget::SurfaceCornerPosition(id, corner) => {
-            format!("/mapmap/surface/{}/corner/{}/position", id, corner)
-        }
-        ControlTarget::SceneSwitch(id) => format!("/mapmap/scene/switch/{}", id),
-        ControlTarget::CueTrigger(id) => format!("/mapmap/cue/trigger/{}", id),
     }
 }
 
