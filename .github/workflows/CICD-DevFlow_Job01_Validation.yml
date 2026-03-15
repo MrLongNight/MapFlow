@@ -3,6 +3,11 @@ name: "CICD-DevFlow: Job01 Validation"
 on:
   push:
     branches: ["main"]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "assets/**"
+      - ".vscode/**"
   pull_request:
   workflow_dispatch:
     inputs:
@@ -35,24 +40,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ inputs.toolchain || github.event.inputs.toolchain || 'stable' }}
           components: rustfmt, clippy
-
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
-
       - name: Install System Deps (Ubuntu)
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential pkg-config clang libclang-dev yasm nasm libfontconfig1-dev libfreetype6-dev libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libx11-dev libx11-xcb-dev libxcb-glx0-dev libxcb-dri2-0-dev libxcb-dri3-dev libxcb-present-dev libxcb-sync-dev libxrandr-dev libxi-dev libxcursor-dev libxinerama-dev libxkbcommon-dev libwayland-dev libasound2-dev libudev-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev ffmpeg
-
+          sudo apt-get install -y build-essential pkg-config clang libclang-dev yasm nasm libfontconfig1-dev libfreetype6-dev libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libx11-dev libasound2-dev libudev-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev ffmpeg
       - name: Check Formatting
         run: cargo fmt --all -- --check
-
       - name: Check Clippy
         run: cargo clippy --workspace --all-targets --features "mapmap-io/ci-linux,ffmpeg" -- -D warnings
 
@@ -61,24 +61,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ inputs.toolchain || github.event.inputs.toolchain || 'stable' }}
-
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
-
       - name: Install Tools
         uses: cargo-bins/cargo-binstall@main
-
       - name: Install cargo-deny
         run: |
           cargo binstall -y cargo-deny --force
           test -x "${CARGO_HOME}/bin/cargo-deny"
           "${CARGO_HOME}/bin/cargo-deny" --version
-
       - name: Run Advisory Check
         run: |
           "${CARGO_HOME}/bin/cargo-deny" check advisories
@@ -88,23 +83,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ inputs.toolchain || github.event.inputs.toolchain || 'stable' }}
-
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
-
       - name: Install System Dependencies
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y build-essential pkg-config clang libclang-dev yasm nasm libfontconfig1-dev libfreetype6-dev libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libx11-dev libx11-xcb-dev libxcb-glx0-dev libxcb-dri2-0-dev libxcb-dri3-dev libxcb-present-dev libxcb-sync-dev libxrandr-dev libxi-dev libxcursor-dev libxinerama-dev libxkbcommon-dev libwayland-dev libasound2-dev libudev-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev ffmpeg
-
+          sudo apt-get install -y build-essential pkg-config clang libclang-dev yasm nasm libfontconfig1-dev libfreetype6-dev libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libx11-dev libasound2-dev libudev-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev libudev-dev ffmpeg
       - name: Build
         run: cargo build --verbose --features "mapmap-io/ci-linux,ffmpeg"
-
       - name: Test
         run: cargo test --workspace --features "mapmap-io/ci-linux,ffmpeg"
 
@@ -116,15 +106,12 @@ jobs:
       (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'test-windows'))
     steps:
       - uses: actions/checkout@v5
-
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ inputs.toolchain || github.event.inputs.toolchain || 'stable' }}
-
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
-
       - name: Build
         run: cargo build --release --verbose --no-default-features --features "audio"
 
@@ -133,15 +120,12 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v5
-
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ inputs.toolchain || github.event.inputs.toolchain || 'stable' }}
-
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
-
       - name: Build
         run: cargo build --release -p mapmap --no-default-features --features "macos-beta"
 
