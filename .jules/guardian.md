@@ -138,3 +138,8 @@ Die Inkonsistenz im `ModuleEvaluator` bleibt bestehen, da dieser statenlos ist u
 ## 2025-03-11 - Testabdeckung im mapmap-core/layer verbessert
 **Erkenntnis:** Der mapmap-core layer manager (manager.rs) hatte keine direkte Testabdeckung für diverse Extrem- oder Fehlerfälle (z.B. ID out-of-bounds, `remove_layer` von nicht existierenden IDs).
 **Aktion:** Umfangreiche Tests für LayerManager direkt in `crates/mapmap-core/src/layer/manager.rs` hinzugefügt, insbesondere für Edge-Cases und extrem-Szenarien (`move_layer_up_down_extremes`, `duplicate_nonexistent_layer`). In Zukunft bei neuem Code immer den zugehörigen Test-File prüfen, insbesondere bei zentralen Managern in mapmap-core.
+
+## 2026-03-15 - [AudioAnalyzerV2 Test Coverage Improvement]
+
+**Erkenntnis:** The `AudioAnalyzerV2` module had gaps in its test coverage, particularly in edge cases of the `calculate_bpm` and `try_receive` functions. The `calculate_bpm` lacked tests for clamped ranges, a zero average interval calculation (when dividing), and handling an empty valid interval collection (caused by few samples or bad input timestamps).
+**Aktion:** Handled these explicitly by injecting manual timestamps to bypass earlier signal processing logic and hit only the mathematical branches in `calculate_bpm`. This isolates tests and exposes pure logic edge cases in `audio/analyzer_v2.rs`.
