@@ -443,7 +443,7 @@ mod ffmpeg_impl {
                     let mut tight_data = Vec::with_capacity(width_bytes * self.height as usize);
                     let stride = rgb_frame.stride(0);
                     let src_data = rgb_frame.data(0);
-                    
+
                     for y in 0..self.height as usize {
                         let start = y * stride;
                         let end = start + width_bytes;
