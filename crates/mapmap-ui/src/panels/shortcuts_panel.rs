@@ -57,7 +57,9 @@ impl ShortcutsPanel {
         ui.horizontal(|ui| {
             ui.label("🔍");
             ui.add(TextEdit::singleline(&mut self.search_filter).hint_text("Search shortcuts..."));
-            if !self.search_filter.is_empty() && ui.button("✖").clicked() {
+            if !self.search_filter.is_empty()
+                && ui.button("✖").on_hover_text("Clear Search").clicked()
+            {
                 self.search_filter.clear();
             }
         });

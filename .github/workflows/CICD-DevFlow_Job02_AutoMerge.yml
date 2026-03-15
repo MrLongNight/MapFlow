@@ -2,9 +2,9 @@ name: "CICD-DevFlow: Job02 Auto-Merge"
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize, labeled, ready_for_review]
+    types: [opened, reopened, synchronize, labeled, unlabeled, ready_for_review]
   workflow_run:
-    workflows: ["CICD-DevFlow: Job01 Validation", "Security Analysis"]
+    workflows: ["CICD-DevFlow: Job01 Validation"]
     types: [completed]
   workflow_dispatch:
     inputs:
@@ -12,14 +12,13 @@ on:
         description: "Optional PR number to re-evaluate manually"
         required: false
         type: string
-  status:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   AUTO_MERGE_ENABLED: true
 
 concurrency:
-  group: auto-merge-${{ github.event.pull_request.number || github.event.inputs.pr_number || github.event.workflow_run.head_sha || github.event.sha || github.run_id }}
+  group: auto-merge-${{ github.event.pull_request.number || github.event.inputs.pr_number || github.event.workflow_run.head_sha || github.run_id }}
   cancel-in-progress: true
 
 permissions:
@@ -33,7 +32,7 @@ jobs:
   auto-merge:
     name: "Auto-Merge"
     runs-on: ubuntu-latest
-    if: github.event.pull_request != null || github.event.workflow_run != null || github.event_name == 'status' || github.event_name == 'workflow_dispatch'
+    if: github.event.pull_request != null || github.event.workflow_run != null || github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Evaluate Auto-Merge Eligibility
@@ -132,9 +131,7 @@ jobs:
               }
             };
 
-            const getExpectedChecks = (pr) => {
-              const hasWindowsLabel = (pr.labels || []).some((label) => label.name === 'test-windows');
-
+            const getExpectedChecks = () => {
               return [
                 {
                   name: 'pre-commit.ci - pr',
@@ -161,29 +158,19 @@ jobs:
                   required: true,
                 },
                 {
+                  name: 'Build & Test (Windows)',
+                  source: 'check_run',
+                  allowedConclusions: ['success'],
+                  required: true,
+                },
+                {
                   name: 'Validation Success',
                   source: 'check_run',
                   allowedConclusions: ['success'],
                   required: true,
                 },
-                {
-                  name: 'Analyze (rust)',
-                  source: 'check_run',
-                  allowedConclusions: ['success'],
-                  required: true,
-                },
-                {
-                  name: 'Build & Test (Windows)',
-                  source: 'check_run',
-                  allowedConclusions: ['success', 'skipped', 'neutral'],
-                  required: hasWindowsLabel,
-                },
               ];
             };
-
-            if (context.eventName === 'status' && context.payload.context !== 'pre-commit.ci - pr') {
-              return;
-            }
 
             let prNumber = context.payload.pull_request?.number;
             const manualPrNumber = context.payload.inputs?.pr_number;
@@ -216,9 +203,8 @@ jobs:
               }
             }
 
-            if (!prNumber && context.eventName === 'status') {
-              const headSha = context.payload.sha;
-              const match = await findOpenPrByHeadSha(headSha);
+            if (!prNumber && context.payload.workflow_run?.head_sha) {
+              const match = await findOpenPrByHeadSha(context.payload.workflow_run.head_sha);
               if (match) {
                 prNumber = match.number;
               }
@@ -315,7 +301,7 @@ jobs:
               }
             }
 
-            const expectedChecks = getExpectedChecks(pr);
+            const expectedChecks = getExpectedChecks();
             let allRequiredPassed = true;
             const missingOrFailed = [];
 

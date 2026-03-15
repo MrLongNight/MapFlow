@@ -403,7 +403,11 @@ impl AppUI {
                     ui,
                     &self.i18n.t("panel-media-browser"),
                     |ui| {
-                        if ui.button("✕").clicked() {
+                        if ui
+                            .button("✕")
+                            .on_hover_text("Close Media Browser")
+                            .clicked()
+                        {
                             self.show_media_browser = false;
                         }
                     },
