@@ -351,7 +351,14 @@ pub fn render_source_ui(
             {
                 ui.vertical_centered(|ui| {
                     ui.add_space(10.0);
-                    if ui.button("🔍 Discover Sources").clicked()
+                    if ui
+                        .add(
+                            egui::Button::new(
+                                "🔍 Discover Sources",
+                            )
+                            .min_size(egui::vec2(150.0, 30.0)),
+                        )
+                        .clicked()
                     {
                         // Start async discovery
                         let (tx, rx) =
