@@ -200,38 +200,24 @@ mod ffmpeg_impl {
 
             // Calculate duration
             let raw_duration = video_stream.duration();
-            let duration_secs = if raw_duration == i64::MIN {
-                // AV_NOPTS_VALUE
-                f64::NAN
-            } else {
-                raw_duration as f64 * f64::from(time_base)
-            };
+            let duration_secs = raw_duration as f64 * f64::from(time_base);
 
-            if duration_secs.is_nan() {
-                info!(
-                    "Video info: FPS={:.2}, RawDuration=AV_NOPTS_VALUE, TimeBase={}/{}, CalcDuration=UNKNOWN",
-                    fps_value,
-                    time_base.numerator(),
-                    time_base.denominator()
-                );
-            } else {
-                info!(
-                    "Video info: FPS={:.2}, RawDuration={}, TimeBase={}/{}, CalcDuration={:.2}s",
-                    fps_value,
-                    raw_duration,
-                    time_base.numerator(),
-                    time_base.denominator(),
-                    duration_secs
-                );
-            }
+            info!(
+                "Video info: FPS={:.2}, RawDuration={}, TimeBase={}/{}, CalcDuration={}",
+                fps_value,
+                raw_duration,
+                time_base.numerator(),
+                time_base.denominator(),
+                duration_secs
+            );
 
             let duration = if duration_secs < 0.0 || duration_secs.is_nan() {
-                if !duration_secs.is_nan() {
-                    warn!(
-                        "Negative video duration detected: {} seconds. Treating as unknown.",
-                        duration_secs
-                    );
-                }
+                warn!(
+                    "Invalid video duration: {} seconds (raw: {}). Treating as live stream or unknown duration",
+                    duration_secs, raw_duration
+                );
+                // Bolt Fix: Don't just set to ZERO if it's suspicious, but ZERO is safer for logic.
+                // However, we should ensure the player doesn't auto-stop.
                 Duration::ZERO
             } else {
                 Duration::from_secs_f64(duration_secs)
@@ -351,15 +337,7 @@ mod ffmpeg_impl {
 
     impl super::VideoDecoder for RealFFmpegDecoder {
         fn next_frame(&mut self) -> Result<VideoFrame> {
-            let mut packets_processed = 0;
-            const MAX_PACKETS_PER_CALL: usize = 50;
-
             for (stream, packet) in self.input_ctx.packets() {
-                packets_processed += 1;
-                if packets_processed >= MAX_PACKETS_PER_CALL {
-                    return Err(MediaError::WouldBlock);
-                }
-
                 if stream.index() != self.video_stream_idx {
                     continue;
                 }
@@ -452,24 +430,8 @@ mod ffmpeg_impl {
                         decoded.timestamp().unwrap_or(0) as f64 * f64::from(self.time_base),
                     );
 
-                    // Copy to a tight buffer to remove FFmpeg's alignment padding.
-                    // This ensures compatibility with wgpu and other parts of the system
-                    // that expect exactly width * height * 4 bytes.
-                    let width_bytes = self.width as usize * 4;
-                    let mut tight_data = Vec::with_capacity(width_bytes * self.height as usize);
-                    let stride = rgb_frame.stride(0);
-                    let src_data = rgb_frame.data(0);
-
-                    for y in 0..self.height as usize {
-                        let start = y * stride;
-                        let end = start + width_bytes;
-                        if end <= src_data.len() {
-                            tight_data.extend_from_slice(&src_data[start..end]);
-                        }
-                    }
-
                     return Ok(VideoFrame::new(
-                        tight_data,
+                        rgb_frame.data(0).to_vec(),
                         mapmap_io::VideoFormat {
                             width: self.width,
                             height: self.height,

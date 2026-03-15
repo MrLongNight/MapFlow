@@ -184,8 +184,6 @@ impl VideoPlayer {
                             let _ = self.status_sender.send(PlaybackStatus::ReachedEnd);
                         }
                     }
-                } else if matches!(e, crate::MediaError::WouldBlock) {
-                    // Do nothing, wait for next update call
                 } else {
                     warn!("Decoder error during playback: {}", e);
                 }

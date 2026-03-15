@@ -155,26 +155,20 @@ Das ist bewusst besser als ein direkt aktivierter Workflow, weil:
 - die Aktivierung ohne weiteren Code-Commit erfolgen kann
 - die Deaktivierung ebenso schnell wieder moeglich ist
 
-### Skip-Mechanik fuer einzelne Pull Requests
-
-Fuer den Fall, dass ein bestimmter PR (z. B. ein reiner Text-Fix oder eine README-Aenderung) nicht auf dem self-hosted Post-Merge-Runner geprueft werden soll, kann das PR-Label `skip-self-hosted-post-merge` auf den entsprechenden Pull Request gesetzt werden.
-
-Wird dieses Label von der CI im geschlossenen Zustand des PRs erkannt, bricht der Workflow sofort ab, ohne Ressourcen auf dem Runner zu beanspruchen.
-
 ## Einfache temporaere Deaktivierung
 
 Empfohlene Reihenfolge:
 
-1. Repo-Variable `MAPFLOW_ENABLE_SELF_HOSTED_POST_MERGE` auf `false` setzen oder ganz entfernen
+1. Repo-Variable auf `false` setzen oder entfernen
 2. optional den Runner in GitHub auf `offline` gehen lassen
 3. optional den lokalen Runner-Dienst oder die Runner-App stoppen
 
 Praktische Varianten:
 
-- global aus: Repo-Variable deaktivieren (`MAPFLOW_ENABLE_SELF_HOSTED_POST_MERGE=false`)
+- global aus: Repo-Variable deaktivieren
 - lokal gewartet: Runner-Dienst oder Runner-App stoppen
 - dauerhaft aus dem Routing nehmen: Label `mapflow-post-merge` entfernen oder Runner aus GitHub abmelden
-- einzelnen PR ausnehmen: PR-Label `skip-self-hosted-post-merge` vor dem Merge setzen
+- einzelnen PR ausnehmen: Label `skip-self-hosted-post-merge` setzen
 
 ## Was der vorbereitete Job aktuell macht
 

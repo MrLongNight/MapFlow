@@ -44,7 +44,7 @@ fn load_startup_animation(app: &mut App, source_path: &str) {
         return;
     };
 
-    match mapmap_media::open_path_with_hw_accel(&path, mapmap_media::HwAccelType::None) {
+    match mapmap_media::open_path(&path) {
         Ok(mut player) => {
             let _ = player.set_loop_mode(LoopMode::PlayOnce);
             let _ = player.play();

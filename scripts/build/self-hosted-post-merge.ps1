@@ -118,18 +118,6 @@ if ($env:MAPFLOW_SELF_HOSTED_RUN_VISUAL_AUTOMATION -eq "true") {
     New-Item -ItemType Directory -Force -Path $visualArtifactRoot | Out-Null
     $env:MAPFLOW_VISUAL_CAPTURE_OUTPUT_DIR = $visualArtifactRoot
     Write-Host "Visual artifacts will be written to $visualArtifactRoot"
-
-    $metadataPath = Join-Path $visualArtifactRoot "run_metadata.json"
-    $metadata = @{
-        pr_number = $env:MAPFLOW_PR_NUMBER
-        pr_head_sha = $env:MAPFLOW_PR_HEAD_SHA
-        merge_commit_sha = $env:MAPFLOW_MERGE_COMMIT_SHA
-        timestamp = (Get-Date -AsUTC).ToString("yyyy-MM-ddTHH:mm:ssZ")
-    }
-    $metadata | ConvertTo-Json -Depth 2 | Out-File -FilePath $metadataPath -Encoding utf8
-
-    Write-Host "Wrote run_metadata.json hook for multimodal evaluation"
-
     cargo test -p mapmap --no-default-features --test visual_capture_tests -- --ignored --nocapture
 } else {
     Write-Host "Visual automation is disabled. Set MAPFLOW_SELF_HOSTED_RUN_VISUAL_AUTOMATION=true to run the local screenshot regression tests."

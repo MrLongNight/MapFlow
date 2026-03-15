@@ -11,7 +11,6 @@ fn test_timeline_fully_automated_switch() {
                 start_time: 0.0,
                 duration: 10.0,
                 enabled: true,
-                start_trigger: None,
             },
             ModuleArrangementItem {
                 id: 2,
@@ -19,7 +18,6 @@ fn test_timeline_fully_automated_switch() {
                 start_time: 10.0,
                 duration: 10.0,
                 enabled: true,
-                start_trigger: None,
             },
         ],
         ..TimelineV2::default()
@@ -47,7 +45,6 @@ fn test_timeline_manual_mode_no_auto_switch() {
             start_time: 0.0,
             duration: 10.0,
             enabled: true,
-            start_trigger: None,
         }],
         ..TimelineV2::default()
     };

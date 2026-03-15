@@ -112,6 +112,7 @@ jobs:
               { name: 'Security Scan', allowedConclusions: ['success'] },
               { name: 'Build & Test (Linux)', allowedConclusions: ['success'] },
               { name: 'Validation Success', allowedConclusions: ['success'] },
+              { name: 'Analyze (rust)', allowedConclusions: ['success'] },
             ];
             const OPTIONAL_CHECK_RUNS = [
               { name: 'Build & Test (Windows)', allowedConclusions: ['success', 'skipped', 'neutral'] },
