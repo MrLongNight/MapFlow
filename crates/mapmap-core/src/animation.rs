@@ -77,6 +77,7 @@ pub struct Keyframe {
 }
 
 impl Keyframe {
+    /// Create a new keyframe from time in seconds and value
     pub fn new(time_secs: f64, value: AnimValue) -> Self {
         Self {
             time: (time_secs * 1_000_000.0) as u64,
@@ -89,15 +90,22 @@ impl Keyframe {
 /// Animated value types supported by the engine
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum AnimValue {
+    /// Single floating point value
     Float(f32),
+    /// 2D vector [x, y]
     Vec2([f32; 2]),
+    /// 3D vector [x, y, z]
     Vec3([f32; 3]),
+    /// 4D vector [x, y, z, w]
     Vec4([f32; 4]),
+    /// Color [r, g, b, a]
     Color([f32; 4]),
+    /// Boolean value
     Bool(bool),
 }
 
 impl AnimValue {
+    /// Interpolate between this value and another based on factor t (0.0 to 1.0)
     pub fn interpolate(&self, other: &Self, t: f32) -> Self {
         match (self, other) {
             (Self::Float(a), Self::Float(b)) => Self::Float(a + (b - a) * t),
@@ -151,6 +159,7 @@ pub struct AnimationTrack {
 }
 
 impl AnimationTrack {
+    /// Create a new animation track by name
     pub fn new(name: String) -> Self {
         Self {
             name,
@@ -158,19 +167,23 @@ impl AnimationTrack {
         }
     }
 
+    /// Add a keyframe to the track
     pub fn add_keyframe(&mut self, kf: Keyframe) {
         self.keyframes.insert(kf.time, kf);
     }
 
+    /// Remove a keyframe by time in seconds
     pub fn remove_keyframe(&mut self, time_secs: f64) {
         let time_us = (time_secs * 1_000_000.0) as u64;
         self.keyframes.remove(&time_us);
     }
 
+    /// Get all keyframes ordered by time
     pub fn keyframes_ordered(&self) -> Vec<&Keyframe> {
         self.keyframes.values().collect()
     }
 
+    /// Evaluate the track at a given time in seconds
     pub fn evaluate(&self, time_secs: f64) -> Option<AnimValue> {
         if self.keyframes.is_empty() {
             return None;
@@ -232,7 +245,9 @@ pub struct AnimationClip {
     pub out_point: Option<TimePoint>,
     /// BPM synchronization
     pub bpm_sync: bool,
+    /// Beats per minute
     pub bpm: f32,
+    /// Number of beats in the clip
     pub beats: f32,
     /// Play direction
     pub reverse: bool,
@@ -305,6 +320,7 @@ impl<'de> Deserialize<'de> for AnimationClip {
 }
 
 impl AnimationClip {
+    /// Create a new animation clip by name
     pub fn new(name: String) -> Self {
         Self {
             name,
@@ -345,11 +361,13 @@ impl AnimationClip {
             .collect()
     }
 
+    /// Add a timeline marker to the clip
     pub fn add_marker(&mut self, marker: TimelineMarker) {
         self.markers.push(marker);
         self.markers.sort_by(|a, b| a.time.partial_cmp(&b.time).unwrap());
     }
 
+    /// Remove a timeline marker by time in seconds
     pub fn remove_marker(&mut self, time: f64) -> bool {
         let old_len = self.markers.len();
         let epsilon = 0.001;
@@ -421,6 +439,7 @@ fn default_animation_speed() -> f32 {
 }
 
 impl AnimationPlayer {
+    /// Create a new animation player for a clip
     pub fn new(clip: AnimationClip) -> Self {
         let dir = if clip.reverse { -1.0 } else { 1.0 };
         Self {
@@ -433,19 +452,23 @@ impl AnimationPlayer {
         }
     }
 
+    /// Start playback
     pub fn play(&mut self) {
         self.playing = true;
     }
 
+    /// Pause playback
     pub fn pause(&mut self) {
         self.playing = false;
     }
 
+    /// Stop playback and reset to start (or in-point)
     pub fn stop(&mut self) {
         self.playing = false;
         self.current_time = self.clip.in_point.unwrap_or(0.0);
     }
 
+    /// Update playback state by delta time in seconds
     pub fn update(&mut self, delta_time: f64) -> Vec<(String, AnimValue)> {
         if self.playing {
             let in_pt = self.clip.in_point.unwrap_or(0.0).max(0.0);
@@ -555,6 +578,7 @@ impl AnimationPlayer {
         self.current_time = time.clamp(in_pt, out_pt);
     }
 
+    /// Jump playhead to the next available marker
     pub fn jump_to_next_marker(&mut self) {
         let epsilon = 0.001;
         if let Some(marker) = self.clip.markers.iter().find(|m| m.time > self.current_time + epsilon) {
@@ -562,6 +586,7 @@ impl AnimationPlayer {
         }
     }
 
+    /// Jump playhead to the previous available marker
     pub fn jump_to_prev_marker(&mut self) {
         let epsilon = 0.001;
         if let Some(marker) = self.clip.markers.iter().rev().find(|m| m.time < self.current_time - epsilon) {
