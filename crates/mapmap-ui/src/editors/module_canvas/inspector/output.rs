@@ -1,10 +1,14 @@
-use egui::Ui;
-use mapmap_core::module::{HueMappingMode, OutputType, ModulePartId};
-use super::super::state::ModuleCanvas;
 use super::super::mesh;
+use super::super::state::ModuleCanvas;
+use egui::Ui;
+use mapmap_core::module::{HueMappingMode, ModulePartId, OutputType};
 
 /// Renders the hue bridge discovery UI.
-pub fn render_hue_bridge_discovery(canvas: &mut ModuleCanvas, ui: &mut Ui, current_ip: &mut String) {
+pub fn render_hue_bridge_discovery(
+    canvas: &mut ModuleCanvas,
+    ui: &mut Ui,
+    current_ip: &mut String,
+) {
     if ui.button("🔍 Discover Bridges").clicked() {
         let (tx, rx) = std::sync::mpsc::channel();
         canvas.hue_discovery_rx = Some(rx);
@@ -42,7 +46,12 @@ pub fn render_hue_bridge_discovery(canvas: &mut ModuleCanvas, ui: &mut Ui, curre
 }
 
 /// Renders the configuration UI for a `ModulePartType::Output`.
-pub fn render_output_ui(canvas: &mut ModuleCanvas, ui: &mut Ui, output: &mut OutputType, _part_id: ModulePartId) {
+pub fn render_output_ui(
+    canvas: &mut ModuleCanvas,
+    ui: &mut Ui,
+    output: &mut OutputType,
+    _part_id: ModulePartId,
+) {
     ui.label("Output:");
     match output {
         OutputType::Projector {
@@ -79,7 +88,11 @@ pub fn render_output_ui(canvas: &mut ModuleCanvas, ui: &mut Ui, output: &mut Out
                     .selected_text(format!("Monitor {}", target_screen))
                     .show_ui(ui, |ui| {
                         for i in 0..=3u8 {
-                            let label = if i == 0 { "Primary".to_string() } else { format!("Monitor {}", i) };
+                            let label = if i == 0 {
+                                "Primary".to_string()
+                            } else {
+                                format!("Monitor {}", i)
+                            };
                             if ui.selectable_label(*target_screen == i, &label).clicked() {
                                 *target_screen = i;
                             }
@@ -157,14 +170,19 @@ pub fn render_output_ui(canvas: &mut ModuleCanvas, ui: &mut Ui, output: &mut Out
                     if let Ok(result) = rx.try_recv() {
                         canvas.hue_discovery_rx = None;
                         // Explicit type annotation for the result to help inference
-                        let result: Result<Vec<mapmap_control::hue::api::discovery::DiscoveredBridge>, _> = result;
+                        let result: Result<
+                            Vec<mapmap_control::hue::api::discovery::DiscoveredBridge>,
+                            _,
+                        > = result;
                         match result {
                             Ok(bridges) => {
                                 canvas.hue_bridges = bridges;
-                                canvas.hue_status_message = Some(format!("Found {} bridges", canvas.hue_bridges.len()));
+                                canvas.hue_status_message =
+                                    Some(format!("Found {} bridges", canvas.hue_bridges.len()));
                             }
                             Err(e) => {
-                                canvas.hue_status_message = Some(format!("Discovery failed: {}", e));
+                                canvas.hue_status_message =
+                                    Some(format!("Discovery failed: {}", e));
                             }
                         }
                     } else {
@@ -184,7 +202,11 @@ pub fn render_output_ui(canvas: &mut ModuleCanvas, ui: &mut Ui, output: &mut Out
                 ui.text_edit_singleline(bridge_ip);
 
                 // Pairing (Requires bridge button press)
-                if ui.button("\u{1F517} Pair with Bridge").on_hover_text("Press button on Bridge then click this").clicked() {
+                if ui
+                    .button("\u{1F517} Pair with Bridge")
+                    .on_hover_text("Press button on Bridge then click this")
+                    .clicked()
+                {
                     // TODO: Implement pairing logic
                     // This requires async call to `register_user`
                     // Similar pattern to discovery
@@ -199,15 +221,23 @@ pub fn render_output_ui(canvas: &mut ModuleCanvas, ui: &mut Ui, output: &mut Out
             });
 
             ui.collapsing("\u{1F3AD} Area & Mode", |ui| {
-                    ui.label("Entertainment Area:");
-                    ui.text_edit_singleline(entertainment_area);
-                    // TODO: Fetch areas from bridge if paired
+                ui.label("Entertainment Area:");
+                ui.text_edit_singleline(entertainment_area);
+                // TODO: Fetch areas from bridge if paired
 
-                    ui.separator();
-                    ui.label("Mapping Mode:");
-                    ui.radio_value(mapping_mode, HueMappingMode::Ambient, "Ambient (Average Color)");
-                    ui.radio_value(mapping_mode, HueMappingMode::Spatial, "Spatial (2D Map)");
-                    ui.radio_value(mapping_mode, HueMappingMode::Trigger, "Trigger (Strobe/Pulse)");
+                ui.separator();
+                ui.label("Mapping Mode:");
+                ui.radio_value(
+                    mapping_mode,
+                    HueMappingMode::Ambient,
+                    "Ambient (Average Color)",
+                );
+                ui.radio_value(mapping_mode, HueMappingMode::Spatial, "Spatial (2D Map)");
+                ui.radio_value(
+                    mapping_mode,
+                    HueMappingMode::Trigger,
+                    "Trigger (Strobe/Pulse)",
+                );
             });
 
             if *mapping_mode == HueMappingMode::Spatial {
