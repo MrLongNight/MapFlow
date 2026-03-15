@@ -74,7 +74,7 @@ Wenn der Build in CI fehlschlägt:
 
 - **CI/CD README:** [CI_CD_README.md](DOC-C1_README_CICD.md)
 - **Workflow Details:** [workflows/README.md](../../../.github/workflows/README.md)
-- **Roadmap:** [ROADMAP.md](../B1_PLANNING/DOC-C10_PROJECT_PHASES.md)
+- **Roadmap:** [ROADMAP.md](../../project/roadmap/README.md)
 
 ## Self-hosted Post-Merge Quickref
 
