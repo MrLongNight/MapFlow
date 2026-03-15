@@ -15,6 +15,7 @@ on:
   status:
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   AUTO_MERGE_ENABLED: true
 
 concurrency:
@@ -70,22 +71,17 @@ jobs:
                   issue_number: issueNumber,
                   body,
                 });
-                console.log('Created managed auto-merge comment.');
                 return;
               }
 
-              if (existingComment.body === body) {
-                console.log(`Managed auto-merge comment ${existingComment.id} is already current.`);
-                return;
+              if (existingComment.body !== body) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existingComment.id,
+                  body,
+                });
               }
-
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existingComment.id,
-                body,
-              });
-              console.log(`Updated managed auto-merge comment ${existingComment.id}.`);
             };
 
             const findOpenPrByHeadSha = async (headSha) => {
@@ -107,17 +103,9 @@ jobs:
                   (currentPr.mergeable_state && currentPr.mergeable_state !== 'unknown') ||
                   currentPr.mergeable !== null
                 ) {
-                  if (attempt > 1) {
-                    console.log(
-                      `PR mergeability resolved on attempt ${attempt}: mergeable=${currentPr.mergeable}, state=${currentPr.mergeable_state}`,
-                    );
-                  }
                   return currentPr;
                 }
 
-                console.log(
-                  `PR mergeability still pending (mergeable=${currentPr.mergeable}, state=${currentPr.mergeable_state}); retrying (${attempt}/10)...`,
-                );
                 await sleep(2000);
 
                 const refreshedPr = await github.rest.pulls.get({
@@ -128,15 +116,10 @@ jobs:
                 currentPr = refreshedPr.data;
               }
 
-              console.log(
-                'PR mergeability is still unknown after waiting. Skipping evaluation until GitHub finishes recomputing it.',
-              );
               return null;
             };
 
             const updateBehindPr = async (currentPr) => {
-              console.log('PR is behind the base branch. Requesting branch update and waiting for synchronize.');
-
               try {
                 await github.rest.pulls.updateBranch({
                   owner: context.repo.owner,
@@ -144,7 +127,6 @@ jobs:
                   pull_number: currentPr.number,
                   expected_head_sha: currentPr.head.sha,
                 });
-                console.log('Branch update requested successfully.');
               } catch (error) {
                 console.log(`Branch update failed: ${error.message}`);
               }
@@ -200,7 +182,6 @@ jobs:
             };
 
             if (context.eventName === 'status' && context.payload.context !== 'pre-commit.ci - pr') {
-              console.log(`Ignoring status event for "${context.payload.context}".`);
               return;
             }
 
@@ -210,7 +191,6 @@ jobs:
             if (!prNumber && manualPrNumber) {
               const parsedPrNumber = Number.parseInt(manualPrNumber, 10);
               if (Number.isNaN(parsedPrNumber)) {
-                console.log(`Invalid pr_number input: "${manualPrNumber}"`);
                 return;
               }
               prNumber = parsedPrNumber;
@@ -219,8 +199,6 @@ jobs:
             if (!prNumber && context.payload.workflow_run) {
               const headBranch = context.payload.workflow_run.head_branch;
               const headSha = context.payload.workflow_run.head_sha;
-
-              console.log(`Searching for PR with head branch "${headBranch}" and SHA ${headSha}...`);
 
               const prs = await github.rest.pulls.list({
                 owner: context.repo.owner,
@@ -247,11 +225,8 @@ jobs:
             }
 
             if (!prNumber) {
-              console.log('No PR found for this event.');
               return;
             }
-
-            console.log(`Checking PR #${prNumber} for auto-merge eligibility...`);
 
             const initialPrResponse = await github.rest.pulls.get({
               owner: context.repo.owner,
@@ -264,23 +239,14 @@ jobs:
               return;
             }
 
-            if (pr.draft) {
-              console.log('PR is a draft. Skipping auto-merge.');
+            if (pr.draft || pr.state === 'closed') {
               return;
             }
-
-            if (pr.state === 'closed') {
-              console.log('PR is already closed.');
-              return;
-            }
-
-            console.log(`Mergeable: ${pr.mergeable}, state: ${pr.mergeable_state}`);
 
             if (pr.mergeable === false) {
-              console.log('PR has merge conflicts. Cannot auto-merge.');
               await upsertManagedComment(
                 prNumber,
-                'Auto-merge ist blockiert, weil der PR Merge-Konflikte enthält. Bitte Branch aktualisieren oder Konflikte manuell auflösen.',
+                'Auto-merge ist blockiert, weil der PR Merge-Konflikte enthält.',
               );
               return;
             }
@@ -289,7 +255,7 @@ jobs:
               await updateBehindPr(pr);
               await upsertManagedComment(
                 prNumber,
-                'Auto-merge wartet, weil der PR hinter `main` liegt. Der Branch wurde zur Aktualisierung angefordert; nach dem nächsten `synchronize`-Event werden die Checks erneut ausgewertet.',
+                'Auto-merge wartet, weil der PR hinter `main` liegt. Der Branch wurde zur Aktualisierung angefordert.',
               );
               return;
             }
@@ -310,12 +276,7 @@ jobs:
               }),
             ]);
 
-            console.log(
-              `Found ${checks.data.total_count} check run(s) and ${combinedStatus.data.statuses.length} status context(s).`,
-            );
-
             const ownRunId = process.env.GITHUB_RUN_ID;
-
             const externalRuns = checks.data.check_runs.filter((run) => {
               if (run.name.includes('Auto-Merge')) {
                 return false;
@@ -355,11 +316,6 @@ jobs:
             }
 
             const expectedChecks = getExpectedChecks(pr);
-            const observedChecks = [
-              ...latestRunsByName.values(),
-              ...latestStatusesByName.values(),
-            ];
-
             let allRequiredPassed = true;
             const missingOrFailed = [];
 
@@ -370,15 +326,10 @@ jobs:
                   : latestRunsByName.get(expectedCheck.name);
 
               if (!match) {
-                console.log(`Required check "${expectedCheck.name}" not found yet.`);
                 allRequiredPassed = false;
                 missingOrFailed.push(`${expectedCheck.name} (missing)`);
                 continue;
               }
-
-              console.log(
-                `  - ${expectedCheck.name}: source=${match.source}, status=${match.status}, conclusion=${match.conclusion}`,
-              );
 
               if (match.status !== 'completed') {
                 allRequiredPassed = false;
@@ -393,24 +344,11 @@ jobs:
             }
 
             if (!allRequiredPassed) {
-              const message =
-                `Auto-merge wartet noch auf erfolgreiche Pflicht-Checks: ${missingOrFailed.join(', ')}.`;
-
-              console.log(message);
-              await upsertManagedComment(prNumber, message);
+              await upsertManagedComment(
+                prNumber,
+                `Auto-merge wartet noch auf erfolgreiche Pflicht-Checks: ${missingOrFailed.join(', ')}.`,
+              );
               return;
-            }
-
-            const otherFailed = observedChecks.filter(
-              (check) =>
-                !expectedChecks.some((expectedCheck) => expectedCheck.name === check.name) &&
-                check.status === 'completed' &&
-                ['failure', 'timed_out', 'cancelled', 'error'].includes(check.conclusion),
-            );
-
-            if (otherFailed.length > 0) {
-              console.log('Non-required checks failed:');
-              otherFailed.forEach((check) => console.log(`  - ${check.name}: ${check.conclusion}`));
             }
 
             const refreshedPrResponse = await github.rest.pulls.get({
@@ -424,43 +362,14 @@ jobs:
               return;
             }
 
-            if (finalPr.state === 'closed') {
-              console.log('PR became closed before merge attempt.');
-              return;
-            }
-
-            if (finalPr.draft) {
-              console.log('PR became draft before merge attempt.');
-              return;
-            }
-
-            if (finalPr.mergeable === false) {
-              console.log('PR developed merge conflicts before merge attempt.');
-              await upsertManagedComment(
-                prNumber,
-                'Auto-merge wurde abgebrochen, weil vor dem Merge-Versuch Merge-Konflikte erkannt wurden.',
-              );
+            if (finalPr.state === 'closed' || finalPr.draft || finalPr.mergeable === false) {
               return;
             }
 
             if (finalPr.mergeable_state === 'behind') {
               await updateBehindPr(finalPr);
-              await upsertManagedComment(
-                prNumber,
-                'Auto-merge wurde verschoben, weil der PR vor dem Merge erneut hinter `main` lag.',
-              );
               return;
             }
-
-            if (finalPr.mergeable_state === 'blocked') {
-              console.log(
-                "PR mergeable_state is 'blocked' despite all required checks passing. Attempting merge and letting GitHub enforce branch protection.",
-              );
-            } else {
-              console.log(`Final pre-merge state: mergeable=${finalPr.mergeable}, state=${finalPr.mergeable_state}`);
-            }
-
-            console.log('All conditions met. Initiating auto-merge...');
 
             try {
               await github.rest.pulls.merge({
@@ -472,15 +381,11 @@ jobs:
                 commit_message: `${finalPr.body || ''}\n\nAuto-merged by GitHub Actions`,
               });
 
-              console.log('PR merged successfully.');
-
               await upsertManagedComment(
                 prNumber,
                 'Auto-merged by the CI pipeline after all required checks passed.',
               );
             } catch (error) {
-              console.log(`Merge failed: ${error.message}`);
-
               await upsertManagedComment(
                 prNumber,
                 `Auto-merge failed: ${error.message}\n\nPlease merge manually.`,
