@@ -4,7 +4,7 @@ Dieses Dokument fasst den Status der technischen Schulden, die Ergebnisse vergan
 
 ## 1. Status der technischen Schulden (März 2026)
 
-Alle kritischen Architektur-Probleme (God Files, Unsafe Pointer) der frühen Phasen wurden erfolgreich behoben. Die verbleibenden Aufgaben sind in die `ROADMAP.md` überführt worden.
+Alle kritischen Architektur-Probleme (God Files, Unsafe Pointer) der frühen Phasen wurden erfolgreich behoben. Die verbleibenden Aufgaben sind in die `ROADMAP.md` (`docs/project/roadmap/README.md`) überführt worden.
 
 ### Erledigte Altlasten ✅
 - **Module Canvas**: Aufgeteilt in saubere Submodule.
@@ -39,4 +39,4 @@ MapFlow wurde in 7 Kernphasen entwickelt:
 - **Phase 7**: Performance & Release-Vorbereitung (Aktuell).
 
 ---
-*Die aktuelle operative Planung erfolgt ausschließlich in der `ROADMAP.md` im Root-Verzeichnis.*
+*Die aktuelle operative Planung erfolgt ausschließlich in der `ROADMAP.md` (jetzt `docs/project/roadmap/README.md`) im Root-Verzeichnis.*
