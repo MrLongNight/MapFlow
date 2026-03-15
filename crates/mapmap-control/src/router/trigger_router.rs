@@ -1,4 +1,4 @@
-//! Universal Trigger Router
+//! Universal Trigger Router.
 //!
 //! Maps external inputs (MIDI, OSC, GPIO, etc.) to timeline and show-control actions,
 //! specifically designed for the Trackline Mode.
