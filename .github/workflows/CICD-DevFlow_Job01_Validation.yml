@@ -3,11 +3,6 @@ name: "CICD-DevFlow: Job01 Validation"
 on:
   push:
     branches: ["main"]
-    paths-ignore:
-      - "**.md"
-      - "docs/**"
-      - "assets/**"
-      - ".vscode/**"
   pull_request:
   workflow_dispatch:
     inputs:
@@ -22,6 +17,10 @@ on:
         required: false
         type: string
         default: "stable"
+
+concurrency:
+  group: validation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
