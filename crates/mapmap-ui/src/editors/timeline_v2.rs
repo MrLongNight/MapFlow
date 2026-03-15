@@ -31,8 +31,6 @@ pub enum ShowMode {
     SemiAutomated,
     /// Module switching is manual only (timeline acts as arrangement board).
     Manual,
-    /// Hybrid mode (time + trigger combination).
-    Hybrid,
 }
 
 impl ShowMode {
@@ -41,7 +39,6 @@ impl ShowMode {
             Self::FullyAutomated => "Fully Auto",
             Self::SemiAutomated => "Semi Auto",
             Self::Manual => "Manual",
-            Self::Hybrid => "Hybrid",
         }
     }
 }
@@ -84,8 +81,6 @@ pub struct TimelineV2 {
     pub selected_keyframes: Vec<(String, u64)>,
     /// Show curve editor
     pub show_curve_editor: bool,
-    /// Expanded automation tracks/groups
-    pub expanded_tracks: HashSet<String>,
     /// Enable module arrangement show-control.
     pub show_control_enabled: bool,
     /// Selected show mode.
@@ -104,8 +99,6 @@ pub struct TimelineV2 {
     pub semi_auto_pending_block_id: Option<u64>,
     /// Full-auto last block.
     pub full_auto_current_block_id: Option<u64>,
-    /// Hybrid mode current block.
-    pub hybrid_current_block_id: Option<u64>,
 }
 
 impl Default for TimelineV2 {
@@ -118,7 +111,6 @@ impl Default for TimelineV2 {
             snap_interval: 0.1, // 100ms default snap
             selected_keyframes: Vec::new(),
             show_curve_editor: false,
-            expanded_tracks: HashSet::new(),
             show_control_enabled: true,
             show_mode: ShowMode::FullyAutomated,
             module_arrangement: Vec::new(),
@@ -128,7 +120,6 @@ impl Default for TimelineV2 {
             semi_auto_current_block_id: None,
             semi_auto_pending_block_id: None,
             full_auto_current_block_id: None,
-            hybrid_current_block_id: None,
         }
     }
 }
@@ -209,7 +200,6 @@ impl TimelineV2 {
         self.semi_auto_current_block_id = None;
         self.semi_auto_pending_block_id = None;
         self.full_auto_current_block_id = None;
-        self.hybrid_current_block_id = None;
     }
 
     fn cleanup_missing_modules(&mut self, available_module_ids: &[ModuleId]) {
@@ -233,26 +223,24 @@ impl TimelineV2 {
         if !has_block(self.full_auto_current_block_id, &self.module_arrangement) {
             self.full_auto_current_block_id = None;
         }
-        if !has_block(self.hybrid_current_block_id, &self.module_arrangement) {
-            self.hybrid_current_block_id = None;
-        }
     }
 
     fn add_module_block(&mut self, module_id: ModuleId) {
-        let start_time = if let Some(last) = self.module_arrangement.last() {
-            last.end_time()
-        } else {
-            0.0
-        };
+        let default_start = self
+            .module_arrangement
+            .iter()
+            .map(ModuleArrangementItem::end_time)
+            .fold(0.0, f32::max);
+        let id = self.next_arrangement_id;
+        self.next_arrangement_id = self.next_arrangement_id.saturating_add(1);
 
         self.module_arrangement.push(ModuleArrangementItem {
-            id: self.next_arrangement_id,
+            id,
             module_id,
-            start_time,
-            duration: 5.0,
+            start_time: default_start,
+            duration: 8.0,
             enabled: true,
         });
-        self.next_arrangement_id += 1;
     }
 
     fn set_manual_current(&mut self, block_id: Option<u64>) {
@@ -260,10 +248,13 @@ impl TimelineV2 {
     }
 
     fn module_for_block_id(&self, block_id: Option<u64>) -> Option<ModuleId> {
-        block_id.and_then(|id| self.find_block(id).map(|b| b.module_id))
+        block_id
+            .and_then(|id| self.find_block(id))
+            .map(|block| block.module_id)
     }
 
-    /// Update orchestration and return target module if it should change.
+    /// Returns the module that should be active for show playback.
+    /// `None` means "do not filter modules".
     pub fn runtime_show_module(
         &mut self,
         current_time: f32,
@@ -312,13 +303,6 @@ impl TimelineV2 {
                     self.manual_current_block_id = self.first_enabled_block_id();
                 }
                 self.module_for_block_id(self.manual_current_block_id)
-            }
-            ShowMode::Hybrid => {
-                // In Hybrid mode, time defines current scope, but triggers can jump.
-                // For now, behave like full auto but keep separate state.
-                let active_id = self.active_block_for_time(current_time).map(|b| b.id);
-                self.hybrid_current_block_id = active_id;
-                self.module_for_block_id(active_id)
             }
         }
     }
@@ -600,11 +584,6 @@ impl TimelineV2 {
                             ShowMode::Manual,
                             ShowMode::Manual.label(),
                         );
-                        ui.selectable_value(
-                            &mut self.show_mode,
-                            ShowMode::Hybrid,
-                            ShowMode::Hybrid.label(),
-                        );
                     });
 
                 match self.show_mode {
@@ -627,7 +606,7 @@ impl TimelineV2 {
                             }
                         }
                     }
-                    ShowMode::FullyAutomated | ShowMode::Hybrid => {}
+                    ShowMode::FullyAutomated => {}
                 }
             }
         });
@@ -743,37 +722,14 @@ impl TimelineV2 {
         // Timeline area
         egui::ScrollArea::both().show(ui, |ui| {
             let clip = animator.clip(); // Get immutable ref first to calculate size
-
-            // Group tracks by "lane" (e.g. `Blur_0` from `Blur_0.radius`)
-            let mut track_groups: std::collections::BTreeMap<
-                String,
-                Vec<&mapmap_core::animation::AnimationTrack>,
-            > = std::collections::BTreeMap::new();
-            for track in &clip.tracks {
-                let parts: Vec<&str> = track.name.split('.').collect();
-                let group_name = if parts.len() > 1 {
-                    parts[0].to_string()
-                } else {
-                    "General".to_string()
-                };
-                track_groups.entry(group_name).or_default().push(track);
-            }
-
-            let mut visible_lanes_count = 0;
-            for (group_name, tracks) in &track_groups {
-                visible_lanes_count += 1; // Group header
-                if self.expanded_tracks.contains(group_name) {
-                    visible_lanes_count += tracks.len(); // Expanded tracks
-                }
-            }
-
+            let track_count = clip.tracks.len();
             let module_track_height = if self.module_arrangement.is_empty() {
                 0.0
             } else {
                 64.0
             };
 
-            let available_height = 50.0 + (visible_lanes_count as f32 * 60.0) + module_track_height;
+            let available_height = 50.0 + (track_count as f32 * 60.0) + module_track_height;
             let available_width = (duration * self.zoom).max(ui.available_width());
 
             let (response, painter) = ui.allocate_painter(
@@ -847,148 +803,91 @@ impl TimelineV2 {
             }
 
             // Access immutable clip for drawing tracks
+            let tracks = &animator.clip().tracks;
             let track_start_y = ruler_rect.max.y;
-            let mut current_lane_index = 0;
 
-            for (group_name, tracks) in &track_groups {
-                let is_expanded = self.expanded_tracks.contains(group_name);
-                let header_y = track_start_y + (current_lane_index as f32 * 60.0);
-                let header_rect = Rect::from_min_size(
-                    Pos2::new(rect.min.x, header_y),
+            for (i, track) in tracks.iter().enumerate() {
+                let track_y = track_start_y + (i as f32 * 60.0);
+                let track_rect = Rect::from_min_size(
+                    Pos2::new(rect.min.x, track_y),
                     Vec2::new(rect.width(), 60.0),
                 );
 
-                // Draw header lane
-                let header_bg_color = Color32::from_rgb(45, 45, 45);
-                painter.rect_filled(header_rect, 0.0, header_bg_color);
+                // Alternating background
+                let bg_color = if i % 2 == 0 {
+                    Color32::from_rgb(30, 30, 30)
+                } else {
+                    Color32::from_rgb(35, 35, 35)
+                };
+                painter.rect_filled(track_rect, 0.0, bg_color);
 
-                let fold_icon = if is_expanded { "▼" } else { "▶" };
-                let header_label = format!("{} {}", fold_icon, group_name);
+                // Track name
+                painter.text(
+                    Pos2::new(track_rect.min.x + 5.0, track_rect.min.y + 10.0),
+                    egui::Align2::LEFT_TOP,
+                    &track.name,
+                    egui::FontId::proportional(14.0),
+                    Color32::from_rgb(200, 200, 200),
+                );
 
-                // Make header interactive for folding/unfolding
-                let header_response =
-                    ui.interact(header_rect, ui.id().with(group_name), Sense::click());
-                if header_response.clicked() {
-                    if is_expanded {
-                        self.expanded_tracks.remove(group_name);
-                    } else {
-                        self.expanded_tracks.insert(group_name.clone());
+                // Draw keyframes and curves
+                let keyframes = track.keyframes_ordered();
+
+                if keyframes.len() >= 2 {
+                    let mut points = Vec::new();
+                    for kf in &keyframes {
+                        let t = kf.time as f32;
+                        let val = match &kf.value {
+                            AnimValue::Float(v) => *v,
+                            AnimValue::Vec3(v) => v[0],
+                            AnimValue::Vec4(v) => v[0],
+                            AnimValue::Color(v) => v[0],
+                            _ => 0.0,
+                        };
+
+                        let normalized = val.clamp(0.0, 1.0);
+                        let x = rect.min.x + t * self.zoom;
+                        let y = track_rect.max.y - 10.0 - (normalized * 40.0);
+                        points.push(Pos2::new(x, y));
+                    }
+
+                    if !points.is_empty() {
+                        painter.add(egui::Shape::line(
+                            points,
+                            Stroke::new(2.0, Color32::from_rgb(100, 200, 255)),
+                        ));
                     }
                 }
 
-                let text_color = if header_response.hovered() {
-                    Color32::WHITE
-                } else {
-                    Color32::from_rgb(220, 220, 220)
-                };
+                for kf in &keyframes {
+                    let kf_time = kf.time as f32;
+                    let val = match &kf.value {
+                        AnimValue::Float(v) => *v,
+                        _ => 0.0,
+                    };
+                    let normalized = val.clamp(0.0, 1.0);
 
-                painter.text(
-                    Pos2::new(header_rect.min.x + 10.0, header_rect.min.y + 22.0),
-                    egui::Align2::LEFT_TOP,
-                    header_label,
-                    egui::FontId::proportional(14.0),
-                    text_color,
-                );
+                    let x = rect.min.x + kf_time * self.zoom;
+                    let y = track_rect.max.y - 10.0 - (normalized * 40.0);
 
-                current_lane_index += 1;
+                    let diamond_size = 6.0;
+                    let diamond = vec![
+                        Pos2::new(x, y - diamond_size),
+                        Pos2::new(x + diamond_size, y),
+                        Pos2::new(x, y + diamond_size),
+                        Pos2::new(x - diamond_size, y),
+                    ];
 
-                if is_expanded {
-                    for track in tracks {
-                        let track_y = track_start_y + (current_lane_index as f32 * 60.0);
-                        let track_rect = Rect::from_min_size(
-                            Pos2::new(rect.min.x, track_y),
-                            Vec2::new(rect.width(), 60.0),
-                        );
-
-                        // Alternating background for automation tracks
-                        let bg_color = if current_lane_index % 2 == 0 {
-                            Color32::from_rgb(30, 30, 30)
-                        } else {
-                            Color32::from_rgb(35, 35, 35)
-                        };
-                        painter.rect_filled(track_rect, 0.0, bg_color);
-
-                        // Draw track tree line
-                        painter.line_segment(
-                            [
-                                Pos2::new(track_rect.min.x + 15.0, track_rect.min.y),
-                                Pos2::new(track_rect.min.x + 15.0, track_rect.max.y),
-                            ],
-                            Stroke::new(1.0, Color32::from_rgb(80, 80, 80)),
-                        );
-
-                        // Track name (parameter)
-                        let param_name = track.name.split('.').next_back().unwrap_or(&track.name);
-                        painter.text(
-                            Pos2::new(track_rect.min.x + 25.0, track_rect.min.y + 10.0),
-                            egui::Align2::LEFT_TOP,
-                            param_name,
-                            egui::FontId::proportional(13.0),
-                            Color32::from_rgb(180, 180, 180),
-                        );
-
-                        // Draw keyframes and curves
-                        let keyframes = track.keyframes_ordered();
-
-                        if keyframes.len() >= 2 {
-                            let mut points = Vec::new();
-                            for kf in &keyframes {
-                                let t = kf.time as f32;
-                                let val = match &kf.value {
-                                    AnimValue::Float(v) => *v,
-                                    AnimValue::Vec3(v) => v[0],
-                                    AnimValue::Vec4(v) => v[0],
-                                    AnimValue::Color(v) => v[0],
-                                    _ => 0.0,
-                                };
-
-                                let normalized = val.clamp(0.0, 1.0);
-                                let x = rect.min.x + t * self.zoom;
-                                let y = track_rect.max.y - 10.0 - (normalized * 40.0);
-                                points.push(Pos2::new(x, y));
-                            }
-
-                            if !points.is_empty() {
-                                painter.add(egui::Shape::line(
-                                    points,
-                                    Stroke::new(2.0, Color32::from_rgb(100, 200, 255)),
-                                ));
-                            }
-                        }
-
-                        for kf in &keyframes {
-                            let kf_time = kf.time as f32;
-                            let val = match &kf.value {
-                                AnimValue::Float(v) => *v,
-                                _ => 0.0,
-                            };
-                            let normalized = val.clamp(0.0, 1.0);
-
-                            let x = rect.min.x + kf_time * self.zoom;
-                            let y = track_rect.max.y - 10.0 - (normalized * 40.0);
-
-                            let diamond_size = 6.0;
-                            let diamond = vec![
-                                Pos2::new(x, y - diamond_size),
-                                Pos2::new(x + diamond_size, y),
-                                Pos2::new(x, y + diamond_size),
-                                Pos2::new(x - diamond_size, y),
-                            ];
-
-                            painter.add(egui::Shape::convex_polygon(
-                                diamond,
-                                Color32::YELLOW,
-                                Stroke::new(1.0, Color32::WHITE),
-                            ));
-                        }
-
-                        current_lane_index += 1;
-                    }
+                    painter.add(egui::Shape::convex_polygon(
+                        diamond,
+                        Color32::YELLOW,
+                        Stroke::new(1.0, Color32::WHITE),
+                    ));
                 }
             }
 
             if module_track_height > 0.0 {
-                let module_track_y = track_start_y + (current_lane_index as f32 * 60.0);
+                let module_track_y = track_start_y + (track_count as f32 * 60.0);
                 let module_rect = Rect::from_min_size(
                     Pos2::new(rect.min.x, module_track_y),
                     Vec2::new(rect.width(), module_track_height),
@@ -1015,8 +914,7 @@ impl TimelineV2 {
                     // For now, we just emit it, the handler in actions.rs should be idempotent.
                     if action.is_none()
                         && animator.is_playing()
-                        && (self.show_mode == ShowMode::FullyAutomated
-                            || self.show_mode == ShowMode::Hybrid)
+                        && self.show_mode == ShowMode::FullyAutomated
                     {
                         action = Some(TimelineAction::SelectModule(mod_id));
                     }
@@ -1026,7 +924,6 @@ impl TimelineV2 {
                     ShowMode::FullyAutomated => self.full_auto_current_block_id,
                     ShowMode::SemiAutomated => self.semi_auto_current_block_id,
                     ShowMode::Manual => self.manual_current_block_id,
-                    ShowMode::Hybrid => self.hybrid_current_block_id,
                 };
 
                 for block in self.sorted_enabled_blocks() {
