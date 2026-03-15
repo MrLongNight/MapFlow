@@ -1,8 +1,13 @@
+use super::super::state::ModuleCanvas;
+use super::super::types::MediaPlaybackCommand;
 use crate::widgets::{styled_drag_value, styled_slider};
 use egui::{Color32, Pos2, Rect, Sense, Stroke, Ui, Vec2};
 use mapmap_core::module::{BlendModeType, ModulePartId};
-use super::super::state::ModuleCanvas;
-use super::super::types::MediaPlaybackCommand;
+
+use super::super::state::LayerInspectorViewMode;
+use super::InspectorPreviewContext;
+use egui::ProgressBar;
+use mapmap_core::module::ModuleId;
 
 /// Renders the common transform and color correction controls for a media source.
 #[allow(clippy::too_many_arguments)]
@@ -420,4 +425,161 @@ pub fn render_timeline(
         Color32::from_rgb(255, 200, 50),
         Stroke::NONE,
     ));
+}
+
+pub fn render_inspector_preview_toggle(canvas: &mut ModuleCanvas, ui: &mut Ui) {
+    ui.horizontal(|ui| {
+        ui.heading("Inspector Preview");
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            ui.checkbox(&mut canvas.show_inspector_previews, "Enabled");
+        });
+    });
+}
+
+pub fn render_fixed_timer_preview(
+    canvas: &mut ModuleCanvas,
+    ui: &mut Ui,
+    part_id: ModulePartId,
+    interval_ms: u32,
+    offset_ms: u32,
+) {
+    if !canvas.show_inspector_previews {
+        return;
+    }
+
+    let now_ms = (ui.input(|input| input.time) * 1000.0) as u32;
+    let cycle_ms = interval_ms.max(1);
+    let phase_ms = now_ms.wrapping_add(offset_ms) % cycle_ms;
+    let progress = phase_ms as f32 / cycle_ms as f32;
+    let live_value = canvas
+        .last_trigger_values
+        .get(&part_id)
+        .copied()
+        .unwrap_or(0.0);
+    let is_live = live_value > 0.1;
+    let next_pulse_ms = cycle_ms.saturating_sub(phase_ms) % cycle_ms;
+
+    ui.ctx().request_repaint();
+    ui.separator();
+    render_inspector_preview_toggle(canvas, ui);
+    ui.group(|ui| {
+        ui.label("Fixed timer cadence");
+        ui.add(
+            ProgressBar::new(progress)
+                .desired_width(ui.available_width())
+                .text(format!("cycle {} ms", cycle_ms)),
+        );
+        ui.horizontal(|ui| {
+            let status = if is_live { "LIVE pulse" } else { "Waiting" };
+            let color = if is_live {
+                Color32::from_rgb(110, 235, 150)
+            } else {
+                Color32::from_rgb(180, 180, 180)
+            };
+            ui.colored_label(color, status);
+            ui.label(format!("Next pulse in {} ms", next_pulse_ms));
+        });
+        ui.label(format!("Offset {} ms", offset_ms));
+        ui.label(format!("Current trigger value {:.2}", live_value));
+    });
+}
+
+pub fn render_preview_texture(ui: &mut Ui, texture_id: egui::TextureId, caption: &str) {
+    let width = ui.available_width().max(160.0);
+    let size = Vec2::new(width, width * 9.0 / 16.0);
+    ui.image((texture_id, size));
+    ui.small(caption);
+}
+
+pub fn render_layer_preview_panel(
+    canvas: &mut ModuleCanvas,
+    ui: &mut Ui,
+    module_id: ModuleId,
+    part_id: ModulePartId,
+    preview_context: &InspectorPreviewContext,
+) {
+    ui.horizontal(|ui| {
+        ui.selectable_value(
+            &mut canvas.layer_inspector_view_mode,
+            LayerInspectorViewMode::Preview,
+            "Preview",
+        );
+        ui.selectable_value(
+            &mut canvas.layer_inspector_view_mode,
+            LayerInspectorViewMode::MeshEditor,
+            "Mesh Editor",
+        );
+    });
+
+    if canvas.layer_inspector_view_mode != LayerInspectorViewMode::Preview {
+        return;
+    }
+
+    if !canvas.show_inspector_previews {
+        ui.label("Inspector preview is disabled.");
+        return;
+    }
+
+    ui.add_space(6.0);
+    if let Some(&texture_id) = canvas.node_previews.get(&(module_id, part_id)) {
+        render_preview_texture(ui, texture_id, "Direct layer preview");
+        return;
+    }
+
+    for output_id in &preview_context.output_ids {
+        if let Some(&texture_id) = canvas.output_previews.get(output_id) {
+            render_preview_texture(
+                ui,
+                texture_id,
+                &format!("Linked output preview (Output {})", output_id),
+            );
+            return;
+        }
+    }
+
+    for source_part_id in &preview_context.upstream_source_part_ids {
+        if let Some(&texture_id) = canvas.node_previews.get(&(module_id, *source_part_id)) {
+            render_preview_texture(ui, texture_id, "Fallback: upstream source preview");
+            ui.small(
+                "The layer preview is falling back to the source texture. If the output stays black, the issue is after the source stage.",
+            );
+            return;
+        }
+    }
+
+    ui.group(|ui| {
+        ui.label(
+            egui::RichText::new("No preview available yet.")
+                .weak()
+                .italics(),
+        );
+        if preview_context.output_ids.is_empty() {
+            ui.small("This layer is not linked to a projector output yet.");
+        } else {
+            ui.small(format!(
+                "Expected linked output preview for Output {}.",
+                preview_context
+                    .output_ids
+                    .iter()
+                    .map(|id| id.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ));
+        }
+        if preview_context.upstream_source_part_ids.is_empty() {
+            ui.label(
+                egui::RichText::new("No upstream source node was found for this layer.")
+                    .weak()
+                    .italics(),
+            );
+        } else {
+            ui.label(
+                egui::RichText::new(
+                    "Upstream source exists, but no preview texture reached the inspector.",
+                )
+                .weak()
+                .italics(),
+            );
+        }
+    });
 }
