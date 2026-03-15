@@ -36,7 +36,7 @@ impl ModuleCanvas {
         effect_type: ModuleEffectType,
         params: &mut std::collections::HashMap<String, f32>,
     ) {
-        inspector::effect::set_default_effect_params(effect_type, params);
+        inspector::set_default_effect_params(effect_type, params);
     }
 
     #[allow(clippy::too_many_arguments)]

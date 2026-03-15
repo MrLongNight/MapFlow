@@ -1,5 +1,5 @@
 use egui::{Color32, Ui};
-use mapmap_core::module::{BlendModeType, EffectType, ModulePartId, ModulizerType};
+use mapmap_core::module::{BlendModeType, EffectType, ModulizerType, ModulePartId};
 
 /// Sets default parameters for a given effect type.
 pub fn set_default_effect_params(
@@ -42,10 +42,7 @@ pub fn set_default_effect_params(
 pub fn render_effect_ui(ui: &mut Ui, mod_type: &mut ModulizerType, part_id: ModulePartId) {
     ui.label("Modulator:");
     match mod_type {
-        ModulizerType::Effect {
-            effect_type: effect,
-            params,
-        } => {
+        ModulizerType::Effect { effect_type: effect, params } => {
             // === LIVE HEADER ===
             ui.add_space(5.0);
 
@@ -67,7 +64,9 @@ pub fn render_effect_ui(ui: &mut Ui, mod_type: &mut ModulizerType, part_id: Modu
                     "\u{27F2} Safe Reset",
                     Color32::from_rgb(255, 180, 0),
                 ) {
-                    set_default_effect_params(*effect, params);
+                    set_default_effect_params(
+                        *effect, params,
+                    );
                 }
             });
 
@@ -80,128 +79,32 @@ pub fn render_effect_ui(ui: &mut Ui, mod_type: &mut ModulizerType, part_id: Modu
                 .selected_text(effect.name())
                 .show_ui(ui, |ui| {
                     ui.label("--- Basic ---");
-                    if ui
-                        .selectable_label(matches!(effect, EffectType::Blur), "Blur")
-                        .clicked()
-                    {
-                        changed_type = Some(EffectType::Blur);
-                    }
-                    if ui
-                        .selectable_label(matches!(effect, EffectType::Invert), "Invert")
-                        .clicked()
-                    {
-                        changed_type = Some(EffectType::Invert);
-                    }
-                    if ui
-                        .selectable_label(matches!(effect, EffectType::Sharpen), "Sharpen")
-                        .clicked()
-                    {
-                        changed_type = Some(EffectType::Sharpen);
-                    }
-                    if ui
-                        .selectable_label(matches!(effect, EffectType::Threshold), "Threshold")
-                        .clicked()
-                    {
-                        changed_type = Some(EffectType::Threshold);
-                    }
+                    if ui.selectable_label(matches!(effect, EffectType::Blur), "Blur").clicked() { changed_type = Some(EffectType::Blur); }
+                    if ui.selectable_label(matches!(effect, EffectType::Invert), "Invert").clicked() { changed_type = Some(EffectType::Invert); }
+                    if ui.selectable_label(matches!(effect, EffectType::Sharpen), "Sharpen").clicked() { changed_type = Some(EffectType::Sharpen); }
+                    if ui.selectable_label(matches!(effect, EffectType::Threshold), "Threshold").clicked() { changed_type = Some(EffectType::Threshold); }
 
                     ui.label("--- Color ---");
-                    if ui
-                        .selectable_label(matches!(effect, EffectType::Brightness), "Brightness")
-                        .clicked()
-                    {
-                        changed_type = Some(EffectType::Brightness);
-                    }
-                    if ui
-                        .selectable_label(matches!(effect, EffectType::Contrast), "Contrast")
-                        .clicked()
-                    {
-                        changed_type = Some(EffectType::Contrast);
-                    }
-                    if ui
-                        .selectable_label(matches!(effect, EffectType::Saturation), "Saturation")
-                        .clicked()
-                    {
-                        changed_type = Some(EffectType::Saturation);
-                    }
-                    if ui
-                        .selectable_label(matches!(effect, EffectType::HueShift), "Hue Shift")
-                        .clicked()
-                    {
-                        changed_type = Some(EffectType::HueShift);
-                    }
-                    if ui
-                        .selectable_label(matches!(effect, EffectType::Colorize), "Colorize")
-                        .clicked()
-                    {
-                        changed_type = Some(EffectType::Colorize);
-                    }
+                    if ui.selectable_label(matches!(effect, EffectType::Brightness), "Brightness").clicked() { changed_type = Some(EffectType::Brightness); }
+                    if ui.selectable_label(matches!(effect, EffectType::Contrast), "Contrast").clicked() { changed_type = Some(EffectType::Contrast); }
+                    if ui.selectable_label(matches!(effect, EffectType::Saturation), "Saturation").clicked() { changed_type = Some(EffectType::Saturation); }
+                    if ui.selectable_label(matches!(effect, EffectType::HueShift), "Hue Shift").clicked() { changed_type = Some(EffectType::HueShift); }
+                    if ui.selectable_label(matches!(effect, EffectType::Colorize), "Colorize").clicked() { changed_type = Some(EffectType::Colorize); }
 
                     ui.label("--- Distortion ---");
-                    if ui
-                        .selectable_label(matches!(effect, EffectType::Wave), "Wave")
-                        .clicked()
-                    {
-                        changed_type = Some(EffectType::Wave);
-                    }
-                    if ui
-                        .selectable_label(matches!(effect, EffectType::Spiral), "Spiral")
-                        .clicked()
-                    {
-                        changed_type = Some(EffectType::Spiral);
-                    }
-                    if ui
-                        .selectable_label(
-                            matches!(effect, EffectType::Kaleidoscope),
-                            "Kaleidoscope",
-                        )
-                        .clicked()
-                    {
-                        changed_type = Some(EffectType::Kaleidoscope);
-                    }
+                    if ui.selectable_label(matches!(effect, EffectType::Wave), "Wave").clicked() { changed_type = Some(EffectType::Wave); }
+                    if ui.selectable_label(matches!(effect, EffectType::Spiral), "Spiral").clicked() { changed_type = Some(EffectType::Spiral); }
+                    if ui.selectable_label(matches!(effect, EffectType::Kaleidoscope), "Kaleidoscope").clicked() { changed_type = Some(EffectType::Kaleidoscope); }
 
                     ui.label("--- Stylize ---");
-                    if ui
-                        .selectable_label(matches!(effect, EffectType::Pixelate), "Pixelate")
-                        .clicked()
-                    {
-                        changed_type = Some(EffectType::Pixelate);
-                    }
-                    if ui
-                        .selectable_label(matches!(effect, EffectType::EdgeDetect), "Edge Detect")
-                        .clicked()
-                    {
-                        changed_type = Some(EffectType::EdgeDetect);
-                    }
+                    if ui.selectable_label(matches!(effect, EffectType::Pixelate), "Pixelate").clicked() { changed_type = Some(EffectType::Pixelate); }
+                    if ui.selectable_label(matches!(effect, EffectType::EdgeDetect), "Edge Detect").clicked() { changed_type = Some(EffectType::EdgeDetect); }
 
                     ui.label("--- Composite ---");
-                    if ui
-                        .selectable_label(matches!(effect, EffectType::RgbSplit), "RGB Split")
-                        .clicked()
-                    {
-                        changed_type = Some(EffectType::RgbSplit);
-                    }
-                    if ui
-                        .selectable_label(
-                            matches!(effect, EffectType::ChromaticAberration),
-                            "Chromatic",
-                        )
-                        .clicked()
-                    {
-                        changed_type = Some(EffectType::ChromaticAberration);
-                    }
-                    if ui
-                        .selectable_label(matches!(effect, EffectType::FilmGrain), "Film Grain")
-                        .clicked()
-                    {
-                        changed_type = Some(EffectType::FilmGrain);
-                    }
-                    if ui
-                        .selectable_label(matches!(effect, EffectType::Vignette), "Vignette")
-                        .clicked()
-                    {
-                        changed_type = Some(EffectType::Vignette);
-                    }
+                    if ui.selectable_label(matches!(effect, EffectType::RgbSplit), "RGB Split").clicked() { changed_type = Some(EffectType::RgbSplit); }
+                    if ui.selectable_label(matches!(effect, EffectType::ChromaticAberration), "Chromatic").clicked() { changed_type = Some(EffectType::ChromaticAberration); }
+                    if ui.selectable_label(matches!(effect, EffectType::FilmGrain), "Film Grain").clicked() { changed_type = Some(EffectType::FilmGrain); }
+                    if ui.selectable_label(matches!(effect, EffectType::Vignette), "Vignette").clicked() { changed_type = Some(EffectType::Vignette); }
                 });
 
             if let Some(new_type) = changed_type {
@@ -246,11 +149,7 @@ pub fn render_effect_ui(ui: &mut Ui, mod_type: &mut ModulizerType, part_id: Modu
                     ui.add(egui::Slider::new(sat, 0.0..=2.0).text("Saturation"));
                 }
                 _ => {
-                    ui.label(
-                        egui::RichText::new("No configurable parameters")
-                            .weak()
-                            .italics(),
-                    );
+                    ui.label(egui::RichText::new("No configurable parameters").weak().italics());
                 }
             }
         }
@@ -259,50 +158,18 @@ pub fn render_effect_ui(ui: &mut Ui, mod_type: &mut ModulizerType, part_id: Modu
             egui::ComboBox::from_id_salt("blend_mode")
                 .selected_text(format!("{:?}", blend))
                 .show_ui(ui, |ui| {
-                    if ui
-                        .selectable_label(matches!(blend, BlendModeType::Normal), "Normal")
-                        .clicked()
-                    {
-                        *blend = BlendModeType::Normal;
-                    }
-                    if ui
-                        .selectable_label(matches!(blend, BlendModeType::Add), "Add")
-                        .clicked()
-                    {
-                        *blend = BlendModeType::Add;
-                    }
-                    if ui
-                        .selectable_label(matches!(blend, BlendModeType::Multiply), "Multiply")
-                        .clicked()
-                    {
-                        *blend = BlendModeType::Multiply;
-                    }
-                    if ui
-                        .selectable_label(matches!(blend, BlendModeType::Screen), "Screen")
-                        .clicked()
-                    {
-                        *blend = BlendModeType::Screen;
-                    }
-                    if ui
-                        .selectable_label(matches!(blend, BlendModeType::Overlay), "Overlay")
-                        .clicked()
-                    {
-                        *blend = BlendModeType::Overlay;
-                    }
-                    if ui
-                        .selectable_label(matches!(blend, BlendModeType::Difference), "Difference")
-                        .clicked()
-                    {
-                        *blend = BlendModeType::Difference;
-                    }
-                    if ui
-                        .selectable_label(matches!(blend, BlendModeType::Exclusion), "Exclusion")
-                        .clicked()
-                    {
-                        *blend = BlendModeType::Exclusion;
-                    }
+                    if ui.selectable_label(matches!(blend, BlendModeType::Normal), "Normal").clicked() { *blend = BlendModeType::Normal; }
+                    if ui.selectable_label(matches!(blend, BlendModeType::Add), "Add").clicked() { *blend = BlendModeType::Add; }
+                    if ui.selectable_label(matches!(blend, BlendModeType::Multiply), "Multiply").clicked() { *blend = BlendModeType::Multiply; }
+                    if ui.selectable_label(matches!(blend, BlendModeType::Screen), "Screen").clicked() { *blend = BlendModeType::Screen; }
+                    if ui.selectable_label(matches!(blend, BlendModeType::Overlay), "Overlay").clicked() { *blend = BlendModeType::Overlay; }
+                    if ui.selectable_label(matches!(blend, BlendModeType::Difference), "Difference").clicked() { *blend = BlendModeType::Difference; }
+                    if ui.selectable_label(matches!(blend, BlendModeType::Exclusion), "Exclusion").clicked() { *blend = BlendModeType::Exclusion; }
                 });
-            ui.add(egui::Slider::new(&mut 1.0_f32, 0.0..=1.0).text("Opacity"));
+            ui.add(
+                egui::Slider::new(&mut 1.0_f32, 0.0..=1.0)
+                    .text("Opacity"),
+            );
         }
         ModulizerType::AudioReactive { source } => {
             ui.label("\u{1F50A} Audio Reactive");
@@ -311,51 +178,22 @@ pub fn render_effect_ui(ui: &mut Ui, mod_type: &mut ModulizerType, part_id: Modu
                 egui::ComboBox::from_id_salt("audio_source")
                     .selected_text(source.as_str())
                     .show_ui(ui, |ui| {
-                        if ui
-                            .selectable_label(source == "SubBass", "SubBass")
-                            .clicked()
-                        {
-                            *source = "SubBass".to_string();
-                        }
-                        if ui.selectable_label(source == "Bass", "Bass").clicked() {
-                            *source = "Bass".to_string();
-                        }
-                        if ui.selectable_label(source == "LowMid", "LowMid").clicked() {
-                            *source = "LowMid".to_string();
-                        }
-                        if ui.selectable_label(source == "Mid", "Mid").clicked() {
-                            *source = "Mid".to_string();
-                        }
-                        if ui
-                            .selectable_label(source == "HighMid", "HighMid")
-                            .clicked()
-                        {
-                            *source = "HighMid".to_string();
-                        }
-                        if ui
-                            .selectable_label(source == "Presence", "Presence")
-                            .clicked()
-                        {
-                            *source = "Presence".to_string();
-                        }
-                        if ui
-                            .selectable_label(source == "Brilliance", "Brilliance")
-                            .clicked()
-                        {
-                            *source = "Brilliance".to_string();
-                        }
-                        if ui.selectable_label(source == "RMS", "RMS Volume").clicked() {
-                            *source = "RMS".to_string();
-                        }
-                        if ui.selectable_label(source == "Peak", "Peak").clicked() {
-                            *source = "Peak".to_string();
-                        }
-                        if ui.selectable_label(source == "BPM", "BPM").clicked() {
-                            *source = "BPM".to_string();
-                        }
+                        if ui.selectable_label(source == "SubBass", "SubBass").clicked() { *source = "SubBass".to_string(); }
+                        if ui.selectable_label(source == "Bass", "Bass").clicked() { *source = "Bass".to_string(); }
+                        if ui.selectable_label(source == "LowMid", "LowMid").clicked() { *source = "LowMid".to_string(); }
+                        if ui.selectable_label(source == "Mid", "Mid").clicked() { *source = "Mid".to_string(); }
+                        if ui.selectable_label(source == "HighMid", "HighMid").clicked() { *source = "HighMid".to_string(); }
+                        if ui.selectable_label(source == "Presence", "Presence").clicked() { *source = "Presence".to_string(); }
+                        if ui.selectable_label(source == "Brilliance", "Brilliance").clicked() { *source = "Brilliance".to_string(); }
+                        if ui.selectable_label(source == "RMS", "RMS Volume").clicked() { *source = "RMS".to_string(); }
+                        if ui.selectable_label(source == "Peak", "Peak").clicked() { *source = "Peak".to_string(); }
+                        if ui.selectable_label(source == "BPM", "BPM").clicked() { *source = "BPM".to_string(); }
                     });
             });
-            ui.add(egui::Slider::new(&mut 0.1_f32, 0.0..=1.0).text("Smoothing"));
+            ui.add(
+                egui::Slider::new(&mut 0.1_f32, 0.0..=1.0)
+                    .text("Smoothing"),
+            );
         }
     }
 }

@@ -30,22 +30,22 @@ if ! cargo fmt --all; then
 fi
 ok "Formatierung OK"
 
-log "2/5: cargo clippy --workspace --all-targets -- -D warnings"
-if ! cargo clippy --workspace --all-targets -- -D warnings; then
+log "2/5: cargo clippy --all-targets --all-features -- -D warnings"
+if ! cargo clippy --all-targets --all-features -- -D warnings; then
   err "Clippy hat Fehler/Warnungen (behandelt als Fehler). Bitte beheben."
   exit 3
 fi
 ok "Clippy OK"
 
-log "3/5: cargo check --all-targets"
-if ! cargo check --all-targets; then
+log "3/5: cargo check --all-targets --all-features"
+if ! cargo check --all-targets --all-features; then
   err "cargo check fehlgeschlagen. Bitte Build-Probleme beheben."
   exit 4
 fi
 ok "Build-Check OK"
 
-log "4/5: cargo test --workspace"
-if ! cargo test --workspace; then
+log "4/5: cargo test --workspace --all-features"
+if ! cargo test --workspace --all-features; then
   err "Tests fehlgeschlagen. Bitte Tests zum Passen bringen."
   exit 5
 fi

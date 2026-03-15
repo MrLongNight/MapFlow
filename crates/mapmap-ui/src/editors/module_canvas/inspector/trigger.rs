@@ -1,9 +1,7 @@
-use super::super::state::ModuleCanvas;
 use crate::widgets::styled_slider;
 use egui::Ui;
-use mapmap_core::module::{
-    ModulePart, ModulePartId, TriggerMappingMode, TriggerTarget, TriggerType,
-};
+use mapmap_core::module::{ModulePart, ModulePartId, TriggerMappingMode, TriggerTarget, TriggerType};
+use super::super::state::ModuleCanvas;
 
 /// Renders the trigger configuration UI for mapping module inputs.
 pub fn render_trigger_config_ui(canvas: &mut ModuleCanvas, ui: &mut Ui, part: &mut ModulePart) {
@@ -203,39 +201,27 @@ pub fn render_trigger_config_ui(canvas: &mut ModuleCanvas, ui: &mut Ui, part: &m
 }
 
 /// Renders the configuration UI for a `ModulePartType::Trigger`.
-pub fn render_trigger_ui(
-    canvas: &mut ModuleCanvas,
-    ui: &mut Ui,
-    trigger: &mut TriggerType,
-    part_id: ModulePartId,
-) {
+pub fn render_trigger_ui(canvas: &mut ModuleCanvas, ui: &mut Ui, trigger: &mut TriggerType, part_id: ModulePartId) {
     ui.label("Trigger Type:");
     match trigger {
         TriggerType::Beat => {
             ui.label("🥁 Beat Sync");
             ui.label("Triggers on BPM beat.");
         }
-        TriggerType::AudioFFT {
-            band: _band,
-            threshold,
-            output_config,
-        } => {
+        TriggerType::AudioFFT { band: _band, threshold, output_config } => {
             ui.label("\u{1F50A} Audio FFT");
             ui.label("Outputs 9 frequency bands, plus volume and beat.");
-            ui.add(egui::Slider::new(threshold, 0.0..=1.0).text("Threshold"));
+            ui.add(
+                egui::Slider::new(threshold, 0.0..=1.0)
+                    .text("Threshold"),
+            );
 
             ui.separator();
             ui.label("\u{1F4E4} Output Configuration:");
             ui.checkbox(&mut output_config.beat_output, "🥁 Beat Detection");
             ui.checkbox(&mut output_config.bpm_output, "⏱️ BPM");
-            ui.checkbox(
-                &mut output_config.volume_outputs,
-                "\u{1F4CA} Volume (RMS, Peak)",
-            );
-            ui.checkbox(
-                &mut output_config.frequency_bands,
-                "\u{1F3B5} Frequency Bands (9)",
-            );
+            ui.checkbox(&mut output_config.volume_outputs, "\u{1F4CA} Volume (RMS, Peak)");
+            ui.checkbox(&mut output_config.frequency_bands, "\u{1F3B5} Frequency Bands (9)");
 
             ui.separator();
             ui.collapsing("\u{1F504} Invert Signals (NOT Logic)", |ui| {
@@ -277,7 +263,9 @@ pub fn render_trigger_ui(
                 }
             });
 
-            ui.label("Threshold is used for the node's visual glow effect.");
+            ui.label(
+                "Threshold is used for the node's visual glow effect.",
+            );
         }
         TriggerType::Random {
             min_interval_ms,
@@ -285,9 +273,18 @@ pub fn render_trigger_ui(
             probability,
         } => {
             ui.label("\u{1F3B2} Random");
-            ui.add(egui::Slider::new(min_interval_ms, 50..=5000).text("Min (ms)"));
-            ui.add(egui::Slider::new(max_interval_ms, 100..=10000).text("Max (ms)"));
-            ui.add(egui::Slider::new(probability, 0.0..=1.0).text("Probability"));
+            ui.add(
+                egui::Slider::new(min_interval_ms, 50..=5000)
+                    .text("Min (ms)"),
+            );
+            ui.add(
+                egui::Slider::new(max_interval_ms, 100..=10000)
+                    .text("Max (ms)"),
+            );
+            ui.add(
+                egui::Slider::new(probability, 0.0..=1.0)
+                    .text("Probability"),
+            );
         }
         TriggerType::Fixed {
             interval_ms,
@@ -295,14 +292,16 @@ pub fn render_trigger_ui(
             ..
         } => {
             ui.label("⏱️ Fixed Timer");
-            ui.add(egui::Slider::new(interval_ms, 16..=10000).text("Interval (ms)"));
-            ui.add(egui::Slider::new(offset_ms, 0..=5000).text("Offset (ms)"));
+            ui.add(
+                egui::Slider::new(interval_ms, 16..=10000)
+                    .text("Interval (ms)"),
+            );
+            ui.add(
+                egui::Slider::new(offset_ms, 0..=5000)
+                    .text("Offset (ms)"),
+            );
         }
-        TriggerType::Midi {
-            channel,
-            note,
-            device: _,
-        } => {
+        TriggerType::Midi { channel, note, device: _ } => {
             ui.label("\u{1F3B9} MIDI Trigger");
 
             // Available MIDI ports dropdown
@@ -310,17 +309,23 @@ pub fn render_trigger_ui(
                 ui.label("Device:");
                 #[cfg(feature = "midi")]
                 {
-                    if let Ok(ports) = mapmap_control::midi::MidiInputHandler::list_ports() {
+                    if let Ok(ports) =
+                        mapmap_control::midi::MidiInputHandler::list_ports()
+                    {
                         if ports.is_empty() {
                             ui.label(egui::RichText::new("No MIDI devices").weak().italics());
                         } else {
-                            egui::ComboBox::from_id_salt("midi_device")
-                                .selected_text(ports.first().cloned().unwrap_or_default())
-                                .show_ui(ui, |ui| {
-                                    for port in &ports {
-                                        let _ = ui.selectable_label(false, port);
-                                    }
-                                });
+                            egui::ComboBox::from_id_salt(
+                                "midi_device",
+                            )
+                            .selected_text(
+                                ports.first().cloned().unwrap_or_default(),
+                            )
+                            .show_ui(ui, |ui| {
+                                for port in &ports {
+                                    let _ = ui.selectable_label(false, port);
+                                }
+                            });
                         }
                     } else {
                         ui.label("MIDI unavailable");
@@ -332,11 +337,17 @@ pub fn render_trigger_ui(
                 }
             });
 
-            ui.add(egui::Slider::new(channel, 1..=16).text("Channel"));
-            ui.add(egui::Slider::new(note, 0..=127).text("Note"));
+            ui.add(
+                egui::Slider::new(channel, 1..=16)
+                    .text("Channel"),
+            );
+            ui.add(
+                egui::Slider::new(note, 0..=127).text("Note"),
+            );
 
             // MIDI Learn button
-            let is_learning = canvas.midi_learn_part_id == Some(part_id);
+            let is_learning =
+                canvas.midi_learn_part_id == Some(part_id);
             let learn_text = if is_learning {
                 "â ³ Waiting for MIDI..."
             } else {
@@ -357,7 +368,10 @@ pub fn render_trigger_ui(
             ui.label("\u{1F4E1} OSC Trigger");
             ui.horizontal(|ui| {
                 ui.label("Address:");
-                ui.add(egui::TextEdit::singleline(address).desired_width(150.0));
+                ui.add(
+                    egui::TextEdit::singleline(address)
+                        .desired_width(150.0),
+                );
             });
             ui.label("Format: /path/to/trigger");
             ui.label("Default port: 8000");

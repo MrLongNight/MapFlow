@@ -1,11 +1,11 @@
-use super::super::state::ModuleCanvas;
-use super::super::types::MediaPlaybackCommand;
-use super::common::{render_common_controls, render_timeline, render_transport_controls};
 use crate::theme::colors;
 use crate::widgets::styled_slider;
 use crate::UIAction;
 use egui::{Color32, Ui, Vec2};
 use mapmap_core::module::{BevyCameraMode, ModuleId, ModulePartId, SourceType};
+use super::super::state::ModuleCanvas;
+use super::common::{render_common_controls, render_transport_controls, render_timeline};
+use super::super::types::MediaPlaybackCommand;
 
 /// Renders the configuration UI for a `ModulePartType::Source`.
 pub fn render_source_ui(
@@ -45,53 +45,13 @@ pub fn render_source_ui(
             .selected_text(current_mode)
             .show_ui(ui, |ui| {
                 ui.label("--- File Based ---");
-                if ui
-                    .selectable_label(
-                        matches!(source, SourceType::MediaFile { .. }),
-                        "\u{1F4F9} Media File",
-                    )
-                    .clicked()
-                {
-                    next_type = Some("MediaFile");
-                }
-                if ui
-                    .selectable_label(
-                        matches!(source, SourceType::VideoUni { .. }),
-                        "\u{1F4F9} Video (Uni)",
-                    )
-                    .clicked()
-                {
-                    next_type = Some("VideoUni");
-                }
-                if ui
-                    .selectable_label(
-                        matches!(source, SourceType::ImageUni { .. }),
-                        "\u{1F5BC} Image (Uni)",
-                    )
-                    .clicked()
-                {
-                    next_type = Some("ImageUni");
-                }
+                if ui.selectable_label(matches!(source, SourceType::MediaFile { .. }), "\u{1F4F9} Media File").clicked() { next_type = Some("MediaFile"); }
+                if ui.selectable_label(matches!(source, SourceType::VideoUni { .. }), "\u{1F4F9} Video (Uni)").clicked() { next_type = Some("VideoUni"); }
+                if ui.selectable_label(matches!(source, SourceType::ImageUni { .. }), "\u{1F5BC} Image (Uni)").clicked() { next_type = Some("ImageUni"); }
 
                 ui.label("--- Shared ---");
-                if ui
-                    .selectable_label(
-                        matches!(source, SourceType::VideoMulti { .. }),
-                        "\u{1F517} Video (Multi)",
-                    )
-                    .clicked()
-                {
-                    next_type = Some("VideoMulti");
-                }
-                if ui
-                    .selectable_label(
-                        matches!(source, SourceType::ImageMulti { .. }),
-                        "\u{1F517} Image (Multi)",
-                    )
-                    .clicked()
-                {
-                    next_type = Some("ImageMulti");
-                }
+                if ui.selectable_label(matches!(source, SourceType::VideoMulti { .. }), "\u{1F517} Video (Multi)").clicked() { next_type = Some("VideoMulti"); }
+                if ui.selectable_label(matches!(source, SourceType::ImageMulti { .. }), "\u{1F517} Image (Multi)").clicked() { next_type = Some("ImageMulti"); }
             });
 
         if let Some(t) = next_type {
@@ -108,90 +68,33 @@ pub fn render_source_ui(
             };
 
             *source = match t {
-                "MediaFile" => {
-                    SourceType::new_media_file(if path.is_empty() { shared_id } else { path })
-                }
+                "MediaFile" => SourceType::new_media_file(if path.is_empty() { shared_id } else { path }),
                 "VideoUni" => SourceType::VideoUni {
                     path: if path.is_empty() { shared_id } else { path },
-                    speed: 1.0,
-                    loop_enabled: true,
-                    start_time: 0.0,
-                    end_time: 0.0,
-                    opacity: 1.0,
-                    blend_mode: None,
-                    brightness: 0.0,
-                    contrast: 1.0,
-                    saturation: 1.0,
-                    hue_shift: 0.0,
-                    scale_x: 1.0,
-                    scale_y: 1.0,
-                    rotation: 0.0,
-                    offset_x: 0.0,
-                    offset_y: 0.0,
-                    target_width: None,
-                    target_height: None,
-                    target_fps: None,
-                    flip_horizontal: false,
-                    flip_vertical: false,
-                    reverse_playback: false,
+                    speed: 1.0, loop_enabled: true, start_time: 0.0, end_time: 0.0,
+                    opacity: 1.0, blend_mode: None, brightness: 0.0, contrast: 1.0, saturation: 1.0, hue_shift: 0.0,
+                    scale_x: 1.0, scale_y: 1.0, rotation: 0.0, offset_x: 0.0, offset_y: 0.0,
+                    target_width: None, target_height: None, target_fps: None,
+                    flip_horizontal: false, flip_vertical: false, reverse_playback: false,
                 },
                 "ImageUni" => SourceType::ImageUni {
                     path: if path.is_empty() { shared_id } else { path },
-                    opacity: 1.0,
-                    blend_mode: None,
-                    brightness: 0.0,
-                    contrast: 1.0,
-                    saturation: 1.0,
-                    hue_shift: 0.0,
-                    scale_x: 1.0,
-                    scale_y: 1.0,
-                    rotation: 0.0,
-                    offset_x: 0.0,
-                    offset_y: 0.0,
-                    target_width: None,
-                    target_height: None,
-                    flip_horizontal: false,
-                    flip_vertical: false,
+                    opacity: 1.0, blend_mode: None, brightness: 0.0, contrast: 1.0, saturation: 1.0, hue_shift: 0.0,
+                    scale_x: 1.0, scale_y: 1.0, rotation: 0.0, offset_x: 0.0, offset_y: 0.0,
+                    target_width: None, target_height: None,
+                    flip_horizontal: false, flip_vertical: false,
                 },
                 "VideoMulti" => SourceType::VideoMulti {
-                    shared_id: if shared_id.is_empty() {
-                        path
-                    } else {
-                        shared_id
-                    },
-                    opacity: 1.0,
-                    blend_mode: None,
-                    brightness: 0.0,
-                    contrast: 1.0,
-                    saturation: 1.0,
-                    hue_shift: 0.0,
-                    scale_x: 1.0,
-                    scale_y: 1.0,
-                    rotation: 0.0,
-                    offset_x: 0.0,
-                    offset_y: 0.0,
-                    flip_horizontal: false,
-                    flip_vertical: false,
+                    shared_id: if shared_id.is_empty() { path } else { shared_id },
+                    opacity: 1.0, blend_mode: None, brightness: 0.0, contrast: 1.0, saturation: 1.0, hue_shift: 0.0,
+                    scale_x: 1.0, scale_y: 1.0, rotation: 0.0, offset_x: 0.0, offset_y: 0.0,
+                    flip_horizontal: false, flip_vertical: false,
                 },
                 "ImageMulti" => SourceType::ImageMulti {
-                    shared_id: if shared_id.is_empty() {
-                        path
-                    } else {
-                        shared_id
-                    },
-                    opacity: 1.0,
-                    blend_mode: None,
-                    brightness: 0.0,
-                    contrast: 1.0,
-                    saturation: 1.0,
-                    hue_shift: 0.0,
-                    scale_x: 1.0,
-                    scale_y: 1.0,
-                    rotation: 0.0,
-                    offset_x: 0.0,
-                    offset_y: 0.0,
-                    flip_horizontal: false,
-                    flip_vertical: false,
+                    shared_id: if shared_id.is_empty() { path } else { shared_id },
+                    opacity: 1.0, blend_mode: None, brightness: 0.0, contrast: 1.0, saturation: 1.0, hue_shift: 0.0,
+                    scale_x: 1.0, scale_y: 1.0, rotation: 0.0, offset_x: 0.0, offset_y: 0.0,
+                    flip_horizontal: false, flip_vertical: false,
                 },
                 _ => source.clone(),
             };
@@ -202,48 +105,13 @@ pub fn render_source_ui(
 
     match source {
         SourceType::MediaFile {
-            path,
-            speed,
-            loop_enabled,
-            start_time,
-            end_time,
-            opacity,
-            blend_mode,
-            brightness,
-            contrast,
-            saturation,
-            hue_shift,
-            scale_x,
-            scale_y,
-            rotation,
-            offset_x,
-            offset_y,
-            flip_horizontal,
-            flip_vertical,
-            reverse_playback,
-            ..
-        }
-        | SourceType::VideoUni {
-            path,
-            speed,
-            loop_enabled,
-            start_time,
-            end_time,
-            opacity,
-            blend_mode,
-            brightness,
-            contrast,
-            saturation,
-            hue_shift,
-            scale_x,
-            scale_y,
-            rotation,
-            offset_x,
-            offset_y,
-            flip_horizontal,
-            flip_vertical,
-            reverse_playback,
-            ..
+            path, speed, loop_enabled, start_time, end_time, opacity, blend_mode,
+            brightness, contrast, saturation, hue_shift, scale_x, scale_y, rotation,
+            offset_x, offset_y, flip_horizontal, flip_vertical, reverse_playback, ..
+        } | SourceType::VideoUni {
+            path, speed, loop_enabled, start_time, end_time, opacity, blend_mode,
+            brightness, contrast, saturation, hue_shift, scale_x, scale_y, rotation,
+            offset_x, offset_y, flip_horizontal, flip_vertical, reverse_playback, ..
         } => {
             // Media Picker (common for file-based video)
             if path.is_empty() {
@@ -260,27 +128,15 @@ pub fn render_source_ui(
                     ui.horizontal(|ui| {
                         ui.label("Path:");
                         ui.add(egui::TextEdit::singleline(path).desired_width(160.0));
-                        if ui
-                            .button("\u{1F4C2}")
-                            .on_hover_text("Select Media File")
-                            .clicked()
-                        {
-                            actions.push(UIAction::PickMediaFile(
-                                module_id,
-                                part_id,
-                                "".to_string(),
-                            ));
+                        if ui.button("\u{1F4C2}").on_hover_text("Select Media File").clicked() {
+                            actions.push(UIAction::PickMediaFile(module_id, part_id, "".to_string()));
                         }
                     });
                 });
             }
 
             // Playback Info
-            let player_info = canvas
-                .player_info
-                .get(&part_id)
-                .cloned()
-                .unwrap_or_default();
+            let player_info = canvas.player_info.get(&part_id).cloned().unwrap_or_default();
             let video_duration = player_info.duration.max(1.0) as f32;
             let current_pos = player_info.current_time as f32;
             let is_playing = player_info.is_playing;
@@ -298,34 +154,16 @@ pub fn render_source_ui(
                 ui.label(
                     egui::RichText::new(format!(
                         "{:02}:{:02}.{:02} / {:02}:{:02}.{:02}",
-                        current_min,
-                        current_sec,
-                        current_frac,
-                        duration_min,
-                        duration_sec,
-                        duration_frac
+                        current_min, current_sec, current_frac,
+                        duration_min, duration_sec, duration_frac
                     ))
-                    .monospace()
-                    .size(22.0)
-                    .strong()
-                    .color(if is_playing {
-                        Color32::from_rgb(100, 255, 150)
-                    } else {
-                        Color32::from_rgb(200, 200, 200)
-                    }),
+                    .monospace().size(22.0).strong()
+                    .color(if is_playing { Color32::from_rgb(100, 255, 150) } else { Color32::from_rgb(200, 200, 200) })
                 );
             });
             ui.add_space(10.0);
 
-            render_transport_controls(
-                canvas,
-                ui,
-                part_id,
-                is_playing,
-                current_pos,
-                loop_enabled,
-                reverse_playback,
-            );
+            render_transport_controls(canvas, ui, part_id, is_playing, current_pos, loop_enabled, reverse_playback);
 
             ui.add_space(10.0);
 
@@ -336,15 +174,7 @@ pub fn render_source_ui(
             }
             ui.add_space(4.0);
 
-            render_timeline(
-                canvas,
-                ui,
-                part_id,
-                video_duration,
-                current_pos,
-                start_time,
-                end_time,
-            );
+            render_timeline(canvas, ui, part_id, video_duration, current_pos, start_time, end_time);
 
             // Safe Reset Clip (Mary StyleUX)
             ui.vertical_centered(|ui| {
@@ -365,10 +195,7 @@ pub fn render_source_ui(
                 let speed_slider = styled_slider(ui, speed, 0.1..=4.0, 1.0);
                 ui.label("x");
                 if speed_slider.changed() {
-                    actions.push(UIAction::MediaCommand(
-                        part_id,
-                        MediaPlaybackCommand::SetSpeed(*speed),
-                    ));
+                    actions.push(UIAction::MediaCommand(part_id, MediaPlaybackCommand::SetSpeed(*speed)));
                 }
             });
             ui.separator();
@@ -377,10 +204,7 @@ pub fn render_source_ui(
             ui.collapsing("\u{1F3AC} Video Options", |ui| {
                 let mut reverse = *reverse_playback;
                 if ui.checkbox(&mut reverse, "⏪ Reverse Playback").changed() {
-                    actions.push(crate::UIAction::MediaCommand(
-                        part_id,
-                        MediaPlaybackCommand::SetReverse(reverse),
-                    ));
+                    actions.push(crate::UIAction::MediaCommand(part_id, MediaPlaybackCommand::SetReverse(reverse)));
                 }
 
                 ui.separator();
@@ -392,63 +216,31 @@ pub fn render_source_ui(
                     egui::Slider::new(&mut seek_pos, 0.0..=100.0)
                         .text("Position")
                         .suffix("%")
-                        .show_value(true),
+                        .show_value(true)
                 );
                 if seek_slider.drag_stopped() && seek_slider.changed() {
                     // Convert percentage to duration-based seek
                     // This will need actual video duration from player
-                    canvas.pending_playback_commands.push((
-                        part_id,
-                        MediaPlaybackCommand::Seek(seek_pos / 100.0 * 300.0),
-                    ));
+                    canvas.pending_playback_commands.push((part_id, MediaPlaybackCommand::Seek(seek_pos / 100.0 * 300.0)));
                 }
             });
             ui.separator();
 
             render_common_controls(
-                ui,
-                opacity,
-                blend_mode,
-                brightness,
-                contrast,
-                saturation,
-                hue_shift,
-                scale_x,
-                scale_y,
-                rotation,
-                offset_x,
-                offset_y,
-                flip_horizontal,
-                flip_vertical,
+                ui, opacity, blend_mode, brightness, contrast, saturation, hue_shift,
+                scale_x, scale_y, rotation, offset_x, offset_y, flip_horizontal, flip_vertical
             );
         }
         SourceType::ImageUni {
-            path,
-            opacity,
-            blend_mode,
-            brightness,
-            contrast,
-            saturation,
-            hue_shift,
-            scale_x,
-            scale_y,
-            rotation,
-            offset_x,
-            offset_y,
-            flip_horizontal,
-            flip_vertical,
-            ..
+            path, opacity, blend_mode, brightness, contrast, saturation, hue_shift,
+            scale_x, scale_y, rotation, offset_x, offset_y, flip_horizontal, flip_vertical, ..
         } => {
             // Image Picker
             if path.is_empty() {
                 ui.vertical_centered(|ui| {
                     ui.add_space(10.0);
                     if ui.button("\u{1F4C2} Select Image File").clicked() {
-                        actions.push(crate::UIAction::PickMediaFile(
-                            module_id,
-                            part_id,
-                            "".to_string(),
-                        ));
+                        actions.push(crate::UIAction::PickMediaFile(module_id, part_id, "".to_string()));
                     }
                     ui.label(egui::RichText::new("No image loaded").weak().italics());
                     ui.add_space(10.0);
@@ -458,16 +250,8 @@ pub fn render_source_ui(
                     ui.horizontal(|ui| {
                         ui.label("Path:");
                         ui.add(egui::TextEdit::singleline(path).desired_width(160.0));
-                        if ui
-                            .button("\u{1F4C2}")
-                            .on_hover_text("Select Image File")
-                            .clicked()
-                        {
-                            actions.push(crate::UIAction::PickMediaFile(
-                                module_id,
-                                part_id,
-                                "".to_string(),
-                            ));
+                        if ui.button("\u{1F4C2}").on_hover_text("Select Image File").clicked() {
+                            actions.push(crate::UIAction::PickMediaFile(module_id, part_id, "".to_string()));
                         }
                     });
                 });
@@ -475,47 +259,19 @@ pub fn render_source_ui(
 
             ui.separator();
             render_common_controls(
-                ui,
-                opacity,
-                blend_mode,
-                brightness,
-                contrast,
-                saturation,
-                hue_shift,
-                scale_x,
-                scale_y,
-                rotation,
-                offset_x,
-                offset_y,
-                flip_horizontal,
-                flip_vertical,
+                ui, opacity, blend_mode, brightness, contrast, saturation, hue_shift,
+                scale_x, scale_y, rotation, offset_x, offset_y, flip_horizontal, flip_vertical
             );
+
         }
         SourceType::VideoMulti {
-            shared_id,
-            opacity,
-            blend_mode,
-            brightness,
-            contrast,
-            saturation,
-            hue_shift,
-            scale_x,
-            scale_y,
-            rotation,
-            offset_x,
-            offset_y,
-            flip_horizontal,
-            flip_vertical,
-            ..
+            shared_id, opacity, blend_mode, brightness, contrast, saturation, hue_shift,
+            scale_x, scale_y, rotation, offset_x, offset_y, flip_horizontal, flip_vertical, ..
         } => {
             ui.label("\u{1F517} Shared Video Source");
             ui.horizontal(|ui| {
                 ui.label("Shared ID:");
-                ui.add(
-                    egui::TextEdit::singleline(shared_id)
-                        .hint_text("Enter ID...")
-                        .desired_width(140.0),
-                );
+                ui.add(egui::TextEdit::singleline(shared_id).hint_text("Enter ID...").desired_width(140.0));
 
                 egui::ComboBox::from_id_salt("shared_media_video")
                     .selected_text("Select Existing")
@@ -527,55 +283,22 @@ pub fn render_source_ui(
                         }
                     });
             });
-            ui.label(
-                egui::RichText::new("Use the same ID to sync multiple nodes.")
-                    .weak()
-                    .small(),
-            );
+            ui.label(egui::RichText::new("Use the same ID to sync multiple nodes.").weak().small());
 
             ui.separator();
             render_common_controls(
-                ui,
-                opacity,
-                blend_mode,
-                brightness,
-                contrast,
-                saturation,
-                hue_shift,
-                scale_x,
-                scale_y,
-                rotation,
-                offset_x,
-                offset_y,
-                flip_horizontal,
-                flip_vertical,
+                ui, opacity, blend_mode, brightness, contrast, saturation, hue_shift,
+                scale_x, scale_y, rotation, offset_x, offset_y, flip_horizontal, flip_vertical
             );
         }
         SourceType::ImageMulti {
-            shared_id,
-            opacity,
-            blend_mode,
-            brightness,
-            contrast,
-            saturation,
-            hue_shift,
-            scale_x,
-            scale_y,
-            rotation,
-            offset_x,
-            offset_y,
-            flip_horizontal,
-            flip_vertical,
-            ..
+            shared_id, opacity, blend_mode, brightness, contrast, saturation, hue_shift,
+            scale_x, scale_y, rotation, offset_x, offset_y, flip_horizontal, flip_vertical, ..
         } => {
             ui.label("\u{1F517} Shared Image Source");
             ui.horizontal(|ui| {
                 ui.label("Shared ID:");
-                ui.add(
-                    egui::TextEdit::singleline(shared_id)
-                        .hint_text("Enter ID...")
-                        .desired_width(140.0),
-                );
+                ui.add(egui::TextEdit::singleline(shared_id).hint_text("Enter ID...").desired_width(140.0));
 
                 egui::ComboBox::from_id_salt("shared_media_image")
                     .selected_text("Select Existing")
@@ -587,28 +310,12 @@ pub fn render_source_ui(
                         }
                     });
             });
-            ui.label(
-                egui::RichText::new("Use the same ID to sync multiple nodes.")
-                    .weak()
-                    .small(),
-            );
+            ui.label(egui::RichText::new("Use the same ID to sync multiple nodes.").weak().small());
 
             ui.separator();
             render_common_controls(
-                ui,
-                opacity,
-                blend_mode,
-                brightness,
-                contrast,
-                saturation,
-                hue_shift,
-                scale_x,
-                scale_y,
-                rotation,
-                offset_x,
-                offset_y,
-                flip_horizontal,
-                flip_vertical,
+                ui, opacity, blend_mode, brightness, contrast, saturation, hue_shift,
+                scale_x, scale_y, rotation, offset_x, offset_y, flip_horizontal, flip_vertical
             );
         }
         SourceType::Shader { name, params: _ } => {
@@ -646,37 +353,42 @@ pub fn render_source_ui(
                     ui.add_space(10.0);
                     if ui
                         .add(
-                            egui::Button::new("🔍 Discover Sources")
-                                .min_size(egui::vec2(150.0, 30.0)),
+                            egui::Button::new(
+                                "🔍 Discover Sources",
+                            )
+                            .min_size(egui::vec2(150.0, 30.0)),
                         )
                         .clicked()
                     {
                         // Start async discovery
-                        let (tx, rx) = std::sync::mpsc::channel();
+                        let (tx, rx) =
+                            std::sync::mpsc::channel();
                         canvas.ndi_discovery_rx = Some(rx);
                         mapmap_io::ndi::NdiReceiver::discover_sources_async(tx);
                         canvas.ndi_sources.clear();
                         ui.ctx().request_repaint();
                     }
-                    ui.label(
-                        egui::RichText::new("No NDI source selected")
-                            .weak()
-                            .italics(),
-                    );
+                    ui.label(egui::RichText::new("No NDI source selected").weak().italics());
                     ui.add_space(10.0);
                 });
             } else {
                 // Display current source
                 let display_name = source_name
                     .clone()
-                    .unwrap_or_else(|| "Not Connected".to_string());
+                    .unwrap_or_else(|| {
+                        "Not Connected".to_string()
+                    });
                 ui.label(format!("Current: {}", display_name));
 
                 // Discover button
                 ui.horizontal(|ui| {
-                    if ui.button("🔍 Discover Sources").clicked() {
+                    if ui
+                        .button("🔍 Discover Sources")
+                        .clicked()
+                    {
                         // Start async discovery
-                        let (tx, rx) = std::sync::mpsc::channel();
+                        let (tx, rx) =
+                            std::sync::mpsc::channel();
                         canvas.ndi_discovery_rx = Some(rx);
                         mapmap_io::ndi::NdiReceiver::discover_sources_async(tx);
                         canvas.ndi_sources.clear();
@@ -703,36 +415,55 @@ pub fn render_source_ui(
                     ui.separator();
                     ui.label("Available Sources:");
 
-                    egui::ComboBox::from_id_salt("ndi_source_select")
-                        .selected_text(display_name.clone())
-                        .show_ui(ui, |ui| {
-                            // Option to disconnect
+                    egui::ComboBox::from_id_salt(
+                        "ndi_source_select",
+                    )
+                    .selected_text(display_name.clone())
+                    .show_ui(ui, |ui| {
+                        // Option to disconnect
+                        if ui
+                            .selectable_label(
+                                source_name.is_none(),
+                                "❌ None (Disconnect)",
+                            )
+                            .clicked()
+                        {
+                            *source_name = None;
+                            actions.push(UIAction::DisconnectNdiSource { part_id });
+                        }
+
+                        // Available sources
+                        for ndi_source in &canvas.ndi_sources {
+                            let selected = source_name.as_ref()
+                                == Some(&ndi_source.name);
                             if ui
-                                .selectable_label(source_name.is_none(), "❌ None (Disconnect)")
+                                .selectable_label(
+                                    selected,
+                                    &ndi_source.name,
+                                )
                                 .clicked()
                             {
-                                *source_name = None;
-                                actions.push(UIAction::DisconnectNdiSource { part_id });
+                                *source_name = Some(
+                                    ndi_source.name.clone(),
+                                );
+
+                                // Trigger connection action
+                                actions.push(UIAction::ConnectNdiSource {
+                                    part_id,
+                                    source: ndi_source.clone(),
+                                });
                             }
+                        }
+                    });
 
-                            // Available sources
-                            for ndi_source in &canvas.ndi_sources {
-                                let selected = source_name.as_ref() == Some(&ndi_source.name);
-                                if ui.selectable_label(selected, &ndi_source.name).clicked() {
-                                    *source_name = Some(ndi_source.name.clone());
-
-                                    // Trigger connection action
-                                    actions.push(UIAction::ConnectNdiSource {
-                                        part_id,
-                                        source: ndi_source.clone(),
-                                    });
-                                }
-                            }
-                        });
-
-                    ui.label(format!("Found {} source(s)", canvas.ndi_sources.len()));
+                    ui.label(format!(
+                        "Found {} source(s)",
+                        canvas.ndi_sources.len()
+                    ));
                 } else if canvas.ndi_discovery_rx.is_none() {
-                    ui.label("Click 'Discover' to find NDI sources");
+                    ui.label(
+                        "Click 'Discover' to find NDI sources",
+                    );
                 }
             }
         }
@@ -778,10 +509,26 @@ pub fn render_source_ui(
                 egui::ComboBox::from_id_salt("text_align")
                     .selected_text(alignment.as_str())
                     .show_ui(ui, |ui| {
-                        ui.selectable_value(alignment, "Left".to_string(), "Left");
-                        ui.selectable_value(alignment, "Center".to_string(), "Center");
-                        ui.selectable_value(alignment, "Right".to_string(), "Right");
-                        ui.selectable_value(alignment, "Justify".to_string(), "Justify");
+                        ui.selectable_value(
+                            alignment,
+                            "Left".to_string(),
+                            "Left",
+                        );
+                        ui.selectable_value(
+                            alignment,
+                            "Center".to_string(),
+                            "Center",
+                        );
+                        ui.selectable_value(
+                            alignment,
+                            "Right".to_string(),
+                            "Right",
+                        );
+                        ui.selectable_value(
+                            alignment,
+                            "Justify".to_string(),
+                            "Justify",
+                        );
                     });
             });
 
@@ -830,13 +577,19 @@ pub fn render_source_ui(
                 })
                 .show_ui(ui, |ui| {
                     if ui
-                        .selectable_label(matches!(mode, BevyCameraMode::Orbit { .. }), "Orbit")
+                        .selectable_label(
+                            matches!(mode, BevyCameraMode::Orbit { .. }),
+                            "Orbit",
+                        )
                         .clicked()
                     {
                         *mode = BevyCameraMode::default(); // Default is Orbit
                     }
                     if ui
-                        .selectable_label(matches!(mode, BevyCameraMode::Fly { .. }), "Fly")
+                        .selectable_label(
+                            matches!(mode, BevyCameraMode::Fly { .. }),
+                            "Fly",
+                        )
                         .clicked()
                     {
                         *mode = BevyCameraMode::Fly {
@@ -845,7 +598,10 @@ pub fn render_source_ui(
                         };
                     }
                     if ui
-                        .selectable_label(matches!(mode, BevyCameraMode::Static { .. }), "Static")
+                        .selectable_label(
+                            matches!(mode, BevyCameraMode::Static { .. }),
+                            "Static",
+                        )
                         .clicked()
                     {
                         *mode = BevyCameraMode::Static {
@@ -887,39 +643,15 @@ pub fn render_source_ui(
                     ui.label("Static Settings");
                     ui.label("Position:");
                     ui.horizontal(|ui| {
-                        ui.add(
-                            egui::DragValue::new(&mut position[0])
-                                .prefix("X:")
-                                .speed(0.1),
-                        );
-                        ui.add(
-                            egui::DragValue::new(&mut position[1])
-                                .prefix("Y:")
-                                .speed(0.1),
-                        );
-                        ui.add(
-                            egui::DragValue::new(&mut position[2])
-                                .prefix("Z:")
-                                .speed(0.1),
-                        );
+                        ui.add(egui::DragValue::new(&mut position[0]).prefix("X:").speed(0.1));
+                        ui.add(egui::DragValue::new(&mut position[1]).prefix("Y:").speed(0.1));
+                        ui.add(egui::DragValue::new(&mut position[2]).prefix("Z:").speed(0.1));
                     });
                     ui.label("Look At:");
                     ui.horizontal(|ui| {
-                        ui.add(
-                            egui::DragValue::new(&mut look_at[0])
-                                .prefix("X:")
-                                .speed(0.1),
-                        );
-                        ui.add(
-                            egui::DragValue::new(&mut look_at[1])
-                                .prefix("Y:")
-                                .speed(0.1),
-                        );
-                        ui.add(
-                            egui::DragValue::new(&mut look_at[2])
-                                .prefix("Z:")
-                                .speed(0.1),
-                        );
+                        ui.add(egui::DragValue::new(&mut look_at[0]).prefix("X:").speed(0.1));
+                        ui.add(egui::DragValue::new(&mut look_at[1]).prefix("Y:").speed(0.1));
+                        ui.add(egui::DragValue::new(&mut look_at[2]).prefix("Z:").speed(0.1));
                     });
                 }
             }
@@ -943,16 +675,8 @@ pub fn render_source_ui(
 
             ui.label("Sun Position (Azimuth, Elevation):");
             ui.horizontal(|ui| {
-                ui.add(
-                    egui::DragValue::new(&mut sun_position.0)
-                        .prefix("Az:")
-                        .speed(0.1),
-                );
-                ui.add(
-                    egui::DragValue::new(&mut sun_position.1)
-                        .prefix("El:")
-                        .speed(0.1),
-                );
+                ui.add(egui::DragValue::new(&mut sun_position.0).prefix("Az:").speed(0.1));
+                ui.add(egui::DragValue::new(&mut sun_position.1).prefix("El:").speed(0.1));
             });
         }
         SourceType::BevyHexGrid {
@@ -974,40 +698,16 @@ pub fn render_source_ui(
 
             ui.label("Position:");
             ui.horizontal(|ui| {
-                ui.add(
-                    egui::DragValue::new(&mut position[0])
-                        .prefix("X:")
-                        .speed(0.1),
-                );
-                ui.add(
-                    egui::DragValue::new(&mut position[1])
-                        .prefix("Y:")
-                        .speed(0.1),
-                );
-                ui.add(
-                    egui::DragValue::new(&mut position[2])
-                        .prefix("Z:")
-                        .speed(0.1),
-                );
+                ui.add(egui::DragValue::new(&mut position[0]).prefix("X:").speed(0.1));
+                ui.add(egui::DragValue::new(&mut position[1]).prefix("Y:").speed(0.1));
+                ui.add(egui::DragValue::new(&mut position[2]).prefix("Z:").speed(0.1));
             });
 
             ui.label("Rotation:");
             ui.horizontal(|ui| {
-                ui.add(
-                    egui::DragValue::new(&mut rotation[0])
-                        .prefix("X:")
-                        .speed(1.0),
-                );
-                ui.add(
-                    egui::DragValue::new(&mut rotation[1])
-                        .prefix("Y:")
-                        .speed(1.0),
-                );
-                ui.add(
-                    egui::DragValue::new(&mut rotation[2])
-                        .prefix("Z:")
-                        .speed(1.0),
-                );
+                ui.add(egui::DragValue::new(&mut rotation[0]).prefix("X:").speed(1.0));
+                ui.add(egui::DragValue::new(&mut rotation[1]).prefix("Y:").speed(1.0));
+                ui.add(egui::DragValue::new(&mut rotation[2]).prefix("Z:").speed(1.0));
             });
 
             ui.add(egui::DragValue::new(scale).prefix("Scale:").speed(0.1));
@@ -1025,11 +725,7 @@ pub fn render_source_ui(
             ui.separator();
 
             ui.add(egui::DragValue::new(rate).prefix("Rate:").speed(1.0));
-            ui.add(
-                egui::DragValue::new(lifetime)
-                    .prefix("Lifetime:")
-                    .speed(0.1),
-            );
+            ui.add(egui::DragValue::new(lifetime).prefix("Lifetime:").speed(0.1));
             ui.add(egui::DragValue::new(speed).prefix("Speed:").speed(0.1));
 
             ui.horizontal(|ui| {
@@ -1043,40 +739,16 @@ pub fn render_source_ui(
 
             ui.label("Position:");
             ui.horizontal(|ui| {
-                ui.add(
-                    egui::DragValue::new(&mut position[0])
-                        .prefix("X:")
-                        .speed(0.1),
-                );
-                ui.add(
-                    egui::DragValue::new(&mut position[1])
-                        .prefix("Y:")
-                        .speed(0.1),
-                );
-                ui.add(
-                    egui::DragValue::new(&mut position[2])
-                        .prefix("Z:")
-                        .speed(0.1),
-                );
+                ui.add(egui::DragValue::new(&mut position[0]).prefix("X:").speed(0.1));
+                ui.add(egui::DragValue::new(&mut position[1]).prefix("Y:").speed(0.1));
+                ui.add(egui::DragValue::new(&mut position[2]).prefix("Z:").speed(0.1));
             });
 
             ui.label("Rotation:");
             ui.horizontal(|ui| {
-                ui.add(
-                    egui::DragValue::new(&mut rotation[0])
-                        .prefix("X:")
-                        .speed(1.0),
-                );
-                ui.add(
-                    egui::DragValue::new(&mut rotation[1])
-                        .prefix("Y:")
-                        .speed(1.0),
-                );
-                ui.add(
-                    egui::DragValue::new(&mut rotation[2])
-                        .prefix("Z:")
-                        .speed(1.0),
-                );
+                ui.add(egui::DragValue::new(&mut rotation[0]).prefix("X:").speed(1.0));
+                ui.add(egui::DragValue::new(&mut rotation[1]).prefix("Y:").speed(1.0));
+                ui.add(egui::DragValue::new(&mut rotation[2]).prefix("Z:").speed(1.0));
             });
         }
         SourceType::Bevy3DShape {
@@ -1098,36 +770,12 @@ pub fn render_source_ui(
                 egui::ComboBox::from_id_salt("shape_type_select")
                     .selected_text(format!("{:?}", shape_type))
                     .show_ui(ui, |ui| {
-                        ui.selectable_value(
-                            shape_type,
-                            mapmap_core::module::BevyShapeType::Cube,
-                            "Cube",
-                        );
-                        ui.selectable_value(
-                            shape_type,
-                            mapmap_core::module::BevyShapeType::Sphere,
-                            "Sphere",
-                        );
-                        ui.selectable_value(
-                            shape_type,
-                            mapmap_core::module::BevyShapeType::Capsule,
-                            "Capsule",
-                        );
-                        ui.selectable_value(
-                            shape_type,
-                            mapmap_core::module::BevyShapeType::Torus,
-                            "Torus",
-                        );
-                        ui.selectable_value(
-                            shape_type,
-                            mapmap_core::module::BevyShapeType::Cylinder,
-                            "Cylinder",
-                        );
-                        ui.selectable_value(
-                            shape_type,
-                            mapmap_core::module::BevyShapeType::Plane,
-                            "Plane",
-                        );
+                        ui.selectable_value(shape_type, mapmap_core::module::BevyShapeType::Cube, "Cube");
+                        ui.selectable_value(shape_type, mapmap_core::module::BevyShapeType::Sphere, "Sphere");
+                        ui.selectable_value(shape_type, mapmap_core::module::BevyShapeType::Capsule, "Capsule");
+                        ui.selectable_value(shape_type, mapmap_core::module::BevyShapeType::Torus, "Torus");
+                        ui.selectable_value(shape_type, mapmap_core::module::BevyShapeType::Cylinder, "Cylinder");
+                        ui.selectable_value(shape_type, mapmap_core::module::BevyShapeType::Plane, "Plane");
                     });
             });
 
@@ -1143,62 +791,23 @@ pub fn render_source_ui(
             ui.collapsing("📐 Transform (3D)", |ui| {
                 ui.label("Position:");
                 ui.horizontal(|ui| {
-                    ui.add(
-                        egui::DragValue::new(&mut position[0])
-                            .speed(0.1)
-                            .prefix("X: "),
-                    );
-                    ui.add(
-                        egui::DragValue::new(&mut position[1])
-                            .speed(0.1)
-                            .prefix("Y: "),
-                    );
-                    ui.add(
-                        egui::DragValue::new(&mut position[2])
-                            .speed(0.1)
-                            .prefix("Z: "),
-                    );
+                    ui.add(egui::DragValue::new(&mut position[0]).speed(0.1).prefix("X: "));
+                    ui.add(egui::DragValue::new(&mut position[1]).speed(0.1).prefix("Y: "));
+                    ui.add(egui::DragValue::new(&mut position[2]).speed(0.1).prefix("Z: "));
                 });
 
                 ui.label("Rotation:");
                 ui.horizontal(|ui| {
-                    ui.add(
-                        egui::DragValue::new(&mut rotation[0])
-                            .speed(1.0)
-                            .prefix("X: ")
-                            .suffix("°"),
-                    );
-                    ui.add(
-                        egui::DragValue::new(&mut rotation[1])
-                            .speed(1.0)
-                            .prefix("Y: ")
-                            .suffix("°"),
-                    );
-                    ui.add(
-                        egui::DragValue::new(&mut rotation[2])
-                            .speed(1.0)
-                            .prefix("Z: ")
-                            .suffix("°"),
-                    );
+                    ui.add(egui::DragValue::new(&mut rotation[0]).speed(1.0).prefix("X: ").suffix("°"));
+                    ui.add(egui::DragValue::new(&mut rotation[1]).speed(1.0).prefix("Y: ").suffix("°"));
+                    ui.add(egui::DragValue::new(&mut rotation[2]).speed(1.0).prefix("Z: ").suffix("°"));
                 });
 
                 ui.label("Scale:");
                 ui.horizontal(|ui| {
-                    ui.add(
-                        egui::DragValue::new(&mut scale[0])
-                            .speed(0.01)
-                            .prefix("X: "),
-                    );
-                    ui.add(
-                        egui::DragValue::new(&mut scale[1])
-                            .speed(0.01)
-                            .prefix("Y: "),
-                    );
-                    ui.add(
-                        egui::DragValue::new(&mut scale[2])
-                            .speed(0.01)
-                            .prefix("Z: "),
-                    );
+                    ui.add(egui::DragValue::new(&mut scale[0]).speed(0.01).prefix("X: "));
+                    ui.add(egui::DragValue::new(&mut scale[1]).speed(0.01).prefix("Y: "));
+                    ui.add(egui::DragValue::new(&mut scale[2]).speed(0.01).prefix("Z: "));
                 });
             });
 
@@ -1220,11 +829,7 @@ pub fn render_source_ui(
         }
         SourceType::Bevy => {
             ui.label("\u{1F3AE} Bevy Scene");
-            ui.label(
-                egui::RichText::new("Rendering Internal 3D Scene")
-                    .weak()
-                    .italics(),
-            );
+            ui.label(egui::RichText::new("Rendering Internal 3D Scene").weak().italics());
             ui.small("The scene is rendered internally and available as 'bevy_output'");
         }
     }
