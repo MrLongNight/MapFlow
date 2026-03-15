@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod trackline_tests {
-    use mapmap_core::animation::{AnimationClip, AnimationPlayer, Marker, PlaybackMode};
+    use mapmap_core::animation::{AnimationClip, AnimationPlayer, Marker};
 
     #[test]
     fn test_trackline_mode_pauses_at_marker() {

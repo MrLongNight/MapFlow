@@ -56,12 +56,46 @@ pub enum MediaError {
     #[error("End of stream")]
     EndOfStream,
 
+    #[error("Would block (try again later)")]
+    WouldBlock,
+
     #[error("Seek error: {0}")]
     SeekError(String),
 }
 
 /// Result type for media operations
 pub type Result<T> = std::result::Result<T, MediaError>;
+
+/// Open a media file or image sequence and create a video player with specific hardware acceleration
+pub fn open_path_with_hw_accel<P: AsRef<Path>>(
+    path: P,
+    hw_accel: HwAccelType,
+) -> Result<VideoPlayer> {
+    let path = path.as_ref();
+
+    // Check if it's an image sequence (directory)
+    if path.is_dir() {
+        let decoder = ImageSequenceDecoder::open(path, 30.0)?; // Default to 30 fps
+        return Ok(VideoPlayer::new(decoder));
+    }
+
+    // Check file extension for still images and GIFs
+    let ext = path
+        .extension()
+        .and_then(|s| s.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+
+    let decoder: Box<dyn VideoDecoder> = match ext.as_str() {
+        "gif" => Box::new(GifDecoder::open(path)?),
+        "png" | "jpg" | "jpeg" | "tif" | "tiff" | "bmp" | "webp" => {
+            Box::new(StillImageDecoder::open(path)?)
+        }
+        _ => open_video_file_with_hw_accel(path, hw_accel)?,
+    };
+
+    Ok(VideoPlayer::new_with_box(decoder))
+}
 
 /// Open a media file or image sequence and create a video player
 ///
@@ -93,36 +127,27 @@ pub fn open_path<P: AsRef<Path>>(path: P) -> Result<VideoPlayer> {
         "png" | "jpg" | "jpeg" | "tif" | "tiff" | "bmp" | "webp" => {
             Box::new(StillImageDecoder::open(path)?)
         }
-        // HAP videos are typically in MOV containers
-        // #[cfg(feature = "hap")]
-        // "mov" => {
-        //     // Try HAP first, fall back to other decoders if it fails
-        //     match HapVideoDecoder::open(path) {
-        //         Ok(hap_decoder) => {
-        //             tracing::info!("Opened as HAP video: {:?}", path);
-        //             Box::new(hap_decoder)
-        //         }
-        //         Err(_) => {
-        //             tracing::debug!("Not a HAP file, trying other decoders: {:?}", path);
-        //             open_video_file(path)?
-        //         }
-        //     }
-        // }
         _ => open_video_file(path)?,
     };
 
     Ok(VideoPlayer::new_with_box(decoder))
 }
 
-/// Open a video file using the best available decoder
-/// Priority: FFmpeg > libmpv (libmpv currently only provides placeholder frames)
-fn open_video_file<P: AsRef<Path>>(path: P) -> Result<Box<dyn VideoDecoder>> {
+/// Open a video file using the best available decoder with hardware acceleration
+fn open_video_file_with_hw_accel<P: AsRef<Path>>(
+    path: P,
+    hw_accel: HwAccelType,
+) -> Result<Box<dyn VideoDecoder>> {
     let path = path.as_ref();
 
     // Try FFmpeg first (stable, full frame support)
-    match FFmpegDecoder::open(path) {
+    match FFmpegDecoder::open_with_hw_accel(path, hw_accel) {
         Ok(decoder) => {
-            tracing::info!("Opened with FFmpeg decoder: {:?}", path);
+            tracing::info!(
+                "Opened with FFmpeg decoder (hw_accel={:?}): {:?}",
+                hw_accel,
+                path
+            );
             return Ok(Box::new(decoder));
         }
         Err(e) => {
@@ -131,6 +156,63 @@ fn open_video_file<P: AsRef<Path>>(path: P) -> Result<Box<dyn VideoDecoder>> {
     }
 
     // Fallback to libmpv if available (currently placeholder frames only)
+    #[cfg(feature = "libmpv")]
+    {
+        match MpvDecoder::open(path) {
+            Ok(decoder) => {
+                tracing::info!("Opened with MPV decoder (fallback): {:?}", path);
+                return Ok(Box::new(decoder));
+            }
+            Err(e) => {
+                tracing::warn!("MPV decoder also failed: {}", e);
+            }
+        }
+    }
+
+    // Both failed, return the FFmpeg error
+    Err(MediaError::FileOpen(format!(
+        "Could not open video: {:?}",
+        path
+    )))
+}
+
+/// Open a video file using the best available decoder
+/// Priority: FFmpeg (HW) > FFmpeg (SW) > libmpv
+fn open_video_file<P: AsRef<Path>>(path: P) -> Result<Box<dyn VideoDecoder>> {
+    let path = path.as_ref();
+
+    // 1. Try FFmpeg with AUTO hardware acceleration (best performance)
+    #[cfg(target_os = "windows")]
+    let hw_accel = HwAccelType::D3D11VA;
+    #[cfg(target_os = "macos")]
+    let hw_accel = HwAccelType::VideoToolbox;
+    #[cfg(target_os = "linux")]
+    let hw_accel = HwAccelType::VAAPI;
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    let hw_accel = HwAccelType::None;
+
+    match FFmpegDecoder::open_with_hw_accel(path, hw_accel) {
+        Ok(decoder) => {
+            tracing::info!("Opened with FFmpeg decoder (hw_accel={:?}): {:?}", hw_accel, path);
+            return Ok(Box::new(decoder));
+        }
+        Err(e) => {
+            tracing::warn!("FFmpeg hardware decoder failed: {}. Falling back to software.", e);
+        }
+    }
+
+    // 2. Try FFmpeg with NO hardware acceleration (best compatibility)
+    match FFmpegDecoder::open_with_hw_accel(path, HwAccelType::None) {
+        Ok(decoder) => {
+            tracing::info!("Opened with FFmpeg software decoder: {:?}", path);
+            return Ok(Box::new(decoder));
+        }
+        Err(e) => {
+            tracing::warn!("FFmpeg software decoder also failed: {}", e);
+        }
+    }
+
+    // 3. Fallback to libmpv if available
     #[cfg(feature = "libmpv")]
     {
         match MpvDecoder::open(path) {
