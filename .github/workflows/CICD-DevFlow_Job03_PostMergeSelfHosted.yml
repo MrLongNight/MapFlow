@@ -23,6 +23,7 @@ concurrency:
 
 env:
   SELF_HOSTED_POST_MERGE_ENABLED: ${{ vars.MAPFLOW_ENABLE_SELF_HOSTED_POST_MERGE || 'false' }}
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   resolve-context:
