@@ -359,9 +359,9 @@ fn main() -> Result<()> {
         } else {
             "Unknown panic payload"
         };
-        
+
         let location = panic_info.location().map_or("Unknown location".to_string(), |l| format!("{}:{}", l.file(), l.line()));
-        
+
         tracing::error!("CRITICAL: Thread panicked at {}: {}", location, msg);
     }));
 
