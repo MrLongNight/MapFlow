@@ -3,7 +3,7 @@
 //! Bridges the Animation system with Effect parameters,
 //! allowing effect parameters to be keyframe-animated over time.
 
-use crate::animation::{AnimValue, AnimationClip, AnimationPlayer, AnimationTrack, Keyframe};
+use crate::animation::{AnimValue, AnimationClip, AnimationPlayer, AnimationTrack, Keyframe, TimelineMarker};
 use crate::effects::EffectType;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -76,7 +76,7 @@ impl EffectParameterAnimator {
         effect_type: EffectType,
         effect_instance: u64,
         parameter_name: &str,
-        default_value: AnimValue,
+        _default_value: AnimValue,
     ) -> EffectAnimationId {
         let id = self.next_id;
         self.next_id += 1;
@@ -85,10 +85,12 @@ impl EffectParameterAnimator {
 
         // Create track if it doesn't exist
         if self.clip.get_track(&track_name).is_none() {
-            let track = AnimationTrack::new(track_name.clone(), default_value.clone());
+            let track = AnimationTrack::new(track_name.clone());
             self.clip.add_track(track);
             // Recreate player with updated clip
+            let time = self.get_current_time();
             self.player = AnimationPlayer::new(self.clip.clone());
+            self.player.current_time = time;
         }
 
         let binding = EffectParameterBinding {
@@ -117,8 +119,9 @@ impl EffectParameterAnimator {
             if let Some(track) = self.clip.get_track_mut(&binding.track_name) {
                 track.add_keyframe(Keyframe::new(time, value));
                 // Update player with new clip
+                let current_time = self.get_current_time();
                 self.player = AnimationPlayer::new(self.clip.clone());
-                self.player.current_time = self.get_current_time();
+                self.player.current_time = current_time;
                 return true;
             }
         }
@@ -130,8 +133,9 @@ impl EffectParameterAnimator {
         if let Some(binding) = self.bindings.iter().find(|b| b.id == binding_id) {
             if let Some(track) = self.clip.get_track_mut(&binding.track_name) {
                 track.remove_keyframe(time);
+                let current_time = self.get_current_time();
                 self.player = AnimationPlayer::new(self.clip.clone());
-                self.player.current_time = self.get_current_time();
+                self.player.current_time = current_time;
                 return true;
             }
         }
@@ -187,6 +191,16 @@ impl EffectParameterAnimator {
         self.player.speed = speed;
     }
 
+    /// Set whether to pause at markers
+    pub fn set_pause_at_markers(&mut self, enabled: bool) {
+        self.player.pause_at_markers = enabled;
+    }
+
+    /// Set playhead position
+    pub fn set_playhead(&mut self, time: f64) {
+        self.player.seek(time);
+    }
+
     /// Update the animator (call every frame)
     ///
     /// Returns a list of (effect_type, effect_instance, parameter_name, value) tuples
@@ -240,17 +254,19 @@ impl EffectParameterAnimator {
     }
 
     /// Add a marker to the timeline
-    pub fn add_marker(&mut self, marker: crate::animation::Marker) {
+    pub fn add_marker(&mut self, marker: TimelineMarker) {
         self.clip.add_marker(marker);
+        let time = self.get_current_time();
         self.player = AnimationPlayer::new(self.clip.clone());
-        self.player.current_time = self.get_current_time();
+        self.player.current_time = time;
     }
 
     /// Remove a marker from the timeline
     pub fn remove_marker(&mut self, time: f64) {
         if self.clip.remove_marker(time) {
+            let current_time = self.get_current_time();
             self.player = AnimationPlayer::new(self.clip.clone());
-            self.player.current_time = self.get_current_time();
+            self.player.current_time = current_time;
         }
     }
 
@@ -266,8 +282,9 @@ impl EffectParameterAnimator {
             }
         }
         if changed {
+            let current_time = self.get_current_time();
             self.player = AnimationPlayer::new(self.clip.clone());
-            self.player.current_time = self.get_current_time();
+            self.player.current_time = current_time;
         }
     }
 
@@ -284,7 +301,9 @@ impl EffectParameterAnimator {
     /// Set the animation clip duration
     pub fn set_duration(&mut self, duration: f64) {
         self.clip.duration = duration;
+        let current_time = self.get_current_time();
         self.player = AnimationPlayer::new(self.clip.clone());
+        self.player.current_time = current_time;
     }
 
     /// Get the animation clip duration

@@ -669,7 +669,9 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                     TimelineAction::AddMarker(t) => {
                         let animator = std::sync::Arc::make_mut(&mut app.state.effect_animator);
                         let name = format!("Marker {:.1}s", t);
-                        animator.add_marker(mapmap_core::animation::Marker::new(t as f64, name));
+                        // Simple ID generation for markers
+                        let id = (t * 1000.0) as u64;
+                        animator.add_marker(mapmap_core::animation::Marker::new(id, t as f64, name));
                     }
                     TimelineAction::RemoveMarker(t) => {
                         let animator = std::sync::Arc::make_mut(&mut app.state.effect_animator);

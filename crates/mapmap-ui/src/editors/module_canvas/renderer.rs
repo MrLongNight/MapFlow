@@ -199,7 +199,7 @@ pub fn render_canvas(
         }
     };
 
-    let remove_conn_idx = draw::draw_connections(
+    let remove_conn_idx = super::draw::draw_connections(
         canvas,
         ui,
         &painter,

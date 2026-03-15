@@ -31,6 +31,10 @@ pub enum ShowMode {
     SemiAutomated,
     /// Module switching is manual only (timeline acts as arrangement board).
     Manual,
+    /// Hybrid logic combining time and triggers.
+    Hybrid,
+    /// Playback stops at markers, waiting for explicit trigger to continue.
+    Trackline,
 }
 
 impl ShowMode {
@@ -39,12 +43,15 @@ impl ShowMode {
             Self::FullyAutomated => "Fully Auto",
             Self::SemiAutomated => "Semi Auto",
             Self::Manual => "Manual",
+            Self::Hybrid => "Hybrid",
+            Self::Trackline => "Trackline",
         }
     }
 }
 
 /// A scheduled module block on the show timeline.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ModuleArrangementItem {
     /// Unique ID for stable runtime selection.
     pub id: u64,
@@ -56,6 +63,21 @@ pub struct ModuleArrangementItem {
     pub duration: f32,
     /// Whether this block is active in runtime.
     pub enabled: bool,
+    /// Trigger that must be active to start this block (Hybrid Mode).
+    pub start_trigger: Option<String>,
+}
+
+impl Default for ModuleArrangementItem {
+    fn default() -> Self {
+        Self {
+            id: 0,
+            module_id: 0,
+            start_time: 0.0,
+            duration: 8.0,
+            enabled: true,
+            start_trigger: None,
+        }
+    }
 }
 
 impl ModuleArrangementItem {
@@ -81,6 +103,8 @@ pub struct TimelineV2 {
     pub selected_keyframes: Vec<(String, u64)>,
     /// Show curve editor
     pub show_curve_editor: bool,
+    /// Expanded automation tracks/groups
+    pub expanded_tracks: HashSet<String>,
     /// Enable module arrangement show-control.
     pub show_control_enabled: bool,
     /// Selected show mode.
@@ -99,6 +123,12 @@ pub struct TimelineV2 {
     pub semi_auto_pending_block_id: Option<u64>,
     /// Full-auto last block.
     pub full_auto_current_block_id: Option<u64>,
+    /// Hybrid mode current block.
+    pub hybrid_current_block_id: Option<u64>,
+    /// Hybrid mode active triggers.
+    pub hybrid_active_triggers: HashSet<String>,
+    /// Selected marker ID.
+    pub selected_marker_id: Option<u64>,
 }
 
 impl Default for TimelineV2 {
@@ -111,6 +141,7 @@ impl Default for TimelineV2 {
             snap_interval: 0.1, // 100ms default snap
             selected_keyframes: Vec::new(),
             show_curve_editor: false,
+            expanded_tracks: HashSet::new(),
             show_control_enabled: true,
             show_mode: ShowMode::FullyAutomated,
             module_arrangement: Vec::new(),
@@ -120,6 +151,9 @@ impl Default for TimelineV2 {
             semi_auto_current_block_id: None,
             semi_auto_pending_block_id: None,
             full_auto_current_block_id: None,
+            hybrid_current_block_id: None,
+            hybrid_active_triggers: HashSet::new(),
+            selected_marker_id: None,
         }
     }
 }
@@ -200,6 +234,7 @@ impl TimelineV2 {
         self.semi_auto_current_block_id = None;
         self.semi_auto_pending_block_id = None;
         self.full_auto_current_block_id = None;
+        self.hybrid_current_block_id = None;
     }
 
     fn cleanup_missing_modules(&mut self, available_module_ids: &[ModuleId]) {
@@ -223,6 +258,9 @@ impl TimelineV2 {
         if !has_block(self.full_auto_current_block_id, &self.module_arrangement) {
             self.full_auto_current_block_id = None;
         }
+        if !has_block(self.hybrid_current_block_id, &self.module_arrangement) {
+            self.hybrid_current_block_id = None;
+        }
     }
 
     fn add_module_block(&mut self, module_id: ModuleId) {
@@ -240,6 +278,7 @@ impl TimelineV2 {
             start_time: default_start,
             duration: 8.0,
             enabled: true,
+            start_trigger: None,
         });
     }
 
@@ -271,7 +310,7 @@ impl TimelineV2 {
         }
 
         match self.show_mode {
-            ShowMode::FullyAutomated => {
+            ShowMode::FullyAutomated | ShowMode::Trackline => {
                 let active_id = self.active_block_for_time(current_time).map(|b| b.id);
                 self.full_auto_current_block_id = active_id;
                 self.manual_current_block_id = active_id;
@@ -303,6 +342,59 @@ impl TimelineV2 {
                     self.manual_current_block_id = self.first_enabled_block_id();
                 }
                 self.module_for_block_id(self.manual_current_block_id)
+            }
+            ShowMode::Hybrid => {
+                if self.hybrid_current_block_id.is_none() {
+                    self.hybrid_current_block_id = self.first_enabled_block_id();
+                }
+
+                if is_playing {
+                    let blocks = self.sorted_enabled_blocks();
+
+                    // Find all blocks that overlap with the current time
+                    let mut active_blocks: Vec<&ModuleArrangementItem> = blocks
+                        .iter()
+                        .copied()
+                        .filter(|b| current_time >= b.start_time && current_time < b.end_time())
+                        .collect();
+
+                    // Sort by whether they require triggers (those without triggers are defaults)
+                    active_blocks
+                        .sort_by(|a, b| a.start_trigger.is_some().cmp(&b.start_trigger.is_some()));
+
+                    let mut next_block_id = self.hybrid_current_block_id;
+
+                    // Evaluate blocks matching current time
+                    for block in active_blocks {
+                        if let Some(trigger) = &block.start_trigger {
+                            if self.hybrid_active_triggers.contains(trigger) {
+                                next_block_id = Some(block.id);
+                                break; // Trigger matched, take this block
+                            }
+                        } else {
+                            // Block has no trigger, it's the default for this time
+                            let current_is_active = if let Some(current_id) =
+                                self.hybrid_current_block_id
+                            {
+                                blocks.iter().find(|b| b.id == current_id).is_some_and(|b| {
+                                    current_time >= b.start_time && current_time < b.end_time()
+                                })
+                            } else {
+                                false
+                            };
+
+                            if !current_is_active {
+                                next_block_id = Some(block.id);
+                            }
+                        }
+                    }
+
+                    if next_block_id != self.hybrid_current_block_id {
+                        self.hybrid_current_block_id = next_block_id;
+                    }
+                }
+
+                self.module_for_block_id(self.hybrid_current_block_id)
             }
         }
     }
@@ -393,6 +485,9 @@ impl TimelineV2 {
         let module_names = Self::module_name_map(modules);
         let available_module_ids: Vec<ModuleId> = modules.iter().map(|m| m.id).collect();
 
+        // Ensure pause_at_markers reflects the current ShowMode
+        animator.set_pause_at_markers(self.show_mode == ShowMode::Trackline);
+
         // Sync local playhead with animator
         self.playhead = animator.get_current_time() as f32;
 
@@ -410,13 +505,6 @@ impl TimelineV2 {
 
             if hold_to_action_button(ui, "Stop", colors::ERROR_COLOR) {
                 action = Some(TimelineAction::Stop);
-            }
-
-            if ui.button("⏮").on_hover_text("Previous Marker").clicked() {
-                action = Some(TimelineAction::JumpPrevMarker);
-            }
-            if ui.button("⏭").on_hover_text("Next Marker").clicked() {
-                action = Some(TimelineAction::JumpNextMarker);
             }
 
             ui.separator();
@@ -441,11 +529,17 @@ impl TimelineV2 {
 
             // Zoom controls
             ui.label(format!("Zoom: {:.0}px/s", self.zoom));
-            if ui.button("+").on_hover_text("Zoom In").clicked() {
+            if ui.button("+").clicked() {
                 self.zoom *= 1.2;
             }
-            if ui.button("-").on_hover_text("Zoom Out").clicked() {
+            if ui.button("-").clicked() {
                 self.zoom /= 1.2;
+            }
+
+            ui.separator();
+
+            if ui.button("Add Marker").clicked() {
+                action = Some(TimelineAction::AddMarker(self.playhead));
             }
 
             // Playback Mode selection
@@ -479,16 +573,6 @@ impl TimelineV2 {
                             &mut current_mode,
                             mapmap_core::animation::PlaybackMode::OneShot,
                             "OneShot",
-                        )
-                        .clicked()
-                    {
-                        mode_changed = true;
-                    }
-                    if ui
-                        .selectable_value(
-                            &mut current_mode,
-                            mapmap_core::animation::PlaybackMode::Trackline,
-                            "Trackline",
                         )
                         .clicked()
                     {
@@ -601,6 +685,16 @@ impl TimelineV2 {
                             ShowMode::Manual,
                             ShowMode::Manual.label(),
                         );
+                        ui.selectable_value(
+                            &mut self.show_mode,
+                            ShowMode::Hybrid,
+                            ShowMode::Hybrid.label(),
+                        );
+                        ui.selectable_value(
+                            &mut self.show_mode,
+                            ShowMode::Trackline,
+                            ShowMode::Trackline.label(),
+                        );
                     });
 
                 match self.show_mode {
@@ -623,7 +717,7 @@ impl TimelineV2 {
                             }
                         }
                     }
-                    ShowMode::FullyAutomated => {}
+                    ShowMode::FullyAutomated | ShowMode::Hybrid | ShowMode::Trackline => {}
                 }
             }
         });
@@ -712,10 +806,26 @@ impl TimelineV2 {
                             .range(0.1..=36000.0),
                     );
 
+                    if self.show_mode == ShowMode::Hybrid {
+                        let mut trigger_str = block.start_trigger.clone().unwrap_or_default();
+                        let response = ui.add(
+                            egui::TextEdit::singleline(&mut trigger_str)
+                                .hint_text("Trigger (e.g. MIDI/OSC)")
+                                .desired_width(120.0),
+                        );
+                        if response.changed() {
+                            if trigger_str.trim().is_empty() {
+                                block.start_trigger = None;
+                            } else {
+                                block.start_trigger = Some(trigger_str);
+                            }
+                        }
+                    }
+
                     if ui.button("Jump").clicked() {
                         jump_to_block = Some((block.start_time, block.id));
                     }
-                    if ui.button("X").on_hover_text("Remove Block").clicked() {
+                    if ui.button("X").clicked() {
                         remove_block_id = Some(block.id);
                     }
                 });
@@ -739,14 +849,37 @@ impl TimelineV2 {
         // Timeline area
         egui::ScrollArea::both().show(ui, |ui| {
             let clip = animator.clip(); // Get immutable ref first to calculate size
-            let track_count = clip.tracks.len();
+
+            // Group tracks by "lane" (e.g. `Blur_0` from `Blur_0.radius`)
+            let mut track_groups: std::collections::BTreeMap<
+                String,
+                Vec<&mapmap_core::animation::AnimationTrack>,
+            > = std::collections::BTreeMap::new();
+            for track in &clip.tracks {
+                let parts: Vec<&str> = track.name.split('.').collect();
+                let group_name = if parts.len() > 1 {
+                    parts[0].to_string()
+                } else {
+                    "General".to_string()
+                };
+                track_groups.entry(group_name).or_default().push(track);
+            }
+
+            let mut visible_lanes_count = 0;
+            for (group_name, tracks) in &track_groups {
+                visible_lanes_count += 1; // Group header
+                if self.expanded_tracks.contains(group_name) {
+                    visible_lanes_count += tracks.len(); // Expanded tracks
+                }
+            }
+
             let module_track_height = if self.module_arrangement.is_empty() {
                 0.0
             } else {
                 64.0
             };
 
-            let available_height = 50.0 + (track_count as f32 * 60.0) + module_track_height;
+            let available_height = 50.0 + (visible_lanes_count as f32 * 60.0) + module_track_height;
             let available_width = (duration * self.zoom).max(ui.available_width());
 
             let (response, painter) = ui.allocate_painter(
@@ -759,67 +892,6 @@ impl TimelineV2 {
             // Draw time ruler
             let ruler_rect = Rect::from_min_size(rect.min, Vec2::new(rect.width(), 30.0));
             painter.rect_filled(ruler_rect, 0.0, Color32::from_rgb(40, 40, 40));
-
-            // Draw markers
-            let mut marker_to_remove = None;
-            let mut marker_to_toggle_pause = None;
-
-            for marker in clip.markers() {
-                let x = rect.min.x + (marker.time as f32) * self.zoom;
-                if x >= rect.min.x && x <= rect.max.x {
-                    // Marker line
-                    let color = if marker.pause_at {
-                        Color32::from_rgb(255, 150, 50)
-                    } else {
-                        Color32::from_rgb(100, 200, 255)
-                    };
-                    painter.line_segment(
-                        [Pos2::new(x, ruler_rect.min.y), Pos2::new(x, rect.max.y)],
-                        Stroke::new(1.0, color.linear_multiply(0.5)),
-                    );
-
-                    // Marker handle (triangle)
-                    let handle_rect = Rect::from_center_size(
-                        Pos2::new(x, ruler_rect.min.y + 6.0),
-                        Vec2::new(12.0, 12.0),
-                    );
-
-                    let points = vec![
-                        Pos2::new(x - 6.0, ruler_rect.min.y),
-                        Pos2::new(x + 6.0, ruler_rect.min.y),
-                        Pos2::new(x, ruler_rect.min.y + 12.0),
-                    ];
-
-                    painter.add(egui::Shape::convex_polygon(
-                        points,
-                        color,
-                        Stroke::new(1.0, Color32::WHITE),
-                    ));
-
-                    // Check interaction with marker handle
-                    let interact_rect = handle_rect.expand(2.0);
-                    let handle_response = ui.interact(
-                        interact_rect,
-                        ui.id().with(format!("marker_{}", marker.time)),
-                        Sense::click(),
-                    );
-                    let handle_response = handle_response.on_hover_ui(|ui| {
-                        ui.label(format!("Marker: {}", marker.name));
-                        ui.label(format!("Time: {:.2}s", marker.time));
-                        ui.label(if marker.pause_at {
-                            "Pauses playback"
-                        } else {
-                            "Does not pause playback"
-                        });
-                        ui.label("Right-click to toggle pause, Shift+Click to remove");
-                    });
-                    if handle_response.secondary_clicked() {
-                        marker_to_toggle_pause = Some(marker.time as f32);
-                    } else if handle_response.clicked() && ui.input(|i| i.modifiers.shift) {
-                        marker_to_remove = Some(marker.time as f32);
-                    }
-                }
-            }
 
             // Draw time ticks
             let tick_interval = if self.zoom > 100.0 { 0.1 } else { 1.0 };
@@ -854,6 +926,60 @@ impl TimelineV2 {
                 time += tick_interval;
             }
 
+            // Draw markers
+            let mut remove_marker_id: Option<u64> = None;
+            for marker in &clip.markers {
+                let x = rect.min.x + (marker.time as f32) * self.zoom;
+                if x >= rect.min.x && x <= rect.max.x {
+                    // Marker line
+                    painter.line_segment(
+                        [Pos2::new(x, ruler_rect.min.y), Pos2::new(x, rect.max.y)],
+                        Stroke::new(1.0, Color32::from_rgb(100, 200, 100)),
+                    );
+
+                    // Marker flag
+                    let flag_rect =
+                        Rect::from_min_size(Pos2::new(x, ruler_rect.min.y), Vec2::new(14.0, 14.0));
+                    let is_selected = self.selected_marker_id == Some(marker.id);
+                    let flag_color = if is_selected {
+                        Color32::from_rgb(150, 255, 150)
+                    } else {
+                        Color32::from_rgb(50, 150, 50)
+                    };
+
+                    painter.rect_filled(flag_rect, 2.0, flag_color);
+                    painter.text(
+                        Pos2::new(x + 2.0, ruler_rect.min.y + 1.0),
+                        egui::Align2::LEFT_TOP,
+                        "M",
+                        egui::FontId::proportional(10.0),
+                        Color32::WHITE,
+                    );
+
+                    let interact_rect = Rect::from_min_size(
+                        Pos2::new(x - 5.0, ruler_rect.min.y),
+                        Vec2::new(20.0, 16.0),
+                    );
+                    let marker_response =
+                        ui.interact(interact_rect, ui.id().with(marker.id), Sense::click());
+
+                    if marker_response.clicked() {
+                        self.selected_marker_id = Some(marker.id);
+                        action = Some(TimelineAction::Seek(marker.time as f32));
+                    }
+                    if marker_response.secondary_clicked() {
+                        remove_marker_id = Some(marker.id);
+                    }
+
+                    // Tooltip
+                    marker_response
+                        .on_hover_text(format!("Marker: {}\nRight-click to remove", marker.name));
+                }
+            }
+            if let Some(id) = remove_marker_id {
+                action = Some(TimelineAction::RemoveMarker(id));
+            }
+
             // Draw playhead
             let playhead_x = rect.min.x + self.playhead * self.zoom;
             painter.line_segment(
@@ -867,41 +993,162 @@ impl TimelineV2 {
             // Handle ruler scrubbing
             if response.hovered() || response.dragged() {
                 if let Some(pos) = response.interact_pointer_pos() {
-                    if pos.y <= ruler_rect.max.y {
-                        if response.is_pointer_button_down_on() {
-                            let time = (pos.x - rect.min.x) / self.zoom;
-                            let snapped = if ui.input(|i| i.modifiers.shift) {
-                                time // Bypass snap
-                            } else {
-                                self.snap_time(time)
-                            };
+                    if pos.y <= ruler_rect.max.y && response.is_pointer_button_down_on() {
+                        let time = (pos.x - rect.min.x) / self.zoom;
+                        let snapped = if ui.input(|i| i.modifiers.shift) {
+                            time // Bypass snap
+                        } else {
+                            self.snap_time(time)
+                        };
 
-                            action = Some(TimelineAction::Seek(snapped));
-                        } else if response.secondary_clicked() {
-                            let time = (pos.x - rect.min.x) / self.zoom;
-                            let snapped = if ui.input(|i| i.modifiers.shift) {
-                                time // Bypass snap
-                            } else {
-                                self.snap_time(time)
-                            };
-                            action = Some(TimelineAction::AddMarker(snapped));
-                        }
+                        action = Some(TimelineAction::Seek(snapped));
                     }
                 }
             }
 
-            if let Some(time) = marker_to_remove {
-                action = Some(TimelineAction::RemoveMarker(time));
-            } else if let Some(time) = marker_to_toggle_pause {
-                action = Some(TimelineAction::ToggleMarkerPause(time));
+            // Access immutable clip for drawing tracks
+            let track_start_y = ruler_rect.max.y;
+            let mut current_lane_index = 0;
+
+            for (group_name, tracks) in &track_groups {
+                let is_expanded = self.expanded_tracks.contains(group_name);
+                let header_y = track_start_y + (current_lane_index as f32 * 60.0);
+                let header_rect = Rect::from_min_size(
+                    Pos2::new(rect.min.x, header_y),
+                    Vec2::new(rect.width(), 60.0),
+                );
+
+                // Draw header lane
+                let header_bg_color = Color32::from_rgb(45, 45, 45);
+                painter.rect_filled(header_rect, 0.0, header_bg_color);
+
+                let fold_icon = if is_expanded { "▼" } else { "▶" };
+                let header_label = format!("{} {}", fold_icon, group_name);
+
+                // Make header interactive for folding/unfolding
+                let header_response =
+                    ui.interact(header_rect, ui.id().with(group_name), Sense::click());
+                if header_response.clicked() {
+                    if is_expanded {
+                        self.expanded_tracks.remove(group_name);
+                    } else {
+                        self.expanded_tracks.insert(group_name.clone());
+                    }
+                }
+
+                let text_color = if header_response.hovered() {
+                    Color32::WHITE
+                } else {
+                    Color32::from_rgb(220, 220, 220)
+                };
+
+                painter.text(
+                    Pos2::new(header_rect.min.x + 10.0, header_rect.min.y + 22.0),
+                    egui::Align2::LEFT_TOP,
+                    header_label,
+                    egui::FontId::proportional(14.0),
+                    text_color,
+                );
+
+                current_lane_index += 1;
+
+                if is_expanded {
+                    for track in tracks {
+                        let track_y = track_start_y + (current_lane_index as f32 * 60.0);
+                        let track_rect = Rect::from_min_size(
+                            Pos2::new(rect.min.x, track_y),
+                            Vec2::new(rect.width(), 60.0),
+                        );
+
+                        // Alternating background for automation tracks
+                        let bg_color = if current_lane_index % 2 == 0 {
+                            Color32::from_rgb(30, 30, 30)
+                        } else {
+                            Color32::from_rgb(35, 35, 35)
+                        };
+                        painter.rect_filled(track_rect, 0.0, bg_color);
+
+                        // Draw track tree line
+                        painter.line_segment(
+                            [
+                                Pos2::new(track_rect.min.x + 15.0, track_rect.min.y),
+                                Pos2::new(track_rect.min.x + 15.0, track_rect.max.y),
+                            ],
+                            Stroke::new(1.0, Color32::from_rgb(80, 80, 80)),
+                        );
+
+                        // Track name (parameter)
+                        let param_name = track.name.split('.').next_back().unwrap_or(&track.name);
+                        painter.text(
+                            Pos2::new(track_rect.min.x + 25.0, track_rect.min.y + 10.0),
+                            egui::Align2::LEFT_TOP,
+                            param_name,
+                            egui::FontId::proportional(13.0),
+                            Color32::from_rgb(180, 180, 180),
+                        );
+
+                        // Draw keyframes and curves
+                        let keyframes = track.keyframes_ordered();
+
+                        if keyframes.len() >= 2 {
+                            let mut points = Vec::new();
+                            for kf in &keyframes {
+                                let t = kf.time as f32;
+                                let val = match &kf.value {
+                                    AnimValue::Float(v) => *v,
+                                    AnimValue::Vec3(v) => v[0],
+                                    AnimValue::Vec4(v) => v[0],
+                                    AnimValue::Color(v) => v[0],
+                                    _ => 0.0,
+                                };
+
+                                let normalized = val.clamp(0.0, 1.0);
+                                let x = rect.min.x + t * self.zoom;
+                                let y = track_rect.max.y - 10.0 - (normalized * 40.0);
+                                points.push(Pos2::new(x, y));
+                            }
+
+                            if !points.is_empty() {
+                                painter.add(egui::Shape::line(
+                                    points,
+                                    Stroke::new(2.0, Color32::from_rgb(100, 200, 255)),
+                                ));
+                            }
+                        }
+
+                        for kf in &keyframes {
+                            let kf_time = kf.time as f32;
+                            let val = match &kf.value {
+                                AnimValue::Float(v) => *v,
+                                _ => 0.0,
+                            };
+                            let normalized = val.clamp(0.0, 1.0);
+
+                            let x = rect.min.x + kf_time * self.zoom;
+                            let y = track_rect.max.y - 10.0 - (normalized * 40.0);
+
+                            let diamond_size = 6.0;
+                            let diamond = vec![
+                                Pos2::new(x, y - diamond_size),
+                                Pos2::new(x + diamond_size, y),
+                                Pos2::new(x, y + diamond_size),
+                                Pos2::new(x - diamond_size, y),
+                            ];
+
+                            painter.add(egui::Shape::convex_polygon(
+                                diamond,
+                                Color32::YELLOW,
+                                Stroke::new(1.0, Color32::WHITE),
+                            ));
+                        }
+
+                        current_lane_index += 1;
+                    }
+                }
             }
 
-            // Access immutable clip for drawing tracks
-            let tracks = &animator.clip().tracks;
-            let track_start_y = ruler_rect.max.y;
-
             if module_track_height > 0.0 {
-                let module_track_y = track_start_y;
+                let module_track_y = track_start_y + (visible_lanes_count as f32 * 60.0);
                 let module_rect = Rect::from_min_size(
                     Pos2::new(rect.min.x, module_track_y),
                     Vec2::new(rect.width(), module_track_height),
@@ -910,7 +1157,7 @@ impl TimelineV2 {
                 painter.text(
                     Pos2::new(module_rect.min.x + 5.0, module_rect.min.y + 6.0),
                     egui::Align2::LEFT_TOP,
-                    "Module Track",
+                    "Module Show",
                     egui::FontId::proportional(13.0),
                     Color32::from_rgb(200, 220, 255),
                 );
@@ -928,16 +1175,21 @@ impl TimelineV2 {
                     // For now, we just emit it, the handler in actions.rs should be idempotent.
                     if action.is_none()
                         && animator.is_playing()
-                        && self.show_mode == ShowMode::FullyAutomated
+                        && (self.show_mode == ShowMode::FullyAutomated
+                            || self.show_mode == ShowMode::Hybrid
+                            || self.show_mode == ShowMode::Trackline)
                     {
                         action = Some(TimelineAction::SelectModule(mod_id));
                     }
                 }
 
                 let active_block_id = match self.show_mode {
-                    ShowMode::FullyAutomated => self.full_auto_current_block_id,
+                    ShowMode::FullyAutomated | ShowMode::Trackline => {
+                        self.full_auto_current_block_id
+                    }
                     ShowMode::SemiAutomated => self.semi_auto_current_block_id,
                     ShowMode::Manual => self.manual_current_block_id,
+                    ShowMode::Hybrid => self.hybrid_current_block_id,
                 };
 
                 for block in self.sorted_enabled_blocks() {
@@ -976,86 +1228,6 @@ impl TimelineV2 {
                     );
                 }
             }
-
-            for (i, track) in tracks.iter().enumerate() {
-                let track_y = track_start_y + module_track_height + (i as f32 * 60.0);
-                let track_rect = Rect::from_min_size(
-                    Pos2::new(rect.min.x, track_y),
-                    Vec2::new(rect.width(), 60.0),
-                );
-
-                // Alternating background
-                let bg_color = if i % 2 == 0 {
-                    Color32::from_rgb(30, 30, 30)
-                } else {
-                    Color32::from_rgb(35, 35, 35)
-                };
-                painter.rect_filled(track_rect, 0.0, bg_color);
-
-                // Track name
-                painter.text(
-                    Pos2::new(track_rect.min.x + 5.0, track_rect.min.y + 10.0),
-                    egui::Align2::LEFT_TOP,
-                    &track.name,
-                    egui::FontId::proportional(14.0),
-                    Color32::from_rgb(200, 200, 200),
-                );
-
-                // Draw keyframes and curves
-                let keyframes = track.keyframes_ordered();
-
-                if keyframes.len() >= 2 {
-                    let mut points = Vec::new();
-                    for kf in &keyframes {
-                        let t = kf.time as f32;
-                        let val = match &kf.value {
-                            AnimValue::Float(v) => *v,
-                            AnimValue::Vec3(v) => v[0],
-                            AnimValue::Vec4(v) => v[0],
-                            AnimValue::Color(v) => v[0],
-                            _ => 0.0,
-                        };
-
-                        let normalized = val.clamp(0.0, 1.0);
-                        let x = rect.min.x + t * self.zoom;
-                        let y = track_rect.max.y - 10.0 - (normalized * 40.0);
-                        points.push(Pos2::new(x, y));
-                    }
-
-                    if !points.is_empty() {
-                        painter.add(egui::Shape::line(
-                            points,
-                            Stroke::new(2.0, Color32::from_rgb(100, 200, 255)),
-                        ));
-                    }
-                }
-
-                for kf in &keyframes {
-                    let kf_time = kf.time as f32;
-                    let val = match &kf.value {
-                        AnimValue::Float(v) => *v,
-                        _ => 0.0,
-                    };
-                    let normalized = val.clamp(0.0, 1.0);
-
-                    let x = rect.min.x + kf_time * self.zoom;
-                    let y = track_rect.max.y - 10.0 - (normalized * 40.0);
-
-                    let diamond_size = 6.0;
-                    let diamond = vec![
-                        Pos2::new(x, y - diamond_size),
-                        Pos2::new(x + diamond_size, y),
-                        Pos2::new(x, y + diamond_size),
-                        Pos2::new(x - diamond_size, y),
-                    ];
-
-                    painter.add(egui::Shape::convex_polygon(
-                        diamond,
-                        Color32::YELLOW,
-                        Stroke::new(1.0, Color32::WHITE),
-                    ));
-                }
-            }
         });
 
         action
@@ -1071,7 +1243,7 @@ pub enum TimelineAction {
     Seek(f32),
     SelectModule(ModuleId),
     AddMarker(f32),
-    RemoveMarker(f32),
+    RemoveMarker(u64),
     ToggleMarkerPause(f32),
     JumpNextMarker,
     JumpPrevMarker,
