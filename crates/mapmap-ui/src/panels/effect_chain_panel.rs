@@ -1,0 +1,1591 @@
+//! Effect Chain UI Panel
+//!
+//! egui-based panel for managing effect chains with drag & drop reordering,
+//! parameter sliders, and preset browser.
+
+use crate::core::responsive::ResponsiveLayout;
+use crate::i18n::LocaleManager;
+use crate::icons::{AppIcon, IconManager};
+use crate::theme::colors;
+use crate::widgets::custom::{delete_button, icon_button_simple, styled_slider};
+use crate::widgets::panel::{cyber_panel_frame, render_panel_header};
+use egui::{CornerRadius, RichText, Ui};
+use serde::{Deserialize, Serialize};
+
+/// Available effect types (mirror of mapmap-render::EffectType)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum EffectType {
+    LoadLUT,
+    ColorAdjust,
+    Blur,
+    ChromaticAberration,
+    EdgeDetect,
+    Glow,
+    Kaleidoscope,
+    Invert,
+    Pixelate,
+    Vignette,
+    FilmGrain,
+    Wave,
+    Glitch,
+    RgbSplit,
+    Mirror,
+    HueShift,
+    Voronoi,
+    Tunnel,
+    Galaxy,
+    Custom,
+}
+
+impl EffectType {
+    pub fn display_name(&self, locale: &LocaleManager) -> String {
+        match self {
+            EffectType::LoadLUT => locale.t("effect-name-load-lut"),
+            EffectType::ColorAdjust => locale.t("effect-name-color-adjust"),
+            EffectType::Blur => locale.t("effect-name-blur"),
+            EffectType::ChromaticAberration => locale.t("effect-name-chromatic-aberration"),
+            EffectType::EdgeDetect => locale.t("effect-name-edge-detect"),
+            EffectType::Glow => locale.t("effect-name-glow"),
+            EffectType::Kaleidoscope => locale.t("effect-name-kaleidoscope"),
+            EffectType::Invert => locale.t("effect-name-invert"),
+            EffectType::Pixelate => locale.t("effect-name-pixelate"),
+            EffectType::Vignette => locale.t("effect-name-vignette"),
+            EffectType::FilmGrain => locale.t("effect-name-film-grain"),
+            EffectType::Wave => locale.t("effect-name-wave"),
+            EffectType::Glitch => locale.t("effect-name-glitch"),
+            EffectType::RgbSplit => locale.t("effect-name-rgb-split"),
+            EffectType::Mirror => locale.t("effect-name-mirror"),
+            EffectType::HueShift => locale.t("effect-name-hue-shift"),
+            EffectType::Voronoi => locale.t("effect-name-voronoi"),
+            EffectType::Tunnel => locale.t("effect-name-tunnel"),
+            EffectType::Galaxy => locale.t("effect-name-galaxy"),
+            EffectType::Custom => locale.t("effect-name-custom"),
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            EffectType::LoadLUT => "🧊",
+            EffectType::ColorAdjust => "🎨",
+            EffectType::Blur => "🌫️",
+            EffectType::ChromaticAberration => "🌈",
+            EffectType::EdgeDetect => "📐",
+            EffectType::Glow => "✨",
+            EffectType::Kaleidoscope => "🔮",
+            EffectType::Invert => "🔄",
+            EffectType::Pixelate => "🟩",
+            EffectType::Vignette => "🌑",
+            EffectType::FilmGrain => "🎞️",
+            EffectType::Wave => "🌊",
+            EffectType::Glitch => "👾",
+            EffectType::RgbSplit => "🌈",
+            EffectType::Mirror => "🪞",
+            EffectType::HueShift => "🎨",
+            EffectType::Voronoi => "💠",
+            EffectType::Tunnel => "🌀",
+            EffectType::Galaxy => "🌌",
+            EffectType::Custom => "⚙️",
+        }
+    }
+
+    pub fn app_icon(&self) -> AppIcon {
+        match self {
+            EffectType::LoadLUT => AppIcon::ImageFile,
+            EffectType::ColorAdjust => AppIcon::MagicWand,
+            EffectType::Blur => AppIcon::MagicWand,
+            EffectType::ChromaticAberration => AppIcon::MagicWand,
+            EffectType::EdgeDetect => AppIcon::Pencil,
+            EffectType::Glow => AppIcon::MagicWand,
+            EffectType::Kaleidoscope => AppIcon::MagicWand,
+            EffectType::Invert => AppIcon::Repeat,
+            EffectType::Pixelate => AppIcon::Screen,
+            EffectType::Vignette => AppIcon::AppWindow,
+            EffectType::FilmGrain => AppIcon::VideoFile,
+            EffectType::Wave => AppIcon::MagicWand,
+            EffectType::Glitch => AppIcon::Screen,
+            EffectType::RgbSplit => AppIcon::MagicWand,
+            EffectType::Mirror => AppIcon::Repeat,
+            EffectType::HueShift => AppIcon::PaintBucket,
+            EffectType::Voronoi => AppIcon::MagicWand,
+            EffectType::Tunnel => AppIcon::MagicWand,
+            EffectType::Galaxy => AppIcon::MagicWand,
+            EffectType::Custom => AppIcon::Cog,
+        }
+    }
+
+    pub fn all() -> &'static [EffectType] {
+        &[
+            EffectType::LoadLUT,
+            EffectType::ColorAdjust,
+            EffectType::Blur,
+            EffectType::ChromaticAberration,
+            EffectType::EdgeDetect,
+            EffectType::Glow,
+            EffectType::Kaleidoscope,
+            EffectType::Invert,
+            EffectType::Pixelate,
+            EffectType::Vignette,
+            EffectType::FilmGrain,
+            EffectType::Wave,
+            EffectType::Glitch,
+            EffectType::RgbSplit,
+            EffectType::Mirror,
+            EffectType::HueShift,
+            EffectType::Voronoi,
+            EffectType::Tunnel,
+            EffectType::Galaxy,
+            EffectType::Custom,
+        ]
+    }
+
+    pub fn default_params(&self) -> std::collections::HashMap<String, f32> {
+        let mut parameters = std::collections::HashMap::new();
+
+        match self {
+            EffectType::LoadLUT => {
+                parameters.insert("intensity".to_string(), 1.0);
+            }
+            EffectType::ColorAdjust => {
+                parameters.insert("brightness".to_string(), 0.0);
+                parameters.insert("contrast".to_string(), 1.0);
+                parameters.insert("saturation".to_string(), 1.0);
+            }
+            EffectType::Blur => {
+                parameters.insert("radius".to_string(), 5.0);
+            }
+            EffectType::ChromaticAberration => {
+                parameters.insert("amount".to_string(), 0.01);
+            }
+            EffectType::Glow => {
+                parameters.insert("threshold".to_string(), 0.5);
+                parameters.insert("radius".to_string(), 10.0);
+            }
+            EffectType::Kaleidoscope => {
+                parameters.insert("segments".to_string(), 6.0);
+                parameters.insert("rotation".to_string(), 0.0);
+            }
+            EffectType::Pixelate => {
+                parameters.insert("pixel_size".to_string(), 8.0);
+            }
+            EffectType::Vignette => {
+                parameters.insert("radius".to_string(), 0.5);
+                parameters.insert("softness".to_string(), 0.5);
+            }
+            EffectType::FilmGrain => {
+                parameters.insert("amount".to_string(), 0.1);
+                parameters.insert("speed".to_string(), 1.0);
+            }
+            EffectType::Voronoi => {
+                parameters.insert("scale".to_string(), 10.0);
+                parameters.insert("offset".to_string(), 1.0);
+                parameters.insert("cell_size".to_string(), 1.0);
+                parameters.insert("distortion".to_string(), 0.5);
+            }
+            EffectType::Tunnel => {
+                parameters.insert("speed".to_string(), 0.5);
+                parameters.insert("rotation".to_string(), 0.5);
+                parameters.insert("scale".to_string(), 0.5);
+                parameters.insert("distortion".to_string(), 0.5);
+            }
+            EffectType::Galaxy => {
+                parameters.insert("zoom".to_string(), 0.5);
+                parameters.insert("speed".to_string(), 0.2);
+                parameters.insert("radius".to_string(), 1.0);
+                parameters.insert("brightness".to_string(), 1.0);
+            }
+            _ => {}
+        }
+        parameters
+    }
+}
+
+/// Effect instance for UI
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UIEffect {
+    /// Unique identifier for this entity.
+    pub id: u64,
+    pub effect_type: EffectType,
+    pub enabled: bool,
+    pub intensity: f32,
+    pub expanded: bool,
+    pub lut_path: String,
+    pub error: Option<String>,
+    pub parameters: std::collections::HashMap<String, f32>,
+}
+
+impl UIEffect {
+    /// Unique identifier for this entity.
+    pub fn new(id: u64, effect_type: EffectType) -> Self {
+        Self {
+            id,
+            effect_type,
+            enabled: true,
+            intensity: 1.0,
+            expanded: true,
+            lut_path: String::new(),
+            error: None,
+            parameters: effect_type.default_params(),
+        }
+    }
+
+    /// Human-readable display name.
+    pub fn get_param(&self, name: &str, default: f32) -> f32 {
+        *self.parameters.get(name).unwrap_or(&default)
+    }
+
+    /// Human-readable display name.
+    pub fn set_param(&mut self, name: &str, value: f32) {
+        self.parameters.insert(name.to_string(), value);
+    }
+}
+
+/// Effect chain for UI
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct UIEffectChain {
+    pub effects: Vec<UIEffect>,
+    next_id: u64,
+}
+
+impl UIEffectChain {
+    /// Creates a new, uninitialized instance with default settings.
+    pub fn new() -> Self {
+        Self {
+            effects: Vec::new(),
+            next_id: 1,
+        }
+    }
+
+    pub fn add_effect(&mut self, effect_type: EffectType) -> u64 {
+        let id = self.next_id;
+        self.next_id += 1;
+        self.effects.push(UIEffect::new(id, effect_type));
+        id
+    }
+
+    /// Unique identifier for this entity.
+    pub fn remove_effect(&mut self, id: u64) {
+        self.effects.retain(|e| e.id != id);
+    }
+
+    /// Unique identifier for this entity.
+    pub fn move_up(&mut self, id: u64) {
+        if let Some(pos) = self.effects.iter().position(|e| e.id == id) {
+            if pos > 0 {
+                self.effects.swap(pos, pos - 1);
+            }
+        }
+    }
+
+    /// Unique identifier for this entity.
+    pub fn move_down(&mut self, id: u64) {
+        if let Some(pos) = self.effects.iter().position(|e| e.id == id) {
+            if pos < self.effects.len() - 1 {
+                self.effects.swap(pos, pos + 1);
+            }
+        }
+    }
+
+    /// Unique identifier for this entity.
+    pub fn move_effect(&mut self, id: u64, to_idx: usize) {
+        if let Some(from_idx) = self.effects.iter().position(|e| e.id == id) {
+            if from_idx == to_idx {
+                return;
+            }
+            if to_idx >= self.effects.len() {
+                return;
+            }
+            let effect = self.effects.remove(from_idx);
+            self.effects.insert(to_idx, effect);
+        }
+    }
+
+    /// Unique identifier for this entity.
+    pub fn get_effect_mut(&mut self, id: u64) -> Option<&mut UIEffect> {
+        self.effects.iter_mut().find(|e| e.id == id)
+    }
+}
+
+/// Actions from the effect chain panel
+#[derive(Debug, Clone)]
+pub enum EffectChainAction {
+    /// Add a new effect of the given type
+    AddEffect(EffectType),
+    /// Add a new effect with specific parameters
+    AddEffectWithParams(EffectType, std::collections::HashMap<String, f32>),
+    /// Remove an effect by ID
+    RemoveEffect(u64),
+    /// Move effect up in chain
+    MoveUp(u64),
+    /// Move effect down in chain
+    MoveDown(u64),
+    /// Move effect to specific index
+    MoveEffect(u64, usize),
+    /// Toggle effect enabled state
+    ToggleEnabled(u64),
+    /// Set effect intensity
+    SetIntensity(u64, f32),
+    /// Set effect parameter
+    SetParameter(u64, String, f32),
+    /// Set LUT path
+    SetLUTPath(u64, String),
+    /// Reset effect parameters to default
+    ResetEffect(u64),
+    /// Load a preset by name
+    LoadPreset(String),
+    /// Save current chain as preset
+    SavePreset(String),
+    /// Clear all effects
+    ClearAll,
+}
+
+/// Preset entry for the browser
+#[derive(Debug, Clone)]
+pub struct PresetEntry {
+    /// Human-readable display name.
+    pub name: String,
+    pub category: String,
+    /// File system path to the asset or resource.
+    pub path: String,
+    pub is_favorite: bool,
+}
+
+/// Effect Chain Panel
+#[derive(Default, Debug)]
+pub struct EffectChainPanel {
+    /// Current effect chain
+    pub chain: UIEffectChain,
+
+    /// Whether the panel is visible
+    pub visible: bool,
+
+    /// Show add effect menu
+    show_add_menu: bool,
+
+    /// Show preset browser
+    show_preset_browser: bool,
+
+    /// Preset search query
+    preset_search: String,
+
+    /// Available presets
+    presets: Vec<PresetEntry>,
+
+    /// Currently dragging effect ID
+    dragging_effect: Option<u64>,
+
+    /// Save preset name input
+    save_preset_name: String,
+
+    /// Pending actions
+    actions: Vec<EffectChainAction>,
+}
+
+impl EffectChainPanel {
+    /// Creates a new, uninitialized instance with default settings.
+    pub fn new() -> Self {
+        Self {
+            chain: UIEffectChain::new(),
+            visible: true,
+            show_add_menu: false,
+            show_preset_browser: false,
+            preset_search: String::new(),
+            presets: Vec::new(),
+            dragging_effect: None,
+            save_preset_name: String::new(),
+            actions: Vec::new(),
+        }
+    }
+
+    /// Set available presets
+    pub fn set_presets(&mut self, presets: Vec<PresetEntry>) {
+        self.presets = presets;
+    }
+
+    /// Take all pending actions
+    pub fn take_actions(&mut self) -> Vec<EffectChainAction> {
+        std::mem::take(&mut self.actions)
+    }
+
+    /// Render the effect chain panel
+    pub fn ui(
+        &mut self,
+        ctx: &egui::Context,
+        locale: &LocaleManager,
+        icon_manager: Option<&IconManager>,
+        mut recent_configs: Option<&mut mapmap_core::RecentEffectConfigs>,
+    ) {
+        if !self.visible {
+            return;
+        }
+
+        let layout = ResponsiveLayout::new(ctx);
+        let window_size = layout.window_size(400.0, 600.0);
+
+        egui::Window::new(locale.t("panel-effect-chain"))
+            .default_size(window_size)
+            .resizable(true)
+            .scroll([false, true])
+            .frame(cyber_panel_frame(&ctx.style()))
+            .show(ctx, |ui| {
+                render_panel_header(ui, &locale.t("panel-effect-chain"), |_| {});
+
+                ui.add_space(8.0);
+
+                self.render_toolbar(ui, locale, icon_manager, &mut recent_configs);
+                ui.separator();
+                self.render_effect_list(ui, locale, icon_manager);
+                ui.separator();
+                self.render_footer(ui, locale, icon_manager);
+            });
+
+        // Render popups
+        if self.show_preset_browser {
+            self.render_preset_browser(ctx, locale, icon_manager);
+        }
+    }
+
+    fn render_toolbar(
+        &mut self,
+        ui: &mut Ui,
+        locale: &LocaleManager,
+        icon_manager: Option<&IconManager>,
+        recent_configs: &mut Option<&mut mapmap_core::RecentEffectConfigs>,
+    ) {
+        ui.horizontal(|ui| {
+            // Add effect button
+            if ui
+                .button(locale.t("effect-add"))
+                .clone()
+                .on_hover_text(locale.t("effect-add"))
+                .clicked()
+            {
+                self.show_add_menu = !self.show_add_menu;
+            }
+
+            // Preset buttons
+            if ui
+                .button(locale.t("effect-presets"))
+                .clone()
+                .on_hover_text(locale.t("effect-presets"))
+                .clicked()
+            {
+                self.show_preset_browser = !self.show_preset_browser;
+            }
+
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                if icon_button_simple(
+                    ui,
+                    icon_manager,
+                    AppIcon::Remove,
+                    16.0,
+                    &locale.t("effect-clear"),
+                )
+                .clicked()
+                {
+                    self.actions.push(EffectChainAction::ClearAll);
+                    self.chain.effects.clear();
+                }
+            });
+        });
+
+        // Add effect menu
+        if self.show_add_menu {
+            // Replaced ui.group with egui::Frame for Cyber Dark Theme
+            egui::Frame::default()
+                .fill(colors::DARK_GREY)
+                .stroke(egui::Stroke::new(1.0, colors::STROKE_GREY))
+                .corner_radius(CornerRadius::ZERO)
+                .inner_margin(8.0)
+                .show(ui, |ui| {
+                    ui.label(locale.t("effect-select-type"));
+                    ui.horizontal_wrapped(|ui| {
+                        for effect_type in EffectType::all() {
+                            let label = effect_type.display_name(locale);
+                            if let Some(mgr) = icon_manager {
+                                if let Some(img) = mgr.image(effect_type.app_icon(), 16.0) {
+                                    let btn = ui.add(egui::Button::image_and_text(img, label));
+                                    if btn.clicked() {
+                                        self.chain.add_effect(*effect_type);
+                                        self.actions
+                                            .push(EffectChainAction::AddEffect(*effect_type));
+                                        self.show_add_menu = false;
+                                    }
+
+                                    // Show context menu for recent configs on right click
+                                    btn.context_menu(|ui| {
+                                        ui.label("Recent Configurations:");
+                                        if let Some(recent) = recent_configs {
+                                            let type_name = format!("{:?}", effect_type);
+                                            let configs = recent.get_recent(&type_name);
+
+                                            if configs.is_empty() {
+                                                ui.label(egui::RichText::new("No recent configs").weak().italics());
+                                            } else {
+                                                for config in configs {
+                                                    if ui.button(config.name.to_string()).clone().on_hover_text(format!("{:?}", config.params)).clicked() {
+                                                         self.chain.add_effect(*effect_type);
+
+                                                         let id = self.chain.effects.last().unwrap().id;
+                                                         let effect = self.chain.get_effect_mut(id).unwrap();
+
+                                                         let mut f32_params = std::collections::HashMap::new();
+                                                         for (k, v) in &config.params {
+                                                             if let mapmap_core::recent_effect_configs::EffectParamValue::Float(f) = v {
+                                                                 effect.set_param(k, *f);
+                                                                 f32_params.insert(k.clone(), *f);
+                                                             }
+                                                         }
+
+                                                         self.actions.push(EffectChainAction::AddEffectWithParams(*effect_type, f32_params));
+                                                         ui.close();
+                                                         self.show_add_menu = false;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                    });
+                });
+        }
+    }
+
+    fn render_effect_list(
+        &mut self,
+        ui: &mut Ui,
+        locale: &LocaleManager,
+        icon_manager: Option<&IconManager>,
+    ) {
+        egui::ScrollArea::vertical()
+            .max_height(350.0)
+            .show(ui, |ui| {
+                if self.chain.effects.is_empty() {
+                    ui.vertical_centered(|ui| {
+                        ui.add_space(50.0);
+                        ui.label(
+                            RichText::new(locale.t("effect-no-effects"))
+                                .size(16.0)
+                                .weak()
+                                .italics(),
+                        );
+                        ui.label(locale.t("effect-start-tip"));
+                        ui.add_space(50.0);
+                    });
+                } else {
+                    let mut effect_to_remove = None;
+                    let mut effect_to_move_up = None;
+                    let mut effect_to_move_down = None;
+                    let mut drag_started_id = None;
+                    let mut swap_request = None; // (from_id, to_idx)
+
+                    // Collect effect data to avoid borrow issues
+                    let effect_count = self.chain.effects.len();
+
+                    for idx in 0..effect_count {
+                        let is_first = idx == 0;
+                        let is_last = idx == effect_count - 1;
+
+                        let effect = &mut self.chain.effects[idx];
+                        let effect_id = effect.id;
+                        let effect_type = effect.effect_type;
+                        let enabled = effect.enabled;
+                        let expanded = effect.expanded;
+                        let intensity = effect.intensity;
+                        let is_dragging = self.dragging_effect == Some(effect_id);
+
+                        let (
+                            remove,
+                            reset,
+                            move_up,
+                            move_down,
+                            dragged,
+                            card_rect,
+                            new_enabled,
+                            new_expanded,
+                            new_intensity,
+                            param_changes,
+                            new_lut_path,
+                            new_error,
+                        ) = Self::render_effect_card_static(
+                            ui,
+                            effect_id,
+                            effect_type,
+                            enabled,
+                            expanded,
+                            intensity,
+                            &effect.lut_path,
+                            effect.error.as_ref(),
+                            &effect.parameters,
+                            is_first,
+                            is_last,
+                            is_dragging,
+                            idx,
+                            locale,
+                            icon_manager,
+                        );
+
+                        if dragged {
+                            drag_started_id = Some(effect_id);
+                        }
+
+                        // Handle swap on hover
+                        if let Some(dragging_id) = self.dragging_effect {
+                            if dragging_id != effect_id
+                                && card_rect.contains(
+                                    ui.input(|i| i.pointer.interact_pos().unwrap_or_default()),
+                                )
+                            {
+                                // Only swap if we are hovering over the middle of the card to prevent flickering
+                                // or just simple containment for now
+                                swap_request = Some((dragging_id, idx));
+                            }
+                        }
+
+                        // Apply changes
+                        let effect = &mut self.chain.effects[idx];
+                        if new_enabled != enabled {
+                            effect.enabled = new_enabled;
+                            self.actions
+                                .push(EffectChainAction::ToggleEnabled(effect_id));
+                        }
+                        if new_expanded != expanded {
+                            effect.expanded = new_expanded;
+                        }
+                        if (new_intensity - intensity).abs() > 0.001 {
+                            effect.intensity = new_intensity;
+                            self.actions
+                                .push(EffectChainAction::SetIntensity(effect_id, new_intensity));
+                        }
+                        for (name, value) in param_changes {
+                            effect.set_param(&name, value);
+                            self.actions
+                                .push(EffectChainAction::SetParameter(effect_id, name, value));
+                        }
+
+                        if let Some(path) = new_lut_path {
+                            effect.lut_path = path.clone();
+                            self.actions
+                                .push(EffectChainAction::SetLUTPath(effect_id, path));
+                        }
+
+                        if let Some(err) = new_error {
+                            effect.error = err;
+                        }
+
+                        if reset {
+                            for (k, v) in effect_type.default_params() {
+                                effect.set_param(&k, v);
+                            }
+                            self.actions.push(EffectChainAction::ResetEffect(effect_id));
+                        }
+
+                        if remove {
+                            effect_to_remove = Some(effect_id);
+                        }
+                        if move_up {
+                            effect_to_move_up = Some(effect_id);
+                        }
+                        if move_down {
+                            effect_to_move_down = Some(effect_id);
+                        }
+                    }
+
+                    // Handle drag state updates
+                    if let Some(id) = drag_started_id {
+                        self.dragging_effect = Some(id);
+                    }
+
+                    if ui.input(|i| i.pointer.any_released()) {
+                        self.dragging_effect = None;
+                    }
+
+                    // Apply pending operations
+                    if let Some(id) = effect_to_remove {
+                        self.chain.remove_effect(id);
+                        self.actions.push(EffectChainAction::RemoveEffect(id));
+                    }
+                    if let Some(id) = effect_to_move_up {
+                        self.chain.move_up(id);
+                        self.actions.push(EffectChainAction::MoveUp(id));
+                    }
+                    if let Some(id) = effect_to_move_down {
+                        self.chain.move_down(id);
+                        self.actions.push(EffectChainAction::MoveDown(id));
+                    }
+                    if let Some((from_id, to_idx)) = swap_request {
+                        if let Some(from_idx) =
+                            self.chain.effects.iter().position(|e| e.id == from_id)
+                        {
+                            if from_idx != to_idx {
+                                self.chain.move_effect(from_id, to_idx);
+                                self.actions
+                                    .push(EffectChainAction::MoveEffect(from_id, to_idx));
+                            }
+                        }
+                    }
+                }
+            });
+    }
+
+    /// Static rendering function that doesn't borrow self
+    #[allow(clippy::type_complexity)]
+    #[allow(clippy::too_many_arguments)]
+    fn render_effect_card_static(
+        ui: &mut Ui,
+        effect_id: u64,
+        effect_type: EffectType,
+        mut enabled: bool,
+        mut expanded: bool,
+        mut intensity: f32,
+        lut_path: &str,
+        error: Option<&String>,
+        parameters: &std::collections::HashMap<String, f32>,
+        is_first: bool,
+        is_last: bool,
+        is_dragging: bool,
+        index: usize,
+        locale: &LocaleManager,
+        icon_manager: Option<&IconManager>,
+    ) -> (
+        bool,
+        bool,
+        bool,
+        bool,
+        bool,
+        egui::Rect,
+        bool,
+        bool,
+        f32,
+        Vec<(String, f32)>,
+        Option<String>,
+        Option<Option<String>>,
+    ) {
+        let mut remove = false;
+        let mut reset = false;
+        let mut move_up = false;
+        let mut move_down = false;
+        let mut dragged = false;
+        let mut param_changes = Vec::new();
+        let mut new_lut_path = None;
+        let mut new_error = None;
+
+        let frame_color = if is_dragging {
+            colors::CYAN_ACCENT.linear_multiply(0.4) // Highlight when dragging
+        } else if enabled {
+            // Active effect background - subtle tint
+            colors::CYAN_ACCENT
+                .linear_multiply(0.05)
+                .gamma_multiply(0.5)
+        } else if index % 2 == 0 {
+            colors::DARK_GREY
+        } else {
+            colors::DARKER_GREY
+        };
+
+        // Add stroke if dragging or enabled
+        let stroke = if is_dragging {
+            egui::Stroke::new(2.0, colors::CYAN_ACCENT)
+        } else if enabled {
+            egui::Stroke::new(1.0, colors::CYAN_ACCENT.linear_multiply(0.5))
+        } else {
+            egui::Stroke::new(1.0, colors::STROKE_GREY)
+        };
+
+        let response = egui::Frame::default()
+            .fill(frame_color)
+            .stroke(stroke)
+            .corner_radius(CornerRadius::ZERO)
+            .inner_margin(4.0)
+            .outer_margin(2.0)
+            .show(ui, |ui| {
+                // Header row
+                ui.horizontal(|ui| {
+                    // Drag Handle
+                    let handle_resp = ui
+                        .add(
+                            egui::Button::new("⋮⋮")
+                                .frame(false)
+                                .sense(egui::Sense::drag()),
+                        )
+                        .on_hover_text("Drag to reorder. Hold Alt+Up/Down to move.");
+
+                    if handle_resp.drag_started() {
+                        dragged = true;
+                    }
+                    if handle_resp.dragged() {
+                        ui.ctx().set_cursor_icon(egui::CursorIcon::Grabbing);
+                    } else if handle_resp.hovered() {
+                        ui.ctx().set_cursor_icon(egui::CursorIcon::Grab);
+
+                        // Keyboard reordering
+                        if ui.input(|i| i.modifiers.alt && i.key_pressed(egui::Key::ArrowUp)) {
+                            move_up = true;
+                        }
+                        if ui.input(|i| i.modifiers.alt && i.key_pressed(egui::Key::ArrowDown)) {
+                            move_down = true;
+                        }
+                    }
+
+                    // Enable toggle
+                    ui.checkbox(&mut enabled, "")
+                        .on_hover_text("Enable/Disable Effect");
+
+                    // Effect name with icon
+                    let header_text = effect_type.display_name(locale);
+                    if let Some(mgr) = icon_manager {
+                        if let Some(img) = mgr.image(effect_type.app_icon(), 16.0) {
+                            if ui
+                                .add(
+                                    egui::Button::image_and_text(img, header_text)
+                                        .selected(expanded),
+                                )
+                                .clicked()
+                            {
+                                expanded = !expanded;
+                            }
+                        }
+                    }
+
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        // Delete button (Hold to Confirm)
+                        if delete_button(ui) {
+                            remove = true;
+                        }
+                        if crate::widgets::custom::hold_to_action_button(
+                            ui,
+                            "↺ Reset",
+                            colors::WARN_COLOR,
+                        ) {
+                            reset = true;
+                        }
+
+                        // Move buttons
+                        ui.add_enabled_ui(!is_last, |ui| {
+                            if ui.small_button("▼").clicked() {
+                                move_down = true;
+                            }
+                        });
+                        ui.add_enabled_ui(!is_first, |ui| {
+                            if ui.small_button("▲").clicked() {
+                                move_up = true;
+                            }
+                        });
+                    });
+                });
+
+                // Expanded content
+                if expanded {
+                    ui.separator();
+
+                    // Intensity slider
+                    ui.horizontal(|ui| {
+                        ui.label(locale.t("effect-intensity"));
+                        ui.add(egui::Slider::new(&mut intensity, 0.0..=1.0));
+                    });
+
+                    // LUT Path
+                    if effect_type == EffectType::LoadLUT {
+                        ui.horizontal(|ui| {
+                            ui.label("LUT:");
+                            let path_label = if lut_path.is_empty() {
+                                "None"
+                            } else {
+                                std::path::Path::new(lut_path)
+                                    .file_name()
+                                    .and_then(|n| n.to_str())
+                                    .unwrap_or(lut_path)
+                            };
+
+                            if ui.button(path_label).clicked() {
+                                if let Some(path) = rfd::FileDialog::new()
+                                    .add_filter("LUT", &["cube", "png"])
+                                    .pick_file()
+                                {
+                                    let path_str = path.to_string_lossy().to_string();
+                                    match mapmap_core::lut::Lut3D::from_file(&path) {
+                                        Ok(_) => {
+                                            new_lut_path = Some(path_str);
+                                            new_error = Some(None);
+                                        }
+                                        Err(e) => {
+                                            new_error = Some(Some(e.to_string()));
+                                        }
+                                    }
+                                }
+                            }
+                        });
+
+                        if let Some(err) = error {
+                            ui.label(
+                                RichText::new(format!("Error: {}", err))
+                                    .color(colors::ERROR_COLOR)
+                                    .small(),
+                            );
+                        }
+                    }
+
+                    // Effect-specific parameters
+                    Self::render_effect_parameters_static(
+                        ui,
+                        effect_type,
+                        effect_id,
+                        parameters,
+                        &mut param_changes,
+                        locale,
+                    );
+                }
+            });
+
+        (
+            remove,
+            reset,
+            move_up,
+            move_down,
+            dragged,
+            response.response.rect, // Return the rect of the whole card
+            enabled,
+            expanded,
+            intensity,
+            param_changes,
+            new_lut_path,
+            new_error,
+        )
+    }
+
+    fn render_effect_parameters_static(
+        ui: &mut Ui,
+        effect_type: EffectType,
+        effect_id: u64,
+        parameters: &std::collections::HashMap<String, f32>,
+        param_changes: &mut Vec<(String, f32)>,
+        locale: &LocaleManager,
+    ) {
+        match effect_type {
+            EffectType::ColorAdjust => {
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "brightness",
+                    &locale.t("param-brightness"),
+                    -1.0,
+                    1.0,
+                    0.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "contrast",
+                    &locale.t("param-contrast"),
+                    0.0,
+                    2.0,
+                    1.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "saturation",
+                    &locale.t("param-saturation"),
+                    0.0,
+                    2.0,
+                    1.0,
+                );
+            }
+            EffectType::Blur => {
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "radius",
+                    &locale.t("param-radius"),
+                    0.0,
+                    20.0,
+                    5.0,
+                );
+            }
+            EffectType::ChromaticAberration => {
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "amount",
+                    &locale.t("param-amount"),
+                    0.0,
+                    0.1,
+                    0.01,
+                );
+            }
+            EffectType::Glow => {
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "threshold",
+                    &locale.t("param-threshold"),
+                    0.0,
+                    1.0,
+                    0.5,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "radius",
+                    &locale.t("param-radius"),
+                    0.0,
+                    30.0,
+                    10.0,
+                );
+            }
+            EffectType::Kaleidoscope => {
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "segments",
+                    &locale.t("param-segments"),
+                    2.0,
+                    16.0,
+                    6.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "rotation",
+                    &locale.t("param-rotation"),
+                    0.0,
+                    360.0,
+                    0.0,
+                );
+            }
+            EffectType::Pixelate => {
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "pixel_size",
+                    &locale.t("param-pixel-size"),
+                    1.0,
+                    64.0,
+                    8.0,
+                );
+            }
+            EffectType::Vignette => {
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "radius",
+                    &locale.t("param-radius"),
+                    0.0,
+                    1.0,
+                    0.5,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "softness",
+                    &locale.t("param-softness"),
+                    0.0,
+                    1.0,
+                    0.5,
+                );
+            }
+            EffectType::FilmGrain => {
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "amount",
+                    &locale.t("param-amount"),
+                    0.0,
+                    0.5,
+                    0.1,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "speed",
+                    &locale.t("param-speed"),
+                    0.0,
+                    5.0,
+                    1.0,
+                );
+            }
+            EffectType::Wave => {
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "frequency",
+                    &locale.t("param-frequency"),
+                    0.0,
+                    50.0,
+                    0.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "amplitude",
+                    &locale.t("param-amplitude"),
+                    0.0,
+                    2.0,
+                    0.0,
+                );
+            }
+            EffectType::Glitch => {
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "block_size",
+                    &locale.t("param-block-size"),
+                    1.0,
+                    50.0,
+                    0.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "color_shift",
+                    &locale.t("param-color-shift"),
+                    0.0,
+                    20.0,
+                    0.0,
+                );
+            }
+            EffectType::RgbSplit => {
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "offset_x",
+                    &locale.t("param-offset-x"),
+                    -50.0,
+                    50.0,
+                    0.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "offset_y",
+                    &locale.t("param-offset-y"),
+                    -50.0,
+                    50.0,
+                    0.0,
+                );
+            }
+            EffectType::Mirror => {
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "center",
+                    &locale.t("param-center"),
+                    0.0,
+                    1.0,
+                    0.0,
+                );
+            }
+            EffectType::HueShift => {
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "hue_shift",
+                    &locale.t("param-hue-shift"),
+                    0.0,
+                    1.0,
+                    0.0,
+                );
+            }
+            EffectType::Voronoi => {
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "scale",
+                    &locale.t("param-scale"),
+                    1.0,
+                    50.0,
+                    10.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "offset",
+                    &locale.t("param-offset"),
+                    0.0,
+                    10.0,
+                    1.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "cell_size",
+                    &locale.t("param-cell-size"),
+                    0.1,
+                    5.0,
+                    1.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "distortion",
+                    &locale.t("param-distortion"),
+                    0.0,
+                    2.0,
+                    0.5,
+                );
+            }
+            EffectType::Tunnel => {
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "scale",
+                    &locale.t("param-scale"),
+                    0.1,
+                    2.0,
+                    0.5,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "rotation",
+                    &locale.t("param-rotation"),
+                    0.0,
+                    5.0,
+                    0.5,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "speed",
+                    &locale.t("param-speed"),
+                    0.0,
+                    5.0,
+                    0.5,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "distortion",
+                    &locale.t("param-distortion"),
+                    0.0,
+                    2.0,
+                    0.5,
+                );
+            }
+            EffectType::Galaxy => {
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "zoom",
+                    &locale.t("param-zoom"),
+                    0.1,
+                    5.0,
+                    0.5,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "speed",
+                    &locale.t("param-speed"),
+                    0.0,
+                    2.0,
+                    0.2,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "radius",
+                    &locale.t("param-radius"),
+                    0.1,
+                    3.0,
+                    1.0,
+                );
+                Self::render_param_slider_static(
+                    ui,
+                    parameters,
+                    param_changes,
+                    "brightness",
+                    &locale.t("param-brightness"),
+                    0.0,
+                    2.0,
+                    1.0,
+                );
+            }
+            _ => {
+                ui.label(locale.t("no-parameters"));
+            }
+        }
+        let _ = effect_id; // Silence unused warning
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn render_param_slider_static(
+        ui: &mut Ui,
+        parameters: &std::collections::HashMap<String, f32>,
+        param_changes: &mut Vec<(String, f32)>,
+        param_name: &str,
+        label: &str,
+        min: f32,
+        max: f32,
+        default_value: f32,
+    ) {
+        ui.horizontal(|ui| {
+            ui.label(format!("{}:", label));
+            let old_value = *parameters.get(param_name).unwrap_or(&default_value);
+            let mut value = old_value;
+            let response = styled_slider(ui, &mut value, min..=max, default_value);
+
+            response.context_menu(|ui| {
+                if crate::widgets::custom::hold_to_action_button(ui, "↺ Reset", colors::WARN_COLOR)
+                {
+                    value = default_value;
+                    ui.close();
+                }
+            });
+            if (value - old_value).abs() > 0.0001 {
+                param_changes.push((param_name.to_string(), value));
+            }
+        });
+    }
+
+    fn render_footer(
+        &mut self,
+        ui: &mut Ui,
+        locale: &LocaleManager,
+        icon_manager: Option<&IconManager>,
+    ) {
+        ui.horizontal(|ui| {
+            ui.label(format!(
+                "{} {}",
+                self.chain.effects.len(),
+                locale.t("panel-effect-chain")
+            ));
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                if icon_button_simple(
+                    ui,
+                    icon_manager,
+                    AppIcon::FloppyDisk,
+                    16.0,
+                    &locale.t("effect-save"),
+                )
+                .clicked()
+                {
+                    self.show_preset_browser = true;
+                }
+            });
+        });
+    }
+
+    fn render_preset_browser(
+        &mut self,
+        ctx: &egui::Context,
+        locale: &LocaleManager,
+        icon_manager: Option<&IconManager>,
+    ) {
+        let mut close_browser = false;
+        let mut load_preset_path: Option<String> = None;
+
+        let mut open = self.show_preset_browser;
+        egui::Window::new(locale.t("effect-presets-browser"))
+            .default_size([400.0, 300.0])
+            .resizable(true)
+            .open(&mut open)
+            .frame(cyber_panel_frame(&ctx.style()))
+            .show(ctx, |ui| {
+                render_panel_header(ui, &locale.t("effect-presets-browser"), |_| {});
+                ui.add_space(8.0);
+                ui.horizontal(|ui| {
+                    ui.label("🔍");
+                    ui.add(
+                        egui::TextEdit::singleline(&mut self.preset_search)
+                            .hint_text(locale.t("effect-search")),
+                    );
+                });
+                ui.separator();
+                egui::Frame::default()
+                    .fill(colors::DARKER_GREY)
+                    .stroke(egui::Stroke::new(1.0, colors::STROKE_GREY))
+                    .corner_radius(CornerRadius::ZERO)
+                    .inner_margin(4.0)
+                    .show(ui, |ui| {
+                        egui::ScrollArea::vertical()
+                            .max_height(200.0)
+                            .show(ui, |ui| {
+                                let search_lower = self.preset_search.to_lowercase();
+                                for preset in &self.presets {
+                                    if !self.preset_search.is_empty()
+                                        && !preset.name.to_lowercase().contains(&search_lower)
+                                    {
+                                        continue;
+                                    }
+                                    ui.horizontal(|ui| {
+                                        let star = if preset.is_favorite { "⭐" } else { "☆" };
+                                        ui.label(star);
+                                        if ui.button(&preset.name).clicked() {
+                                            load_preset_path = Some(preset.path.clone());
+                                            close_browser = true;
+                                        }
+                                        ui.weak(&preset.category);
+                                    });
+                                }
+                                if self.presets.is_empty() {
+                                    ui.label(locale.t("effect-no-presets"));
+                                }
+                            });
+                    });
+                ui.separator();
+                ui.horizontal(|ui| {
+                    ui.label(locale.t("effect-save-as"));
+                    ui.text_edit_singleline(&mut self.save_preset_name);
+                    if icon_button_simple(
+                        ui,
+                        icon_manager,
+                        AppIcon::FloppyDisk,
+                        16.0,
+                        &locale.t("effect-save"),
+                    )
+                    .clicked()
+                        && !self.save_preset_name.is_empty()
+                    {
+                        self.actions
+                            .push(EffectChainAction::SavePreset(self.save_preset_name.clone()));
+                        self.save_preset_name.clear();
+                    }
+                });
+            });
+        self.show_preset_browser = open;
+        if let Some(path) = load_preset_path {
+            self.actions.push(EffectChainAction::LoadPreset(path));
+        }
+        if close_browser {
+            self.show_preset_browser = false;
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ui_effect_chain_creation() {
+        let mut chain = UIEffectChain::new();
+
+        let id1 = chain.add_effect(EffectType::Blur);
+        let id2 = chain.add_effect(EffectType::ColorAdjust);
+
+        assert_eq!(chain.effects.len(), 2);
+        assert_eq!(chain.effects[0].id, id1);
+        assert_eq!(chain.effects[1].id, id2);
+    }
+
+    #[test]
+    fn test_ui_effect_chain_move_down() {
+        let mut chain = UIEffectChain::new();
+
+        let id1 = chain.add_effect(EffectType::Blur);
+        let id2 = chain.add_effect(EffectType::ColorAdjust);
+
+        chain.move_down(id1);
+
+        assert_eq!(chain.effects[0].id, id2);
+        assert_eq!(chain.effects[1].id, id1);
+    }
+
+    #[test]
+    fn test_ui_effect_chain_move_effect() {
+        let mut chain = UIEffectChain::new();
+
+        let id1 = chain.add_effect(EffectType::Blur); // 0
+        let id2 = chain.add_effect(EffectType::ColorAdjust); // 1
+        let id3 = chain.add_effect(EffectType::Glow); // 2
+
+        // Move id1 (0) to 2
+        chain.move_effect(id1, 2);
+        // Expect: [id2, id3, id1]
+        assert_eq!(chain.effects[0].id, id2);
+        assert_eq!(chain.effects[1].id, id3);
+        assert_eq!(chain.effects[2].id, id1);
+    }
+
+    #[test]
+    fn test_ui_effect_chain_reorder() {
+        let mut chain = UIEffectChain::new();
+
+        let id1 = chain.add_effect(EffectType::Blur);
+        let id2 = chain.add_effect(EffectType::ColorAdjust);
+
+        chain.move_up(id2);
+
+        assert_eq!(chain.effects[0].id, id2);
+        assert_eq!(chain.effects[1].id, id1);
+    }
+
+    #[test]
+    fn test_effect_panel_actions() {
+        let mut panel = EffectChainPanel::new();
+
+        panel.chain.add_effect(EffectType::Blur);
+        panel
+            .actions
+            .push(EffectChainAction::AddEffect(EffectType::Blur));
+
+        let actions = panel.take_actions();
+        assert_eq!(actions.len(), 1);
+        assert!(panel.actions.is_empty());
+    }
+
+    #[test]
+    fn test_effect_reset_logic() {
+        let mut chain = UIEffectChain::new();
+        let id = chain.add_effect(EffectType::Blur);
+
+        // Modify
+        if let Some(effect) = chain.get_effect_mut(id) {
+            effect.set_param("radius", 20.0);
+        }
+
+        // Verify modified
+        assert_eq!(
+            chain.get_effect_mut(id).unwrap().get_param("radius", 0.0),
+            20.0
+        );
+
+        // Reset Logic (simulate what happens in UI)
+        if let Some(effect) = chain.get_effect_mut(id) {
+            for (k, v) in effect.effect_type.default_params() {
+                effect.set_param(&k, v);
+            }
+        }
+
+        // Verify reset
+        assert_eq!(
+            chain.get_effect_mut(id).unwrap().get_param("radius", 0.0),
+            5.0
+        );
+    }
+}
