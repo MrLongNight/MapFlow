@@ -6,11 +6,12 @@ mod trackline_tests {
     fn test_trackline_mode_pauses_at_marker() {
         let mut clip = AnimationClip::new("test".into());
         clip.duration = 10.0;
-        clip.playback_mode = PlaybackMode::Trackline;
-        clip.add_marker(Marker::new(2.0, "Pause 1".into()));
-        clip.add_marker(Marker::new(5.0, "Pause 2".into()));
+        // Trackline mode is now implemented via a flag on the player
+        clip.add_marker(Marker::new(1, 2.0, "Pause 1".into()));
+        clip.add_marker(Marker::new(2, 5.0, "Pause 2".into()));
 
         let mut player = AnimationPlayer::new(clip);
+        player.pause_at_markers = true;
         player.play();
 
         // Update past the first marker
