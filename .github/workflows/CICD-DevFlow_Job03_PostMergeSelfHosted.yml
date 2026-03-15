@@ -23,10 +23,11 @@ concurrency:
 
 env:
   SELF_HOSTED_POST_MERGE_ENABLED: ${{ vars.MAPFLOW_ENABLE_SELF_HOSTED_POST_MERGE || 'false' }}
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   resolve-context:
-    name: Resolve Post-Merge Context
+    name: "Resolve Post-Merge Context"
     runs-on: ubuntu-latest
     if: vars.MAPFLOW_ENABLE_SELF_HOSTED_POST_MERGE == 'true'
     outputs:
@@ -35,6 +36,7 @@ jobs:
       pr_head_sha: ${{ steps.resolve.outputs.pr_head_sha }}
       merge_commit_sha: ${{ steps.resolve.outputs.merge_commit_sha }}
       checkout_ref: ${{ steps.resolve.outputs.checkout_ref }}
+
     steps:
       - name: Resolve PR details and activation guard
         id: resolve
@@ -103,10 +105,11 @@ jobs:
             core.setOutput('checkout_ref', pr.merge_commit_sha);
 
   gate-standard-pr-checks:
-    name: Gate On Standard PR Checks
+    name: "Gate On Standard PR Checks"
     runs-on: ubuntu-latest
     needs: [resolve-context]
     if: vars.MAPFLOW_ENABLE_SELF_HOSTED_POST_MERGE == 'true' && needs.resolve-context.outputs.should_run == 'true'
+
     steps:
       - name: Verify required GitHub-hosted PR checks succeeded
         uses: actions/github-script@v7
@@ -115,39 +118,40 @@ jobs:
             const headSha = `${{ needs.resolve-context.outputs.pr_head_sha }}`;
             const prNumber = `${{ needs.resolve-context.outputs.pr_number }}`;
 
-            const REQUIRED_CHECKS = [
+            const REQUIRED_CHECK_RUNS = [
               {
                 name: 'Quality Gate (Format & Lint)',
-                source: 'check_run',
                 allowedConclusions: ['success'],
               },
               {
                 name: 'Security Scan',
-                source: 'check_run',
                 allowedConclusions: ['success'],
               },
               {
                 name: 'Build & Test (Linux)',
-                source: 'check_run',
                 allowedConclusions: ['success'],
               },
               {
                 name: 'Validation Success',
-                source: 'check_run',
                 allowedConclusions: ['success'],
               },
               {
                 name: 'Analyze (rust)',
-                source: 'check_run',
                 allowedConclusions: ['success'],
               },
             ];
 
-            const OPTIONAL_CHECKS = [
+            const OPTIONAL_CHECK_RUNS = [
               {
                 name: 'Build & Test (Windows)',
-                source: 'check_run',
                 allowedConclusions: ['success', 'skipped', 'neutral'],
+              },
+            ];
+
+            const REQUIRED_STATUSES = [
+              {
+                name: 'pre-commit.ci - pr',
+                allowedConclusions: ['success'],
               },
             ];
 
@@ -184,32 +188,64 @@ jobs:
             }
 
             const failures = [];
-            for (const expected of REQUIRED_CHECKS) {
-              const match =
-                expected.source === 'check_run'
-                  ? latestCheckRunsByName.get(expected.name)
-                  : latestStatusesByName.get(expected.name);
+
+            for (const expected of REQUIRED_CHECK_RUNS) {
+              const match = latestCheckRunsByName.get(expected.name);
 
               if (!match) {
                 failures.push(`${expected.name} (missing)`);
                 continue;
               }
 
-              const status =
-                expected.source === 'check_run'
-                  ? match.status
-                  : match.state === 'pending'
-                    ? 'in_progress'
-                    : 'completed';
-              const conclusion =
-                expected.source === 'check_run'
-                  ? match.conclusion
-                  : match.state === 'pending'
-                    ? null
-                    : match.state;
+              core.info(
+                `${expected.name}: source=check_run, status=${match.status}, conclusion=${match.conclusion}`,
+              );
+
+              if (match.status !== 'completed') {
+                failures.push(`${expected.name} (${match.status})`);
+                continue;
+              }
+
+              if (!expected.allowedConclusions.includes(match.conclusion)) {
+                failures.push(`${expected.name} (${match.conclusion})`);
+              }
+            }
+
+            for (const optional of OPTIONAL_CHECK_RUNS) {
+              const match = latestCheckRunsByName.get(optional.name);
+
+              if (!match) {
+                core.info(`${optional.name}: not present on this PR head, accepted as optional.`);
+                continue;
+              }
 
               core.info(
-                `${expected.name}: source=${expected.source}, status=${status}, conclusion=${conclusion}`,
+                `${optional.name}: source=check_run, status=${match.status}, conclusion=${match.conclusion}`,
+              );
+
+              if (match.status !== 'completed') {
+                failures.push(`${optional.name} (${match.status})`);
+                continue;
+              }
+
+              if (!optional.allowedConclusions.includes(match.conclusion)) {
+                failures.push(`${optional.name} (${match.conclusion})`);
+              }
+            }
+
+            for (const expected of REQUIRED_STATUSES) {
+              const match = latestStatusesByName.get(expected.name);
+
+              if (!match) {
+                failures.push(`${expected.name} (missing)`);
+                continue;
+              }
+
+              const status = match.state === 'pending' ? 'in_progress' : 'completed';
+              const conclusion = match.state === 'pending' ? null : match.state;
+
+              core.info(
+                `${expected.name}: source=status, status=${status}, conclusion=${conclusion}`,
               );
 
               if (status !== 'completed') {
@@ -219,44 +255,6 @@ jobs:
 
               if (!expected.allowedConclusions.includes(conclusion)) {
                 failures.push(`${expected.name} (${conclusion})`);
-              }
-            }
-
-            for (const optionalCheck of OPTIONAL_CHECKS) {
-              const match =
-                optionalCheck.source === 'check_run'
-                  ? latestCheckRunsByName.get(optionalCheck.name)
-                  : latestStatusesByName.get(optionalCheck.name);
-
-              if (!match) {
-                core.info(`${optionalCheck.name}: not present on this PR head, accepted as optional.`);
-                continue;
-              }
-
-              const status =
-                optionalCheck.source === 'check_run'
-                  ? match.status
-                  : match.state === 'pending'
-                    ? 'in_progress'
-                    : 'completed';
-              const conclusion =
-                optionalCheck.source === 'check_run'
-                  ? match.conclusion
-                  : match.state === 'pending'
-                    ? null
-                    : match.state;
-
-              core.info(
-                `${optionalCheck.name}: source=${optionalCheck.source}, status=${status}, conclusion=${conclusion}`,
-              );
-
-              if (status !== 'completed') {
-                failures.push(`${optionalCheck.name} (${status})`);
-                continue;
-              }
-
-              if (!optionalCheck.allowedConclusions.includes(conclusion)) {
-                failures.push(`${optionalCheck.name} (${conclusion})`);
               }
             }
 
@@ -270,11 +268,12 @@ jobs:
             core.notice(`Merged PR #${prNumber} passed the standard hosted PR gate.`);
 
   self-hosted-post-merge:
-    name: Self-Hosted Post-Merge Validation
+    name: "Self-Hosted Post-Merge Validation"
     runs-on: [self-hosted, windows, x64, mapflow-post-merge]
     needs: [resolve-context, gate-standard-pr-checks]
     if: vars.MAPFLOW_ENABLE_SELF_HOSTED_POST_MERGE == 'true' && needs.resolve-context.outputs.should_run == 'true'
     timeout-minutes: 120
+
     steps:
       - name: Checkout merged commit from main
         uses: actions/checkout@v5
