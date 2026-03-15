@@ -303,6 +303,15 @@ impl TexturePool {
 
         handle.mark_used(self.start_time);
 
+        let expected_size = (4 * width * height) as usize;
+        if data.len() < expected_size {
+            tracing::error!(
+                "TexturePool::upload_data: Data size mismatch for {}. Expected at least {} bytes, got {}. Skipping upload to prevent panic.",
+                name, expected_size, data.len()
+            );
+            return;
+        }
+
         queue.write_texture(
             wgpu::TexelCopyTextureInfo {
                 texture: &handle.texture,
