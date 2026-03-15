@@ -337,7 +337,7 @@ Rationale:
 ## 10. Roadmap Link
 
 - Roadmap task: `MF-061-MACOS-COMPATIBILITY`
-- See root `ROADMAP.md` for status tracking
+- See root `ROADMAP.md` (`docs/project/roadmap/README.md`) for status tracking
 
 ### Subtasks
 - `MF-062-MACOS-BUILD-BOOTSTRAP`

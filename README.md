@@ -110,7 +110,7 @@ Explore our comprehensive guides in the [`docs/`](docs/README.md) directory:
 
 * 📖 [**User Guide**](docs/A4_USER/B1_MANUAL/DOC-C0_README.md): Interface layout, keyboard shortcuts, and performance tips.
 * 👨‍💻 [**Developer Portal**](docs/A2_DEVELOPMENT/DOC-B0_README.md): Architecture overview, coding standards, and build instructions.
-* 🗺️ [**Project Roadmap**](ROADMAP.md): Current status and upcoming Phase 1.0 release goals.
+* 🗺️ [**Project Roadmap**](docs/project/roadmap/README.md): Current status and upcoming Phase 1.0 release goals.
 
 ---
 

@@ -4,7 +4,7 @@
 - Status: Proposed
 - Zweck: umsetzungsnahe Detailvorgaben fuer `MF-059`, `MF-056` und `MF-021`
 - Ergaenzt:
-  - `ROADMAP.md`
+  - `ROADMAP.md` (`docs/project/roadmap/README.md`)
   - `DOC-C11_VIDEO_IO_STRATEGY.md`
 
 ## 1. Einsatz dieses Dokuments
@@ -19,7 +19,7 @@ Ziel ist:
 
 ## 2. Gemeinsame Guardrails
 
-- `QA-Status` in `ROADMAP.md` nicht aendern.
+- `QA-Status` in `ROADMAP.md` (`docs/project/roadmap/README.md`) nicht aendern.
 - Keine grossen Neben-Refactors ohne direkten Bezug zu `MF-059`, `MF-056` oder `MF-021`.
 - Doku und Code muessen am Ende denselben Status ausdruecken.
 - Wenn ein Task nur teilweise geschlossen werden kann, muessen Restblocker explizit dokumentiert werden.
