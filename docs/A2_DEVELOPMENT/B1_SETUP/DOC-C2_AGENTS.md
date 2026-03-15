@@ -10,4 +10,4 @@
 *   Formatierung via `cargo fmt`.
 
 ## 3. Dokumentations-Pflicht
-Jeder Feature-Task muss im `CHANGELOG.md` und in der `ROADMAP.md` dokumentiert werden.
+Jeder Feature-Task muss im `CHANGELOG.md` und in der `ROADMAP.md` (jetzt unter `docs/project/roadmap/README.md`) dokumentiert werden.

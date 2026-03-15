@@ -1,7 +1,7 @@
 # TEST_MATRIX (No-Loss)
 
 Stand: 2026-03-06
-Bezug: `ROADMAP.md` (MF-ID gesteuert)
+Bezug: `ROADMAP.md` / `docs/project/roadmap/README.md` (MF-ID gesteuert)
 
 ## Roh-Inventar (unveraendert)
 
@@ -55,7 +55,7 @@ Alle Quellpunkte bleiben als `SRC-###` erhalten.
 | SRC-044 | User_2026-03-06 | Design Themes und Umschaltfunktion fehlen. |
 | SRC-045 | walkthrough.md | TechLead passt nur Task-ID an jules_dispatcher (keine redundanten Tasktexte). |
 | SRC-046 | walkthrough.md | automationMode: AUTO_CREATE_PR ist verpflichtend. |
-| SRC-047 | walkthrough.md | ROADMAP.md muss GitHub PR/Issue-Status spiegeln. |
+| SRC-047 | walkthrough.md | ROADMAP.md (jetzt docs/project/roadmap/README.md) muss GitHub PR/Issue-Status spiegeln. |
 | SRC-048 | walkthrough.md | Einheits-Schema MF-[NR]-[SLUG], Branch-Namen und PR-Prefix strikt nach ID. |
 | SRC-049 | walkthrough.md | pr_branch_manager bestaetigt gruene Checks vor Statuswechsel auf Abnahme erforderlich. |
 | SRC-050 | walkthrough.md | Architect markiert delegierbare Tasks mit Roadmap Task-ID. |
