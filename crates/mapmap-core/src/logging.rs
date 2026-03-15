@@ -171,4 +171,64 @@ mod tests {
         assert!(filename.starts_with("mapflow_"));
         assert!(filename.ends_with(".log"));
     }
+
+    #[test]
+    fn test_current_log_path() {
+        let config = LogConfig {
+            log_path: PathBuf::from("my_logs"),
+            ..Default::default()
+        };
+        let path = config.current_log_path();
+        assert!(path.starts_with("my_logs"));
+        assert!(path.to_string_lossy().contains("mapflow_"));
+        assert!(path.extension().unwrap() == "log");
+    }
+
+    #[test]
+    fn test_ensure_log_directory() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let log_dir = temp_dir.path().join("test_logs");
+
+        let config = LogConfig {
+            log_path: log_dir.clone(),
+            ..Default::default()
+        };
+
+        config.ensure_log_directory().unwrap();
+        assert!(log_dir.exists());
+        assert!(log_dir.is_dir());
+    }
+
+    #[test]
+    fn test_cleanup_old_logs() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let log_dir = temp_dir.path().join("cleanup_logs");
+        fs::create_dir_all(&log_dir).unwrap();
+
+        let file1 = log_dir.join("mapflow_1.log");
+        let file2 = log_dir.join("mapflow_2.log");
+        let file3 = log_dir.join("mapflow_3.log");
+
+        fs::write(&file1, "log 1").unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        fs::write(&file2, "log 2").unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        fs::write(&file3, "log 3").unwrap();
+
+        let non_log = log_dir.join("ignore.txt");
+        fs::write(&non_log, "ignore me").unwrap();
+
+        let config = LogConfig {
+            log_path: log_dir.clone(),
+            max_files: 2,
+            ..Default::default()
+        };
+
+        config.cleanup_old_logs().unwrap();
+
+        assert!(!file1.exists());
+        assert!(file2.exists());
+        assert!(file3.exists());
+        assert!(non_log.exists());
+    }
 }
