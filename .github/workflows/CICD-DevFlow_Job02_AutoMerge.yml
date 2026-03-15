@@ -54,70 +54,94 @@ jobs:
               }
               prNumber = parsedPrNumber;
             }
+
             const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
             const AUTO_MERGE_RESULT_MARKER = '<!-- auto-merge-result -->';
             const buildManagedCommentBody = (message) =>
               `${AUTO_MERGE_RESULT_MARKER}\n${message}`;
-            const MERGE_BLOCKING_CHECKS = [
-              {
-                name: 'pre-commit.ci - pr',
-                source: 'status',
-                allowedConclusions: ['success'],
-              },
-              {
-                name: 'Quality Gate (Format & Lint)',
-                source: 'check_run',
-                allowedConclusions: ['success'],
-              },
-              {
-                name: 'Security Scan',
-                source: 'check_run',
-                allowedConclusions: ['success'],
-              },
-              {
-                name: 'Build & Test (Linux)',
-                source: 'check_run',
-                allowedConclusions: ['success'],
-              },
-              {
-                name: 'Build & Test (Windows)',
-                source: 'check_run',
-                allowedConclusions: ['success', 'skipped', 'neutral'],
-              },
-              {
-                name: 'Validation Success',
-                source: 'check_run',
-                allowedConclusions: ['success'],
-              },
-              {
-                name: 'Analyze (rust)',
-                source: 'check_run',
-                allowedConclusions: ['success'],
-              },
-            ];
-            const MANAGED_WORKFLOWS = [
-              {
-                workflowId: 'CICD-DevFlow_Job01_Validation.yml',
-                workflowName: 'CICD-DevFlow: Job01 Validation',
-                checkNames: [
-                  'Quality Gate (Format & Lint)',
-                  'Security Scan',
-                  'Build & Test (Linux)',
-                  'Build & Test (Windows)',
-                  'Validation Success',
-                ],
-                inputs: {
-                  toolchain: 'stable',
+
+            const getExpectedChecks = (pr) => {
+              const hasWindowsLabel = (pr.labels || []).some((label) => label.name === 'test-windows');
+
+              const checks = [
+                {
+                  name: 'pre-commit.ci - pr',
+                  source: 'status',
+                  allowedConclusions: ['success'],
+                  required: true,
                 },
-              },
-              {
-                workflowId: 'CI-02_security-scan.yml',
-                workflowName: 'Security Analysis',
-                checkNames: ['Analyze (rust)'],
-              },
-            ];
+                {
+                  name: 'Quality Gate (Format & Lint)',
+                  source: 'status',
+                  allowedConclusions: ['success'],
+                  required: true,
+                },
+                {
+                  name: 'Security Scan',
+                  source: 'status',
+                  allowedConclusions: ['success'],
+                  required: true,
+                },
+                {
+                  name: 'Build & Test (Linux)',
+                  source: 'status',
+                  allowedConclusions: ['success'],
+                  required: true,
+                },
+                {
+                  name: 'Validation Success',
+                  source: 'status',
+                  allowedConclusions: ['success'],
+                  required: true,
+                },
+                {
+                  name: 'Analyze (rust)',
+                  source: 'check_run',
+                  allowedConclusions: ['success'],
+                  required: true,
+                },
+                {
+                  name: 'Build & Test (Windows)',
+                  source: 'check_run',
+                  allowedConclusions: ['success', 'skipped', 'neutral'],
+                  required: hasWindowsLabel,
+                },
+              ];
+
+              return checks;
+            };
+
+            const getManagedWorkflows = (pr) => {
+              const hasWindowsLabel = (pr.labels || []).some((label) => label.name === 'test-windows');
+
+              return [
+                {
+                  workflowId: 'CICD-DevFlow_Job01_Validation.yml',
+                  workflowName: 'CICD-DevFlow: Job01 Validation',
+                  checkNames: [
+                    'Quality Gate (Format & Lint)',
+                    'Security Scan',
+                    'Build & Test (Linux)',
+                    'Validation Success',
+                    ...(hasWindowsLabel ? ['Build & Test (Windows)'] : []),
+                  ],
+                  checkSource: 'status',
+                  inputs: {
+                    toolchain: 'stable',
+                  },
+                },
+                {
+                  workflowId: 'CI-02_security-scan.yml',
+                  workflowName: 'Security Analysis',
+                  checkNames: ['Analyze (rust)'],
+                  checkSource: 'check_run',
+                },
+              ];
+            };
+
             const isActiveWorkflowRun = (run) =>
               ['queued', 'in_progress', 'pending', 'requested', 'waiting'].includes(run.status);
+
             const upsertManagedComment = async (issueNumber, message) => {
               const body = buildManagedCommentBody(message);
               const comments = await github.paginate(github.rest.issues.listComments, {
@@ -155,6 +179,7 @@ jobs:
               });
               console.log(`Updated managed auto-merge comment ${existingComment.id}.`);
             };
+
             const findOpenPrByHeadSha = async (headSha) => {
               const prs = await github.rest.pulls.list({
                 owner: context.repo.owner,
@@ -165,6 +190,7 @@ jobs:
 
               return prs.data.find((pr) => pr.head.sha === headSha);
             };
+
             const listWorkflowRunsForHead = async (workflowId, branch, headSha) => {
               const runs = await github.request(
                 'GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',
@@ -179,6 +205,7 @@ jobs:
 
               return runs.data.workflow_runs.filter((run) => run.head_sha === headSha);
             };
+
             const dispatchWorkflowForHead = async ({ workflowId, workflowName, ref, headSha, inputs }) => {
               const matchingRuns = await listWorkflowRunsForHead(workflowId, ref, headSha);
               const activeRun = matchingRuns.find((run) => isActiveWorkflowRun(run));
@@ -213,11 +240,19 @@ jobs:
               console.log(`Triggered ${workflowId} via workflow_dispatch on branch ${ref} for head ${headSha}.`);
               return true;
             };
-            const recoverMissingManagedWorkflows = async (headRef, headSha, latestRunsByName) => {
+
+            const recoverMissingManagedWorkflows = async (
+              headRef,
+              headSha,
+              latestRunsByName,
+              latestStatusesByName,
+              managedWorkflows,
+            ) => {
               let dispatchedAny = false;
 
-              for (const workflow of MANAGED_WORKFLOWS) {
-                const missingChecks = workflow.checkNames.filter((checkName) => !latestRunsByName.has(checkName));
+              for (const workflow of managedWorkflows) {
+                const sourceMap = workflow.checkSource === 'status' ? latestStatusesByName : latestRunsByName;
+                const missingChecks = workflow.checkNames.filter((checkName) => !sourceMap.has(checkName));
                 if (missingChecks.length === 0) {
                   continue;
                 }
@@ -238,6 +273,7 @@ jobs:
 
               return dispatchedAny;
             };
+
             const waitForUpdatedPrHead = async (pullNumber, previousHeadSha) => {
               for (let attempt = 1; attempt <= 20; attempt += 1) {
                 const currentPr = await github.rest.pulls.get({
@@ -264,6 +300,7 @@ jobs:
               );
               return null;
             };
+
             const waitForResolvedMergeability = async (pullNumber, initialPr) => {
               let currentPr = initialPr;
 
@@ -298,6 +335,7 @@ jobs:
               );
               return null;
             };
+
             const updateBehindPr = async (currentPr) => {
               console.log('PR is behind the base branch. Updating branch before attempting auto-merge...');
 
@@ -315,8 +353,9 @@ jobs:
 
                 const updatedPr = await waitForUpdatedPrHead(currentPr.number, currentPr.head.sha);
                 if (updatedPr) {
+                  const managedWorkflows = getManagedWorkflows(updatedPr);
                   let dispatchedAny = false;
-                  for (const workflow of MANAGED_WORKFLOWS) {
+                  for (const workflow of managedWorkflows) {
                     const dispatched = await dispatchWorkflowForHead({
                       workflowId: workflow.workflowId,
                       workflowName: workflow.workflowName,
@@ -415,7 +454,6 @@ jobs:
 
             console.log(`Fetching check runs and statuses for commit ${pr.head.sha}...`);
 
-            // pre-commit.ci reports through the Status API, not the Checks API.
             const [checks, combinedStatus] = await Promise.all([
               github.rest.checks.listForRef({
                 owner: context.repo.owner,
@@ -472,14 +510,20 @@ jobs:
               }
             }
 
+            const expectedChecks = getExpectedChecks(pr);
+            const managedWorkflows = getManagedWorkflows(pr);
+
             const observedChecks = [
               ...latestRunsByName.values(),
               ...latestStatusesByName.values(),
             ];
+
             const dispatchedMissingWorkflows = await recoverMissingManagedWorkflows(
               pr.head.ref,
               pr.head.sha,
               latestRunsByName,
+              latestStatusesByName,
+              managedWorkflows,
             );
 
             if (dispatchedMissingWorkflows) {
@@ -490,7 +534,7 @@ jobs:
             let allRequiredPassed = true;
             const missingOrFailed = [];
 
-            for (const expectedCheck of MERGE_BLOCKING_CHECKS) {
+            for (const expectedCheck of expectedChecks.filter((check) => check.required)) {
               const match =
                 expectedCheck.source === 'status'
                   ? latestStatusesByName.get(expectedCheck.name)
@@ -526,7 +570,7 @@ jobs:
 
             const otherFailed = observedChecks.filter(
               (check) =>
-                !MERGE_BLOCKING_CHECKS.some((expectedCheck) => expectedCheck.name === check.name) &&
+                !expectedChecks.some((expectedCheck) => expectedCheck.name === check.name) &&
                 check.status === 'completed' &&
                 ['failure', 'timed_out', 'cancelled', 'error'].includes(check.conclusion),
             );
