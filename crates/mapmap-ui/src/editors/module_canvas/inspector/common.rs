@@ -4,7 +4,7 @@ use crate::widgets::{styled_drag_value, styled_slider};
 use egui::{Color32, Pos2, Rect, Sense, Stroke, Ui, Vec2};
 use mapmap_core::module::{BlendModeType, ModulePartId};
 
-/// Renders the common transform and color correction controls for a media source.
+/// Renders the common transform and color correction controls for a media source..
 #[allow(clippy::too_many_arguments)]
 pub fn render_common_controls(
     ui: &mut Ui,
