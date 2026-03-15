@@ -31,8 +31,6 @@ pub enum ShowMode {
     SemiAutomated,
     /// Module switching is manual only (timeline acts as arrangement board).
     Manual,
-    /// Hybrid mode (time + trigger combination).
-    Hybrid,
 }
 
 impl ShowMode {
@@ -41,7 +39,6 @@ impl ShowMode {
             Self::FullyAutomated => "Fully Auto",
             Self::SemiAutomated => "Semi Auto",
             Self::Manual => "Manual",
-            Self::Hybrid => "Hybrid",
         }
     }
 }
@@ -104,8 +101,6 @@ pub struct TimelineV2 {
     pub semi_auto_pending_block_id: Option<u64>,
     /// Full-auto last block.
     pub full_auto_current_block_id: Option<u64>,
-    /// Hybrid mode current block.
-    pub hybrid_current_block_id: Option<u64>,
 }
 
 impl Default for TimelineV2 {
@@ -128,7 +123,6 @@ impl Default for TimelineV2 {
             semi_auto_current_block_id: None,
             semi_auto_pending_block_id: None,
             full_auto_current_block_id: None,
-            hybrid_current_block_id: None,
         }
     }
 }
@@ -209,7 +203,6 @@ impl TimelineV2 {
         self.semi_auto_current_block_id = None;
         self.semi_auto_pending_block_id = None;
         self.full_auto_current_block_id = None;
-        self.hybrid_current_block_id = None;
     }
 
     fn cleanup_missing_modules(&mut self, available_module_ids: &[ModuleId]) {
@@ -232,9 +225,6 @@ impl TimelineV2 {
         }
         if !has_block(self.full_auto_current_block_id, &self.module_arrangement) {
             self.full_auto_current_block_id = None;
-        }
-        if !has_block(self.hybrid_current_block_id, &self.module_arrangement) {
-            self.hybrid_current_block_id = None;
         }
     }
 
@@ -316,13 +306,6 @@ impl TimelineV2 {
                     self.manual_current_block_id = self.first_enabled_block_id();
                 }
                 self.module_for_block_id(self.manual_current_block_id)
-            }
-            ShowMode::Hybrid => {
-                // In Hybrid mode, time defines current scope, but triggers can jump.
-                // For now, behave like full auto but keep separate state.
-                let active_id = self.active_block_for_time(current_time).map(|b| b.id);
-                self.hybrid_current_block_id = active_id;
-                self.module_for_block_id(active_id)
             }
         }
     }
@@ -621,11 +604,6 @@ impl TimelineV2 {
                             ShowMode::Manual,
                             ShowMode::Manual.label(),
                         );
-                        ui.selectable_value(
-                            &mut self.show_mode,
-                            ShowMode::Hybrid,
-                            ShowMode::Hybrid.label(),
-                        );
                     });
 
                 match self.show_mode {
@@ -648,7 +626,7 @@ impl TimelineV2 {
                             }
                         }
                     }
-                    ShowMode::FullyAutomated | ShowMode::Hybrid => {}
+                    ShowMode::FullyAutomated => {}
                 }
             }
         });
@@ -948,95 +926,11 @@ impl TimelineV2 {
             let track_start_y = ruler_rect.max.y;
             let mut current_lane_index = 0;
 
-<<<<<<< HEAD
             for (group_name, tracks) in &track_groups {
                 let is_expanded = self.expanded_tracks.contains(group_name);
                 let header_y = track_start_y + (current_lane_index as f32 * 60.0);
                 let header_rect = Rect::from_min_size(
                     Pos2::new(rect.min.x, header_y),
-=======
-            if module_track_height > 0.0 {
-                let module_track_y = track_start_y;
-                let module_rect = Rect::from_min_size(
-                    Pos2::new(rect.min.x, module_track_y),
-                    Vec2::new(rect.width(), module_track_height),
-                );
-                painter.rect_filled(module_rect, 0.0, Color32::from_rgb(22, 22, 22));
-                painter.text(
-                    Pos2::new(module_rect.min.x + 5.0, module_rect.min.y + 6.0),
-                    egui::Align2::LEFT_TOP,
-                    "Module Track",
-                    egui::FontId::proportional(13.0),
-                    Color32::from_rgb(200, 220, 255),
-                );
-
-                let active_module = self.runtime_show_module(
-                    self.playhead,
-                    animator.is_playing(),
-                    &available_module_ids,
-                );
-
-                // TRIGGER ACTION IF CHANGED
-                if let Some(mod_id) = active_module {
-                    // Check if we need to emit a select action (only if not already the active one in the app)
-                    // We use a simple heuristic: if it's the first frame or the ID changed.
-                    // For now, we just emit it, the handler in actions.rs should be idempotent.
-                    if action.is_none()
-                        && animator.is_playing()
-                        && self.show_mode == ShowMode::FullyAutomated
-                    {
-                        action = Some(TimelineAction::SelectModule(mod_id));
-                    }
-                }
-
-                let active_block_id = match self.show_mode {
-                    ShowMode::FullyAutomated => self.full_auto_current_block_id,
-                    ShowMode::SemiAutomated => self.semi_auto_current_block_id,
-                    ShowMode::Manual => self.manual_current_block_id,
-                };
-
-                for block in self.sorted_enabled_blocks() {
-                    let block_x = rect.min.x + block.start_time * self.zoom;
-                    let block_w = (block.duration * self.zoom).max(8.0);
-                    let block_rect = Rect::from_min_size(
-                        Pos2::new(block_x, module_rect.min.y + 24.0),
-                        Vec2::new(block_w, 28.0),
-                    );
-
-                    let color = if self.semi_auto_pending_block_id == Some(block.id) {
-                        Color32::from_rgb(255, 170, 0)
-                    } else if active_block_id == Some(block.id) {
-                        Color32::from_rgb(40, 180, 80)
-                    } else if active_module == Some(block.module_id) {
-                        Color32::from_rgb(55, 130, 200)
-                    } else {
-                        Color32::from_rgb(70, 70, 90)
-                    };
-
-                    painter.rect_filled(block_rect, 3.0, color);
-                    painter.rect_stroke(
-                        block_rect,
-                        3.0,
-                        Stroke::new(1.0, Color32::from_rgb(230, 230, 230)),
-                        egui::StrokeKind::Middle,
-                    );
-
-                    let label = Self::module_name(&module_names, block.module_id);
-                    painter.text(
-                        Pos2::new(block_rect.min.x + 4.0, block_rect.min.y + 6.0),
-                        egui::Align2::LEFT_TOP,
-                        label,
-                        egui::FontId::proportional(12.0),
-                        Color32::WHITE,
-                    );
-                }
-            }
-
-            for (i, track) in tracks.iter().enumerate() {
-                let track_y = track_start_y + module_track_height + (i as f32 * 60.0);
-                let track_rect = Rect::from_min_size(
-                    Pos2::new(rect.min.x, track_y),
->>>>>>> origin/main
                     Vec2::new(rect.width(), 60.0),
                 );
 
@@ -1168,10 +1062,9 @@ impl TimelineV2 {
                     }
                 }
             }
-<<<<<<< HEAD
 
             if module_track_height > 0.0 {
-                let module_track_y = track_start_y + (current_lane_index as f32 * 60.0);
+                let module_track_y = track_start_y + (visible_lanes_count as f32 * 60.0);
                 let module_rect = Rect::from_min_size(
                     Pos2::new(rect.min.x, module_track_y),
                     Vec2::new(rect.width(), module_track_height),
@@ -1208,7 +1101,6 @@ impl TimelineV2 {
                     ShowMode::FullyAutomated => self.full_auto_current_block_id,
                     ShowMode::SemiAutomated => self.semi_auto_current_block_id,
                     ShowMode::Manual => self.manual_current_block_id,
-                    ShowMode::Hybrid => self.hybrid_current_block_id,
                 };
 
                 for block in self.sorted_enabled_blocks() {
@@ -1247,8 +1139,6 @@ impl TimelineV2 {
                     );
                 }
             }
-=======
->>>>>>> origin/main
         });
 
         action
