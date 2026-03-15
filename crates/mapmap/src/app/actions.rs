@@ -774,6 +774,39 @@ fn handle_node_action(app: &mut App, action: NodeEditorAction) -> Result<()> {
 /// Process pending MCP actions
 pub fn handle_mcp_actions(app: &mut App) {
     while let Ok(action) = app.mcp_receiver.try_recv() {
+        if let mapmap_mcp::McpAction::ApplicationCaptureScreenshot(test_name) = &action {
+            info!("MCP: ApplicationCaptureScreenshot({})", test_name);
+            if let Some(runner) = &app.bevy_runner {
+                if let Some((data, width, height)) = runner.get_image_data() {
+                    let output_dir = std::env::var_os("MAPFLOW_VISUAL_CAPTURE_OUTPUT_DIR")
+                        .map(std::path::PathBuf::from)
+                        .unwrap_or_else(|| {
+                            std::env::current_dir()
+                                .unwrap_or_default()
+                                .join("tests")
+                                .join("artifacts")
+                        });
+                    let path = output_dir.join(format!("{}_actual.png", test_name));
+
+                    if let Some(parent) = path.parent() {
+                        let _ = std::fs::create_dir_all(parent);
+                    }
+                    if let Some(img) = image::RgbaImage::from_raw(width, height, data) {
+                        if let Err(e) = img.save(&path) {
+                            tracing::error!("Failed to save screenshot: {}", e);
+                        } else {
+                            info!("Saved screenshot to {:?}", path);
+                        }
+                    }
+                } else {
+                    tracing::warn!("MCP CaptureScreenshot failed: No image data from Bevy");
+                }
+            } else {
+                tracing::warn!("MCP CaptureScreenshot failed: Bevy runner not active");
+            }
+            continue;
+        }
+
         if let mapmap_mcp::McpAction::SetModuleSourcePath(mod_id, part_id, path) = action {
             info!(
                 "MCP: SetModuleSourcePath({}, {}, {:?})",

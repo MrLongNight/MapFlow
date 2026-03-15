@@ -45,6 +45,37 @@ pub fn handle_tool_call(
     params: CallToolParams,
 ) -> Option<JsonRpcResponse> {
     match params.name.as_str() {
+        "Application.CaptureScreenshot" => {
+            if let Some(args) = params.arguments {
+                if let Some(name_val) = args.get("test_name") {
+                    if let Some(test_name) = name_val.as_str() {
+                        if let Some(sender) = &server.action_sender {
+                            if let Err(e) =
+                                sender.send(crate::McpAction::ApplicationCaptureScreenshot(
+                                    test_name.to_string(),
+                                ))
+                            {
+                                error!("Failed to send ApplicationCaptureScreenshot action: {}", e);
+                                return Some(crate::server::error_response(
+                                    id,
+                                    -32603,
+                                    "Internal error: Failed to send action",
+                                ));
+                            }
+                        }
+                        return Some(crate::server::success_response(
+                            id,
+                            serde_json::json!({"status": "queued", "message": format!("Capture initiated for test_name '{}'", test_name)}),
+                        ));
+                    }
+                }
+            }
+            Some(crate::server::error_response(
+                id,
+                -32602,
+                "Missing test_name",
+            ))
+        }
         "project_save" => {
             if let Some(args) = params.arguments {
                 if let Some(path_val) = args.get("path") {

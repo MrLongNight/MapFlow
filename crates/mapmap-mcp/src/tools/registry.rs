@@ -2,6 +2,18 @@ use crate::protocol::Tool;
 
 pub fn get_tools() -> Vec<Tool> {
     vec![
+        // === Application Diagnostics & Testing ===
+        Tool {
+            name: "Application.CaptureScreenshot".to_string(),
+            description: Some("Captures the current output to an image file. Designed for visual automated E2E testing.".to_string()),
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "test_name": { "type": "string", "description": "The name or scenario ID to be used in the output filename." }
+                },
+                "required": ["test_name"]
+            }),
+        },
         // === Basic Tools ===
         Tool {
             name: "send_osc".to_string(),

@@ -11,6 +11,10 @@ description = "MapFlow - Professional Projection Mapping Software"
 name = "MapFlow"
 path = "src/main.rs"
 
+[[bin]]
+name = "mapflow_visual_compare"
+path = "src/bin/mapflow_visual_compare.rs"
+
 [features]
 default = ["audio", "midi", "ffmpeg"]
 ffmpeg = ["ffmpeg-next", "mapmap-media/ffmpeg"]

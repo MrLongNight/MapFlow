@@ -1,0 +1,23 @@
+{
+  "name": "pilot_mcp_capture",
+  "commands": [
+    {
+      "method": "tools/call",
+      "params": {
+        "name": "layer_create",
+        "arguments": {
+          "name": "Test Layer 1"
+        }
+      }
+    },
+    {
+      "method": "tools/call",
+      "params": {
+        "name": "Application.CaptureScreenshot",
+        "arguments": {
+          "test_name": "pilot_mcp_capture"
+        }
+      }
+    }
+  ]
+}
