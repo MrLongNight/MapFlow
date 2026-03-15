@@ -136,8 +136,20 @@ pub fn create_player_handle(
         .map_err(anyhow::Error::from)?;
 
     // Prime the first frame immediately so a paused source still has a visible preview.
+    // Try multiple times as some decoders (like FFmpeg) need several packets/frames to fill buffers.
     player.play().map_err(anyhow::Error::from)?;
-    if let Some(frame) = player.update(Duration::ZERO) {
+
+    let mut primed_frame = None;
+    for _ in 0..15 {
+        if let Some(frame) = player.update(Duration::from_millis(1)) {
+            primed_frame = Some(frame);
+            break;
+        }
+        // Small yield to allow background decoding if applicable
+        std::thread::sleep(Duration::from_millis(2));
+    }
+
+    if let Some(frame) = primed_frame {
         if let mapmap_io::format::FrameData::Cpu(ref data) = frame.data {
             pool.upload_data(&queue, &name, data, frame.format.width, frame.format.height);
         } else {
@@ -146,6 +158,8 @@ pub fn create_player_handle(
                 path
             );
         }
+    } else {
+        info!("Media-Sync: Keine sofortige Frame-Vorschau fuer '{}' verfuegbar (Decoder benoetigt evtl. mehr Zeit).", path);
     }
     if !start_playing {
         player.pause().map_err(anyhow::Error::from)?;

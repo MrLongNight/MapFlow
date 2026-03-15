@@ -418,7 +418,13 @@ mod ffmpeg_impl {
                     }
 
                     // Scale to RGBA
-                    let mut rgb_frame = ffmpeg::util::frame::Video::empty();
+                    // Properly allocate the destination frame with the correct format and dimensions
+                    let mut rgb_frame = ffmpeg::util::frame::Video::new(
+                        ffmpeg::format::Pixel::RGBA,
+                        self.width,
+                        self.height,
+                    );
+
                     self.scaler.run(frame_ptr, &mut rgb_frame).map_err(|e| {
                         MediaError::DecoderError(format!(
                             "Decoder error: Input changed? Scaler run failed: {}",
@@ -430,8 +436,24 @@ mod ffmpeg_impl {
                         decoded.timestamp().unwrap_or(0) as f64 * f64::from(self.time_base),
                     );
 
+                    // Copy to a tight buffer to remove FFmpeg's alignment padding.
+                    // This ensures compatibility with wgpu and other parts of the system
+                    // that expect exactly width * height * 4 bytes.
+                    let width_bytes = self.width as usize * 4;
+                    let mut tight_data = Vec::with_capacity(width_bytes * self.height as usize);
+                    let stride = rgb_frame.stride(0);
+                    let src_data = rgb_frame.data(0);
+                    
+                    for y in 0..self.height as usize {
+                        let start = y * stride;
+                        let end = start + width_bytes;
+                        if end <= src_data.len() {
+                            tight_data.extend_from_slice(&src_data[start..end]);
+                        }
+                    }
+
                     return Ok(VideoFrame::new(
-                        rgb_frame.data(0).to_vec(),
+                        tight_data,
                         mapmap_io::VideoFormat {
                             width: self.width,
                             height: self.height,
