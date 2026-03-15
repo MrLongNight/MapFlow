@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod mapping_tests {
+mod tests {
     use crate::osc::address::{control_target_to_address, parse_osc_address};
     use crate::target::ControlTarget;
 

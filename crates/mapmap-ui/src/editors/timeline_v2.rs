@@ -412,13 +412,6 @@ impl TimelineV2 {
                 action = Some(TimelineAction::Stop);
             }
 
-            if ui.button("⏮").on_hover_text("Previous Marker").clicked() {
-                action = Some(TimelineAction::JumpPrevMarker);
-            }
-            if ui.button("⏭").on_hover_text("Next Marker").clicked() {
-                action = Some(TimelineAction::JumpNextMarker);
-            }
-
             ui.separator();
 
             ui.label(format!("Time: {:.2}s", self.playhead));
@@ -479,16 +472,6 @@ impl TimelineV2 {
                             &mut current_mode,
                             mapmap_core::animation::PlaybackMode::OneShot,
                             "OneShot",
-                        )
-                        .clicked()
-                    {
-                        mode_changed = true;
-                    }
-                    if ui
-                        .selectable_value(
-                            &mut current_mode,
-                            mapmap_core::animation::PlaybackMode::Trackline,
-                            "Trackline",
                         )
                         .clicked()
                     {
@@ -760,67 +743,6 @@ impl TimelineV2 {
             let ruler_rect = Rect::from_min_size(rect.min, Vec2::new(rect.width(), 30.0));
             painter.rect_filled(ruler_rect, 0.0, Color32::from_rgb(40, 40, 40));
 
-            // Draw markers
-            let mut marker_to_remove = None;
-            let mut marker_to_toggle_pause = None;
-
-            for marker in clip.markers() {
-                let x = rect.min.x + (marker.time as f32) * self.zoom;
-                if x >= rect.min.x && x <= rect.max.x {
-                    // Marker line
-                    let color = if marker.pause_at {
-                        Color32::from_rgb(255, 150, 50)
-                    } else {
-                        Color32::from_rgb(100, 200, 255)
-                    };
-                    painter.line_segment(
-                        [Pos2::new(x, ruler_rect.min.y), Pos2::new(x, rect.max.y)],
-                        Stroke::new(1.0, color.linear_multiply(0.5)),
-                    );
-
-                    // Marker handle (triangle)
-                    let handle_rect = Rect::from_center_size(
-                        Pos2::new(x, ruler_rect.min.y + 6.0),
-                        Vec2::new(12.0, 12.0),
-                    );
-
-                    let points = vec![
-                        Pos2::new(x - 6.0, ruler_rect.min.y),
-                        Pos2::new(x + 6.0, ruler_rect.min.y),
-                        Pos2::new(x, ruler_rect.min.y + 12.0),
-                    ];
-
-                    painter.add(egui::Shape::convex_polygon(
-                        points,
-                        color,
-                        Stroke::new(1.0, Color32::WHITE),
-                    ));
-
-                    // Check interaction with marker handle
-                    let interact_rect = handle_rect.expand(2.0);
-                    let handle_response = ui.interact(
-                        interact_rect,
-                        ui.id().with(format!("marker_{}", marker.time)),
-                        Sense::click(),
-                    );
-                    let handle_response = handle_response.on_hover_ui(|ui| {
-                        ui.label(format!("Marker: {}", marker.name));
-                        ui.label(format!("Time: {:.2}s", marker.time));
-                        ui.label(if marker.pause_at {
-                            "Pauses playback"
-                        } else {
-                            "Does not pause playback"
-                        });
-                        ui.label("Right-click to toggle pause, Shift+Click to remove");
-                    });
-                    if handle_response.secondary_clicked() {
-                        marker_to_toggle_pause = Some(marker.time as f32);
-                    } else if handle_response.clicked() && ui.input(|i| i.modifiers.shift) {
-                        marker_to_remove = Some(marker.time as f32);
-                    }
-                }
-            }
-
             // Draw time ticks
             let tick_interval = if self.zoom > 100.0 { 0.1 } else { 1.0 };
             let mut time = 0.0;
@@ -867,118 +789,25 @@ impl TimelineV2 {
             // Handle ruler scrubbing
             if response.hovered() || response.dragged() {
                 if let Some(pos) = response.interact_pointer_pos() {
-                    if pos.y <= ruler_rect.max.y {
-                        if response.is_pointer_button_down_on() {
-                            let time = (pos.x - rect.min.x) / self.zoom;
-                            let snapped = if ui.input(|i| i.modifiers.shift) {
-                                time // Bypass snap
-                            } else {
-                                self.snap_time(time)
-                            };
+                    if pos.y <= ruler_rect.max.y && response.is_pointer_button_down_on() {
+                        let time = (pos.x - rect.min.x) / self.zoom;
+                        let snapped = if ui.input(|i| i.modifiers.shift) {
+                            time // Bypass snap
+                        } else {
+                            self.snap_time(time)
+                        };
 
-                            action = Some(TimelineAction::Seek(snapped));
-                        } else if response.secondary_clicked() {
-                            let time = (pos.x - rect.min.x) / self.zoom;
-                            let snapped = if ui.input(|i| i.modifiers.shift) {
-                                time // Bypass snap
-                            } else {
-                                self.snap_time(time)
-                            };
-                            action = Some(TimelineAction::AddMarker(snapped));
-                        }
+                        action = Some(TimelineAction::Seek(snapped));
                     }
                 }
-            }
-
-            if let Some(time) = marker_to_remove {
-                action = Some(TimelineAction::RemoveMarker(time));
-            } else if let Some(time) = marker_to_toggle_pause {
-                action = Some(TimelineAction::ToggleMarkerPause(time));
             }
 
             // Access immutable clip for drawing tracks
             let tracks = &animator.clip().tracks;
             let track_start_y = ruler_rect.max.y;
 
-            if module_track_height > 0.0 {
-                let module_track_y = track_start_y;
-                let module_rect = Rect::from_min_size(
-                    Pos2::new(rect.min.x, module_track_y),
-                    Vec2::new(rect.width(), module_track_height),
-                );
-                painter.rect_filled(module_rect, 0.0, Color32::from_rgb(22, 22, 22));
-                painter.text(
-                    Pos2::new(module_rect.min.x + 5.0, module_rect.min.y + 6.0),
-                    egui::Align2::LEFT_TOP,
-                    "Module Track",
-                    egui::FontId::proportional(13.0),
-                    Color32::from_rgb(200, 220, 255),
-                );
-
-                let active_module = self.runtime_show_module(
-                    self.playhead,
-                    animator.is_playing(),
-                    &available_module_ids,
-                );
-
-                // TRIGGER ACTION IF CHANGED
-                if let Some(mod_id) = active_module {
-                    // Check if we need to emit a select action (only if not already the active one in the app)
-                    // We use a simple heuristic: if it's the first frame or the ID changed.
-                    // For now, we just emit it, the handler in actions.rs should be idempotent.
-                    if action.is_none()
-                        && animator.is_playing()
-                        && self.show_mode == ShowMode::FullyAutomated
-                    {
-                        action = Some(TimelineAction::SelectModule(mod_id));
-                    }
-                }
-
-                let active_block_id = match self.show_mode {
-                    ShowMode::FullyAutomated => self.full_auto_current_block_id,
-                    ShowMode::SemiAutomated => self.semi_auto_current_block_id,
-                    ShowMode::Manual => self.manual_current_block_id,
-                };
-
-                for block in self.sorted_enabled_blocks() {
-                    let block_x = rect.min.x + block.start_time * self.zoom;
-                    let block_w = (block.duration * self.zoom).max(8.0);
-                    let block_rect = Rect::from_min_size(
-                        Pos2::new(block_x, module_rect.min.y + 24.0),
-                        Vec2::new(block_w, 28.0),
-                    );
-
-                    let color = if self.semi_auto_pending_block_id == Some(block.id) {
-                        Color32::from_rgb(255, 170, 0)
-                    } else if active_block_id == Some(block.id) {
-                        Color32::from_rgb(40, 180, 80)
-                    } else if active_module == Some(block.module_id) {
-                        Color32::from_rgb(55, 130, 200)
-                    } else {
-                        Color32::from_rgb(70, 70, 90)
-                    };
-
-                    painter.rect_filled(block_rect, 3.0, color);
-                    painter.rect_stroke(
-                        block_rect,
-                        3.0,
-                        Stroke::new(1.0, Color32::from_rgb(230, 230, 230)),
-                        egui::StrokeKind::Middle,
-                    );
-
-                    let label = Self::module_name(&module_names, block.module_id);
-                    painter.text(
-                        Pos2::new(block_rect.min.x + 4.0, block_rect.min.y + 6.0),
-                        egui::Align2::LEFT_TOP,
-                        label,
-                        egui::FontId::proportional(12.0),
-                        Color32::WHITE,
-                    );
-                }
-            }
-
             for (i, track) in tracks.iter().enumerate() {
-                let track_y = track_start_y + module_track_height + (i as f32 * 60.0);
+                let track_y = track_start_y + (i as f32 * 60.0);
                 let track_rect = Rect::from_min_size(
                     Pos2::new(rect.min.x, track_y),
                     Vec2::new(rect.width(), 60.0),
@@ -1056,6 +885,83 @@ impl TimelineV2 {
                     ));
                 }
             }
+
+            if module_track_height > 0.0 {
+                let module_track_y = track_start_y + (track_count as f32 * 60.0);
+                let module_rect = Rect::from_min_size(
+                    Pos2::new(rect.min.x, module_track_y),
+                    Vec2::new(rect.width(), module_track_height),
+                );
+                painter.rect_filled(module_rect, 0.0, Color32::from_rgb(22, 22, 22));
+                painter.text(
+                    Pos2::new(module_rect.min.x + 5.0, module_rect.min.y + 6.0),
+                    egui::Align2::LEFT_TOP,
+                    "Module Show",
+                    egui::FontId::proportional(13.0),
+                    Color32::from_rgb(200, 220, 255),
+                );
+
+                let active_module = self.runtime_show_module(
+                    self.playhead,
+                    animator.is_playing(),
+                    &available_module_ids,
+                );
+
+                // TRIGGER ACTION IF CHANGED
+                if let Some(mod_id) = active_module {
+                    // Check if we need to emit a select action (only if not already the active one in the app)
+                    // We use a simple heuristic: if it's the first frame or the ID changed.
+                    // For now, we just emit it, the handler in actions.rs should be idempotent.
+                    if action.is_none()
+                        && animator.is_playing()
+                        && self.show_mode == ShowMode::FullyAutomated
+                    {
+                        action = Some(TimelineAction::SelectModule(mod_id));
+                    }
+                }
+
+                let active_block_id = match self.show_mode {
+                    ShowMode::FullyAutomated => self.full_auto_current_block_id,
+                    ShowMode::SemiAutomated => self.semi_auto_current_block_id,
+                    ShowMode::Manual => self.manual_current_block_id,
+                };
+
+                for block in self.sorted_enabled_blocks() {
+                    let block_x = rect.min.x + block.start_time * self.zoom;
+                    let block_w = (block.duration * self.zoom).max(8.0);
+                    let block_rect = Rect::from_min_size(
+                        Pos2::new(block_x, module_rect.min.y + 24.0),
+                        Vec2::new(block_w, 28.0),
+                    );
+
+                    let color = if self.semi_auto_pending_block_id == Some(block.id) {
+                        Color32::from_rgb(255, 170, 0)
+                    } else if active_block_id == Some(block.id) {
+                        Color32::from_rgb(40, 180, 80)
+                    } else if active_module == Some(block.module_id) {
+                        Color32::from_rgb(55, 130, 200)
+                    } else {
+                        Color32::from_rgb(70, 70, 90)
+                    };
+
+                    painter.rect_filled(block_rect, 3.0, color);
+                    painter.rect_stroke(
+                        block_rect,
+                        3.0,
+                        Stroke::new(1.0, Color32::from_rgb(230, 230, 230)),
+                        egui::StrokeKind::Middle,
+                    );
+
+                    let label = Self::module_name(&module_names, block.module_id);
+                    painter.text(
+                        Pos2::new(block_rect.min.x + 4.0, block_rect.min.y + 6.0),
+                        egui::Align2::LEFT_TOP,
+                        label,
+                        egui::FontId::proportional(12.0),
+                        Color32::WHITE,
+                    );
+                }
+            }
         });
 
         action
@@ -1070,9 +976,4 @@ pub enum TimelineAction {
     Stop,
     Seek(f32),
     SelectModule(ModuleId),
-    AddMarker(f32),
-    RemoveMarker(f32),
-    ToggleMarkerPause(f32),
-    JumpNextMarker,
-    JumpPrevMarker,
 }
