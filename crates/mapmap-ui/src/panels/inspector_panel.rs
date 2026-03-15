@@ -34,7 +34,7 @@ impl InspectorPanel {
 
         // Cyber Header
         render_panel_header(ui, &i18n.t("panel-inspector"), |ui| {
-            if ui.button("✕").clicked() {
+            if ui.button("✕").on_hover_text("Close Inspector").clicked() {
                 // TODO: Need a way to close from here
             }
         });

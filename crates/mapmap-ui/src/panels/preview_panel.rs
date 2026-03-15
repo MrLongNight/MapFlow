@@ -92,10 +92,20 @@ impl PreviewPanel {
 
                 // Height adjustment
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if ui.button("−").clicked() && self.panel_height > 80.0 {
+                    if ui
+                        .button("−")
+                        .on_hover_text("Decrease Panel Height")
+                        .clicked()
+                        && self.panel_height > 80.0
+                    {
                         self.panel_height -= 20.0;
                     }
-                    if ui.button("+").clicked() && self.panel_height < 300.0 {
+                    if ui
+                        .button("+")
+                        .on_hover_text("Increase Panel Height")
+                        .clicked()
+                        && self.panel_height < 300.0
+                    {
                         self.panel_height += 20.0;
                     }
                 });

@@ -1,15 +1,12 @@
 name: "Security Analysis"
 
 on:
-  push:
-    branches: ["main"]
-  pull_request:
   schedule:
     - cron: "26 15 * * 1"
   workflow_dispatch:
 
 concurrency:
-  group: security-analysis-${{ github.event.pull_request.number || github.ref }}
+  group: security-analysis-${{ github.ref || github.run_id }}
   cancel-in-progress: true
 
 permissions:

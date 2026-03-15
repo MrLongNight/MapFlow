@@ -8,7 +8,7 @@ use crate::editors::{
 use crate::panels::{
     assignment_panel::AssignmentPanel, audio_panel::AudioPanel,
     controller_overlay_panel::ControllerOverlayPanel, cue_panel::CuePanel,
-    edge_blend_panel::EdgeBlendPanel, effect_chain_panel::EffectChainPanel,
+    edge_blend_panel::EdgeBlendPanel, effect_chain::EffectChainPanel,
     inspector_panel::InspectorPanel, layer_panel::LayerPanel, mapping_panel::MappingPanel,
     oscillator_panel::OscillatorPanel, output_panel::OutputPanel, paint_panel::PaintPanel,
     preview_panel::PreviewPanel, transform_panel::TransformPanel,
@@ -403,7 +403,11 @@ impl AppUI {
                     ui,
                     &self.i18n.t("panel-media-browser"),
                     |ui| {
-                        if ui.button("✕").clicked() {
+                        if ui
+                            .button("✕")
+                            .on_hover_text("Close Media Browser")
+                            .clicked()
+                        {
                             self.show_media_browser = false;
                         }
                     },
