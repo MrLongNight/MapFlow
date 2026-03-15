@@ -45,6 +45,7 @@
 pub mod address;
 pub mod client;
 pub mod mapping;
+pub mod mapping_tests;
 pub mod server;
 pub mod types;
 
