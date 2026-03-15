@@ -5499,6 +5499,7 @@ dependencies = [
  "serde",
  "serde_json",
  "stratum-dsp",
+ "tempfile",
  "thiserror 1.0.69",
  "tobj",
  "tracing",
