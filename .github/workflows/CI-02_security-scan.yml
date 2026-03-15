@@ -2,10 +2,10 @@ name: "Security Analysis"
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
   schedule:
-    - cron: '26 15 * * 1'
+    - cron: "26 15 * * 1"
   workflow_dispatch:
 
 concurrency:
@@ -16,11 +16,15 @@ permissions:
   contents: read
   security-events: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   analyze:
-    name: Analyze
+    name: "Analyze (rust)"
     runs-on: ubuntu-latest
     timeout-minutes: 360
+
     permissions:
       actions: read
       contents: read
@@ -29,46 +33,47 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'rust' ]
+        language: ["rust"]
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v5
 
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
-      with:
-        languages: ${{ matrix.language }}
-        config-file: .github/codeql-config.yml
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          config-file: .github/codeql-config.yml
 
-    - name: Set up Rust
-      uses: dtolnay/rust-toolchain@stable
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
 
-    - name: Rust Cache
-      uses: Swatinem/rust-cache@v2
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
 
-    - name: Install System Dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          libasound2-dev \
-          libudev-dev \
-          pkg-config \
-          clang \
-          libclang-dev \
-          libavcodec-dev \
-          libavformat-dev \
-          libavutil-dev \
-          libswscale-dev \
-          libavdevice-dev \
-          libavfilter-dev \
-          libswresample-dev \
-          ffmpeg
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            pkg-config \
+            clang \
+            libclang-dev \
+            libasound2-dev \
+            libudev-dev \
+            libavcodec-dev \
+            libavformat-dev \
+            libavutil-dev \
+            libswscale-dev \
+            libavdevice-dev \
+            libavfilter-dev \
+            libswresample-dev \
+            ffmpeg
 
-    - name: Build for Analysis
-      run: cargo build --workspace --features "mapmap-io/ci-linux,ffmpeg"
+      - name: Build for Analysis
+        run: cargo build --workspace --features "mapmap-io/ci-linux,ffmpeg"
 
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
-      with:
-        category: "/language:${{matrix.language}}"
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"

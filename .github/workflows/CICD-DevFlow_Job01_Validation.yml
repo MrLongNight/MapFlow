@@ -23,56 +23,92 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write
-  checks: write
-  statuses: write
-  pull-requests: write
-  issues: write
-  security-events: write
+  contents: read
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  RUST_TOOLCHAIN: ${{ inputs.toolchain || github.event.inputs.toolchain || 'stable' }}
 
 jobs:
   quality:
     name: "Quality Gate (Format & Lint)"
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: ${{ inputs.toolchain || github.event.inputs.toolchain || 'stable' }}
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
           components: rustfmt, clippy
+
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
-      - name: Install System Deps (Ubuntu)
+
+      - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential pkg-config clang libclang-dev yasm nasm libfontconfig1-dev libfreetype6-dev libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libx11-dev libasound2-dev libudev-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev ffmpeg libxkbcommon-x11-0
+          sudo apt-get install -y \
+            build-essential \
+            pkg-config \
+            clang \
+            libclang-dev \
+            yasm \
+            nasm \
+            libfontconfig1-dev \
+            libfreetype6-dev \
+            libxcb1-dev \
+            libxcb-render0-dev \
+            libxcb-shape0-dev \
+            libxcb-xfixes0-dev \
+            libx11-dev \
+            libxkbcommon-x11-0 \
+            libasound2-dev \
+            libudev-dev \
+            libavcodec-dev \
+            libavformat-dev \
+            libavutil-dev \
+            libswscale-dev \
+            libavdevice-dev \
+            libavfilter-dev \
+            libswresample-dev \
+            ffmpeg
+
       - name: Check Formatting
         run: cargo fmt --all -- --check
+
       - name: Check Clippy
         run: cargo clippy --workspace --all-targets --features "mapmap-io/ci-linux,ffmpeg" -- -D warnings
 
   security:
     name: "Security Scan"
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: ${{ inputs.toolchain || github.event.inputs.toolchain || 'stable' }}
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
-      - name: Install Tools
+
+      - name: Install cargo-binstall
         uses: cargo-bins/cargo-binstall@main
+
       - name: Install cargo-deny
         run: |
           cargo binstall -y cargo-deny --force
           test -x "${CARGO_HOME}/bin/cargo-deny"
           "${CARGO_HOME}/bin/cargo-deny" --version
+
       - name: Run Advisory Check
         run: |
           "${CARGO_HOME}/bin/cargo-deny" check advisories
@@ -80,51 +116,95 @@ jobs:
   build-linux:
     name: "Build & Test (Linux)"
     runs-on: ubuntu-latest
+    timeout-minutes: 45
+
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: ${{ inputs.toolchain || github.event.inputs.toolchain || 'stable' }}
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
+
       - name: Install System Dependencies
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y build-essential pkg-config clang libclang-dev yasm nasm libfontconfig1-dev libfreetype6-dev libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libx11-dev libasound2-dev libudev-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libavdevice-dev libavfilter-dev libswresample-dev ffmpeg libxkbcommon-x11-0
+          sudo apt-get install -y \
+            build-essential \
+            pkg-config \
+            clang \
+            libclang-dev \
+            yasm \
+            nasm \
+            libfontconfig1-dev \
+            libfreetype6-dev \
+            libxcb1-dev \
+            libxcb-render0-dev \
+            libxcb-shape0-dev \
+            libxcb-xfixes0-dev \
+            libx11-dev \
+            libxkbcommon-x11-0 \
+            libasound2-dev \
+            libudev-dev \
+            libavcodec-dev \
+            libavformat-dev \
+            libavutil-dev \
+            libswscale-dev \
+            libavdevice-dev \
+            libavfilter-dev \
+            libswresample-dev \
+            ffmpeg
+
       - name: Build
-        run: cargo build --verbose --features "mapmap-io/ci-linux,ffmpeg"
+        run: cargo build --workspace --verbose --features "mapmap-io/ci-linux,ffmpeg"
+
       - name: Test
         run: cargo test --workspace --features "mapmap-io/ci-linux,ffmpeg"
 
   build-windows:
     name: "Build & Test (Windows)"
     runs-on: windows-latest
+    timeout-minutes: 45
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'test-windows'))
+
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: ${{ inputs.toolchain || github.event.inputs.toolchain || 'stable' }}
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
+
       - name: Build
         run: cargo build --release --verbose --no-default-features --features "audio"
 
   build-macos:
     name: "Build (macOS Beta)"
     runs-on: macos-latest
+    timeout-minutes: 45
+
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: ${{ inputs.toolchain || github.event.inputs.toolchain || 'stable' }}
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
+
       - name: Build
         run: cargo build --release -p mapmap --no-default-features --features "macos-beta"
 
@@ -133,6 +213,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [quality, security, build-linux, build-windows, build-macos]
     if: always()
+    timeout-minutes: 10
+
     steps:
       - name: Check Results
         run: |
@@ -147,49 +229,5 @@ jobs:
           if [ "${{ needs.build-linux.result }}" != "success" ]; then exit 1; fi
           if [ "${{ needs.build-windows.result }}" != "success" ] && [ "${{ needs.build-windows.result }}" != "skipped" ]; then exit 1; fi
           if [ "${{ needs.build-macos.result }}" != "success" ]; then exit 1; fi
+
           echo "All Validation Checks Passed"
-
-  publish-required-statuses:
-    name: "Publish Required Statuses"
-    runs-on: ubuntu-latest
-    needs: [quality, security, build-linux, validation-success]
-    if: always() && (github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch')
-    steps:
-      - name: Mirror Required Checks To Commit Statuses
-        uses: actions/github-script@v7
-        env:
-          QUALITY_RESULT: ${{ needs.quality.result }}
-          SECURITY_RESULT: ${{ needs.security.result }}
-          BUILD_LINUX_RESULT: ${{ needs.build-linux.result }}
-          VALIDATION_SUCCESS_RESULT: ${{ needs.validation-success.result }}
-        with:
-          script: |
-            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.GITHUB_RUN_ID}`;
-            const resultToState = (result) => {
-              switch (result) {
-                case 'success':
-                  return 'success';
-                case 'cancelled':
-                  return 'error';
-                default:
-                  return 'failure';
-              }
-            };
-            const contexts = [
-              ['Quality Gate (Format & Lint)', process.env.QUALITY_RESULT],
-              ['Security Scan', process.env.SECURITY_RESULT],
-              ['Build & Test (Linux)', process.env.BUILD_LINUX_RESULT],
-              ['Validation Success', process.env.VALIDATION_SUCCESS_RESULT],
-            ];
-
-            for (const [statusContext, result] of contexts) {
-              await github.rest.repos.createCommitStatus({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                sha: context.payload.pull_request ? context.payload.pull_request.head.sha : context.sha,
-                context: statusContext,
-                state: resultToState(result),
-                target_url: runUrl,
-                description: `${context.eventName} result: ${result}`,
-              });
-            }
