@@ -454,16 +454,20 @@ pub fn frame_readback_system(
 
         render_queue.submit(std::iter::once(encoder.finish()));
 
-        // Blocking map
+        // Non-blocking map request
         let (tx, rx) = std::sync::mpsc::channel();
         let buffer_slice = buffer.slice(..);
         buffer_slice.map_async(bevy::render::render_resource::MapMode::Read, move |res| {
-            tx.send(res).unwrap();
+            let _ = tx.send(res);
         });
 
-        render_device.poll(bevy::render::render_resource::Maintain::Wait);
+        // Poll once without waiting to progress the mapping
+        render_device.poll(bevy::render::render_resource::Maintain::Poll);
 
-        if rx.recv().is_ok() {
+        // Check if data is ready immediately (unlikely but possible) 
+        // or just wait for next frame's poll to finish it.
+        // For now, we try to recv with a tiny timeout or just try_recv
+        if let Ok(Ok(_)) = rx.try_recv() {
             let data = buffer_slice.get_mapped_range();
 
             // Acquire lock to update shared data
@@ -483,10 +487,10 @@ pub fn frame_readback_system(
                     *lock = Some(unpadded);
                 }
             }
+            // Must unmap to use buffer again
+            drop(data);
+            buffer.unmap();
         }
-
-        // Must unmap to use buffer again next frame for writing
-        buffer.unmap();
     }
 }
 
