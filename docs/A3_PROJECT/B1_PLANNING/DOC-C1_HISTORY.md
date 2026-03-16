@@ -20,7 +20,7 @@ Alle kritischen Architektur-Probleme (God Files, Unsafe Pointer) der frühen Pha
 
 ## 2. Audit-Historie
 
-Regelmäßige Audits sichern die Qualität von MapFlow.
+Regelmäßige Audits sichern die Qualität von SubI.
 
 | Datum | Typ | Ergebnis |
 | :--- | :--- | :--- |
@@ -32,7 +32,7 @@ Regelmäßige Audits sichern die Qualität von MapFlow.
 
 ## 3. Phasenplanung (Historisch)
 
-MapFlow wurde in 7 Kernphasen entwickelt:
+SubI wurde in 7 Kernphasen entwickelt:
 - **Phase 0-2**: Foundation, Multi-Projector, Shader-System.
 - **Phase 3-5**: Control (MIDI/OSC), Assets, ImGui-Interface.
 - **Phase 6**: Vollständige Migration auf **egui** (Node-Editor, Timeline).

@@ -34,7 +34,7 @@ To minimize risk and manage complexity effectively, we will break this down into
 #### [Task 4.1.3] Graph Logic Consolidation
 - **Input**: `crates/mapmap-core/src/module/mod.rs`
 - **Output**:
-    - Rename/Structure remaining logic in `mod.rs` (the actual `MapFlowModule` graph) to ensure it's clean.
+    - Rename/Structure remaining logic in `mod.rs` (the actual `SubIModule` graph) to ensure it's clean.
     - (Optional) Move graph logic to `graph.rs` if `mod.rs` is still large, keeping `mod.rs` as just an entry point.
 - **Verification**: `cargo check -p mapmap-core`, `cargo test -p mapmap-core`
 

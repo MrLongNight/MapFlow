@@ -3,7 +3,7 @@
 Dieses Dokument beschreibt den Weg eines Frames vom Decoder zum Display.
 
 ## 1. Threading-Modell
-MapFlow nutzt eine asynchrone Pipeline, um Frame-Drops zu vermeiden:
+SubI nutzt eine asynchrone Pipeline, um Frame-Drops zu vermeiden:
 *   **Decode-Thread**: MPV/FFmpeg dekomprimiert Video-Frames.
 *   **Upload-Thread**: Lädt CPU-Daten via Staging-Buffer in GPU-Texturen.
 *   **Main-Thread**: Orchestriert WGPU Render-Passes und UI.

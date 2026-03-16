@@ -31,8 +31,8 @@ Das Crate `mapmap-io` wird zur zentralen Schaltstelle für diese Protokolle.
 *   Stream wird wie ein Live-Video behandelt (Buffer-Management wichtig für Jitter-Ausgleich).
 
 ### 3.2 Spout Receiver/Sender
-*   **Receiver**: MapFlow empfängt Visuals von Resolume oder TouchDesigner.
-*   **Sender**: MapFlow sendet den "Main Mix" oder einzelne Slices an OBS Studio (für Livestreaming).
+*   **Receiver**: SubI empfängt Visuals von Resolume oder TouchDesigner.
+*   **Sender**: SubI sendet den "Main Mix" oder einzelne Slices an OBS Studio (für Livestreaming).
 
 ## 4. UI Integration
 Neue Kategorie im "Source"-Panel: **Live Inputs**.
@@ -41,6 +41,6 @@ Neue Kategorie im "Source"-Panel: **Live Inputs**.
 *   Spout Senders
 
 ## 5. Roadmap
-1.  **Phase 1: Spout Sender (Windows)**. Das ist der häufigste Use-Case (MapFlow -> OBS / Resolume).
+1.  **Phase 1: Spout Sender (Windows)**. Das ist der häufigste Use-Case (SubI -> OBS / Resolume).
 2.  **Phase 2: NDI Receiver**. Damit man Laptops verbinden kann.
 3.  **Phase 3: Syphon (macOS)**. Erst wenn Portierung auf Mac stabil ist.

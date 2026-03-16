@@ -464,7 +464,7 @@ pub fn frame_readback_system(
         // Poll once without waiting to progress the mapping
         render_device.poll(bevy::render::render_resource::Maintain::Poll);
 
-        // Check if data is ready immediately (unlikely but possible) 
+        // Check if data is ready immediately (unlikely but possible)
         // or just wait for next frame's poll to finish it.
         // For now, we try to recv with a tiny timeout or just try_recv
         if let Ok(Ok(_)) = rx.try_recv() {

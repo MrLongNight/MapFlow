@@ -1,7 +1,7 @@
 # Spezifikation: Philips Hue Entertainment Integration
 
 ## 1. Übersicht
-Ziel ist die Integration von Philips Hue Leuchten in MapFlow. Anders als bei einfachen Smart-Home-Apps nutzen wir nicht die langsame REST-API (Polling), sondern die **Hue Entertainment API v2** mit **DTLS (Datagram Transport Layer Security)** Streaming. Das ermöglicht extrem niedrige Latenz (~20ms) und hohe Update-Raten (25-50 Hz) für perfekte Synchronisation mit Musik und Video.
+Ziel ist die Integration von Philips Hue Leuchten in SubI. Anders als bei einfachen Smart-Home-Apps nutzen wir nicht die langsame REST-API (Polling), sondern die **Hue Entertainment API v2** mit **DTLS (Datagram Transport Layer Security)** Streaming. Das ermöglicht extrem niedrige Latenz (~20ms) und hohe Update-Raten (25-50 Hz) für perfekte Synchronisation mit Musik und Video.
 
 ## 2. Technische Grundlagen
 
@@ -19,21 +19,21 @@ Ziel ist die Integration von Philips Hue Leuchten in MapFlow. Anders als bei ein
 *   **DTLS**: `dtls` crate (reine Rust-Implementierung des Webrtc-Projekts) oder `openssl` bindings (schwieriger zu builden). Alternativ: Simple UDP, falls Handshake manuell implementiert wird (DTLS PSK ist der kritische Teil).
 *   **Farb-Konvertierung**: `palette` crate (für RGB -> CIE xy Konvertierung).
 
-## 3. Architektur-Integration in MapFlow
+## 3. Architektur-Integration in SubI
 
 ### 3.1 Modul-Struktur
 Neues Modul in `mapmap-control`: `crates/mapmap-control/src/hue/`
 *   `bridge.rs`: Discovery und Auth-Flow.
 *   `stream.rs`: Der DTLS-Client und Loop.
-*   `mapping.rs`: Konvertierung von MapFlow-Farben (RGB) in Hue-Commands.
+*   `mapping.rs`: Konvertierung von SubI-Farben (RGB) in Hue-Commands.
 
 ### 3.2 Workflow (User Experience)
 1.  **Setup**: User geht in Settings -> "Lighting".
 2.  **Pairing**: Klick auf "Connect Bridge" -> User muss physikalischen Button auf der Hue Bridge drücken. -> App speichert `username` und `client_key`.
-3.  **Area Selection**: MapFlow lädt die in der Hue App konfigurierten "Entertainment Areas" (z.B. "Wohnzimmer", "DJ Booth").
+3.  **Area Selection**: SubI lädt die in der Hue App konfigurierten "Entertainment Areas" (z.B. "Wohnzimmer", "DJ Booth").
 4.  **Mapping**:
     *   **Modus A (Ambient)**: Durchschnittsfarbe des gesamten Video-Outputs wird auf alle Lampen gesendet.
-    *   **Modus B (Spatial)**: Die Position der Lampen im Raum (aus Hue App) wird auf den MapFlow-Canvas gemappt. Lampe links leuchtet, wenn links im Video etwas passiert.
+    *   **Modus B (Spatial)**: Die Position der Lampen im Raum (aus Hue App) wird auf den SubI-Canvas gemappt. Lampe links leuchtet, wenn links im Video etwas passiert.
     *   **Modus C (Strobe)**: Audio-Reactive Trigger (Kick-Drum) lässt alle Lampen weiß blitzen.
 
 ## 4. Technische Herausforderungen

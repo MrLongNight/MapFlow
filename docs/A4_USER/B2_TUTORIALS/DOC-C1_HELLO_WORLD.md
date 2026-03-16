@@ -1,12 +1,12 @@
 # Hello World Projection Mapping Tutorial
 
-Welcome to your first projection mapping example with MapFlow! This tutorial will guide you through creating a simple "Hello World" projection mapping application that demonstrates the core concepts of the MapFlow projection mapping system.
+Welcome to your first projection mapping example with SubI! This tutorial will guide you through creating a simple "Hello World" projection mapping application that demonstrates the core concepts of the SubI projection mapping system.
 
 ## Table of Contents
 
 1. [What is Projection Mapping?](#what-is-projection-mapping)
 2. [Prerequisites](#prerequisites)
-3. [Understanding MapFlow Architecture](#understanding-mapflow-architecture)
+3. [Understanding SubI Architecture](#understanding-subi-architecture)
 4. [Building Your First Projection](#building-your-first-projection)
 5. [Running the Example](#running-the-example)
 6. [Understanding the Code](#understanding-the-code)
@@ -20,7 +20,7 @@ Welcome to your first projection mapping example with MapFlow! This tutorial wil
 
 ### Key Concepts
 
-MapFlow uses a **Paint → Mapping → Mesh → Output** pipeline:
+SubI uses a **Paint → Mapping → Mesh → Output** pipeline:
 
 - **Paint**: A media source (video, image, test pattern, or solid color)
 - **Mapping**: Connects a Paint to a Mesh with opacity, depth, and transforms
@@ -50,13 +50,13 @@ cd mapmap
 
 ---
 
-## Understanding MapFlow Architecture
+## Understanding SubI Architecture
 
-Before we dive into code, let's understand MapFlow's modular architecture:
+Before we dive into code, let's understand SubI's modular architecture:
 
 ### Crate Structure
 
-MapFlow is organized as a Cargo workspace with specialized crates:
+SubI is organized as a Cargo workspace with specialized crates:
 
 ```
 mapmap/
@@ -116,7 +116,7 @@ fn main() {
     // Step 1: Create the window
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
-        .with_title("MapFlow - Hello World Projection")
+        .with_title("SubI - Hello World Projection")
         .with_inner_size(winit::dpi::PhysicalSize::new(1280, 720))
         .build(&event_loop)
         .unwrap();
@@ -459,7 +459,7 @@ event_loop.run(move |event, _, control_flow| {
 
 ## Next Steps
 
-Congratulations! You've created your first projection mapping with MapFlow. Here's what to explore next:
+Congratulations! You've created your first projection mapping with SubI. Here's what to explore next:
 
 ### 1. Load a Real Image or Video
 
@@ -471,7 +471,7 @@ Try different mesh coordinates to create perspective distortion. This is the ess
 
 ### 3. Explore the Full Application
 
-Run the full MapFlow application to see all features: `cargo run --release`
+Run the full SubI application to see all features: `cargo run --release`
 
 ### 4. Read the Documentation
 

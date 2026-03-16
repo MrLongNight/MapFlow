@@ -1,4 +1,4 @@
-# HAP Codec Integration Plan für MapFlow
+# HAP Codec Integration Plan für SubI
 
 ## Übersicht
 

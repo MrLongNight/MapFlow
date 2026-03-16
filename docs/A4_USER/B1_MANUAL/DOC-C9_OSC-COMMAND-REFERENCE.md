@@ -1,11 +1,11 @@
 # OSC Command Reference
 
 This document provides a comprehensive reference for the Open Sound Control (OSC)
-address space used in MapFlow.
+address space used in SubI.
 
 ## Overview
 
--   **Namespace:** All MapFlow commands are prefixed with `/mapmap`.
+-   **Namespace:** All SubI commands are prefixed with `/mapmap`.
 -   **Data Types:** OSC arguments are specified in brackets, e.g., `[f32]`. Common types include:
     -   `[bang]`: An OSC message with no arguments.
     -   `[bool]`: Boolean value (`true` or `false`).

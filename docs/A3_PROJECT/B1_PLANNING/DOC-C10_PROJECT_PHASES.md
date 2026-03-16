@@ -3,7 +3,7 @@
 > **⚠️ DEPRECATED:** This document is kept for historical reference only.
 > For the most up-to-date roadmap and feature status, please verify [ROADMAP.md](../../../docs/project/roadmap/README.md) in the project root.
 
-This document outlines the complete project roadmap for the MapFlow Rust rewrite, from the initial core engine development to the final polish and release.
+This document outlines the complete project roadmap for the SubI Rust rewrite, from the initial core engine development to the final polish and release.
 
 ## Phase Overview
 
@@ -109,7 +109,7 @@ The master PC renders all content and streams the finished video to player clien
   - [ ] Optional status overlay
 
 - [ ] **Installer Updates**
-  - [ ] Add "MapFlow Player (NDI)" shortcut
+  - [ ] Add "SubI Player (NDI)" shortcut
   - [ ] NDI Runtime dependency check
 
 ### 8.2 Option C: Legacy Slave Client
@@ -139,7 +139,7 @@ Budget-friendly player using Raspberry Pi hardware.
 
 - [ ] **Software Options**
   - [ ] Document Dicaffeine NDI Player setup
-  - [ ] Custom ARM64 MapFlow build (optional)
+  - [ ] Custom ARM64 SubI build (optional)
   - [ ] VLC RTSP fallback
 
 - [ ] **Deployment**
@@ -174,7 +174,7 @@ Clients render independently, receiving only control commands.
 
 ### Success Criteria
 
-- [ ] **Option A MVP**: NDI stream from MapFlow to second PC, fullscreen display, <100ms latency
+- [ ] **Option A MVP**: NDI stream from SubI to second PC, fullscreen display, <100ms latency
 - [ ] **Option C MVP**: RTSP stream to Intel HD 2000 PC, 1080p30 playback
 - [ ] **Option D MVP**: Raspberry Pi 4 playing 720p60 NDI stream via Dicaffeine
 - [ ] **Option B MVP**: Two PCs rendering synchronized content via timecode

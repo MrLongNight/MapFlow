@@ -23,13 +23,13 @@ concurrency:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  SELF_HOSTED_POST_MERGE_ENABLED: ${{ vars.MAPFLOW_ENABLE_SELF_HOSTED_POST_MERGE || 'false' }}
+  SELF_HOSTED_POST_MERGE_ENABLED: ${{ vars.SUBI_ENABLE_SELF_HOSTED_POST_MERGE || 'false' }}
 
 jobs:
   resolve-context:
     name: "Resolve Post-Merge Context"
     runs-on: ubuntu-latest
-    if: vars.MAPFLOW_ENABLE_SELF_HOSTED_POST_MERGE == 'true'
+    if: vars.SUBI_ENABLE_SELF_HOSTED_POST_MERGE == 'true'
     outputs:
       should_run: ${{ steps.resolve.outputs.should_run }}
       pr_number: ${{ steps.resolve.outputs.pr_number }}
@@ -48,7 +48,7 @@ jobs:
             const enabled = process.env.SELF_HOSTED_POST_MERGE_ENABLED === 'true';
             if (!enabled) {
               core.notice(
-                'Self-hosted post-merge workflow ist vorbereitet, aber deaktiviert. Setze das Repository-Variable MAPFLOW_ENABLE_SELF_HOSTED_POST_MERGE=true.',
+                'Self-hosted post-merge workflow ist vorbereitet, aber deaktiviert. Setze das Repository-Variable SUBI_ENABLE_SELF_HOSTED_POST_MERGE=true.',
               );
               core.setOutput('should_run', 'false');
               return;
@@ -98,7 +98,7 @@ jobs:
     name: "Gate On Standard PR Checks"
     runs-on: ubuntu-latest
     needs: [resolve-context]
-    if: vars.MAPFLOW_ENABLE_SELF_HOSTED_POST_MERGE == 'true' && needs.resolve-context.outputs.should_run == 'true'
+    if: vars.SUBI_ENABLE_SELF_HOSTED_POST_MERGE == 'true' && needs.resolve-context.outputs.should_run == 'true'
 
     steps:
       - name: Verify required GitHub-hosted PR checks succeeded
@@ -206,9 +206,9 @@ jobs:
 
   self-hosted-post-merge:
     name: "Self-Hosted Post-Merge Validation"
-    runs-on: [self-hosted, windows, x64, mapflow-post-merge]
+    runs-on: [self-hosted, windows, x64, subi-post-merge]
     needs: [resolve-context, gate-standard-pr-checks]
-    if: vars.MAPFLOW_ENABLE_SELF_HOSTED_POST_MERGE == 'true' && needs.resolve-context.outputs.should_run == 'true'
+    if: vars.SUBI_ENABLE_SELF_HOSTED_POST_MERGE == 'true' && needs.resolve-context.outputs.should_run == 'true'
     timeout-minutes: 120
 
     steps:
@@ -231,18 +231,18 @@ jobs:
       - name: Run post-merge self-hosted validation script
         shell: pwsh
         env:
-          MAPFLOW_PR_NUMBER: ${{ needs.resolve-context.outputs.pr_number }}
-          MAPFLOW_PR_HEAD_SHA: ${{ needs.resolve-context.outputs.pr_head_sha }}
-          MAPFLOW_MERGE_COMMIT_SHA: ${{ needs.resolve-context.outputs.merge_commit_sha }}
-          MAPFLOW_SELF_HOSTED_RUN_IGNORED_GPU_TESTS: ${{ vars.MAPFLOW_SELF_HOSTED_RUN_IGNORED_GPU_TESTS || 'false' }}
-          MAPFLOW_SELF_HOSTED_RUN_VISUAL_AUTOMATION: ${{ vars.MAPFLOW_SELF_HOSTED_RUN_VISUAL_AUTOMATION || 'false' }}
-          MAPFLOW_SELF_HOSTED_RUN_PERFORMANCE_CHECK: ${{ vars.MAPFLOW_SELF_HOSTED_RUN_PERFORMANCE_CHECK || 'false' }}
-          MAPFLOW_PERFORMANCE_THRESHOLD: ${{ vars.MAPFLOW_PERFORMANCE_THRESHOLD || '' }}
+          SUBI_PR_NUMBER: ${{ needs.resolve-context.outputs.pr_number }}
+          SUBI_PR_HEAD_SHA: ${{ needs.resolve-context.outputs.pr_head_sha }}
+          SUBI_MERGE_COMMIT_SHA: ${{ needs.resolve-context.outputs.merge_commit_sha }}
+          SUBI_SELF_HOSTED_RUN_IGNORED_GPU_TESTS: ${{ vars.SUBI_SELF_HOSTED_RUN_IGNORED_GPU_TESTS || 'false' }}
+          SUBI_SELF_HOSTED_RUN_VISUAL_AUTOMATION: ${{ vars.SUBI_SELF_HOSTED_RUN_VISUAL_AUTOMATION || 'false' }}
+          SUBI_SELF_HOSTED_RUN_PERFORMANCE_CHECK: ${{ vars.SUBI_SELF_HOSTED_RUN_PERFORMANCE_CHECK || 'false' }}
+          SUBI_PERFORMANCE_THRESHOLD: ${{ vars.SUBI_PERFORMANCE_THRESHOLD || '' }}
           toolchain: stable
         run: .\scripts\build\self-hosted-post-merge.ps1
 
       - name: Upload visual capture artifacts
-        if: always() && vars.MAPFLOW_SELF_HOSTED_RUN_VISUAL_AUTOMATION == 'true'
+        if: always() && vars.SUBI_SELF_HOSTED_RUN_VISUAL_AUTOMATION == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: visual-capture-${{ needs.resolve-context.outputs.pr_number }}-${{ github.run_id }}

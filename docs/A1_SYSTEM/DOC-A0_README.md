@@ -1,6 +1,6 @@
 # DOC-B0: System-Interna
 
-Dieses Verzeichnis enthält die tiefe technische Dokumentation der MapFlow-Engine.
+Dieses Verzeichnis enthält die tiefe technische Dokumentation der SubI-Engine.
 
 ## 📁 Unterverzeichnisse
 

@@ -2,7 +2,7 @@
 
 ## 1. Executive Summary
 
-Die Erweiterung von MapFlow für den Multi-PC-Betrieb ist technisch **machbar** und positioniert die Software als professionelle Alternative zu teuren Lösungen wie Resolume Arena oder MadMapper.
+Die Erweiterung von SubI für den Multi-PC-Betrieb ist technisch **machbar** und positioniert die Software als professionelle Alternative zu teuren Lösungen wie Resolume Arena oder MadMapper.
 
 Diese Studie analysiert **vier Architektur-Optionen** für verschiedene Hardware-Anforderungen:
 
@@ -58,7 +58,7 @@ Diese Studie analysiert **vier Architektur-Optionen** für verschiedene Hardware
 
 ### 2.2 Single-Binary-Konzept
 
-Anstatt separate Anwendungen zu entwickeln, nutzt MapFlow **eine einzige ausführbare Datei** mit verschiedenen Betriebsmodi:
+Anstatt separate Anwendungen zu entwickeln, nutzt SubI **eine einzige ausführbare Datei** mit verschiedenen Betriebsmodi:
 
 ```rust
 // main.rs - Mode Selection
@@ -114,7 +114,7 @@ Der Master-PC berechnet das **gesamte Rendering** (Mapping, Effekte, Compositing
 | **Bandbreite** | ~250 Mbps für 1080p60 (unkomprimiert) |
 
 **Lizenz-Hinweis:**
-Das NDI SDK ist proprietär. Die "NDI Runtime" muss vom Benutzer separat installiert werden (ähnlich wie bei OBS/vMix). MapFlow bindet nur die Library zur Laufzeit.
+Das NDI SDK ist proprietär. Die "NDI Runtime" muss vom Benutzer separat installiert werden (ähnlich wie bei OBS/vMix). SubI bindet nur die Library zur Laufzeit.
 
 #### 3.2.2 GStreamer Alternative (Open Source)
 
@@ -271,7 +271,7 @@ impl TimecodeSync {
     /// Master: Broadcast aktuellen Timecode
     pub fn broadcast_timecode(&self, osc_sender: &OscSender) {
         let tc = self.master_clock.load(Ordering::SeqCst);
-        osc_sender.send("/mapflow/timecode", tc);
+        osc_sender.send("/subi/timecode", tc);
     }
 
     /// Client: Berechne Frame-Nummer aus Timecode
@@ -295,20 +295,20 @@ Für frame-perfekte Synchronisation:
 ### 4.5 Asset-Distribution
 
 ```yaml
-# mapflow-project.yaml
+# subi-project.yaml
 assets:
   distribution: hybrid  # local, network, hybrid
 
   network_sources:
     - type: nfs
-      path: "//nas/mapflow/assets"
+      path: "//nas/subi/assets"
 
     - type: s3
-      bucket: "mapflow-assets"
+      bucket: "subi-assets"
       region: "eu-central-1"
 
   local_cache:
-    path: "/tmp/mapflow-cache"
+    path: "/tmp/subi-cache"
     max_size: "50GB"
 
   sync_strategy:
@@ -499,9 +499,9 @@ dicaffeine --source "MAPFLOW-MASTER" --fullscreen
 - 1080p60: ✅ Stabil (erwartet)
 - 4K30: ⚠️ Experimentell
 
-#### 6.3.2 Option D2: Custom MapFlow Player (Portierung)
+#### 6.3.2 Option D2: Custom SubI Player (Portierung)
 
-Für vollständige Integration kann MapFlow für ARM64 kompiliert werden:
+Für vollständige Integration kann SubI für ARM64 kompiliert werden:
 
 ```rust
 // Compile Target: aarch64-unknown-linux-gnu
@@ -585,16 +585,16 @@ hdmi_drive=2
 ```
 
 ```bash
-# /etc/systemd/system/mapflow-player.service
+# /etc/systemd/system/subi-player.service
 [Unit]
-Description=MapFlow Pi Player
+Description=SubI Pi Player
 After=network.target graphical.target
 
 [Service]
 Type=simple
 User=pi
 Environment=DISPLAY=:0
-ExecStart=/usr/local/bin/mapflow --player-pi --source MAPFLOW-MASTER
+ExecStart=/usr/local/bin/subi --player-pi --source MAPFLOW-MASTER
 Restart=always
 RestartSec=5
 
@@ -622,34 +622,34 @@ Der Installer bietet dem Benutzer verschiedene Installationsprofile:
 
 ```xml
 <!-- installer/wix/main.wxs -->
-<Feature Id="Complete" Title="MapFlow Complete" Level="1">
+<Feature Id="Complete" Title="SubI Complete" Level="1">
     <Feature Id="Core" Title="Core Components" Level="1">
-        <ComponentRef Id="MapFlowExecutable" />
+        <ComponentRef Id="SubIExecutable" />
         <ComponentRef Id="RuntimeDependencies" />
     </Feature>
 
-    <Feature Id="Editor" Title="MapFlow Editor" Level="1">
+    <Feature Id="Editor" Title="SubI Editor" Level="1">
         <ComponentRef Id="EditorShortcut" />
     </Feature>
 
-    <Feature Id="PlayerNdi" Title="MapFlow Player (NDI)" Level="1">
+    <Feature Id="PlayerNdi" Title="SubI Player (NDI)" Level="1">
         <ComponentRef Id="PlayerNdiShortcut" />
     </Feature>
 
-    <Feature Id="PlayerLegacy" Title="MapFlow Player (Legacy)" Level="2">
+    <Feature Id="PlayerLegacy" Title="SubI Player (Legacy)" Level="2">
         <ComponentRef Id="PlayerLegacyShortcut" />
     </Feature>
 </Feature>
 
 <!-- Shortcuts -->
-<Shortcut Id="EditorShortcut" Name="MapFlow"
-          Target="[INSTALLDIR]MapFlow.exe" />
+<Shortcut Id="EditorShortcut" Name="SubI"
+          Target="[INSTALLDIR]SubI.exe" />
 
-<Shortcut Id="PlayerNdiShortcut" Name="MapFlow Player (NDI)"
-          Target="[INSTALLDIR]MapFlow.exe" Arguments="--player-ndi" />
+<Shortcut Id="PlayerNdiShortcut" Name="SubI Player (NDI)"
+          Target="[INSTALLDIR]SubI.exe" Arguments="--player-ndi" />
 
-<Shortcut Id="PlayerLegacyShortcut" Name="MapFlow Player (Legacy)"
-          Target="[INSTALLDIR]MapFlow.exe" Arguments="--player-legacy" />
+<Shortcut Id="PlayerLegacyShortcut" Name="SubI Player (Legacy)"
+          Target="[INSTALLDIR]SubI.exe" Arguments="--player-legacy" />
 ```
 
 ### 7.2 Linux Packages
@@ -658,18 +658,18 @@ Der Installer bietet dem Benutzer verschiedene Installationsprofile:
 
 ```bash
 # Paket-Struktur
-mapflow_1.0.0_amd64.deb
+subi_1.0.0_amd64.deb
 ├── DEBIAN/
 │   ├── control
 │   ├── postinst
 │   └── prerm
 ├── usr/
-│   ├── bin/mapflow
+│   ├── bin/subi
 │   └── share/
 │       ├── applications/
-│       │   ├── mapflow.desktop
-│       │   ├── mapflow-player-ndi.desktop
-│       │   └── mapflow-player-legacy.desktop
+│       │   ├── subi.desktop
+│       │   ├── subi-player-ndi.desktop
+│       │   └── subi-player-legacy.desktop
 │       └── icons/...
 ```
 
@@ -678,9 +678,9 @@ mapflow_1.0.0_amd64.deb
 Für einfachste Installation kann ein vorkonfiguriertes Image bereitgestellt werden:
 
 ```
-mapflow-pi-player-v1.0.0.img.xz
+subi-pi-player-v1.0.0.img.xz
 ├── Raspberry Pi OS Lite (64-bit)
-├── MapFlow Player vorinstalliert
+├── SubI Player vorinstalliert
 ├── Auto-Start konfiguriert
 └── Read-Only Filesystem (optional)
 ```
@@ -692,7 +692,7 @@ mapflow-pi-player-v1.0.0.img.xz
 | Windows 10/11 | MSI | Doppelklick |
 | Ubuntu 22.04+ | DEB | `dpkg -i` |
 | Fedora 38+ | RPM | `dnf install` |
-| Arch Linux | AUR | `yay -S mapflow` |
+| Arch Linux | AUR | `yay -S subi` |
 | Raspberry Pi | DEB / Image | `dpkg -i` oder Flash |
 | macOS | DMG | Drag & Drop |
 
@@ -814,7 +814,7 @@ mapflow-pi-player-v1.0.0.img.xz
 
 ## 11. Fazit
 
-Die Multi-PC-Architektur für MapFlow ist **technisch machbar** und wirtschaftlich sinnvoll. Der empfohlene Ansatz ist:
+Die Multi-PC-Architektur für SubI ist **technisch machbar** und wirtschaftlich sinnvoll. Der empfohlene Ansatz ist:
 
 1. **Single-Binary** mit verschiedenen Modi (professioneller, einfache Wartung)
 2. **NDI als primäres Protokoll** (Industriestandard, geringe Latenz)
@@ -822,19 +822,19 @@ Die Multi-PC-Architektur für MapFlow ist **technisch machbar** und wirtschaftli
 4. **Raspberry Pi als optionale Budget-Lösung**
 5. **Distributed Rendering für High-End** (langfristige Perspektive)
 
-Mit diesem Ansatz positioniert sich MapFlow als **ernstzunehmende Alternative** zu kommerziellen Lösungen wie:
+Mit diesem Ansatz positioniert sich SubI als **ernstzunehmende Alternative** zu kommerziellen Lösungen wie:
 - Resolume Arena (~€799)
 - MadMapper (~€449)
 - TouchDesigner (~$2000/Jahr)
 
 **Empfohlener erster Schritt:**
-Erstellung eines Proof-of-Concept für Option A, der einen NDI-Stream von MapFlow zu einem zweiten PC überträgt und dort fullscreen darstellt. Geschätzte Zeit: 5-7 Tage.
+Erstellung eines Proof-of-Concept für Option A, der einen NDI-Stream von SubI zu einem zweiten PC überträgt und dort fullscreen darstellt. Geschätzte Zeit: 5-7 Tage.
 
 
 
 # Multi-PC Architektur
 
-MapFlow unterstützt skalierbare Setups über mehrere Computer hinweg. Dies ist notwendig für Installationen mit sehr vielen Projektoren oder extrem hohen Auflösungen.
+SubI unterstützt skalierbare Setups über mehrere Computer hinweg. Dies ist notwendig für Installationen mit sehr vielen Projektoren oder extrem hohen Auflösungen.
 
 ## Optionen
 

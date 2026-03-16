@@ -1,13 +1,13 @@
 # AGENTS.md – Anweisungen für KI-Agenten
 
 Hallo Jules!
-Dieses Dokument enthält **technische und organisatorische Vorgaben** für alle KI-basierten Agenten und menschlichen Contributor:innen im MapFlow-Projekt.
+Dieses Dokument enthält **technische und organisatorische Vorgaben** für alle KI-basierten Agenten und menschlichen Contributor:innen im SubI-Projekt.
 
 ---
 
 ## Projektübersicht
 
-- **MapFlow** ist ein vollständiger Rewrite einer bestehenden C++/Qt-Anwendung in Rust.
+- **SubI** ist ein vollständiger Rewrite einer bestehenden C++/Qt-Anwendung in Rust.
 - Ziel ist eine hochperformante, speichersichere Projection-Mapping-Software.
 - Der gesamte Rust-Quellcode befindet sich im `crates/`-Verzeichnis, organisiert als Cargo-Workspace.
 

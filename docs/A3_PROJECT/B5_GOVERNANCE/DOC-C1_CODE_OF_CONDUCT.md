@@ -1,4 +1,4 @@
-# MapFlow Code of Conduct
+# SubI Code of Conduct
 
 ## Our Pledge
 

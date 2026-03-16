@@ -1,6 +1,6 @@
-# 🛠️ MapFlow: Technische Schulden, Bugs & Roadmap
+# 🛠️ SubI: Technische Schulden, Bugs & Roadmap
 
-Dieses Dokument dient der zentralen Erfassung von Architektur-Problemen, monolithischen "God Files" und der Strategie zur Modularisierung des MapFlow (VJMapper) Projekts.
+Dieses Dokument dient der zentralen Erfassung von Architektur-Problemen, monolithischen "God Files" und der Strategie zur Modularisierung des SubI (VJMapper) Projekts.
 
 ---
 

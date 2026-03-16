@@ -1,6 +1,6 @@
 # Build Instructions
 
-This document provides comprehensive build instructions for MapFlow (Rust Edition) on all supported platforms.
+This document provides comprehensive build instructions for SubI (Rust Edition) on all supported platforms.
 
 ## Table of Contents
 
@@ -19,7 +19,7 @@ This document provides comprehensive build instructions for MapFlow (Rust Editio
 
 ### Rust Toolchain
 
-MapFlow requires **Rust 1.75 or later**. Install it using rustup:
+SubI requires **Rust 1.75 or later**. Install it using rustup:
 
 ```bash
 # Install Rust
@@ -143,8 +143,8 @@ sudo pacman -S ffmpeg
 
 ```bash
 # Clone the repository
-git clone https://github.com/MrLongNight/MapFlow.git
-cd MapFlow
+git clone https://github.com/MrLongNight/SubI.git
+cd SubI
 
 # Build in debug mode (faster compile, slower runtime)
 cargo build
@@ -185,8 +185,8 @@ brew install ffmpeg
 
 ```bash
 # Clone the repository
-git clone https://github.com/MrLongNight/MapFlow.git
-cd MapFlow
+git clone https://github.com/MrLongNight/SubI.git
+cd SubI
 
 # Build the current macOS beta baseline
 cargo build --release -p mapmap --no-default-features --features macos-beta
@@ -195,12 +195,12 @@ cargo build --release -p mapmap --no-default-features --features macos-beta
 cargo run --release -p mapmap --no-default-features --features macos-beta
 
 # Package a .app bundle from the built binary
-bash scripts/mapflow/package-macos-app.sh 0.2.0
+bash scripts/subi/package-macos-app.sh 0.2.0
 ```
 
 Notes:
 - The current macOS beta build uses the core UI and rendering path without the default Windows/Linux feature set.
-- The packaging script creates `target/release/MapFlow.app` and copies runtime `assets/` and `resources/` into the bundle.
+- The packaging script creates `target/release/SubI.app` and copies runtime `assets/` and `resources/` into the bundle.
 
 ---
 
@@ -238,8 +238,8 @@ Open Command Prompt or PowerShell:
 
 ```cmd
 # Clone the repository
-git clone https://github.com/MrLongNight/MapFlow.git
-cd MapFlow
+git clone https://github.com/MrLongNight/SubI.git
+cd SubI
 
 # Build in release mode
 cargo build --release
@@ -375,4 +375,4 @@ Ensure your GPU drivers are up-to-date:
 - **Documentation:** See [docs/](../../DOC-A0_README.md) directory
 - **Architecture:** [Architecture](../../dev/architecture/README.md)
 - **Contributing:** [CONTRIBUTING.md](../../../CONTRIBUTING.md)
-- **Issues:** https://github.com/MrLongNight/MapFlow/issues
+- **Issues:** https://github.com/MrLongNight/SubI/issues

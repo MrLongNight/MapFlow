@@ -1,6 +1,6 @@
-# MapFlow Documentation Index
+# SubI Documentation Index
 
-Willkommen in der zentralen Dokumentation von MapFlow. Diese Struktur ist strikt in drei Ebenen unterteilt, um maximale Übersichtlichkeit zu gewährleisten.
+Willkommen in der zentralen Dokumentation von SubI. Diese Struktur ist strikt in drei Ebenen unterteilt, um maximale Übersichtlichkeit zu gewährleisten.
 
 ## 📂 Hauptkategorien (Ebene 1)
 

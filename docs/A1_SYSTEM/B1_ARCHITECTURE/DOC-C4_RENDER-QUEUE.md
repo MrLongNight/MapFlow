@@ -1,4 +1,4 @@
-# MapFlow Render Queue & Pipeline Architektur (Single Source of Truth)
+# SubI Render Queue & Pipeline Architektur (Single Source of Truth)
 
 > Diese Datei ist die **konsolidierte Gesamtdokumentation** für:
 > - System-/Thread-Architektur rund um Rendering und Media
@@ -11,7 +11,7 @@
 
 ## 1. Ziel und Scope
 
-Diese Dokumentation beschreibt den tatsächlichen und geplanten Render-Pfad in MapFlow mit Fokus auf Video-Frames:
+Diese Dokumentation beschreibt den tatsächlichen und geplanten Render-Pfad in SubI mit Fokus auf Video-Frames:
 
 1. **Decode-Thread** erzeugt `PipelineFrame`s aus `VideoPlayer`.
 2. **Upload-Thread** lädt Frame-Daten in GPU-Texturen.

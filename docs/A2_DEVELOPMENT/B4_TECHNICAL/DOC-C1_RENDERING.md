@@ -1,6 +1,6 @@
 # Rendering Pipeline & Technik
 
-MapFlow nutzt eine GPU-beschleunigte Pipeline basierend auf **WGPU** (WebGPU native). Dies ermöglicht Cross-Platform-Kompatibilität (Vulkan, DX12, Metal) bei maximaler Performance.
+SubI nutzt eine GPU-beschleunigte Pipeline basierend auf **WGPU** (WebGPU native). Dies ermöglicht Cross-Platform-Kompatibilität (Vulkan, DX12, Metal) bei maximaler Performance.
 
 ## Pipeline-Stufen
 

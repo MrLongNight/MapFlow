@@ -1,10 +1,10 @@
 # Key Features
 
-MapFlow is packed with features designed for professional VJs and projection mapping artists. This guide provides an overview of the core capabilities.
+SubI is packed with features designed for professional VJs and projection mapping artists. This guide provides an overview of the core capabilities.
 
 ## 1. Modular Node System
 
-MapFlow uses a powerful node-based architecture that gives you complete control over your signal flow.
+SubI uses a powerful node-based architecture that gives you complete control over your signal flow.
 
 *   **Flexible Routing**: Connect any source to any effect or output.
 *   **Reusability**: Create complex effect chains and reuse them across different layers.
@@ -12,7 +12,7 @@ MapFlow uses a powerful node-based architecture that gives you complete control 
 
 ## 2. Advanced Projection Mapping
 
-MapFlow excels at mapping video onto complex physical surfaces.
+SubI excels at mapping video onto complex physical surfaces.
 
 *   **Mesh Warping**: Use grid-based warping to fit video onto curved or irregular shapes.
 *   **Keystone Correction**: Quickly align projections with 4-point corner pinning.
@@ -46,7 +46,7 @@ Make your visuals dance to the music.
 
 ## 6. Control Integration
 
-MapFlow integrates seamlessly with your hardware and software setup.
+SubI integrates seamlessly with your hardware and software setup.
 
 *   **MIDI**: Full two-way MIDI support. Map knobs and faders to any parameter. Includes presets for popular controllers (e.g., Ecler NUO 4).
 *   **OSC**: Open Sound Control support for remote control from tablets or other software.
@@ -61,7 +61,7 @@ MapFlow integrates seamlessly with your hardware and software setup.
 
 ## 8. Bevy Particles Node
 
-Generate dynamic particle systems directly within MapFlow.
+Generate dynamic particle systems directly within SubI.
 
 *   **Real-time Simulation**: GPU-accelerated particle simulation using Bevy engine.
 *   **Audio Reactive**: Control particle emission rate, speed, and color with audio triggers.

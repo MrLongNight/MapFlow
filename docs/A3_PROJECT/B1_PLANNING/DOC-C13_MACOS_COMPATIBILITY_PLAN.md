@@ -12,7 +12,7 @@
 
 ## 1. Summary
 
-MapFlow can be made macOS-compatible, but the current repository is not yet ready to offer macOS as a supported release platform.
+SubI can be made macOS-compatible, but the current repository is not yet ready to offer macOS as a supported release platform.
 
 The core architecture is suitable for a macOS port:
 - Rust workspace
@@ -204,7 +204,7 @@ Deliverables:
 
 ## 7. Success Criteria
 
-MapFlow counts as macOS beta-ready when:
+SubI counts as macOS beta-ready when:
 - CI builds the app on macOS
 - app launches on Apple Silicon
 - the main editing UI is usable
@@ -213,7 +213,7 @@ MapFlow counts as macOS beta-ready when:
 - audio is stable or intentionally disabled with clear UX
 - internal testers can run a packaged artifact
 
-MapFlow counts as production-ready for macOS when:
+SubI counts as production-ready for macOS when:
 - a signed and notarized artifact exists
 - install steps are documented
 - core workflows pass regression testing on real Macs

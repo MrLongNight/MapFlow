@@ -138,13 +138,13 @@ if ($env:MAPFLOW_SELF_HOSTED_RUN_VISUAL_AUTOMATION -eq "true") {
 if ($env:MAPFLOW_SELF_HOSTED_RUN_PERFORMANCE_CHECK -eq "true") {
     Write-Host "Running performance benchmark on the self-hosted runner"
     $perfArgs = @("scripts/dev-tools/run_performance_benchmark.py")
-    
+
     if ($env:MAPFLOW_PERFORMANCE_THRESHOLD) {
         $perfArgs += "--threshold"
         $perfArgs += $env:MAPFLOW_PERFORMANCE_THRESHOLD
         $perfArgs += "--fail-on-regression"
     }
-    
+
     python @perfArgs
 } else {
     Write-Host "Performance benchmark is disabled. Set MAPFLOW_SELF_HOSTED_RUN_PERFORMANCE_CHECK=true to enable it."

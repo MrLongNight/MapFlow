@@ -1,7 +1,7 @@
 # DOC-C1: Audio Subsystem
 
 ## 1. Engine-Anbindung
-MapFlow nutzt das `cpal` Crate für plattformübergreifenden Audio-Input.
+SubI nutzt das `cpal` Crate für plattformübergreifenden Audio-Input.
 
 ## 2. Analyse-Pipeline
 1.  **Sampling**: Abgreifen der Rohdaten vom System-Input.

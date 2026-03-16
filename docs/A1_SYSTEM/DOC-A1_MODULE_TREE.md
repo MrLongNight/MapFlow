@@ -1,4 +1,4 @@
-﻿# MapFlow Module Tree (Generated: 2026-03-08 23:39)
+﻿# SubI Module Tree (Generated: 2026-03-08 23:39)
 
 Diese Datei zeigt die physische und logische Struktur des Projekts.
 
@@ -488,11 +488,11 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 
 | Crate | Pfad | Beschreibung |
 |-------|------|--------------|
-| mapmap | crates/mapmap | MapFlow - Professional Projection Mapping Software |
+| mapmap | crates/mapmap | SubI - Professional Projection Mapping Software |
 | mapmap-bevy | crates/mapmap-bevy |  |
 | mapmap-control | crates/mapmap-control |  |
 | mapmap-core | crates/mapmap-core |  |
-| mapmap-ffi | crates/mapmap-ffi | MapFlow C/C++ Foreign Function Interface bindings. |
+| mapmap-ffi | crates/mapmap-ffi | SubI C/C++ Foreign Function Interface bindings. |
 | mapmap-io | crates/mapmap-io |  |
 | mapmap-mcp | crates/mapmap-mcp |  |
 | mapmap-media | crates/mapmap-media |  |
