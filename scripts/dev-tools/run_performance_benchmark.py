@@ -23,9 +23,9 @@ def run_benchmark():
     parser.add_argument("--fail-on-regression", action="store_true", help="Exit with code 1 if threshold is exceeded")
     parser.add_argument("--binary", type=str, default=BINARY_PATH, help=f"Path to the binary (default: {BINARY_PATH})")
     parser.add_argument("--frames", type=int, default=300, help="Number of frames to run per iteration (default: 300)")
-    
+
     args = parser.parse_args()
-    
+
     iterations = args.iterations
     binary_path = args.binary
     frames = args.frames
@@ -157,7 +157,7 @@ def run_benchmark():
             f.write(f"  Run {i+1}: {t:.4f} seconds\n")
 
     print(f"\nReports saved to {ARTIFACT_DIR}/")
-    
+
     if regression and args.fail_on_regression:
         sys.exit(1)
 
