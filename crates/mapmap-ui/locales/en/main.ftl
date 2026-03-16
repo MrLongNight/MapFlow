@@ -1,5 +1,5 @@
 
-app-title = MapMap - VJ Projection Mapping
+app-title = StageGraph - VJ Projection Mapping
 menu-file = File
 menu-file-new-project = New Project...
 menu-file-open-project = Open Project...
@@ -189,7 +189,7 @@ mode-play-once = Play Once
 panel-performance = Performance
 label-fps = FPS
 label-frame-time = Frame Time
-perf-demo = MapMap Phase 0 Demo
+perf-demo = StageGraph Phase 0 Demo
 
 # Layers
 panel-layers = Layers

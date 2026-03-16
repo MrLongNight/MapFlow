@@ -1,7 +1,7 @@
 # Visual Reference Images
 
 Diese PNG-Dateien sind die Referenzbilder fuer die lokalen visuellen Regressionstests in
-`crates/mapmap/tests/visual_capture_tests.rs`.
+`crates/stagegraph/tests/visual_capture_tests.rs`.
 
 ## Erste Szenarien
 
@@ -20,9 +20,9 @@ Fenster-, Swapchain-, Present- und Screenshot-Pfad verwenden.
 Von der Repo-Wurzel aus:
 
 ```powershell
-cargo run -p mapmap --bin mapflow_visual_harness --no-default-features -- reference --scenario checkerboard --output crates/mapmap/tests/reference_images/checkerboard.png
-cargo run -p mapmap --bin mapflow_visual_harness --no-default-features -- reference --scenario alpha_overlay --output crates/mapmap/tests/reference_images/alpha_overlay.png
-cargo run -p mapmap --bin mapflow_visual_harness --no-default-features -- reference --scenario gradient --output crates/mapmap/tests/reference_images/gradient.png
+cargo run -p mapmap --bin mapflow_visual_harness --no-default-features -- reference --scenario checkerboard --output crates/stagegraph/tests/reference_images/checkerboard.png
+cargo run -p mapmap --bin mapflow_visual_harness --no-default-features -- reference --scenario alpha_overlay --output crates/stagegraph/tests/reference_images/alpha_overlay.png
+cargo run -p mapmap --bin mapflow_visual_harness --no-default-features -- reference --scenario gradient --output crates/stagegraph/tests/reference_images/gradient.png
 ```
 
 ## Lokale visuelle Tests ausfuehren

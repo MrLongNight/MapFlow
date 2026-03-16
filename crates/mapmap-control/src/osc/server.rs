@@ -144,7 +144,7 @@ mod tests {
 
         // Send a message
         client
-            .send_message("/mapmap/layer/0/opacity", vec![OscType::Float(0.5)])
+            .send_message("/stagegraph/layer/0/opacity", vec![OscType::Float(0.5)])
             .unwrap();
 
         // Wait a bit for the message to arrive
@@ -152,7 +152,7 @@ mod tests {
 
         // Poll for packet
         if let Some(OscPacket::Message(msg)) = server.poll_packet() {
-            assert_eq!(msg.addr, "/mapmap/layer/0/opacity");
+            assert_eq!(msg.addr, "/stagegraph/layer/0/opacity");
             assert_eq!(msg.args, vec![OscType::Float(0.5)]);
         } else {
             panic!("Expected OSC packet");

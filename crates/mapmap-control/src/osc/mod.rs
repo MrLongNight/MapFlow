@@ -5,16 +5,16 @@
 //! ## OSC Address Space
 //!
 //! ```text
-//! /mapmap/layer/{id}/opacity       [f32: 0.0-1.0]
-//! /mapmap/layer/{id}/position      [f32, f32: x, y]
-//! /mapmap/layer/{id}/rotation      [f32: degrees]
-//! /mapmap/layer/{id}/scale         [f32: scale]
-//! /mapmap/layer/{id}/visibility    [bool]
-//! /mapmap/paint/{id}/parameter/{name}  [varies]
-//! /mapmap/effect/{id}/parameter/{name} [varies]
-//! /mapmap/playback/speed           [f32: speed multiplier]
-//! /mapmap/playback/position        [f32: 0.0-1.0]
-//! /mapmap/output/{id}/brightness   [f32: 0.0-1.0]
+//! /stagegraph/layer/{id}/opacity       [f32: 0.0-1.0]
+//! /stagegraph/layer/{id}/position      [f32, f32: x, y]
+//! /stagegraph/layer/{id}/rotation      [f32: degrees]
+//! /stagegraph/layer/{id}/scale         [f32: scale]
+//! /stagegraph/layer/{id}/visibility    [bool]
+//! /stagegraph/paint/{id}/parameter/{name}  [varies]
+//! /stagegraph/effect/{id}/parameter/{name} [varies]
+//! /stagegraph/playback/speed           [f32: speed multiplier]
+//! /stagegraph/playback/position        [f32: 0.0-1.0]
+//! /stagegraph/output/{id}/brightness   [f32: 0.0-1.0]
 //! ```
 //!
 //! ## Example Usage

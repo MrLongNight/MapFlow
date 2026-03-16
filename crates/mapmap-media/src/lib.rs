@@ -193,11 +193,18 @@ fn open_video_file<P: AsRef<Path>>(path: P) -> Result<Box<dyn VideoDecoder>> {
 
     match FFmpegDecoder::open_with_hw_accel(path, hw_accel) {
         Ok(decoder) => {
-            tracing::info!("Opened with FFmpeg decoder (hw_accel={:?}): {:?}", hw_accel, path);
+            tracing::info!(
+                "Opened with FFmpeg decoder (hw_accel={:?}): {:?}",
+                hw_accel,
+                path
+            );
             return Ok(Box::new(decoder));
         }
         Err(e) => {
-            tracing::warn!("FFmpeg hardware decoder failed: {}. Falling back to software.", e);
+            tracing::warn!(
+                "FFmpeg hardware decoder failed: {}. Falling back to software.",
+                e
+            );
         }
     }
 
