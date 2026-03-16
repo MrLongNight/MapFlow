@@ -1,10 +1,10 @@
 # Quick Start Guide
 
-Welcome to MapFlow! This guide will get you projecting in 5 minutes.
+Welcome to SubI! This guide will get you projecting in 5 minutes.
 
-## 1. Launch MapFlow
+## 1. Launch SubI
 
-Run the application (`mapflow` or `mapflow.exe`). You will see the **Dashboard** interface.
+Run the application (`subi` or `subi.exe`). You will see the **Dashboard** interface.
 
 ## 2. Import Media
 

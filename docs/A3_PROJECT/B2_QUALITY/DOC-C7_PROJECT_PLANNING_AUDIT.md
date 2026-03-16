@@ -5,7 +5,7 @@
 ## Roadmap vs. Code Status
 
 ### Übereinstimmungen
-- **Rebranding (MapFlow):** Roadmap und Changelog zeigen erfolgreichen Abschluss.
+- **Rebranding (SubI):** Roadmap und Changelog zeigen erfolgreichen Abschluss.
 - **Layer System:** Implementiert wie geplant.
 - **Audio Integration:** AudioAnalyzerV2 und CPAL Backend sind als "Done" markiert und im Code vorhanden.
 

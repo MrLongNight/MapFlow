@@ -1,6 +1,6 @@
 # Multi-PC Architektur
 
-MapFlow unterstützt skalierbare Setups über mehrere Computer hinweg. Dies ist notwendig für Installationen mit sehr vielen Projektoren oder extrem hohen Auflösungen.
+SubI unterstützt skalierbare Setups über mehrere Computer hinweg. Dies ist notwendig für Installationen mit sehr vielen Projektoren oder extrem hohen Auflösungen.
 
 ## Optionen
 

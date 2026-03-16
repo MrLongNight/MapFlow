@@ -1,6 +1,6 @@
 # DOC-B4: Planned Features & Specifications
 
-Dieses Dokument enthält technische Konzepte und Spezifikationen für zukünftige Erweiterungen von MapFlow.
+Dieses Dokument enthält technische Konzepte und Spezifikationen für zukünftige Erweiterungen von SubI.
 
 ## 1. Kamera-basierte Kalibrierung (Auto-Mapping)
 Ziel: Automatische Anpassung des Outputs an die Geometrie der Projektionsfläche.

@@ -1,7 +1,7 @@
 # DOC-C11: Video I/O & Interop Strategie (NDI, Spout, WGPU)
 
 ## 1. Status Quo & Herausforderungen
-MapFlow nutzt `wgpu` für das Rendering. Der Austausch von Videodaten mit anderen Applikationen (NDI, Spout) erfordert effiziente Übergänge zwischen GPU-Kontexten oder schnelles Readback in den RAM.
+SubI nutzt `wgpu` für das Rendering. Der Austausch von Videodaten mit anderen Applikationen (NDI, Spout) erfordert effiziente Übergänge zwischen GPU-Kontexten oder schnelles Readback in den RAM.
 
 ### Herausforderungen:
 *   **MF-019 (Spout):** WGPU abstrahiert native Handles. Spout benötigt unter Windows DX11/DX12 Shared Handles. Ein Update der WGPU-Version ist nötig, um stabilen Zugriff auf `NativeObject` zu erhalten.

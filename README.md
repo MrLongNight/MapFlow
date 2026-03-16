@@ -1,21 +1,21 @@
 <div align="center">
-  <img src="resources/app_icons/MapFlow_Logo_HQ-Full-M.png" alt="MapFlow Logo" width="500"/>
+  <img src="resources/app_icons/SubI_Logo_HQ-Full-M.png" alt="SubI Logo" width="500"/>
 
-# MapFlow
+# SubI
 
 ## High-Performance Real-Time Visual Synthesis & Projection Mapping
 
 <!-- markdownlint-disable MD013 -->
-  [![Build & Quality](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-DevFlow_Job01_Validation.yml/badge.svg?branch=main)](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-DevFlow_Job01_Validation.yml)
-  [![Security Analysis](https://github.com/MrLongNight/MapFlow/actions/workflows/CI-02_security-scan.yml/badge.svg)](https://github.com/MrLongNight/MapFlow/actions/workflows/CI-02_security-scan.yml)
-  [![Stable Release](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-MainFlow_Job03_Release.yml/badge.svg)](https://github.com/MrLongNight/MapFlow/actions/workflows/CICD-MainFlow_Job03_Release.yml)
+  [![Build & Quality](https://github.com/MrLongNight/SubI/actions/workflows/CICD-DevFlow_Job01_Validation.yml/badge.svg?branch=main)](https://github.com/MrLongNight/SubI/actions/workflows/CICD-DevFlow_Job01_Validation.yml)
+  [![Security Analysis](https://github.com/MrLongNight/SubI/actions/workflows/CI-02_security-scan.yml/badge.svg)](https://github.com/MrLongNight/SubI/actions/workflows/CI-02_security-scan.yml)
+  [![Stable Release](https://github.com/MrLongNight/SubI/actions/workflows/CICD-MainFlow_Job03_Release.yml/badge.svg)](https://github.com/MrLongNight/SubI/actions/workflows/CICD-MainFlow_Job03_Release.yml)
   ![OS: Windows | Linux](https://img.shields.io/badge/OS-Windows%20%7C%20Linux-blue.svg)
   [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
   [![Rust: 1.75+](https://img.shields.io/badge/Rust-1.75%2B-orange.svg)](https://www.rust-lang.org/)
   [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 <!-- markdownlint-enable MD013 -->
 
-  **MapFlow** is a next-generation, modular **VJ (Video Jockey) Software**
+  **SubI** is a next-generation, modular **VJ (Video Jockey) Software**
   engineered for high-performance visual synthesis, real-time effects, and
   professional projection mapping. Built with the speed and safety of **Rust**,
   it empowers artists to create immersive visual experiences with unprecedented
@@ -26,7 +26,7 @@
 
 ## 🚀 Vision
 
-In an era of complex visual performances, MapFlow bridges the gap between ease
+In an era of complex visual performances, SubI bridges the gap between ease
 of use and professional power. By utilizing a **node-based architecture**,
 every parameter becomes a playground for automation, audio-reactivity, and
 external control.
@@ -41,7 +41,7 @@ modulation system.
 
 ### ⚡ Professional Rendering Engine
 
-Powered by **WGPU** and the **Bevy Engine**, MapFlow delivers low-latency, hardware-accelerated rendering.
+Powered by **WGPU** and the **Bevy Engine**, SubI delivers low-latency, hardware-accelerated rendering.
 
 * **Multi-Layer Composition**: Advanced blend modes and hierarchical grouping.
 * **3D & Particle Integration**: Native Bevy support for stunning volumetric effects and 3D scenes.
@@ -90,8 +90,8 @@ you extend the software's capabilities.
 
 ```bash
 # Clone the repository
-git clone https://github.com/MrLongNight/MapFlow.git
-cd MapFlow
+git clone https://github.com/MrLongNight/SubI.git
+cd SubI
 
 # Run the application (Release mode recommended for performance)
 cargo run --release
@@ -118,14 +118,14 @@ Explore our comprehensive guides in the [`docs/`](docs/README.md) directory:
 
 We welcome contributions from visual artists and developers alike! Please read
 our [**Contributing Guidelines**](CONTRIBUTING.md) and check our
-[**GitHub Issues**](https://github.com/MrLongNight/MapFlow/issues) for open
+[**GitHub Issues**](https://github.com/MrLongNight/SubI/issues) for open
 tasks.
 
 ## 📄 License
 
-MapFlow is licensed under **GPL-3.0**. See the [LICENSE](LICENSE) file for more information.
+SubI is licensed under **GPL-3.0**. See the [LICENSE](LICENSE) file for more information.
 
 ---
 <div align="center">
-  Created with ❤️ by the MapFlow Contributors.
+  Created with ❤️ by the SubI Contributors.
 </div>

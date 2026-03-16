@@ -1,10 +1,10 @@
-# MapFlow Control Protocol (MCP) API
+# SubI Control Protocol (MCP) API
 
-This document describes the MapFlow Control Protocol (MCP) integration, which allows external agents (like Jules) to control the MapFlow application.
+This document describes the SubI Control Protocol (MCP) integration, which allows external agents (like Jules) to control the SubI application.
 
 ## Overview
 
-The MCP server runs embedded within the MapFlow application and communicates via `stdio` using JSON-RPC 2.0. It adheres to the Model Context Protocol standard.
+The MCP server runs embedded within the SubI application and communicates via `stdio` using JSON-RPC 2.0. It adheres to the Model Context Protocol standard.
 
 ## Tools
 
@@ -102,7 +102,7 @@ The MCP server provides access to application state via resources:
 
 ## Integration
 
-To control MapFlow from an MCP client:
-1.  Start MapFlow.
+To control SubI from an MCP client:
+1.  Start SubI.
 2.  Connect to the MCP server via `stdio`.
 3.  Send JSON-RPC requests to call tools or access resources.

@@ -109,7 +109,7 @@ This document serves as the master plan for refactoring the MapMap application. 
 - **Input**: `crates/mapmap/src/main.rs` (`App::render` WGPU sections)
 - **Actions**:
   1. Create `crates/mapmap/src/renderer.rs`.
-  2. Define `struct MapFlowRenderer` holding Device, Queue, Surface.
+  2. Define `struct SubIRenderer` holding Device, Queue, Surface.
   3. Move initialization and `render_frame` logic here.
 - **Validation**: Graphics render correctly, `main.rs` contains minimal WGPU code.
 

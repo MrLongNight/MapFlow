@@ -1,10 +1,10 @@
 # UI Panels Guide
 
-This guide provides a detailed overview of the user interface panels in MapFlow. MapFlow's UI is designed to be modular and flexible, allowing you to arrange panels to suit your workflow.
+This guide provides a detailed overview of the user interface panels in SubI. SubI's UI is designed to be modular and flexible, allowing you to arrange panels to suit your workflow.
 
 ## Overview
 
-MapFlow's interface is built around a docking system. You can drag panel tabs to rearrange them, or use the **View** menu to show/hide specific panels.
+SubI's interface is built around a docking system. You can drag panel tabs to rearrange them, or use the **View** menu to show/hide specific panels.
 
 The default layout typically includes:
 - **Left Sidebar**: Media Browser
@@ -23,7 +23,7 @@ The Dashboard is your main control center during a performance.
 
 ## 2. Module Canvas
 
-The Module Canvas is the heart of MapFlow's node-based workflow. Here you connect different modules to create your visual signal flow.
+The Module Canvas is the heart of SubI's node-based workflow. Here you connect different modules to create your visual signal flow.
 
 *   **Nodes**: Represent functional units (Media Players, Effects, Layers, Outputs).
 *   **Connections**: Wires connecting outputs of one node to inputs of another.
@@ -79,7 +79,7 @@ The Mapping Panel is dedicated to projection mapping tasks.
 
 Manage your physical and virtual outputs.
 
-*   **Displays**: Assign MapFlow outputs to physical monitors or projectors.
+*   **Displays**: Assign SubI outputs to physical monitors or projectors.
 *   **Resolution**: Set custom resolutions and refresh rates.
 *   **Test Patterns**: Display grids and color bars for alignment.
 *   **Edge Blending**: Configure overlaps for multi-projector setups.

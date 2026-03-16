@@ -4,11 +4,11 @@ Stand: 2026-03-14
 
 ## Ziel
 
-Diese Notiz beschreibt den aktuellen Stand und die noetigen Anpassungen, damit spaeter automatisierte grafische Tests mit sichtbarem MapFlow-Fenster, Screenshots und optionalen Videoaufnahmen moeglich werden.
+Diese Notiz beschreibt den aktuellen Stand und die noetigen Anpassungen, damit spaeter automatisierte grafische Tests mit sichtbarem SubI-Fenster, Screenshots und optionalen Videoaufnahmen moeglich werden.
 
 Das Zielbild ist:
 
-- MapFlow startet in einem deterministischen Testmodus
+- SubI startet in einem deterministischen Testmodus
 - eine definierte Szene oder Fixture wird geladen
 - die App fuehrt reproduzierbare Schritte aus
 - relevante Fenster oder Outputs werden als Bild oder Video aufgenommen
@@ -20,7 +20,7 @@ Der aktuelle Testbestand ist fuer dieses Ziel noch nicht ausreichend, aber ein e
 
 ### Was bereits umgesetzt ist
 
-- dediziertes Binary `mapflow_visual_harness`
+- dediziertes Binary `subi_visual_harness`
 - Screenshot-Export aus einem echten sichtbaren `winit`-Fenster
 - Pixelvergleich gegen feste Referenzbilder
 - optional fester Screenshot-Ausgabeordner ueber `MAPFLOW_VISUAL_CAPTURE_OUTPUT_DIR`
@@ -38,7 +38,7 @@ Der aktuelle Testbestand ist fuer dieses Ziel noch nicht ausreichend, aber ein e
 
 ### Was heute noch fehlt
 
-- kein dedizierter GUI-Test-Harness fuer die komplette MapFlow-App auf Basis des echten `run_app`-Pfads
+- kein dedizierter GUI-Test-Harness fuer die komplette SubI-App auf Basis des echten `run_app`-Pfads
 - keine stabile CLI oder Test-API fuer reproduzierbare UI-Szenarien
 - kein allgemeiner Screenshot- oder Videoexport fuer Tests
 - keine Artefakt-Konvention fuer spaetere automatische Auswertung
@@ -67,7 +67,7 @@ Der echte Fensterpfad liegt im Produktionslauf:
 
 Wesentliche Schlussfolgerung:
 
-- fuer die volle MapFlow-App gilt das weiterhin
+- fuer die volle SubI-App gilt das weiterhin
 - als erster Zwischenschritt existiert jetzt aber ein kleiner lokaler visueller Harness fuer echte sichtbare Fenster und Screenshot-Regressionen
 
 ## Wichtigste Blocker
@@ -121,7 +121,7 @@ Interne Previews werden aktuell gedrosselt aktualisiert. Fuer reproduzierbare Sc
 
 Noetig:
 
-- sichtbaren Test- oder Automationsmodus fuer MapFlow einfuehren
+- sichtbaren Test- oder Automationsmodus fuer SubI einfuehren
 - Einstiegspunkt aus `main.rs` in wiederverwendbare Bausteine extrahieren
 - Fixture-Projekte automatisiert laden koennen
 - Testschritte von aussen parametrisieren
@@ -168,7 +168,7 @@ Empfohlene erste Zielkandidaten:
 
 ## Priorisierte visuelle Testszenarien
 
-Die folgenden Faelle sind fuer einen spaeteren echten MapFlow-App-Harness besonders wertvoll,
+Die folgenden Faelle sind fuer einen spaeteren echten SubI-App-Harness besonders wertvoll,
 weil headless Runner oder reine Logiktests dort nicht genug Signal liefern:
 
 - Main-Window Startzustand mit leerem Testprojekt
@@ -225,13 +225,13 @@ Die benoetigten CLI-Parameter sind:
 **Beispielaufruf lokal:**
 
 ```bash
-cargo run --bin mapflow -- --mode automation \
+cargo run --bin subi -- --mode automation \
   --fixture ./tests/fixtures/test_project.mflow \
   --exit-after-frames 60 \
   --screenshot-dir ./scripts/archive/logs/screenshots
 ```
 
-Damit laedt MapFlow das Test-Projekt, laesst es 60 Frames laufen (ausreichend, um sicherzustellen, dass Texturen und Shader geladen und berechnet sind), speichert einen Screenshot und beendet sich vollautomatisch, ohne auf Benutzereingaben zu warten.
+Damit laedt SubI das Test-Projekt, laesst es 60 Frames laufen (ausreichend, um sicherzustellen, dass Texturen und Shader geladen und berechnet sind), speichert einen Screenshot und beendet sich vollautomatisch, ohne auf Benutzereingaben zu warten.
 
 ## Pragmatische Empfehlung
 

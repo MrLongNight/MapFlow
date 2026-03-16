@@ -1,6 +1,6 @@
 # 🎮 Bevy Advanced Integration & Extensions
 
-Diese Dokumentation beschreibt die Vision und den aktuellen Stand der Bevy-Integration in MapFlow. Statt einer monolithischen "Bevy Scene" verfolgen wir einen modularen Ansatz, bei dem spezialisierte Bevy-Nodes nahtlos in den MapFlow-Graph integriert werden.
+Diese Dokumentation beschreibt die Vision und den aktuellen Stand der Bevy-Integration in SubI. Statt einer monolithischen "Bevy Scene" verfolgen wir einen modularen Ansatz, bei dem spezialisierte Bevy-Nodes nahtlos in den SubI-Graph integriert werden.
 
 ## 🚀 Die Vision: Modulares 3D-Compositing
 Jede Bevy-Extension wird als spezialisierter Node-Typ exponiert. Dies ermöglicht es VJs, komplexe 3D-Szenen prozedural im Graph aufzubauen, ohne Bevy-Code schreiben zu müssen.
@@ -17,10 +17,10 @@ Jede Bevy-Extension wird als spezialisierter Node-Typ exponiert. Dies ermöglich
 | **👆 Interaction** | `bevy_picking` | ⬜ Planned | Klickbare 3D-Elemente im Canvas. | Trigger-Emission auf Click. |
 
 ## 📐 Architektur: Wie es funktioniert
-1.  **Shared Engine**: MapFlow startet eine einzige Bevy-Instanz im Hintergrund.
-2.  **Node-to-Entity Mapping**: Jeder Bevy-Node im MapFlow-Graph entspricht einer Entity oder einer Gruppe von Entities in der Bevy-World.
+1.  **Shared Engine**: SubI startet eine einzige Bevy-Instanz im Hintergrund.
+2.  **Node-to-Entity Mapping**: Jeder Bevy-Node im SubI-Graph entspricht einer Entity oder einer Gruppe von Entities in der Bevy-World.
 3.  **Parameter-Sync**: Änderungen an Node-Slidern werden in Echtzeit als Bevy-Resources oder Components an die Engine übertragen.
-4.  **Audio-Link**: MapFlow's FFT-Daten werden direkt als `AudioInputResource` in Bevy eingespeist, wo sie von spezialisierten Systemen (z.B. für das Hex-Grid) verarbeitet werden.
+4.  **Audio-Link**: SubI's FFT-Daten werden direkt als `AudioInputResource` in Bevy eingespeist, wo sie von spezialisierten Systemen (z.B. für das Hex-Grid) verarbeitet werden.
 
 ## 📖 Node-Details
 
@@ -41,9 +41,9 @@ Einfache geometrische Primitive für schnelles Prototyping oder minimalistische 
 
 ## ⚠️ Inkompatible Extensions
 - `bevy-vfx-bag`: Veraltet (Bevy 0.10). Wir implementieren eigene Shader-Nodes basierend auf WGPU.
-- `bevy-ui-gradients`: Inkompatibel mit 0.14. Native MapFlow UI-Gradients werden bevorzugt.
+- `bevy-ui-gradients`: Inkompatibel mit 0.14. Native SubI UI-Gradients werden bevorzugt.
 
 ## 🔜 Nächste Schritte
 1.  **Node Expansion**: Implementierung der `SourceType` Varianten in `mapmap-core`.
 2.  **UI-Integration**: Erstellen von spezialisierten Inspector-Panels für jeden Bevy-Node.
-3.  **Renderer-Optimierung**: Verbessertes Readback der Bevy-Texture in den MapFlow-Main-Renderer.
+3.  **Renderer-Optimierung**: Verbessertes Readback der Bevy-Texture in den SubI-Main-Renderer.

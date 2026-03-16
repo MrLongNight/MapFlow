@@ -1,8 +1,8 @@
-# MapFlow Architektur Übersicht
+# SubI Architektur Übersicht
 
 ## System-Design
 
-MapFlow basiert auf einer modernen, modularen Architektur, die **Rust** für Performance und Sicherheit, **Bevy** als ECS-Engine und **WGPU** für das Rendering nutzt.
+SubI basiert auf einer modernen, modularen Architektur, die **Rust** für Performance und Sicherheit, **Bevy** als ECS-Engine und **WGPU** für das Rendering nutzt.
 
 ### Kern-Komponenten (Crates)
 
@@ -48,6 +48,6 @@ Die Logik ist Node-basiert (`module_canvas`).
 
 ## Audio-Integration
 
-MapFlow nutzt `cpal` für Low-Level Audio I/O.
+SubI nutzt `cpal` für Low-Level Audio I/O.
 *   **Analyse**: FFT (Fast Fourier Transform) zur Frequenzanalyse.
 *   **Reactivity**: Audio-Signale (Bass, Mids, Highs) können direkt Parameter in der Render-Pipeline steuern.

@@ -1,6 +1,6 @@
 # Development Setup & Contribution Guide
 
-This document provides guidelines for contributing to the MapFlow project.
+This document provides guidelines for contributing to the SubI project.
 
 **Note:** This guide was originally named `HACKING.md` and primarily refers to the development process of the **legacy C++/Qt version**. Guidelines for the Rust version are still evolving but will generally follow similar principles.
 

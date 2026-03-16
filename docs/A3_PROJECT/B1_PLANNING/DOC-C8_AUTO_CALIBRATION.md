@@ -1,7 +1,7 @@
 # Spezifikation: Kamera-basierte Beamer-Kalibrierung & Smart Mapping
 
 ## 1. Übersicht
-Ziel ist die Implementierung einer automatischen Kalibrierung ("Auto-Mapping"), bei der eine Kamera die Projektionsfläche scannt und der Output von MapFlow automatisch an die Geometrie angepasst wird. Dies ermöglicht "Smart 3D Mapping", bei dem Inhalte präzise auf physische Objekte gemappt werden, ohne manuell Punkte ziehen zu müssen.
+Ziel ist die Implementierung einer automatischen Kalibrierung ("Auto-Mapping"), bei der eine Kamera die Projektionsfläche scannt und der Output von SubI automatisch an die Geometrie angepasst wird. Dies ermöglicht "Smart 3D Mapping", bei dem Inhalte präzise auf physische Objekte gemappt werden, ohne manuell Punkte ziehen zu müssen.
 
 ## 2. Technischer Ansatz: Strukturiertes Licht (Structured Light)
 Wir verwenden das **Gray-Code** Verfahren (eine Form von Structured Light Scanning).
@@ -16,7 +16,7 @@ Wir verwenden das **Gray-Code** Verfahren (eine Form von Structured Light Scanni
 ## 3. Architektur & Stack
 
 ### 3.1 Kamera-Zugriff (Video Capture)
-Wir vermeiden schwere Abhängigkeiten wie OpenCV, um die Portabilität und Build-Zeiten von MapFlow zu schonen.
+Wir vermeiden schwere Abhängigkeiten wie OpenCV, um die Portabilität und Build-Zeiten von SubI zu schonen.
 
 *   **Library**: `nokhwa` (https://crates.io/crates/nokhwa)
     *   *Features*: `input-native` (nutzt MediaFoundation auf Windows, V4L2 auf Linux, AVFoundation auf macOS).
@@ -46,7 +46,7 @@ Die Verarbeitung erfolgt "Native Rust".
 
 ### Phase 1: Setup
 1.  **Hardware**: Beamer und Kamera aufstellen und verbinden.
-2.  **View**: In MapFlow (neues Panel "Calibration") den Kamera-Input aktivieren.
+2.  **View**: In SubI (neues Panel "Calibration") den Kamera-Input aktivieren.
 3.  **Ausrichtung**: Sicherstellen, dass die Kamera das gesamte Projektionsbild sieht.
 
 ### Phase 2: Scan (Der "Wizard")

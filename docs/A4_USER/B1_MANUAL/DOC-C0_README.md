@@ -1,6 +1,6 @@
 # DOC-C0: Benutzerhandbuch
 
-Detaillierte Anleitungen zur Bedienung von MapFlow.
+Detaillierte Anleitungen zur Bedienung von SubI.
 
 ## 📄 Dokumente
 

@@ -4,7 +4,7 @@
 
 The `ModuleCanvas` is the central component for the visual programming interface.
 It has been refactored to remove dependencies on external node editor libraries (`egui_node_editor`)
-in favor of a custom, lightweight implementation tailored to MapFlow's needs.
+in favor of a custom, lightweight implementation tailored to SubI's needs.
 
 ### Key Components
 
@@ -18,5 +18,5 @@ in favor of a custom, lightweight implementation tailored to MapFlow's needs.
 ### Module Structure
 
 The UI is built using `egui` and follows a retained-mode style where the `ModuleCanvas`
-struct holds the state of interaction (panning, selection, dragging) while the `MapFlowModule`
+struct holds the state of interaction (panning, selection, dragging) while the `SubIModule`
 (from core) holds the data model.

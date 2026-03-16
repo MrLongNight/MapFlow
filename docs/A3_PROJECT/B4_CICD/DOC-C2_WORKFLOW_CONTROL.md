@@ -283,7 +283,7 @@ Neu vorbereitet, aber standardmaessig deaktiviert:
 - einzelnen PR ausnehmen:
   - Label `skip-self-hosted-post-merge`
 - Runner-seitig deaktivieren:
-  - Runner stoppen oder Label `mapflow-post-merge` entfernen
+  - Runner stoppen oder Label `subi-post-merge` entfernen
 
 Details:
 - [DOC-C5_SELF_HOSTED_RUNNER_WINDOWS](./DOC-C5_SELF_HOSTED_RUNNER_WINDOWS.md)

@@ -1,4 +1,4 @@
-# MapFlow Code-Analyse Report
+# SubI Code-Analyse Report
 
 **Datum:** 2025-12-29
 **Branch:** feature/node-menu-overhaul

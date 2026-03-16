@@ -1,9 +1,9 @@
 # DOC-C3: WGSL Shader System
 
-Dieses Dokument beschreibt die Implementierung und Nutzung von Shadern in MapFlow.
+Dieses Dokument beschreibt die Implementierung und Nutzung von Shadern in SubI.
 
 ## 1. Shader-Sprache: WGSL
-MapFlow nutzt ausschließlich **WGSL** (WebGPU Shading Language). Dies garantiert native Performance auf allen Plattformen (Vulkan, Metal, DX12).
+SubI nutzt ausschließlich **WGSL** (WebGPU Shading Language). Dies garantiert native Performance auf allen Plattformen (Vulkan, Metal, DX12).
 
 ## 2. Kern-Shader
 *   `shaders/mesh_warp.wgsl`: Berechnet die geometrische Verzerrung für das Projection Mapping.

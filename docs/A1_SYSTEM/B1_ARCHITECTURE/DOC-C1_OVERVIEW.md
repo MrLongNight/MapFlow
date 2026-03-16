@@ -1,10 +1,10 @@
-# DOC-B1: MapFlow System Architecture
+# DOC-B1: SubI System Architecture
 
-Dieses Dokument dient als zentrale technische Referenz für die interne Funktionsweise von MapFlow. Es beschreibt das System-Design, die Crate-Hierarchie und den Datenfluss.
+Dieses Dokument dient als zentrale technische Referenz für die interne Funktionsweise von SubI. Es beschreibt das System-Design, die Crate-Hierarchie und den Datenfluss.
 
 ## 1. System-Design & Crates
 
-MapFlow basiert auf einer modernen, modularen Architektur in **Rust**, die **Bevy** als ECS-Engine und **WGPU** für das Rendering nutzt. Das Projekt ist als Cargo Workspace organisiert.
+SubI basiert auf einer modernen, modularen Architektur in **Rust**, die **Bevy** als ECS-Engine und **WGPU** für das Rendering nutzt. Das Projekt ist als Cargo Workspace organisiert.
 
 ### Crate-Ökosystem
 
@@ -46,7 +46,7 @@ graph TD
 
 ## 2. Globaler Frame-Loop
 
-MapFlow trennt strikt zwischen Logik-Update (fest 60Hz) und Render-Update (VSync).
+SubI trennt strikt zwischen Logik-Update (fest 60Hz) und Render-Update (VSync).
 
 ### Phase A: Logic Update (`logic.rs`)
 1. **Input Sampling**: Gather MIDI/OSC/Keyboard Events.
@@ -78,7 +78,7 @@ Der fachliche Datenfluss folgt dem Prinzip:
 
 ## 4. Render-Pipeline & Threading
 
-Aktuell nutzt MapFlow ein asynchrones Modell für Medien-Frames:
+Aktuell nutzt SubI ein asynchrones Modell für Medien-Frames:
 - **Decode-Thread**: Erzeugt Frames aus Video-Quellen.
 - **Upload-Thread**: Lädt Daten via Staging-Buffer in GPU-Texturen (WGPU).
 - **Render-Thread**: Nutzt die Texturen für die Komposition.

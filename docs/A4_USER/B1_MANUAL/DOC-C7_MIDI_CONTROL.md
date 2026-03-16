@@ -1,4 +1,4 @@
-´9# MIDI User Guide - MapFlow
+´9# MIDI User Guide - SubI
 
 > **Version:** 1.0
 > **Stand:** 2025-12-27
@@ -20,7 +20,7 @@
 
 ## Übersicht
 
-MapFlow unterstützt MIDI-Eingabe für:
+SubI unterstützt MIDI-Eingabe für:
 - **Trigger-Nodes** im Module Canvas (Steuerung von Medien/Effekten)
 - **Controller Overlay** (visuelle Anzeige des Ecler NUO 4 Mixers)
 
@@ -90,9 +90,9 @@ MapFlow unterstützt MIDI-Eingabe für:
 ## User Workflow: MIDI Einrichten
 
 ### Schritt 1: App starten
-MapFlow verbindet sich **automatisch** zum ersten verfügbaren MIDI-Port.
+SubI verbindet sich **automatisch** zum ersten verfügbaren MIDI-Port.
 
-Im Log (`logs/mapflow_*.log`) erscheint:
+Im Log (`logs/subi_*.log`) erscheint:
 ```
 INFO  MIDI initialized
 INFO  Available MIDI ports: ["Port 1", "Port 2"]
@@ -120,7 +120,7 @@ Im Settings-Fenster gibt es eine **klappbare Section** "🎹 MIDI".
 
 1. **MIDI Port Dropdown** klicken
 2. Gewünschten Port auswählen
-3. MapFlow disconnectet vom alten Port und connectet zum neuen
+3. SubI disconnectet vom alten Port und connectet zum neuen
 
 **Log-Ausgabe:**
 ```

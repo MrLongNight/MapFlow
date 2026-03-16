@@ -1,6 +1,6 @@
 # DOC-B0: Benutzerhandbuch & Tutorials
 
-Alles, was du wissen musst, um MapFlow professionell einzusetzen.
+Alles, was du wissen musst, um SubI professionell einzusetzen.
 
 ## 📁 Unterverzeichnisse
 

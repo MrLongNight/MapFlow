@@ -38,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 2026-03-14: fix: Ensure commit status is reported for push and pull_request events (#-)
 - 2026-03-14: feat: Implement Trackline Mode for marker-to-marker playback (#1137)
 - 2026-03-14: feat: MF-070-TIMELINE-ARCH-MULTI-TRACK: Architektur: Multi-Track Datenmodell (Module vs. Parameter Tracks) (#1135)
-- 2026-03-14: feat: __MF-SubI_Echter MapFlow-Automationsmodus auf run_app-Basis (#1134)
+- 2026-03-14: feat: __MF-SubI_Echter SubI-Automationsmodus auf run_app-Basis (#1134)
 - 2026-03-14: feat: __MF-SubI_Appnahe Referenzszenarien fuer Core-Features (#1125)
 - 2026-03-14: feat: __MF-SubI_Deterministische Screenshot- und Artefakt-Pipeline (#1127)
 - 2026-03-14: feat: Expand MCP and OSC implementation for full remote controllability (#1123)
@@ -95,7 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.0] - 2025-12-15
 ### Added
-- Initial release of MapFlow (VJMapper).
+- Initial release of SubI (VJMapper).
 - Basic layer management and transformation.
 - FFmpeg-based video decoding.
 - Simple MIDI and OSC support.

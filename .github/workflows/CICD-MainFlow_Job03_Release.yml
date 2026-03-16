@@ -204,8 +204,8 @@ jobs:
         shell: pwsh
         run: |
           $Version = "${{ needs.resolve-release.outputs.version }}"
-          $ZipName = "MapFlow-$Version-Windows-x64.zip"
-          Compress-Archive -Path "target/release/MapFlow.exe", "target/release/*.dll" -DestinationPath "$ZipName"
+          $ZipName = "SubI-$Version-Windows-x64.zip"
+          Compress-Archive -Path "target/release/SubI.exe", "target/release/*.dll" -DestinationPath "$ZipName"
           Add-Content -Path $env:GITHUB_ENV -Value "ZIP_PATH=$ZipName"
 
       - name: Ensure WiX Output Directory
@@ -222,7 +222,7 @@ jobs:
             Write-Error "No MSI artifact was generated in target/wix."
             exit 1
           }
-          Move-Item -Path $MsiPath -Destination "MapFlow-${{ needs.resolve-release.outputs.version }}-x64.msi"
+          Move-Item -Path $MsiPath -Destination "SubI-${{ needs.resolve-release.outputs.version }}-x64.msi"
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
@@ -230,8 +230,8 @@ jobs:
           name: windows-artifacts
           if-no-files-found: error
           path: |
-            MapFlow-${{ needs.resolve-release.outputs.version }}-Windows-x64.zip
-            MapFlow-${{ needs.resolve-release.outputs.version }}-x64.msi
+            SubI-${{ needs.resolve-release.outputs.version }}-Windows-x64.zip
+            SubI-${{ needs.resolve-release.outputs.version }}-x64.msi
 
   build-linux:
     name: "Build (Linux x64)"
@@ -271,15 +271,15 @@ jobs:
       - name: Create Tarball
         run: |
           VERSION="${{ needs.resolve-release.outputs.version }}"
-          TAR_NAME="MapFlow-$VERSION-Linux-x64.tar.gz"
+          TAR_NAME="SubI-$VERSION-Linux-x64.tar.gz"
           cd target/release
-          tar -czf "../../$TAR_NAME" MapFlow
+          tar -czf "../../$TAR_NAME" SubI
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: linux-artifacts
           if-no-files-found: error
-          path: MapFlow-${{ needs.resolve-release.outputs.version }}-Linux-x64.tar.gz
+          path: SubI-${{ needs.resolve-release.outputs.version }}-Linux-x64.tar.gz
 
   build-macos:
     name: "Build (macOS Beta)"
@@ -308,21 +308,21 @@ jobs:
       - name: Package .app Bundle
         shell: bash
         run: |
-          bash scripts/mapflow/package-macos-app.sh "${{ needs.resolve-release.outputs.version }}"
+          bash scripts/subi/package-macos-app.sh "${{ needs.resolve-release.outputs.version }}"
 
       - name: Create ZIP Artifact
         shell: bash
         run: |
           VERSION="${{ needs.resolve-release.outputs.version }}"
-          ZIP_NAME="MapFlow-$VERSION-macOS-beta.zip"
-          ditto -c -k --sequesterRsrc --keepParent "target/release/MapFlow.app" "$ZIP_NAME"
+          ZIP_NAME="SubI-$VERSION-macOS-beta.zip"
+          ditto -c -k --sequesterRsrc --keepParent "target/release/SubI.app" "$ZIP_NAME"
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: macos-artifacts
           if-no-files-found: error
-          path: MapFlow-${{ needs.resolve-release.outputs.version }}-macOS-beta.zip
+          path: SubI-${{ needs.resolve-release.outputs.version }}-macOS-beta.zip
 
   publish-release:
     name: "Publish Release"
@@ -344,16 +344,16 @@ jobs:
           set -euo pipefail
 
           assets=(
-            "release-artifacts/MapFlow-$RELEASE_VERSION-Windows-x64.zip"
-            "release-artifacts/MapFlow-$RELEASE_VERSION-x64.msi"
-            "release-artifacts/MapFlow-$RELEASE_VERSION-Linux-x64.tar.gz"
-            "release-artifacts/MapFlow-$RELEASE_VERSION-macOS-beta.zip"
+            "release-artifacts/SubI-$RELEASE_VERSION-Windows-x64.zip"
+            "release-artifacts/SubI-$RELEASE_VERSION-x64.msi"
+            "release-artifacts/SubI-$RELEASE_VERSION-Linux-x64.tar.gz"
+            "release-artifacts/SubI-$RELEASE_VERSION-macOS-beta.zip"
           )
 
           args=(
             "$RELEASE_VERSION"
             --target "$GITHUB_SHA"
-            --title "MapFlow $RELEASE_VERSION"
+            --title "SubI $RELEASE_VERSION"
             --generate-notes
           )
 

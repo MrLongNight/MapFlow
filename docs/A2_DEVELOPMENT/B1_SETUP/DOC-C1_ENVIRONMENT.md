@@ -4,7 +4,7 @@ Dieses Dokument enthält alle Informationen zum Einrichten der Entwicklungsumgeb
 
 ## 1. System-Anforderungen & Setup
 
-MapFlow ist eine Rust-Anwendung. Stelle sicher, dass die aktuelle Rust-Toolchain (stable) installiert ist.
+SubI ist eine Rust-Anwendung. Stelle sicher, dass die aktuelle Rust-Toolchain (stable) installiert ist.
 
 ### Abhängigkeiten installieren
 - **Windows**: Vcpkg für FFmpeg empfohlen.
