@@ -3,7 +3,9 @@
 //! Bridges the Animation system with Effect parameters,
 //! allowing effect parameters to be keyframe-animated over time.
 
-use crate::animation::{AnimValue, AnimationClip, AnimationPlayer, AnimationTrack, Keyframe, TimelineMarker};
+use crate::animation::{
+    AnimValue, AnimationClip, AnimationPlayer, AnimationTrack, Keyframe, TimelineMarker,
+};
 use crate::effects::EffectType;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

@@ -275,7 +275,9 @@ struct AnimationClipSerde {
     reverse: bool,
 }
 
-fn deserialize_optional_playback_mode<'de, D>(deserializer: D) -> Result<Option<PlaybackMode>, D::Error>
+fn deserialize_optional_playback_mode<'de, D>(
+    deserializer: D,
+) -> Result<Option<PlaybackMode>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
@@ -364,7 +366,8 @@ impl AnimationClip {
     /// Add a timeline marker to the clip
     pub fn add_marker(&mut self, marker: TimelineMarker) {
         self.markers.push(marker);
-        self.markers.sort_by(|a, b| a.time.partial_cmp(&b.time).unwrap());
+        self.markers
+            .sort_by(|a, b| a.time.partial_cmp(&b.time).unwrap());
     }
 
     /// Remove a timeline marker by time in seconds
@@ -490,7 +493,8 @@ impl AnimationPlayer {
                     let clip_duration_beats = out_pt - in_pt;
                     if clip_duration_beats > 0.0 {
                         // duration in seconds = beats / (BPM / 60)
-                        let target_duration = self.clip.beats as f64 / (self.clip.bpm as f64 / 60.0);
+                        let target_duration =
+                            self.clip.beats as f64 / (self.clip.bpm as f64 / 60.0);
                         clip_duration_beats / target_duration
                     } else {
                         1.0
@@ -581,7 +585,12 @@ impl AnimationPlayer {
     /// Jump playhead to the next available marker
     pub fn jump_to_next_marker(&mut self) {
         let epsilon = 0.001;
-        if let Some(marker) = self.clip.markers.iter().find(|m| m.time > self.current_time + epsilon) {
+        if let Some(marker) = self
+            .clip
+            .markers
+            .iter()
+            .find(|m| m.time > self.current_time + epsilon)
+        {
             self.seek(marker.time);
         }
     }
@@ -589,7 +598,13 @@ impl AnimationPlayer {
     /// Jump playhead to the previous available marker
     pub fn jump_to_prev_marker(&mut self) {
         let epsilon = 0.001;
-        if let Some(marker) = self.clip.markers.iter().rev().find(|m| m.time < self.current_time - epsilon) {
+        if let Some(marker) = self
+            .clip
+            .markers
+            .iter()
+            .rev()
+            .find(|m| m.time < self.current_time - epsilon)
+        {
             self.seek(marker.time);
         }
     }
