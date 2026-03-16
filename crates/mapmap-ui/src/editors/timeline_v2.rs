@@ -373,15 +373,14 @@ impl TimelineV2 {
                             }
                         } else {
                             // Block has no trigger, it's the default for this time
-                            let current_is_active = if let Some(current_id) =
-                                self.hybrid_current_block_id
-                            {
-                                blocks.iter().find(|b| b.id == current_id).is_some_and(|b| {
-                                    current_time >= b.start_time && current_time < b.end_time()
-                                })
-                            } else {
-                                false
-                            };
+                            let current_is_active =
+                                if let Some(current_id) = self.hybrid_current_block_id {
+                                    blocks.iter().find(|b| b.id == current_id).is_some_and(|b| {
+                                        current_time >= b.start_time && current_time < b.end_time()
+                                    })
+                                } else {
+                                    false
+                                };
 
                             if !current_is_active {
                                 next_block_id = Some(block.id);

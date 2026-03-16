@@ -68,7 +68,8 @@ pub fn show(ctx: &Context, mut context: TimelineContext) {
                     TimelineAction::AddMarker(t) => {
                         let name = format!("Marker {:.1}s", t);
                         let id = (t * 1000.0) as u64;
-                        animator.add_marker(mapmap_core::animation::Marker::new(id, t as f64, name));
+                        animator
+                            .add_marker(mapmap_core::animation::Marker::new(id, t as f64, name));
                     }
                     TimelineAction::RemoveMarker(t) => {
                         animator.remove_marker(t as f64);
