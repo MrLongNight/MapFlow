@@ -61,21 +61,20 @@ impl BevyRunner {
     /// and logic, without opening a separate window. It registers all custom components and resources
     /// needed for MapFlow integration.
     pub fn new() -> Self {
-        info!("Initializing Bevy integration (Safe Logic Mode)...");
+        info!("Initializing Bevy integration (Headless 3D Mode)...");
 
         let mut app = App::new();
 
-        // Use MinimalPlugins + essential logic plugins
-        app.add_plugins(MinimalPlugins);
-        app.add_plugins((
-            bevy::transform::TransformPlugin,
-            bevy::asset::AssetPlugin::default(),
-            bevy::scene::ScenePlugin,
-        ));
+        // Use DefaultPlugins but disable the window for headless rendering
+        app.add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: None,
+            exit_condition: bevy::window::ExitCondition::DontExit,
+            ..default()
+        }));
 
-        // Manually initialize asset types required by MapFlow systems to avoid PbrPlugin panic
-        app.init_asset::<bevy::prelude::Mesh>();
-        app.init_asset::<bevy::prelude::StandardMaterial>();
+        // Add essential rendering extensions
+        app.add_plugins(bevy_atmosphere::prelude::AtmospherePlugin);
+        app.add_plugins(bevy_mod_outline::OutlinePlugin);
 
         // Register resources
         app.init_resource::<AudioInputResource>();
@@ -94,6 +93,7 @@ impl BevyRunner {
         app.register_type::<BevyCamera>();
 
         // Register systems
+        app.add_systems(Startup, setup_3d_scene);
         app.add_systems(Update, print_status_system);
         app.add_systems(
             Update,
@@ -105,6 +105,8 @@ impl BevyRunner {
                 shape_system,
                 text_3d_system,
                 node_reactivity_system,
+                particle_system,
+                frame_readback_system,
             ),
         );
 

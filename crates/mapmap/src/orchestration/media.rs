@@ -152,40 +152,41 @@ pub fn create_player_handle(
     }
 
     std::thread::spawn(move || {
-        let mut last_update = std::time::Instant::now();
         loop {
-            // Process commands
-            while let Ok(cmd) = cmd_rx.try_recv() {
-                let _ = player.command_sender().send(cmd);
-            }
+            // Block until we get an update or command
+            // We use recv() on the update channel as the primary heartbeat
+            match upd_rx.recv() {
+                Ok(dt) => {
+                    // Process any pending commands first
+                    while let Ok(cmd) = cmd_rx.try_recv() {
+                        let _ = player.command_sender().send(cmd);
+                    }
 
-            // Get dt from channel
-            if let Ok(dt) = upd_rx.try_recv() {
-                player.update(std::time::Duration::from_secs_f32(dt));
-
-                if let Some(frame) = player.last_frame() {
-                    // Extract byte slice from FrameData::Cpu
-                    if let mapmap_io::format::FrameData::Cpu(ref data) = frame.data {
-                        pool.upload_data(
-                            &queue,
-                            &name,
-                            data,
-                            frame.format.width,
-                            frame.format.height,
-                        );
-                    } else {
-                        warn!(
-                            "Fehler in Videoausgabe: Frame fuer '{}' konnte nicht hochgeladen werden, weil das Frame-Format nicht CPU-basiert ist.",
-                            path_buf.display()
-                        );
+                    // Update player and only upload if we got a NEW frame
+                    if let Some(frame) = player.update(std::time::Duration::from_secs_f32(dt)) {
+                        // Extract byte slice from FrameData::Cpu
+                        if let mapmap_io::format::FrameData::Cpu(ref data) = frame.data {
+                            pool.upload_data(
+                                &queue,
+                                &name,
+                                data,
+                                frame.format.width,
+                                frame.format.height,
+                            );
+                        } else {
+                            warn!(
+                                "Fehler in Videoausgabe: Frame fuer '{}' konnte nicht hochgeladen werden, weil das Frame-Format nicht CPU-basiert ist.",
+                                path_buf.display()
+                            );
+                        }
                     }
                 }
+                Err(_) => {
+                    // Channel disconnected, stop the thread
+                    info!("Media-Thread beendet fuer '{}'", path_buf.display());
+                    break;
+                }
             }
-
-            if last_update.elapsed().as_millis() < 5 {
-                std::thread::sleep(std::time::Duration::from_millis(2));
-            }
-            last_update = std::time::Instant::now();
         }
     });
 
