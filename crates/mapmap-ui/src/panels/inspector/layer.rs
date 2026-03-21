@@ -22,7 +22,7 @@ pub fn render_layer_inspector(
         ui.horizontal(|ui| {
             ui.label(egui::RichText::new(&layer.name).strong().size(16.0));
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                ui.label(egui::RichText::new("LAYER").color(egui::Color32::GRAY));
+                ui.label(egui::RichText::new("LAYER").weak().italics());
             });
         });
 

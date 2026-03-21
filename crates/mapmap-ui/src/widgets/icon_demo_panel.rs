@@ -104,7 +104,8 @@ impl IconDemoPanel {
                                         ui.label(
                                             egui::RichText::new(format!("{:?}", icon))
                                                 .size(10.0)
-                                                .color(egui::Color32::GRAY),
+                                                .weak()
+                                                .italics(),
                                         );
                                     });
 

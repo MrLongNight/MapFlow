@@ -246,6 +246,11 @@ pub fn render_trigger_ui(
         TriggerType::Beat => {
             ui.label("🥁 Beat Sync");
             ui.label("Triggers on BPM beat.");
+            ui.separator();
+            super::common::render_info_label(
+                ui,
+                "Event node: Output is sent via Event connections.",
+            );
         }
         TriggerType::AudioFFT {
             band: _band,
@@ -320,6 +325,11 @@ pub fn render_trigger_ui(
             ui.add(egui::Slider::new(min_interval_ms, 50..=5000).text("Min (ms)"));
             ui.add(egui::Slider::new(max_interval_ms, 100..=10000).text("Max (ms)"));
             ui.add(egui::Slider::new(probability, 0.0..=1.0).text("Probability"));
+            ui.separator();
+            super::common::render_info_label(
+                ui,
+                "Event node: Output is sent via Event connections.",
+            );
         }
         TriggerType::Fixed {
             interval_ms,
@@ -403,6 +413,11 @@ pub fn render_trigger_ui(
             if is_learning {
                 ui.label("Press any MIDI key/knob...");
             }
+            ui.separator();
+            super::common::render_info_label(
+                ui,
+                "Event node: Output is sent via Event connections.",
+            );
         }
         TriggerType::Osc { address } => {
             ui.label("\u{1F4E1} OSC Trigger");
@@ -412,6 +427,11 @@ pub fn render_trigger_ui(
             });
             ui.label("Format: /path/to/trigger");
             ui.label("Default port: 8000");
+            ui.separator();
+            super::common::render_info_label(
+                ui,
+                "Event node: Output is sent via Event connections.",
+            );
         }
         TriggerType::Shortcut {
             key_code,
@@ -431,6 +451,11 @@ pub fn render_trigger_ui(
                     *modifiers & 4 != 0
                 ));
             });
+            ui.separator();
+            super::common::render_info_label(
+                ui,
+                "Event node: Output is sent via Event connections.",
+            );
         }
     }
 

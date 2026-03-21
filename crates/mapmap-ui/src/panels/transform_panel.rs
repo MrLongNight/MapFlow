@@ -260,7 +260,8 @@ impl TransformPanel {
                         ui.label(i18n.t("transform-no-layer"));
                         ui.label(
                             egui::RichText::new(i18n.t("transform-select-tip"))
-                                .color(Color32::GRAY),
+                                .weak()
+                                .italics(),
                         );
                     });
                 }

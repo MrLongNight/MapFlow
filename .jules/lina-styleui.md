@@ -87,3 +87,7 @@
 ## 2026-03-16 - [Empty State Consistency Update 2]
 **Learning:** Found an empty state message ("No mapping available to edit mesh.") in the Layer Inspector that used hardcoded gray coloring instead of the standard weak italicized text.
 **Action:** Replaced `.color(egui::Color32::GRAY)` with `.weak().italics()` in `layer.rs` to enforce consistency with the existing Cyber Dark theme guidelines.
+
+## 2026-03-21 - [Empty State Consistency Update 3]
+**Learning:** Found empty state messages ("No outputs configured for preview...", "No Lamps Mapped") and placeholder text ("transform-select-tip") using hardcoded gray coloring instead of the standard weak italicized text.
+**Action:** Replaced `.color(egui::Color32::GRAY)` with `.weak().italics()` across `transform_panel.rs`, `layer.rs`, and `icon_demo_panel.rs` to enforce consistency with the existing Cyber Dark theme guidelines.

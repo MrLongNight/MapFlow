@@ -29,6 +29,10 @@ impl Default for TriggerState {
 }
 
 /// System for processing and tracking active trigger states
+///
+/// Note: Event-trigger nodes (like Beat, Random, Shortcut) emit discrete pulses.
+/// These are tracked here and dispatched to the rest of the graph via Event connections,
+/// separating them from continuous Control signals.
 #[derive(Default)]
 pub struct TriggerSystem {
     active_triggers: ActiveTriggers,
