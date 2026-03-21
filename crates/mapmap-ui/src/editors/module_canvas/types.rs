@@ -20,7 +20,7 @@ pub type PresetPart = (
     (f32, f32),
     Option<(f32, f32)>,
 );
-pub type PresetConnection = (usize, usize, usize, usize); // from_idx, from_socket, to_idx, to_socket
+pub type PresetConnection = (usize, String, usize, String); // from_idx, from_socket, to_idx, to_socket
 
 /// A saved module preset/template
 #[derive(Debug, Clone)]

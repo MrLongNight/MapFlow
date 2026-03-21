@@ -461,9 +461,23 @@ pub fn render_canvas(
 
                     if let Some(target) = closest_socket {
                         let (out_part, out_idx, in_part, in_idx) = if is_output {
-                            (from_part, from_idx, target.part_id, target.socket_idx)
+                            let source = module.part(from_part).unwrap();
+                            let target_p = module.part(target.part_id).unwrap();
+                            (
+                                from_part,
+                                source.outputs[from_idx].id.clone(),
+                                target.part_id,
+                                target_p.inputs[target.socket_idx].id.clone(),
+                            )
                         } else {
-                            (target.part_id, target.socket_idx, from_part, from_idx)
+                            let source = module.part(target.part_id).unwrap();
+                            let target_p = module.part(from_part).unwrap();
+                            (
+                                target.part_id,
+                                source.outputs[target.socket_idx].id.clone(),
+                                from_part,
+                                target_p.inputs[from_idx].id.clone(),
+                            )
                         };
 
                         if module
@@ -526,9 +540,23 @@ pub fn render_canvas(
                             && socket.is_output != from_is_output
                         {
                             let (out_part, out_idx, in_part, in_idx) = if from_is_output {
-                                (from_part_id, from_idx, socket.part_id, socket.socket_idx)
+                                let source = module.part(from_part_id).unwrap();
+                                let target_p = module.part(socket.part_id).unwrap();
+                                (
+                                    from_part_id,
+                                    source.outputs[from_idx].id.clone(),
+                                    socket.part_id,
+                                    target_p.inputs[socket.socket_idx].id.clone(),
+                                )
                             } else {
-                                (socket.part_id, socket.socket_idx, from_part_id, from_idx)
+                                let source = module.part(socket.part_id).unwrap();
+                                let target_p = module.part(from_part_id).unwrap();
+                                (
+                                    socket.part_id,
+                                    source.outputs[socket.socket_idx].id.clone(),
+                                    from_part_id,
+                                    target_p.inputs[from_idx].id.clone(),
+                                )
                             };
                             module
                                 .validate_connection(out_part, out_idx, in_part, in_idx)

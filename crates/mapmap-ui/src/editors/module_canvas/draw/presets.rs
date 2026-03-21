@@ -67,9 +67,9 @@ pub fn draw_presets_popup(
                                     if *from_idx < part_ids.len() && *to_idx < part_ids.len() {
                                         let _ = module.connect_parts(
                                             part_ids[*from_idx],
-                                            *from_socket,
+                                            from_socket.clone(),
                                             part_ids[*to_idx],
-                                            *to_socket,
+                                            to_socket.clone(),
                                         );
                                     }
                                 }
@@ -98,7 +98,12 @@ pub fn draw_presets_popup(
                         if let (Some(&from_idx), Some(&to_idx)) =
                             (id_map.get(&conn.from_part), id_map.get(&conn.to_part))
                         {
-                            connections.push((from_idx, conn.from_socket, to_idx, conn.to_socket));
+                            connections.push((
+                                from_idx,
+                                conn.from_socket.clone(),
+                                to_idx,
+                                conn.to_socket.clone(),
+                            ));
                         }
                     }
 

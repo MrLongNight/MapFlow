@@ -5,12 +5,12 @@ impl ModuleEvaluator {
     pub(crate) fn apply_smoothing(
         &self,
         part_id: ModulePartId,
-        socket_idx: usize,
+        socket_idx: String,
         target_val: f32,
         mode: &TriggerMappingMode,
     ) -> f32 {
         if let TriggerMappingMode::Smoothed { attack, release } = mode {
-            let state_key = (part_id, socket_idx);
+            let state_key = (part_id, socket_idx.clone());
             let mut cache = self.trigger_smoothing_state.borrow_mut();
             let (mut current_val, last_frame) =
                 cache.get(&state_key).copied().unwrap_or((target_val, 0));
@@ -26,7 +26,7 @@ impl ModuleEvaluator {
                 } else {
                     current_val = target_val;
                 }
-                cache.insert(state_key, (current_val, self.current_frame));
+                cache.insert(state_key.clone(), (current_val, self.current_frame));
             }
             current_val
         } else {

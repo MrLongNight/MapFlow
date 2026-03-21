@@ -57,7 +57,7 @@ mod tests {
             next_part_id: 1,
         };
 
-        module.add_connection(1, 0, 2, 0);
+        module.add_connection(1, "0".to_string(), 2, "0".to_string());
 
         assert_eq!(module.connections.len(), 1);
         let conn = &module.connections[0];
@@ -79,10 +79,10 @@ mod tests {
             next_part_id: 1,
         };
 
-        module.add_connection(1, 0, 2, 0);
-        module.add_connection(1, 1, 3, 0);
+        module.add_connection(1, "0".to_string(), 2, "0".to_string());
+        module.add_connection(1, "1".to_string(), 3, "0".to_string());
 
-        module.remove_connection(1, 0, 2, 0);
+        module.remove_connection(1, "0".to_string(), 2, "0".to_string());
 
         assert_eq!(module.connections.len(), 1);
         assert_eq!(module.connections[0].to_part, 3);

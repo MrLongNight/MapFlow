@@ -180,9 +180,14 @@ impl ModuleEvaluator {
         let mut inputs = HashMap::new();
         for conn in &module.connections {
             if let Some(values) = trigger_values.get(&conn.from_part) {
-                if let Some(&value) = values.get(conn.from_socket) {
-                    let current = inputs.entry(conn.to_part).or_insert(0.0);
-                    *current = f32::max(*current, value);
+                let from_idx = module
+                    .part(conn.from_part)
+                    .and_then(|p| p.outputs.iter().position(|s| s.id == conn.from_socket));
+                if let Some(idx) = from_idx {
+                    if let Some(&value) = values.get(idx) {
+                        let current = inputs.entry(conn.to_part).or_insert(0.0);
+                        *current = f32::max(*current, value);
+                    }
                 }
             }
         }
@@ -194,15 +199,20 @@ impl ModuleEvaluator {
         &self,
         module: &MapFlowModule,
         trigger_values: &HashMap<ModulePartId, Vec<f32>>,
-    ) -> HashMap<ModulePartId, HashMap<usize, f32>> {
-        let mut inputs: HashMap<ModulePartId, HashMap<usize, f32>> = HashMap::new();
+    ) -> HashMap<ModulePartId, HashMap<String, f32>> {
+        let mut inputs: HashMap<ModulePartId, HashMap<String, f32>> = HashMap::new();
 
         for conn in &module.connections {
             if let Some(values) = trigger_values.get(&conn.from_part) {
-                if let Some(&value) = values.get(conn.from_socket) {
-                    let part_inputs = inputs.entry(conn.to_part).or_default();
-                    let current = part_inputs.entry(conn.to_socket).or_insert(0.0);
-                    *current = f32::max(*current, value);
+                let from_idx = module
+                    .part(conn.from_part)
+                    .and_then(|p| p.outputs.iter().position(|s| s.id == conn.from_socket));
+                if let Some(idx) = from_idx {
+                    if let Some(&value) = values.get(idx) {
+                        let part_inputs = inputs.entry(conn.to_part).or_default();
+                        let current = part_inputs.entry(conn.to_socket.clone()).or_insert(0.0);
+                        *current = f32::max(*current, value);
+                    }
                 }
             }
         }

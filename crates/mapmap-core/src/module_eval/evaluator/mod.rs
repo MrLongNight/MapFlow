@@ -34,7 +34,7 @@ pub struct ModuleEvaluator {
     pub(crate) active_keys: std::collections::HashSet<String>,
 
     /// State for smoothed trigger inputs: (PartId, SocketIdx) -> (Current Value, Last Updated Frame)
-    pub(crate) trigger_smoothing_state: RefCell<HashMap<(ModulePartId, usize), (f32, u64)>>,
+    pub(crate) trigger_smoothing_state: RefCell<HashMap<(ModulePartId, String), (f32, u64)>>,
 
     /// Manually fired triggers for the current frame
     pub(crate) manual_triggers: std::collections::HashSet<ModulePartId>,
@@ -271,7 +271,7 @@ impl ModuleEvaluator {
                             if let Some(&raw_val) = socket_vals.get(socket_idx) {
                                 let val = self.apply_smoothing(
                                     part.id,
-                                    *socket_idx,
+                                    socket_idx.clone(),
                                     config.apply(raw_val),
                                     &config.mode,
                                 );
@@ -323,11 +323,19 @@ impl ModuleEvaluator {
 
                 let brightness = socket_inputs
                     .get(&part.id)
-                    .and_then(|m| m.get(&0))
+                    .and_then(|m| {
+                        m.get(&"hue_{}_brightness_in".replace("{}", &part.id.to_string()))
+                    })
                     .copied()
                     .unwrap_or(0.0);
-                let hue = socket_inputs.get(&part.id).and_then(|m| m.get(&1)).copied(); // Socket 1: Color(Hue)
-                let strobe = socket_inputs.get(&part.id).and_then(|m| m.get(&2)).copied(); // Socket 2: Strobe
+                let hue = socket_inputs
+                    .get(&part.id)
+                    .and_then(|m| m.get(&"hue_{}_color_in".replace("{}", &part.id.to_string())))
+                    .copied(); // Socket 1: Color(Hue)
+                let strobe = socket_inputs
+                    .get(&part.id)
+                    .and_then(|m| m.get(&"hue_{}_strobe_in".replace("{}", &part.id.to_string())))
+                    .copied(); // Socket 2: Strobe
 
                 // Extract IDs from node type
                 use crate::module::HueNodeType;
@@ -732,7 +740,7 @@ mod evaluator_tests {
 
         // 2. Source (Target)
         let s_id = module.add_part(crate::module::PartType::Source, (200.0, 0.0));
-        module.add_connection(t_id, 0, s_id, 0); // Trigger Out -> Source Trigger In
+        module.add_connection(t_id, "0".to_string(), s_id, "0".to_string()); // Trigger Out -> Source Trigger In
 
         let shared = crate::module::SharedMediaState::default();
         let _result = evaluator.evaluate(&module, &shared, 0);
@@ -753,7 +761,7 @@ mod evaluator_tests {
         assert!(result.source_commands.contains_key(&s_id));
 
         // Now remove connection
-        module.remove_connection(t_id, 0, s_id, 0);
+        module.remove_connection(t_id, "0".to_string(), s_id, "0".to_string());
 
         let result = evaluator.evaluate(&module, &shared, 1);
 
@@ -765,8 +773,6 @@ mod evaluator_tests {
     fn test_full_evaluation_pipeline() {
         let mut evaluator = ModuleEvaluator::new();
         let mut module = create_test_module();
-
-        // Graph: FixedTrigger(Always) -> Source -> Layer -> Output
 
         // 1. Trigger
         let t_type = ModulePartType::Trigger(TriggerType::Fixed {
@@ -791,9 +797,9 @@ mod evaluator_tests {
         let o_id = module.add_part(crate::module::PartType::Output, (300.0, 0.0));
 
         // Connections
-        module.add_connection(t_id, 0, s_id, 0); // Trigger -> Source Trigger
-        module.add_connection(s_id, 0, l_id, 0); // Source Media -> Layer Input
-        module.add_connection(l_id, 0, o_id, 0); // Layer Output -> Output Layer In
+        module.connections.push(crate::module::ModuleConnection { from_part: t_id, from_socket: "trigger_out".to_string(), to_part: s_id, to_socket: "trigger_in".to_string() });
+        module.connections.push(crate::module::ModuleConnection { from_part: s_id, from_socket: "media_out".to_string(), to_part: l_id, to_socket: "media_in".to_string() });
+        module.connections.push(crate::module::ModuleConnection { from_part: l_id, from_socket: "layer_out".to_string(), to_part: o_id, to_socket: "layer_in".to_string() });
 
         let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default(), 0);
 
@@ -837,11 +843,12 @@ mod evaluator_tests {
         let l_id = module.add_part(crate::module::PartType::Layer, (200.0, 0.0));
         let o_id = module.add_part(crate::module::PartType::Output, (300.0, 0.0));
 
-        // Repro: if the trigger connection is inserted first, the render trace must
-        // still follow layer socket 0 (visual chain) rather than socket 1 (trigger).
-        module.add_connection(t_id, 0, l_id, 1);
-        module.add_connection(s_id, 0, l_id, 0);
-        module.add_connection(l_id, 0, o_id, 0);
+        let l_in_trigger = "trigger_in".to_string();
+        module.connections.push(crate::module::ModuleConnection { from_part: t_id, from_socket: "trigger_out".to_string(), to_part: l_id, to_socket: l_in_trigger.clone() });
+        module.parts.iter_mut().find(|p| p.id == l_id).unwrap().trigger_targets.insert(l_in_trigger, Default::default());
+
+        module.connections.push(crate::module::ModuleConnection { from_part: s_id, from_socket: "media_out".to_string(), to_part: l_id, to_socket: "media_in".to_string() });
+        module.connections.push(crate::module::ModuleConnection { from_part: l_id, from_socket: "layer_out".to_string(), to_part: o_id, to_socket: "layer_in".to_string() });
 
         let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default(), 0);
 
@@ -894,8 +901,7 @@ mod evaluator_tests {
         );
 
         // Connect Driving Trigger -> Master Trigger In (Vis)
-        // Master Trigger In index: 0 (since Triggers usually have 0 inputs)
-        module.add_connection(t_id, 0, m_id, 0);
+        module.connections.push(crate::module::ModuleConnection { from_part: t_id, from_socket: "trigger_out".to_string(), to_part: m_id, to_socket: "trigger_vis_in".to_string() });
 
         // Slave Node (Layer)
         let s_id = module.add_part(crate::module::PartType::Layer, (100.0, 0.0));
@@ -910,16 +916,14 @@ mod evaluator_tests {
         }
 
         // Connect Master Link Out -> Slave Link In
-        // Master Link Out index: 1 (0 is Trigger Out)
-        // Slave Link In index: 2 (0=Media, 1=Trigger)
-        module.add_connection(m_id, 1, s_id, 2);
+        module.connections.push(crate::module::ModuleConnection { from_part: m_id, from_socket: "link_out".to_string(), to_part: s_id, to_socket: "link_in".to_string() });
 
         let result = evaluator.evaluate(&module, &crate::module::SharedMediaState::default(), 0);
 
         // Master ID in trigger_values should have 2 values: Trigger Out (1.0) and Link Out (1.0)
-        let m_values = &result.trigger_values[&m_id];
-        assert!(m_values.len() >= 2);
-        assert_eq!(m_values[1], 1.0); // Link Out should be active
+        let master_vals = result.trigger_values.get(&m_id).unwrap();
+        assert_eq!(master_vals.len(), 2);
+        assert_eq!(master_vals[1], 1.0); // Link Out should be active
     }
 
     #[test]
@@ -930,7 +934,7 @@ mod evaluator_tests {
         // 1. Layer -> Output
         let l_id = module.add_part(crate::module::PartType::Layer, (0.0, 0.0));
         let o_id = module.add_part(crate::module::PartType::Output, (100.0, 0.0));
-        module.add_connection(l_id, 0, o_id, 0);
+        module.connections.push(crate::module::ModuleConnection { from_part: l_id, from_socket: "layer_out".to_string(), to_part: o_id, to_socket: "layer_in".to_string() });
 
         let shared = crate::module::SharedMediaState::default();
 
@@ -940,15 +944,12 @@ mod evaluator_tests {
         assert_eq!(evaluator.cached_result.spare_render_ops.len(), 0);
 
         // Pass 2: Should recycle the RenderOp
-        // Note: evaluate() calls clear() at the start, moving render_ops to spare.
-        // Then it pops one.
         evaluator.evaluate(&module, &shared, 0);
         assert_eq!(evaluator.cached_result.render_ops.len(), 1);
-        // Spare should be 0 because we popped the one that was recycled
         assert_eq!(evaluator.cached_result.spare_render_ops.len(), 0);
 
         // Pass 3: Reduce workload (no output connection)
-        module.remove_connection(l_id, 0, o_id, 0);
+        module.connections.retain(|c| !(c.from_part == l_id && c.to_part == o_id));
         evaluator.evaluate(&module, &shared, 1);
 
         // render_ops should be empty

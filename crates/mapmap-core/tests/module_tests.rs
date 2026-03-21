@@ -185,12 +185,12 @@ fn test_add_remove_connection() {
     let pid1 = module.add_part(PartType::Trigger, (0.0, 0.0));
     let pid2 = module.add_part(PartType::Source, (100.0, 0.0));
 
-    module.add_connection(pid1, 0, pid2, 0);
+    let _ = module.connections.push(mapmap_core::module::ModuleConnection { from_part: pid1, from_socket: "trigger_out".to_string(), to_part: pid2, to_socket: "trigger_in".to_string() });
     assert_eq!(module.connections.len(), 1);
     assert_eq!(module.connections[0].from_part, pid1);
     assert_eq!(module.connections[0].to_part, pid2);
 
-    module.remove_connection(pid1, 0, pid2, 0);
+    module.remove_connection(pid1, "trigger_out".to_string(), pid2, "trigger_in".to_string());
     assert!(module.connections.is_empty());
 }
 
@@ -208,7 +208,7 @@ fn test_update_part_sockets() {
 
     let pid1 = module.add_part(PartType::Trigger, (0.0, 0.0));
     let pid2 = module.add_part(PartType::Source, (100.0, 0.0));
-    module.add_connection(pid1, 0, pid2, 0);
+    let _ = module.connections.push(mapmap_core::module::ModuleConnection { from_part: pid1, from_socket: "trigger_out".to_string(), to_part: pid2, to_socket: "trigger_in".to_string() });
 
     // For now just test it doesn't crash on normal update and keeps valid connections
     module.update_part_sockets(pid1);
@@ -228,28 +228,28 @@ fn test_update_part_sockets_removes_invalid_connections() {
     };
 
     // Add part that initially has outputs
-    let pid1 = module.add_part(PartType::Trigger, (0.0, 0.0));
-    let pid2 = module.add_part(PartType::Source, (100.0, 0.0));
+    let pid1 = module.add_part(PartType::Source, (0.0, 0.0));
+    let pid2 = module.add_part(PartType::Layer, (100.0, 0.0));
 
-    // Valid connection logic needs valid sockets
-    let _ = module.connect_parts(pid1, 0, pid2, 0);
+    // Valid connection logic needs valid sockets (media_out to media_in)
+    let _ = module.connect_parts(pid1, "media_out".to_string(), pid2, "media_in".to_string());
 
     // Inject invalid connections manually
     module
         .connections
         .push(mapmap_core::module::ModuleConnection {
             from_part: pid1,
-            from_socket: 999,
+            from_socket: "999".to_string(),
             to_part: pid2,
-            to_socket: 0,
+            to_socket: "0".to_string(),
         });
     module
         .connections
         .push(mapmap_core::module::ModuleConnection {
             from_part: pid1,
-            from_socket: 0,
+            from_socket: "0".to_string(),
             to_part: pid2,
-            to_socket: 999,
+            to_socket: "999".to_string(),
         });
 
     assert_eq!(module.connections.len(), 3);
@@ -264,9 +264,8 @@ fn test_update_part_sockets_removes_invalid_connections() {
     module.update_part_sockets(pid2);
 
     assert_eq!(module.connections.len(), 1);
-
-    assert_eq!(module.connections[0].from_socket, 0);
-    assert_eq!(module.connections[0].to_socket, 0);
+    assert_eq!(module.connections[0].from_socket, "media_out");
+    assert_eq!(module.connections[0].to_socket, "media_in");
 }
 
 #[test]
@@ -288,9 +287,9 @@ fn test_update_part_outputs_delegates() {
         .connections
         .push(mapmap_core::module::ModuleConnection {
             from_part: pid1,
-            from_socket: 999,
+            from_socket: "999".to_string(),
             to_part: pid2,
-            to_socket: 0,
+            to_socket: "0".to_string(),
         }); // Invalid connection
 
     assert_eq!(module.connections.len(), 1);
@@ -551,17 +550,17 @@ fn test_module_add_connection_adds_to_list() {
         .connections
         .push(mapmap_core::module::ModuleConnection {
             from_part: 1,
-            from_socket: 0,
+            from_socket: "0".to_string(),
             to_part: 2,
-            to_socket: 0,
+            to_socket: "0".to_string(),
         });
 
     assert_eq!(module.connections.len(), 1);
     let conn = &module.connections[0];
     assert_eq!(conn.from_part, 1);
-    assert_eq!(conn.from_socket, 0);
+    assert_eq!(conn.from_socket, "0");
     assert_eq!(conn.to_part, 2);
-    assert_eq!(conn.to_socket, 0);
+    assert_eq!(conn.to_socket, "0");
 }
 
 #[test]
@@ -580,20 +579,20 @@ fn test_module_remove_connection_removes_exact_match() {
         .connections
         .push(mapmap_core::module::ModuleConnection {
             from_part: 1,
-            from_socket: 0,
+            from_socket: "0".to_string(),
             to_part: 2,
-            to_socket: 0,
+            to_socket: "0".to_string(),
         });
     module
         .connections
         .push(mapmap_core::module::ModuleConnection {
             from_part: 1,
-            from_socket: 1,
+            from_socket: "1".to_string(),
             to_part: 3,
-            to_socket: 0,
+            to_socket: "0".to_string(),
         });
 
-    module.remove_connection(1, 0, 2, 0);
+    module.remove_connection(1, "0".to_string(), 2, "0".to_string());
 
     assert_eq!(module.connections.len(), 1);
     assert_eq!(module.connections[0].to_part, 3);

@@ -91,5 +91,8 @@ pub fn primary_render_connection_idx(
         .iter()
         .copied()
         // Socket 0 is the primary visual input of the render chain.
-        .find(|&conn_idx| module.connections[conn_idx].to_socket == 0)
+        .find(|&conn_idx| {
+            let s = &module.connections[conn_idx].to_socket;
+            s == "media_in" || s == "layer_in"
+        })
 }

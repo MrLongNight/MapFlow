@@ -47,7 +47,11 @@ pub fn render_trigger_config_ui(canvas: &mut ModuleCanvas, ui: &mut Ui, part: &m
                     ui.label(socket_label);
 
                     // Get config
-                    let mut config = part.trigger_targets.entry(idx).or_default().clone();
+                    let mut config = part
+                        .trigger_targets
+                        .entry(part.inputs[idx].id.clone())
+                        .or_default()
+                        .clone();
                     let original_config = config.clone();
 
                     // Target Selector
@@ -227,7 +231,8 @@ pub fn render_trigger_config_ui(canvas: &mut ModuleCanvas, ui: &mut Ui, part: &m
 
                     // Save back if changed
                     if config != original_config {
-                        part.trigger_targets.insert(idx, config);
+                        part.trigger_targets
+                            .insert(part.inputs[idx].id.clone(), config);
                     }
                 });
             }
