@@ -49,7 +49,7 @@ tokio = { workspace = true, optional = true }
 tracing = { workspace = true }
 # Core dependencies
 wgpu = { workspace = true }
-zip = "8.3"
+zip = "8.4"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 cocoa = { version = "0.26", optional = true }
