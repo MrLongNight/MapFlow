@@ -47,3 +47,7 @@ I have addressed several broken links and outdated status indicators in the docu
 ## 2026-03-18 - Fix broken references to ROADMAP.md
 **Erkenntnis:** Mehrere Dateien (`README.md`, `scripts/dev-tools/check-links.py`, und Dateien in `docs/A3_PROJECT/`) verwiesen fälschlicherweise auf `docs/project/roadmap/README.md` anstelle des korrekten Pfads `ROADMAP.md` im Root-Verzeichnis.
 **Aktion:** Alle Verweise wurden korrigiert, um auf das Root `ROADMAP.md` zu zeigen. Die Verweise auf Dokumentations-Indexdateien in `scripts/dev-tools/check-links.py` wurden ebenfalls aktualisiert, um die neue Struktur (`A4_USER`, `A2_DEVELOPMENT`, `A3_PROJECT`) zu reflektieren.
+
+## 2026-03-24 - Deprecated ROADMAP.md references
+**Erkenntnis:** The deprecated `ROADMAP.md` file was still being referenced in `docs/A3_PROJECT/B2_QUALITY/DOC-C11_AUDIT_OPEN_POINTS_MAIN_2026-03-21.md` and `docs/A3_PROJECT/B4_CICD/DOC-C3_WORKFLOW_QUICKREF.md`.
+**Aktion:** Replaced the references with "GitHub Project Issues" as per the new project planning structure.

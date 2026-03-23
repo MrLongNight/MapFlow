@@ -114,7 +114,7 @@ Status:
   - `docs/A4_USER/B1_MANUAL/DOC-C4_UI_OVERVIEW.md`
   - `docs/A4_USER/B1_MANUAL/DOC-C2_QUICKSTART.md`
   - `docs/A2_DEVELOPMENT/B4_TECHNICAL/DOC-C1_RENDERING.md`
-- Planungsdokumente verweisen auf GitHub Project Issues als "source of truth". Die alte `ROADMAP.md` wurde entfernt.
+- Planungsdokumente verweisen auf GitHub Project Issues als "source of truth". Die alte `docs/project/roadmap/README.md` wurde entfernt.
 
 Bewertung:
 - Das eigentliche Doku-Umraeumen ist weitgehend geschafft.
