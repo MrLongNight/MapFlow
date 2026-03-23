@@ -95,7 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 2026-03-08: fix(hue): Replace OpenSSL-disabled stub with real DTLS implementation using webrtc-dtls (ring) (MF-009).
 - 2026-03-08: ui: Fix empty states visual clarity and remove hold-to-confirm pattern for standard resets (#970)
 - 2026-03-08: docs: Fix broken documentation links to new semantic structure (#971)
-- 2026-03-08: refactor: Modularize app logic into orchestrators and restore audio analysis functionality (#1074)
+- 2026-03-08: refactor: Modularize app logic into orchestrators and restore audio analysis functionality (226202b)
 - 2026-03-06: fix(security): Fix Information Disclosure via Hardcoded Developer Paths (#929)
 - 2026-03-03: docs: Repariere veraltete Links und Ordner-Referenzen in der Dokumentation (0[1-9]-* -> neue Struktur).
 - 2026-03-02: fix(stability): Resolve main branch build failures, failing tests, and clippy warnings.

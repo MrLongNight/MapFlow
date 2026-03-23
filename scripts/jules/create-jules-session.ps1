@@ -84,7 +84,7 @@ Write-JulesInfo "Session erstellt: $sessionId"
 
 if ($IssueNumber -gt 0 -and $resolvedRepository) {
     if ($UpdateIssueBody) {
-        Sync-JulesIssueTracking -Repository $resolvedRepository -IssueNumber $IssueNumber -Session $session -LatestActivity $null -StartingBranch $StartingBranch -SourceName $resolvedSourceName | Out-Null
+        Sync-JulesIssueTracking -Repository $resolvedRepository -IssueNumber $IssueNumber -Session $session -LatestActivity $null -StartingBranch $StartingBranch -SourceName $resolvedSourceName
     }
 
     if ($PostIssueComment) {
@@ -108,19 +108,8 @@ if ($IssueNumber -gt 0 -and $resolvedRepository) {
     }
 
     if ($RemoveTodoUserLabel) {
-        $issueLabels = Get-GitHubIssueLabelNames -Issue $issue
-        if ($issueLabels -contains "Todo-UserISU") {
-            Remove-GitHubIssueLabel -Repository $resolvedRepository -IssueNumber $IssueNumber -LabelName "Todo-UserISU"
-        }
+        Remove-GitHubIssueLabel -Repository $resolvedRepository -IssueNumber $IssueNumber -LabelName "Todo-UserISU"
     }
-}
-
-$sessionUrl = [string](Get-JulesObjectPropertyValue -Object $session -Name "url")
-$sessionTitle = [string](Get-JulesObjectPropertyValue -Object $session -Name "title")
-$sessionState = [string](Get-JulesObjectPropertyValue -Object $session -Name "state")
-$automationMode = [string](Get-JulesObjectPropertyValue -Object $session -Name "automationMode")
-if ([string]::IsNullOrWhiteSpace($automationMode) -and $AutoCreatePr.IsPresent) {
-    $automationMode = "AUTO_CREATE_PR"
 }
 
 [pscustomobject]@{
@@ -128,10 +117,10 @@ if ([string]::IsNullOrWhiteSpace($automationMode) -and $AutoCreatePr.IsPresent) 
     Repository          = $resolvedRepository
     SessionId           = $sessionId
     SessionName         = [string]$session.name
-    SessionUrl          = $sessionUrl
-    Title               = $sessionTitle
-    State               = $sessionState
-    AutomationMode      = $automationMode
+    SessionUrl          = [string]$session.url
+    Title               = [string]$session.title
+    State               = [string]$session.state
+    AutomationMode      = [string]$session.automationMode
     RequirePlanApproval = [bool]$RequirePlanApproval.IsPresent
     SourceName          = $resolvedSourceName
     StartingBranch      = $StartingBranch

@@ -310,7 +310,11 @@ impl ShaderNode {
             NodeType::TimeInput => vec![],
             NodeType::UVInput => vec![],
 
-            NodeType::Add | NodeType::Subtract | NodeType::Multiply | NodeType::Divide => vec![
+            NodeType::Add
+            | NodeType::Subtract
+            | NodeType::Multiply
+            | NodeType::Divide
+            | NodeType::Power => vec![
                 InputSocket {
                     name: "A".to_string(),
                     data_type: DataType::Float,
@@ -351,6 +355,82 @@ impl ShaderNode {
                 name: "In".to_string(),
                 data_type: DataType::Float,
                 default_value: Some(Vec4::new(0.0, 0.0, 0.0, 0.0)),
+                connected_output: None,
+            }],
+
+            NodeType::Clamp => vec![
+                InputSocket {
+                    name: "Value".to_string(),
+                    data_type: DataType::Float,
+                    default_value: Some(Vec4::new(0.0, 0.0, 0.0, 0.0)),
+                    connected_output: None,
+                },
+                InputSocket {
+                    name: "Min".to_string(),
+                    data_type: DataType::Float,
+                    default_value: Some(Vec4::new(0.0, 0.0, 0.0, 0.0)),
+                    connected_output: None,
+                },
+                InputSocket {
+                    name: "Max".to_string(),
+                    data_type: DataType::Float,
+                    default_value: Some(Vec4::new(1.0, 0.0, 0.0, 0.0)),
+                    connected_output: None,
+                },
+            ],
+
+            NodeType::Smoothstep => vec![
+                InputSocket {
+                    name: "Edge0".to_string(),
+                    data_type: DataType::Float,
+                    default_value: Some(Vec4::new(0.0, 0.0, 0.0, 0.0)),
+                    connected_output: None,
+                },
+                InputSocket {
+                    name: "Edge1".to_string(),
+                    data_type: DataType::Float,
+                    default_value: Some(Vec4::new(1.0, 0.0, 0.0, 0.0)),
+                    connected_output: None,
+                },
+                InputSocket {
+                    name: "X".to_string(),
+                    data_type: DataType::Float,
+                    default_value: Some(Vec4::new(0.0, 0.0, 0.0, 0.0)),
+                    connected_output: None,
+                },
+            ],
+
+            NodeType::Combine => vec![
+                InputSocket {
+                    name: "R".to_string(),
+                    data_type: DataType::Float,
+                    default_value: Some(Vec4::new(0.0, 0.0, 0.0, 0.0)),
+                    connected_output: None,
+                },
+                InputSocket {
+                    name: "G".to_string(),
+                    data_type: DataType::Float,
+                    default_value: Some(Vec4::new(0.0, 0.0, 0.0, 0.0)),
+                    connected_output: None,
+                },
+                InputSocket {
+                    name: "B".to_string(),
+                    data_type: DataType::Float,
+                    default_value: Some(Vec4::new(0.0, 0.0, 0.0, 0.0)),
+                    connected_output: None,
+                },
+                InputSocket {
+                    name: "A".to_string(),
+                    data_type: DataType::Float,
+                    default_value: Some(Vec4::new(1.0, 0.0, 0.0, 0.0)),
+                    connected_output: None,
+                },
+            ],
+
+            NodeType::Split => vec![InputSocket {
+                name: "Color".to_string(),
+                data_type: DataType::Color,
+                default_value: Some(Vec4::new(0.0, 0.0, 0.0, 1.0)),
                 connected_output: None,
             }],
 
@@ -412,6 +492,9 @@ impl ShaderNode {
             | NodeType::Subtract
             | NodeType::Multiply
             | NodeType::Divide
+            | NodeType::Power
+            | NodeType::Clamp
+            | NodeType::Smoothstep
             | NodeType::Sin
             | NodeType::Cos => {
                 vec![OutputSocket {
@@ -420,8 +503,30 @@ impl ShaderNode {
                 }]
             }
 
+            NodeType::Split => {
+                vec![
+                    OutputSocket {
+                        name: "R".to_string(),
+                        data_type: DataType::Float,
+                    },
+                    OutputSocket {
+                        name: "G".to_string(),
+                        data_type: DataType::Float,
+                    },
+                    OutputSocket {
+                        name: "B".to_string(),
+                        data_type: DataType::Float,
+                    },
+                    OutputSocket {
+                        name: "A".to_string(),
+                        data_type: DataType::Float,
+                    },
+                ]
+            }
+
             NodeType::TextureSample
             | NodeType::Mix
+            | NodeType::Combine
             | NodeType::Blur
             | NodeType::EdgeDetect
             | NodeType::Brightness

@@ -437,7 +437,7 @@ mod tests {
         // Test request with valid token in subprotocol
         let req = Request::builder()
             .uri("/ws")
-            .header(header::SEC_WEBSOCKET_PROTOCOL, "mapmap.auth.secret123")
+            .header(header::SEC_WEBSOCKET_PROTOCOL, "mapflow.auth.secret123")
             .body(Body::empty())
             .unwrap();
 
@@ -447,7 +447,7 @@ mod tests {
         // Test request with INVALID token
         let req_invalid = Request::builder()
             .uri("/ws")
-            .header(header::SEC_WEBSOCKET_PROTOCOL, "mapmap.auth.WRONG")
+            .header(header::SEC_WEBSOCKET_PROTOCOL, "mapflow.auth.WRONG")
             .body(Body::empty())
             .unwrap();
 

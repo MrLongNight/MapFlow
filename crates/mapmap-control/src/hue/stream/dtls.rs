@@ -1,46 +1,16 @@
 use anyhow::{anyhow, Result};
-use std::sync::Arc;
-use tokio::net::UdpSocket;
-use webrtc_dtls::cipher_suite::CipherSuiteId;
-use webrtc_dtls::config::Config;
-use webrtc_dtls::conn::DTLSConn;
 
-pub struct HueStreamer {
-    conn: Arc<DTLSConn>,
-}
+pub struct HueStreamer {}
 
 impl HueStreamer {
     /// Connects to the Hue Bridge via DTLS for entertainment streaming.
-    pub async fn connect(ip: &str, application_id: &str, client_key: &str) -> Result<Self> {
-        let psk = hex::decode(client_key)
-            .map_err(|e| anyhow!("Failed to decode client_key from hex: {}", e))?;
-        let psk_identity = application_id.as_bytes().to_vec();
-
-        let config = Config {
-            cipher_suites: vec![CipherSuiteId::Tls_Psk_With_Aes_128_Gcm_Sha256],
-            psk: Some(Arc::new(move |_hint: &[u8]| Ok(psk.clone()))),
-            psk_identity_hint: Some(psk_identity),
-            ..Default::default()
-        };
-
-        let bind_addr = "0.0.0.0:0";
-        let socket = UdpSocket::bind(bind_addr).await?;
-        let target_addr = format!("{}:2100", ip);
-        socket.connect(&target_addr).await?;
-
-        let conn = Arc::new(socket);
-        let dtls_conn = DTLSConn::new(conn, config, true, None).await?;
-
-        Ok(Self {
-            conn: Arc::new(dtls_conn),
-        })
+    ///
+    /// STUBBED: OpenSSL is currently disabled due to build hangs on Windows.
+    pub fn connect(_ip: &str, _application_id: &str, _client_key: &str) -> Result<Self> {
+        Err(anyhow!("Hue Entertainment streaming is currently disabled because OpenSSL support is not compiled in (build hang avoidance)."))
     }
 
-    pub async fn write_all(&mut self, buf: &[u8]) -> Result<()> {
-        self.conn
-            .write(buf, None)
-            .await
-            .map_err(|e| anyhow!("DTLS write error: {}", e))?;
-        Ok(())
+    pub fn write_all(&mut self, _buf: &[u8]) -> Result<()> {
+        Err(anyhow!("Hue Entertainment streaming is disabled."))
     }
 }

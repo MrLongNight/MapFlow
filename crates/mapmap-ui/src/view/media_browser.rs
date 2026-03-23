@@ -7,7 +7,7 @@ use crate::i18n::LocaleManager;
 use crate::icons::{AppIcon, IconManager};
 use egui::{Color32, Response, Sense, Ui, Vec2};
 use parking_lot::RwLock;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Instant;
@@ -76,10 +76,18 @@ impl MediaType {
 }
 
 /// Thumbnail handle (reference to generated thumbnail)
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct ThumbnailHandle {
-    pub texture_id: egui::TextureId,
+    pub texture_handle: egui::TextureHandle,
     pub size: (u32, u32),
+}
+
+impl std::fmt::Debug for ThumbnailHandle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ThumbnailHandle")
+            .field("size", &self.size)
+            .finish()
+    }
 }
 
 /// Media browser state
@@ -108,6 +116,12 @@ pub struct MediaBrowser {
     preview_delay: f32,
     /// Thumbnail cache
     thumbnail_cache: Arc<RwLock<HashMap<PathBuf, ThumbnailHandle>>>,
+    /// Receiver for generated thumbnails
+    thumbnail_rx: std::sync::mpsc::Receiver<(PathBuf, Result<egui::ColorImage, String>)>,
+    /// Sender for generated thumbnails
+    thumbnail_tx: std::sync::mpsc::Sender<(PathBuf, Result<egui::ColorImage, String>)>,
+    /// Currently generating thumbnails
+    generating_thumbnails: Arc<RwLock<HashSet<PathBuf>>>,
     /// Show hidden files
     show_hidden: bool,
     /// Sort mode
@@ -158,6 +172,8 @@ impl Default for MediaFolders {
 
 impl MediaBrowser {
     pub fn new(initial_dir: PathBuf) -> Self {
+        let (tx, rx) = std::sync::mpsc::channel();
+
         let path_str = initial_dir.display().to_string();
         let mut browser = Self {
             current_dir: initial_dir.clone(),
@@ -172,6 +188,9 @@ impl MediaBrowser {
             hover_start: None,
             preview_delay: 0.5,
             thumbnail_cache: Arc::new(RwLock::new(HashMap::new())),
+            thumbnail_rx: rx,
+            thumbnail_tx: tx,
+            generating_thumbnails: Arc::new(RwLock::new(HashSet::new())),
             show_hidden: false,
             sort_mode: SortMode::Name,
             history: vec![initial_dir.clone()],
@@ -258,8 +277,41 @@ impl MediaBrowser {
             return Some(thumb.clone());
         }
 
-        // TODO: Generate thumbnail in background
-        // For now, return None - thumbnails will be generated asynchronously
+        // Check if already generating
+        let mut generating = self.generating_thumbnails.write();
+        if generating.contains(path) {
+            return None;
+        }
+
+        let file_type = path
+            .extension()
+            .and_then(|e| e.to_str())
+            .map(MediaType::from_extension)
+            .unwrap_or(MediaType::Unknown);
+
+        // Generate thumbnail in background for supported media types
+        if matches!(file_type, MediaType::Image) {
+            generating.insert(path.to_path_buf());
+            let tx = self.thumbnail_tx.clone();
+            let path_clone = path.to_path_buf();
+
+            rayon::spawn(move || {
+                let result = match image::open(&path_clone) {
+                    Ok(img) => {
+                        let thumbnail = img.thumbnail(128, 128); // Standard thumbnail size
+                        let size = [thumbnail.width() as _, thumbnail.height() as _];
+                        let rgba = thumbnail.to_rgba8();
+                        Ok(egui::ColorImage::from_rgba_unmultiplied(
+                            size,
+                            rgba.as_flat_samples().as_slice(),
+                        ))
+                    }
+                    Err(e) => Err(e.to_string()),
+                };
+                let _ = tx.send((path_clone, result));
+            });
+        }
+
         None
     }
 
@@ -333,12 +385,57 @@ impl MediaBrowser {
     }
 
     /// Render the media browser UI
+    /// Process completed thumbnails and clear flags
+    pub fn process_thumbnails(&mut self, ctx: &egui::Context) {
+        while let Ok((path, result)) = self.thumbnail_rx.try_recv() {
+            if let Ok(color_image) = result {
+                let size = (color_image.size[0] as u32, color_image.size[1] as u32);
+                let texture = ctx.load_texture(
+                    format!("thumb_{}", path.display()),
+                    color_image,
+                    egui::TextureOptions {
+                        magnification: egui::TextureFilter::Linear,
+                        minification: egui::TextureFilter::Linear,
+                        wrap_mode: egui::TextureWrapMode::ClampToEdge,
+                        mipmap_mode: None,
+                    },
+                );
+
+                let handle = ThumbnailHandle {
+                    texture_handle: texture,
+                    size,
+                };
+
+                self.thumbnail_cache
+                    .write()
+                    .insert(path.clone(), handle.clone());
+
+                // Update the corresponding entry in the list
+                for entry in &mut self.entries {
+                    if entry.path == path {
+                        entry.thumbnail = Some(handle.clone());
+                        break;
+                    }
+                }
+
+                // Trigger a UI update to reflect the new thumbnail
+                ctx.request_repaint();
+            }
+
+            // Remove from generating set
+            self.generating_thumbnails.write().remove(&path);
+        }
+    }
+
+    /// Render the media browser UI
     pub fn ui(
         &mut self,
         ui: &mut Ui,
         locale: &LocaleManager,
         icons: Option<&IconManager>,
     ) -> Option<MediaBrowserAction> {
+        self.process_thumbnails(ui.ctx());
+
         let mut action = None;
 
         // Compact toolbar with navigation
@@ -718,7 +815,7 @@ impl MediaBrowser {
             if let Some(thumbnail) = &entry.thumbnail {
                 // Render thumbnail texture
                 ui.painter().image(
-                    thumbnail.texture_id,
+                    thumbnail.texture_handle.id(),
                     thumb_rect,
                     egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)),
                     Color32::WHITE,

@@ -355,6 +355,7 @@ pub fn render_inspector_for_part(
                         mesh,
                         part_id,
                         part_id,
+                        true,
                     );
                 }
                 ModulePartType::Output(output) => {

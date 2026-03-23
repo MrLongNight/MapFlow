@@ -48,6 +48,8 @@ Offen sind vor allem noch:
 
 ### Aus DOC-C10_MODULE_NODE_SYSTEM_AUDIT_2026-03-18
 
+- Die Foundation-Phase (Tracker #1243) ist abgeschlossen. Die Basis-Architektur (`repair_graph`, `RuntimeRenderQueue`, Socket-Schema-Metadaten) ist implementiert und stabil. Sub-Issues haben aktuellen Scope und Basisannahmen stimmen ueberein.
+
 - `ModuleManager::get_module_mut()` dirty-markiert nicht mehr implizit.
 - Core-Validierung fuer Verbindungen ist aktiv.
 - `repair_graph()` ist eingebaut.

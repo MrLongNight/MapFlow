@@ -28,8 +28,17 @@ impl ModuleCanvas {
         mesh: &mut mapmap_core::module::MeshType,
         part_id: mapmap_core::module::ModulePartId,
         id_salt: u64,
+        show_visual_editor: bool,
     ) {
-        mesh::render_mesh_editor_ui(mesh_editor, last_mesh_edit_id, ui, mesh, part_id, id_salt);
+        mesh::render_mesh_editor_ui(
+            mesh_editor,
+            last_mesh_edit_id,
+            ui,
+            mesh,
+            part_id,
+            id_salt,
+            show_visual_editor,
+        );
     }
 
     pub fn set_default_effect_params(

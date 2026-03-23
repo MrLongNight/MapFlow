@@ -23,6 +23,3 @@
 *.rlib binary
 *.ttf binary
 *.otf binary
-
-# Generated artifacts
-coverage/** linguist-generated=true

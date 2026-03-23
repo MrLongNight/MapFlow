@@ -91,6 +91,7 @@ pub fn render_mesh_editor_ui(
     mesh: &mut MeshType,
     part_id: ModulePartId,
     id_salt: u64,
+    show_visual_editor: bool,
 ) {
     ui.add_space(8.0);
     ui.group(|ui| {
@@ -141,56 +142,59 @@ pub fn render_mesh_editor_ui(
                 }
             });
 
-        // Resync logic if type changed (handled by caller passing part, but here we just have mesh)
-        if last_mesh_edit_id.is_none() {
-            let scale = 200.0;
-            match mesh {
-                MeshType::Quad { tl, tr, br, bl } => {
-                    mesh_editor.set_from_quad(
-                        egui::Pos2::new(tl.0 * scale, tl.1 * scale),
-                        egui::Pos2::new(tr.0 * scale, tr.1 * scale),
-                        egui::Pos2::new(br.0 * scale, br.1 * scale),
-                        egui::Pos2::new(bl.0 * scale, bl.1 * scale),
-                    );
-                    *last_mesh_edit_id = Some(part_id);
-                }
-                MeshType::BezierSurface { control_points } => {
-                    // Deserialize scaled points
-                    let points: Vec<(f32, f32)> = control_points
-                        .iter()
-                        .map(|(x, y)| (x * scale, y * scale))
-                        .collect();
-                    mesh_editor.set_from_bezier_points(&points);
-                    *last_mesh_edit_id = Some(part_id);
-                }
-                _ => {
-                    // Fallback
-                    mesh_editor.create_quad(egui::Pos2::new(100.0, 100.0), 200.0);
-                    *last_mesh_edit_id = Some(part_id);
-                }
-            }
-        }
-
-        ui.separator();
-        ui.label("Visual Editor:");
-
-        if let Some(_action) = mesh_editor.ui(ui) {
-            // Sync back
-            let scale = 200.0;
-            match mesh {
-                MeshType::Quad { tl, tr, br, bl } => {
-                    if let Some((p_tl, p_tr, p_br, p_bl)) = mesh_editor.get_quad_corners() {
-                        *tl = (p_tl.x / scale, p_tl.y / scale);
-                        *tr = (p_tr.x / scale, p_tr.y / scale);
-                        *br = (p_br.x / scale, p_br.y / scale);
-                        *bl = (p_bl.x / scale, p_bl.y / scale);
+        if show_visual_editor {
+            // Resync logic if type changed (handled by caller passing part, but here we just have mesh)
+            if last_mesh_edit_id.is_none() {
+                let scale = 200.0;
+                match mesh {
+                    MeshType::Quad { tl, tr, br, bl } => {
+                        mesh_editor.set_from_quad(
+                            egui::Pos2::new(tl.0 * scale, tl.1 * scale),
+                            egui::Pos2::new(tr.0 * scale, tr.1 * scale),
+                            egui::Pos2::new(br.0 * scale, br.1 * scale),
+                            egui::Pos2::new(bl.0 * scale, bl.1 * scale),
+                        );
+                        *last_mesh_edit_id = Some(part_id);
+                    }
+                    MeshType::BezierSurface { control_points } => {
+                        // Deserialize scaled points
+                        let points: Vec<(f32, f32)> = control_points
+                            .iter()
+                            .map(|(x, y)| (x * scale, y * scale))
+                            .collect();
+                        mesh_editor.set_from_bezier_points(&points);
+                        *last_mesh_edit_id = Some(part_id);
+                    }
+                    _ => {
+                        // Fallback
+                        mesh_editor.create_quad(egui::Pos2::new(100.0, 100.0), 200.0);
+                        *last_mesh_edit_id = Some(part_id);
                     }
                 }
-                MeshType::BezierSurface { control_points } => {
-                    let points = mesh_editor.get_bezier_points();
-                    *control_points = points.iter().map(|(x, y)| (x / scale, y / scale)).collect();
+            }
+
+            ui.separator();
+            ui.label("Visual Editor:");
+
+            if let Some(_action) = mesh_editor.ui(ui) {
+                // Sync back
+                let scale = 200.0;
+                match mesh {
+                    MeshType::Quad { tl, tr, br, bl } => {
+                        if let Some((p_tl, p_tr, p_br, p_bl)) = mesh_editor.get_quad_corners() {
+                            *tl = (p_tl.x / scale, p_tl.y / scale);
+                            *tr = (p_tr.x / scale, p_tr.y / scale);
+                            *br = (p_br.x / scale, p_br.y / scale);
+                            *bl = (p_bl.x / scale, p_bl.y / scale);
+                        }
+                    }
+                    MeshType::BezierSurface { control_points } => {
+                        let points = mesh_editor.get_bezier_points();
+                        *control_points =
+                            points.iter().map(|(x, y)| (x / scale, y / scale)).collect();
+                    }
+                    _ => {}
                 }
-                _ => {}
             }
         }
     });

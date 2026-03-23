@@ -58,3 +58,38 @@ fn test_timeline_manual_mode_no_auto_switch() {
     let mod_id = timeline.runtime_show_module(15.0, true, &available_ids);
     assert_eq!(mod_id, Some(101));
 }
+
+#[test]
+fn test_timeline_hybrid_mode() {
+    let mut timeline = TimelineV2 {
+        show_mode: ShowMode::Hybrid,
+        module_arrangement: vec![
+            ModuleArrangementItem {
+                id: 1,
+                module_id: 101,
+                start_time: 0.0,
+                duration: 10.0,
+                enabled: true,
+                start_trigger: None,
+            },
+            ModuleArrangementItem {
+                id: 2,
+                module_id: 102,
+                start_time: 0.0,
+                duration: 10.0,
+                enabled: true,
+                start_trigger: Some("trigA".to_string()),
+            },
+        ],
+        ..TimelineV2::default()
+    };
+
+    let available_ids = vec![101, 102];
+
+    let mod_id = timeline.runtime_show_module(5.0, true, &available_ids);
+    assert_eq!(mod_id, Some(101));
+
+    timeline.hybrid_active_triggers.insert("trigA".to_string());
+    let mod_id = timeline.runtime_show_module(5.0, true, &available_ids);
+    assert_eq!(mod_id, Some(102));
+}

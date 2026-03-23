@@ -1,5 +1,5 @@
 use super::super::mesh;
-use super::super::state::ModuleCanvas;
+use super::super::state::{LayerInspectorViewMode, ModuleCanvas};
 use super::capabilities;
 use super::common;
 use egui::Ui;
@@ -7,7 +7,7 @@ use mapmap_core::module::{BlendModeType, LayerType, MaskShape, MaskType, MeshTyp
 
 /// Renders the configuration UI for a `ModulePartType::Layer`.
 pub fn render_layer_ui(
-    _canvas: &mut ModuleCanvas,
+    canvas: &mut ModuleCanvas,
     mesh_editor: &mut crate::editors::mesh_editor::MeshEditor,
     last_mesh_edit_id: &mut Option<u64>,
     ui: &mut Ui,
@@ -17,9 +17,20 @@ pub fn render_layer_ui(
     ui.label("📋 Layer:");
 
     // Helper to render mesh UI
-    let mut render_mesh_ui = |ui: &mut Ui, mesh: &mut MeshType, id_salt: u64| {
-        mesh::render_mesh_editor_ui(mesh_editor, last_mesh_edit_id, ui, mesh, part_id, id_salt);
-    };
+    let mut render_mesh_ui =
+        |ui: &mut Ui, mesh: &mut MeshType, id_salt: u64, show_visual_editor: bool| {
+            mesh::render_mesh_editor_ui(
+                mesh_editor,
+                last_mesh_edit_id,
+                ui,
+                mesh,
+                part_id,
+                id_salt,
+                show_visual_editor,
+            );
+        };
+
+    let show_mesh_editor = canvas.layer_inspector_view_mode == LayerInspectorViewMode::MeshEditor;
 
     match layer {
         LayerType::Single {
@@ -111,7 +122,7 @@ pub fn render_layer_ui(
                 );
             }
 
-            render_mesh_ui(ui, mesh, *id);
+            render_mesh_ui(ui, mesh, *id, show_mesh_editor);
         }
         LayerType::Group {
             name,
@@ -125,7 +136,7 @@ pub fn render_layer_ui(
                 ui.text_edit_singleline(name);
                 ui.add(egui::Slider::new(opacity, 0.0..=1.0).text("Opacity"));
                 ui.checkbox(mapping_mode, "Mapping Mode (Grid)");
-                render_mesh_ui(ui, mesh, 9999); // Dummy ID
+                render_mesh_ui(ui, mesh, 9999, show_mesh_editor); // Dummy ID
             });
             ui.label(
                 egui::RichText::new(

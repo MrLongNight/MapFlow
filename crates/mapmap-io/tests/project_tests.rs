@@ -84,3 +84,32 @@ fn test_load_invalid_ron() {
     let result = load_project(&file_path);
     assert!(matches!(result, Err(IoError::RonDeserialization(_))));
 }
+
+#[test]
+fn test_autosave_backward_compatibility_master_blackout() {
+    let dir = tempdir().unwrap();
+    let file_path = dir.path().join("autosave.mflow");
+
+    // Get a valid current project file string
+    let app_state = mapmap_core::AppState::default();
+    let project_file = mapmap_io::project_format::ProjectFile::new(app_state);
+
+    // We use RON format, because autosaves default to .mflow -> RON
+    let mut ron_string =
+        ron::ser::to_string_pretty(&project_file, ron::ser::PrettyConfig::default()).unwrap();
+
+    // Ensure the current struct serializes with master_blackout
+    assert!(ron_string.contains("master_blackout: false,"));
+
+    // Remove master_blackout to simulate an old version
+    ron_string = ron_string.replace("master_blackout: false,", "");
+
+    let mut file = std::fs::File::create(&file_path).unwrap();
+    std::io::Write::write_all(&mut file, ron_string.as_bytes()).unwrap();
+
+    let loaded_state =
+        mapmap_io::project::load_project(&file_path).expect("Should load old project successfully");
+
+    // Verify it defaulted correctly
+    assert!(!loaded_state.layer_manager.composition.master_blackout);
+}

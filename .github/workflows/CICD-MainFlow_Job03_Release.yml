@@ -78,7 +78,7 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
+          toolchain: 1.94.0
 
       - name: Install LLVM and Clang
         uses: KyleMayes/install-llvm-action@v2
@@ -244,7 +244,7 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
+          toolchain: 1.94.0
 
       - name: Cache Cargo Registry
         uses: actions/cache@v5
@@ -295,7 +295,7 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
+          toolchain: 1.94.0
 
       - name: Cache Cargo Registry
         uses: actions/cache@v5

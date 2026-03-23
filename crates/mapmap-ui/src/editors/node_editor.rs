@@ -184,6 +184,7 @@ impl NodeEditor {
             NodeType::Cos,
             NodeType::Clamp,
             NodeType::Mix,
+            NodeType::Smoothstep,
             // Color
             NodeType::ColorRamp,
             NodeType::HSVToRGB,
