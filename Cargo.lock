@@ -5603,8 +5603,8 @@ dependencies = [
  "tokio",
  "tracing",
  "wgpu 29.0.0",
- "wgpu-hal 27.0.4",
- "windows 0.58.0",
+ "wgpu-hal 29.0.0",
+ "windows 0.62.2",
  "winit",
 ]
 

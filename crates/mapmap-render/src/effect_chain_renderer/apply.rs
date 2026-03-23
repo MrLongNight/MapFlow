@@ -120,6 +120,7 @@ impl EffectChainRenderer {
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
             self.quad_renderer.draw(&mut rpass, &bind_group);
             return;
@@ -140,7 +141,7 @@ impl EffectChainRenderer {
             let is_custom_graph = matches!(effect.effect_type, EffectType::ShaderGraph(_));
 
             // Get the pipeline for this effect (if standard)
-            let pipeline = if !is_custom_graph {
+            let _pipeline = if !is_custom_graph {
                 match self.pipelines.get(&effect.effect_type.normalized()) {
                     Some(p) => Some(p),
                     None => {
@@ -368,7 +369,7 @@ impl EffectChainRenderer {
                 }
             } else {
                 // --- STANDARD FIXED PIPELINE PATH ---
-                if let Some(pipeline) = pipeline {
+                if let Some(pipeline) = self.pipelines.get(&effect.effect_type) {
                     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         label: Some(&format!("Effect Pass: {:?}", effect.effect_type)),
                         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -383,6 +384,7 @@ impl EffectChainRenderer {
                         depth_stencil_attachment: None,
                         timestamp_writes: None,
                         occlusion_query_set: None,
+                        multiview_mask: None,
                     });
 
                     render_pass.set_pipeline(pipeline);

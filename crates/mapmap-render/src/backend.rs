@@ -65,9 +65,12 @@ impl WgpuBackend {
         power_pref: wgpu::PowerPreference,
         preferred_gpu: Option<&str>,
     ) -> Result<Self> {
-        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends,
-            ..Default::default()
+            flags: wgpu::InstanceFlags::default(),
+            backend_options: wgpu::BackendOptions::default(),
+            display: Default::default(),
+            memory_budget_thresholds: Default::default(),
         });
 
         let adapter = instance
@@ -111,7 +114,7 @@ impl WgpuBackend {
 
         debug!("Device created successfully");
 
-        let staging_belt = StagingBelt::new(1024 * 1024); // 1MB chunks
+        let staging_belt = StagingBelt::new(device.clone(), 1024 * 1024); // 1MB chunks
 
         Ok(Self {
             instance: Arc::new(instance),

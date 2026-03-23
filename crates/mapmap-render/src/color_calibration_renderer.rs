@@ -99,7 +99,7 @@ impl ColorCalibrationRenderer {
             address_mode_w: wgpu::AddressMode::ClampToEdge,
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::MipmapFilterMode::Linear,
             ..Default::default()
         });
 
@@ -152,8 +152,8 @@ impl ColorCalibrationRenderer {
         // Create pipeline layout
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Color Calibration Pipeline Layout"),
-            bind_group_layouts: &[&texture_bind_group_layout, &uniform_bind_group_layout],
-            push_constant_ranges: &[],
+            bind_group_layouts: &[Some(&texture_bind_group_layout), Some(&uniform_bind_group_layout)],
+            immediate_size: 0,
         });
 
         // Create render pipeline
@@ -191,7 +191,7 @@ impl ColorCalibrationRenderer {
                 mask: !0,
                 alpha_to_coverage_enabled: false,
             },
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         });
 

@@ -170,7 +170,7 @@ impl OscillatorRenderer {
             address_mode_w: wgpu::AddressMode::ClampToEdge,
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::MipmapFilterMode::Linear,
             ..Default::default()
         });
 
@@ -182,7 +182,7 @@ impl OscillatorRenderer {
             address_mode_w: wgpu::AddressMode::ClampToEdge,
             mag_filter: wgpu::FilterMode::Nearest,
             min_filter: wgpu::FilterMode::Nearest,
-            mipmap_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::MipmapFilterMode::Nearest,
             ..Default::default()
         });
 
@@ -307,8 +307,8 @@ impl OscillatorRenderer {
         // Create simulation pipeline
         let sim_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Sim Pipeline Layout"),
-            bind_group_layouts: &[&sim_texture_layout, &sim_uniform_layout],
-            push_constant_ranges: &[],
+            bind_group_layouts: &[Some(&sim_texture_layout), Some(&sim_uniform_layout)],
+            immediate_size: 0,
         });
 
         let simulation_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -345,15 +345,15 @@ impl OscillatorRenderer {
                 mask: !0,
                 alpha_to_coverage_enabled: false,
             },
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         });
 
         // Create distortion pipeline
         let dist_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Dist Pipeline Layout"),
-            bind_group_layouts: &[&dist_texture_layout, &dist_uniform_layout],
-            push_constant_ranges: &[],
+            bind_group_layouts: &[Some(&dist_texture_layout), Some(&dist_uniform_layout)],
+            immediate_size: 0,
         });
 
         let distortion_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -390,7 +390,7 @@ impl OscillatorRenderer {
                 mask: !0,
                 alpha_to_coverage_enabled: false,
             },
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         });
 
@@ -736,6 +736,7 @@ impl OscillatorRenderer {
                 depth_stencil_attachment: None,
                 occlusion_query_set: None,
                 timestamp_writes: None,
+                multiview_mask: None,
             });
 
             render_pass.set_pipeline(&self.simulation_pipeline);
@@ -825,6 +826,7 @@ impl OscillatorRenderer {
                 depth_stencil_attachment: None,
                 occlusion_query_set: None,
                 timestamp_writes: None,
+                multiview_mask: None,
             });
 
             render_pass.set_pipeline(&self.distortion_pipeline);

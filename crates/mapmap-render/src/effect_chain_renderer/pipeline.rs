@@ -19,15 +19,15 @@ impl EffectChainRenderer {
             source: wgpu::ShaderSource::Wgsl(shader_source.into()),
         });
 
-        let mut bind_group_layouts = vec![bind_group_layout, uniform_bind_group_layout];
+        let mut bind_group_layouts = vec![Some(bind_group_layout), Some(uniform_bind_group_layout)];
         if let EffectType::LoadLUT { .. } = effect_type {
-            bind_group_layouts.push(lut_bind_group_layout);
+            bind_group_layouts.push(Some(lut_bind_group_layout));
         }
 
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some(&format!("Effect Pipeline Layout: {:?}", effect_type)),
             bind_group_layouts: &bind_group_layouts,
-            push_constant_ranges: &[],
+            immediate_size: 0,
         });
 
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -75,7 +75,7 @@ impl EffectChainRenderer {
             },
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         });
 
