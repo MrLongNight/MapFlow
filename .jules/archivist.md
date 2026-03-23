@@ -138,3 +138,7 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 ## 2026-03-22 - Temporäre Dateien im Root verschoben
 **Erkenntnis:** Im Root-Verzeichnis befanden sich temporäre Entwicklungsskripte und Patches (`fix.sh`, `fix_bevy_test.py`, `fix_script.py`, `patch_diag.py`, `patch_source3.py`, `patch_tests.py`, `test_script.py`) sowie die Testdatei `test.ron`, die nicht den Projektstandards für Root-Dateien entsprechen und unnötig mit Git getrackt wurden.
 **Aktion:** Dateien via `git mv` in das `.temp-archive/` verschoben und mit dem Datum-Präfix `2026-03-22-` versehen, um das Root-Verzeichnis sauber zu halten.
+
+## 2026-03-23 - Temporäre Dateien im Root entfernt
+**Erkenntnis:** Im Root-Verzeichnis befanden sich ein ausführbares Programm `test_macos` und die dazugehörige Quelldatei `test_macos.rs`, die nicht den Projektstandards für Root-Dateien entsprechen und unnötig mit Git getrackt wurden.
+**Aktion:** Dateien via `git rm` aus dem Repository entfernt.
