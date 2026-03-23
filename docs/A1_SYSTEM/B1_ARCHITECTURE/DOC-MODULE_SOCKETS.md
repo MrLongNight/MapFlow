@@ -15,7 +15,7 @@ The following signal variants exist in the current system:
 
 ## Standard Socket Builders
 
-To prevent drift and ensure nodes always present standard and reliable socket IDs, you must use the following standard builders located in `ModuleSocket` (`crates/mapmap-core/src/module/types/socket.rs`) instead of constructing sockets manually via `ModuleSocket::input()`:
+To prevent drift and ensure nodes always present standard and reliable socket IDs, you must use the following standard builders located in `ModuleSocket` (`crates/mapflow-core/src/module/types/socket.rs`) instead of constructing sockets manually via `ModuleSocket::input()`:
 
 *   `standard_media_in()` -> ID: `"media_in"`
 *   `standard_media_out()` -> ID: `"media_out"`

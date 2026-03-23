@@ -21,14 +21,14 @@ Wir vermeiden schwere Abhängigkeiten wie OpenCV, um die Portabilität und Build
 *   **Library**: `nokhwa` (https://crates.io/crates/nokhwa)
     *   *Features*: `input-native` (nutzt MediaFoundation auf Windows, V4L2 auf Linux, AVFoundation auf macOS).
 *   **Integration**:
-    *   Neues Crate (empfohlen): `crates/mapmap-vision`
+    *   Neues Crate (empfohlen): `crates/mapflow-vision`
     *   API-Wrapper um `nokhwa`, der Frames als `image::RgbaImage` oder Rohdaten liefert.
 
 ### 3.2 Bildverarbeitung (Computer Vision)
 Die Verarbeitung erfolgt "Native Rust".
 
 *   **Pattern Generation**:
-    *   Ein neuer Modus im Renderer (`mapmap-render`), der statt User-Content mathematische Muster generiert.
+    *   Ein neuer Modus im Renderer (`mapflow-render`), der statt User-Content mathematische Muster generiert.
 *   **Decoding Engine**:
     *   Input: Serie von Kamerabildern.
     *   Prozess:
@@ -68,7 +68,7 @@ Der User startet den "Auto-Calibrate" Prozess.
 ## 5. Datenstrukturen (Entwurf)
 
 ```rust
-// crates/mapmap-vision/src/lib.rs
+// crates/mapflow-vision/src/lib.rs
 
 /// Repräsentiert eine Kalibrierungs-Sitzung
 pub struct CalibrationSession {
@@ -90,13 +90,13 @@ pub struct CalibrationResult {
 
 ## 6. Implementierungs-Plan
 
-### Schritt 1: `mapmap-vision` Crate Setup
+### Schritt 1: `mapflow-vision` Crate Setup
 - Erstellen des Crates.
 - Einbinden von `nokhwa` und `image`.
 - Implementieren von `CameraInput` (Open, Stream, Capture Frame).
 
 ### Schritt 2: Pattern Generator
-- Erweitern von `mapmap-render` um `PatternRenderer`.
+- Erweitern von `mapflow-render` um `PatternRenderer`.
 - Implementieren der Gray-Code Logik (rekursive Generierung der Streifenmuster).
 
 ### Schritt 3: UI Integration (Vorstufe)

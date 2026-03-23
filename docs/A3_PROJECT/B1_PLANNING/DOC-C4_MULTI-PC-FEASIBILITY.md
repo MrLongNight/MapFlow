@@ -131,7 +131,7 @@ Falls NDI-Lizenzierung ein Problem darstellt:
 #### 3.3.1 Master-Seite (NDI Sender)
 
 ```rust
-// crates/mapmap-ndi/src/sender.rs
+// crates/mapflow-ndi/src/sender.rs
 pub struct NdiSender {
     ndi_instance: NdiInstance,
     video_sender: NdiVideoSender,
@@ -176,7 +176,7 @@ impl NdiSender {
 #### 3.3.2 Player-Seite (NDI Receiver)
 
 ```rust
-// crates/mapmap-ndi/src/receiver.rs
+// crates/mapflow-ndi/src/receiver.rs
 pub struct NdiPlayerApp {
     ndi_receiver: NdiReceiver,
     texture_handle: Option<wgpu::Texture>,
@@ -260,7 +260,7 @@ Der Master sendet nur **Steuerbefehle und Szenen-Updates** über das Netzwerk. J
 #### 4.4.1 Time-Code basiert (Empfohlen)
 
 ```rust
-// crates/mapmap-sync/src/timecode.rs
+// crates/mapflow-sync/src/timecode.rs
 pub struct TimecodeSync {
     master_clock: Arc<AtomicU64>,  // Nanosekunden seit Start
     ntp_offset: i64,               // NTP-Korrektur
@@ -367,7 +367,7 @@ Der Legacy-Client nutzt **Hardware-dekodiertes H.264** anstatt NDI, um die CPU-L
 #### 5.3.2 Encoder (Master-Seite)
 
 ```rust
-// crates/mapmap-legacy/src/encoder.rs
+// crates/mapflow-legacy/src/encoder.rs
 pub struct LegacyStreamEncoder {
     encoder: x264::Encoder,      // Software-Encoder (fallback)
     hw_encoder: Option<NvEnc>,   // Hardware-Encoder (wenn verfügbar)
@@ -394,7 +394,7 @@ impl LegacyStreamEncoder {
 Für maximale Kompatibilität wird der Legacy-Player als **separates Modul** bereitgestellt:
 
 ```rust
-// crates/mapmap-legacy/src/player.rs
+// crates/mapflow-legacy/src/player.rs
 pub struct LegacyPlayer {
     ffmpeg_decoder: FfmpegDecoder,  // Hardware-beschleunigt
     display: SdlDisplay,            // SDL2 für breite Kompatibilität
@@ -505,7 +505,7 @@ Für vollständige Integration kann MapFlow für ARM64 kompiliert werden:
 
 ```rust
 // Compile Target: aarch64-unknown-linux-gnu
-// crates/mapmap-pi/src/player.rs
+// crates/mapflow-pi/src/player.rs
 
 pub struct PiPlayer {
     // Nutze wgpu mit Vulkan (Pi 5) oder OpenGL ES (Pi 4)
@@ -535,7 +535,7 @@ sudo apt install gcc-aarch64-linux-gnu
 
 # Build
 CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc \
-cargo build --target aarch64-unknown-linux-gnu --release -p mapmap-pi
+cargo build --target aarch64-unknown-linux-gnu --release -p mapflow-pi
 ```
 
 #### 6.3.3 Option D3: RTSP/H.264 mit VLC (Fallback)
@@ -842,7 +842,7 @@ MapFlow unterstützt skalierbare Setups über mehrere Computer hinweg. Dies ist 
 Nutzung von NDI (Network Device Interface) zur Übertragung von Video über IP.
 *   **Master**: Rendert das Composing und sendet Slices oder das Gesamtbild per NDI.
 *   **Clients**: Empfangen den NDI-Stream und zeigen ihn im Fullscreen an.
-*   **Status**: Implementiert (`mapmap-io/src/ndi`).
+*   **Status**: Implementiert (`mapflow-io/src/ndi`).
 
 ### Option B: Distributed Rendering (High-End)
 Szenen-Synchronisation statt Video-Streaming.

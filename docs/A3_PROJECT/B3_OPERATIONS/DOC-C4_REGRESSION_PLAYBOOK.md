@@ -53,7 +53,7 @@ Effekt:
 
 ### Fix-Ort
 
-- `crates/mapmap-core/src/module_eval.rs`
+- `crates/mapflow-core/src/module_eval.rs`
 - Helfer: `primary_render_connection_idx(...)`
 - Visual chain folgt jetzt explizit `to_socket == 0`
 
@@ -89,8 +89,8 @@ Es lagen zwei getrennte Fehler vor:
 
 ### Fix-Ort
 
-- `crates/mapmap/src/main.rs`
-- `crates/mapmap/src/app/loops/render.rs`
+- `crates/mapflow/src/main.rs`
+- `crates/mapflow/src/app/loops/render.rs`
 
 ### Regressionstests
 

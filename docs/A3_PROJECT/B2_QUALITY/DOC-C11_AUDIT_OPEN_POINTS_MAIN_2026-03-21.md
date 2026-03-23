@@ -43,8 +43,8 @@ Offen sind vor allem noch:
 - `paint_texture_cache.rs` laedt Bilder inzwischen aus `source_path`; das alte `TODO` fuer Image-Loading ist nicht mehr der Stand von `main`.
 - Das alte UX-Problem "Detect socket under pointer" ist im aktuellen Module-Canvas umgesetzt.
 - Die frueher genannten Dead-Code-Hinweise sind in den konkret genannten Dateien nicht mehr in derselben Form sichtbar:
-  - `crates/mapmap-render/src/mesh_buffer_cache.rs` ist heute aktiv im Renderpfad benutzt.
-  - in `crates/mapmap-ui/src/editors/mesh_editor/*` ist die fruehere pauschale `dead_code`-Lage in dieser Form nicht mehr offensichtlich.
+  - `crates/mapflow-render/src/mesh_buffer_cache.rs` ist heute aktiv im Renderpfad benutzt.
+  - in `crates/mapflow-ui/src/editors/mesh_editor/*` ist die fruehere pauschale `dead_code`-Lage in dieser Form nicht mehr offensichtlich.
 
 ### Aus DOC-C10_MODULE_NODE_SYSTEM_AUDIT_2026-03-18
 
@@ -54,7 +54,7 @@ Offen sind vor allem noch:
 - Core-Validierung fuer Verbindungen ist aktiv.
 - `repair_graph()` ist eingebaut.
 - Presets nutzen keine driftende UI-Socket-Kopie mehr als primaere Wahrheit.
-- Output-Fenster-Cleanup ist inzwischen implementiert (`crates/mapmap/src/orchestration/outputs.rs` entfernt stale windows).
+- Output-Fenster-Cleanup ist inzwischen implementiert (`crates/mapflow/src/orchestration/outputs.rs` entfernt stale windows).
 - Projector-Advanced-Settings (`output_width`, `output_height`, `output_fps`) sind inzwischen im Inspector vorhanden.
 - Automation-Capture / Screenshot-Pfad ist real vorhanden, inklusive Tests und self-hosted Artifact-Upload.
 - Source-Transforms sind im aktuellen Renderpfad nicht mehr nur UI-Attrappe; der aktive Renderpfad wendet sie an.
@@ -69,11 +69,11 @@ Quelle:
 - `DOC-C10_MODULE_NODE_SYSTEM_AUDIT_2026-03-18`
 
 Status:
-- Der heute aktive App-Pfad nutzt fuer Medien `crates/mapmap/src/orchestration/media.rs` und laedt Frames direkt in den `TexturePool`.
+- Der heute aktive App-Pfad nutzt fuer Medien `crates/mapflow/src/orchestration/media.rs` und laedt Frames direkt in den `TexturePool`.
 - Damit ist der alte Audit-Hinweis zum Blackscreen nicht mehr 1:1 der produktive Hauptpfad.
 - Trotzdem bleiben parallele oder alte Video-Pfade offen:
-  - `crates/mapmap-render/src/paint_texture_cache.rs`: `PaintType::Video` und `PaintType::Camera` TODOs wurden entfernt und als Legacy-Pfade dokumentiert.
-  - `crates/mapmap-media/src/pipeline.rs`: `FramePipeline` wurde explizit als obsolete (`#[deprecated]`) markiert.
+  - `crates/mapflow-render/src/paint_texture_cache.rs`: `PaintType::Video` und `PaintType::Camera` TODOs wurden entfernt und als Legacy-Pfade dokumentiert.
+  - `crates/mapflow-media/src/pipeline.rs`: `FramePipeline` wurde explizit als obsolete (`#[deprecated]`) markiert.
 
 Bewertung:
 - Kein akuter Beleg dafuer, dass `main` deswegen im Standardpfad schwarz bleibt.
@@ -87,16 +87,16 @@ Quelle:
 - `DOC-C10_MODULE_NODE_SYSTEM_AUDIT_2026-03-18`
 
 Status:
-- `crates/mapmap-io/src/stream/srt.rs` ist weiterhin explizit als Stub markiert.
-- `crates/mapmap-io/src/ndi/mod.rs` hat kein altes `TODO: Implement actual frame sending` mehr, enthaelt aber weiterhin den Hinweis, dass die Sender-Implementierung ein Placeholder/zu verifizierender Pfad ist.
-- `crates/mapmap-ui/src/editors/module_canvas/inspector/source.rs` zeigt weiterhin explizite Hinweise, dass bestimmte Source-Typen nicht voll an die Runtime angeschlossen sind:
+- `crates/mapflow-io/src/stream/srt.rs` ist weiterhin explizit als Stub markiert.
+- `crates/mapflow-io/src/ndi/mod.rs` hat kein altes `TODO: Implement actual frame sending` mehr, enthaelt aber weiterhin den Hinweis, dass die Sender-Implementierung ein Placeholder/zu verifizierender Pfad ist.
+- `crates/mapflow-ui/src/editors/module_canvas/inspector/source.rs` zeigt weiterhin explizite Hinweise, dass bestimmte Source-Typen nicht voll an die Runtime angeschlossen sind:
   - Shader
   - LiveInput
   - SpoutInput
-- `crates/mapmap-media/src/hap_player.rs` sagt weiterhin selbst, dass der Pfad noch eine FFmpeg-Integration als Platzhalter-Luecke hat.
+- `crates/mapflow-media/src/hap_player.rs` sagt weiterhin selbst, dass der Pfad noch eine FFmpeg-Integration als Platzhalter-Luecke hat.
 - Default-Feature-Gating ist verbessert:
-  - `mapmap-io` hat `default = []`
-  - `mapmap` aktiviert `ndi` nicht standardmaessig
+  - `mapflow-io` hat `default = []`
+  - `mapflow` aktiviert `ndi` nicht standardmaessig
 
 Bewertung:
 - "Standardmaessig deaktivieren, wenn nicht fertig" ist fuer NDI/SRT weitgehend eingehalten.
@@ -127,16 +127,16 @@ Quelle:
 
 Status:
 - Masken:
-  - `crates/mapmap/src/orchestration/evaluation.rs` erzeugt weiter `masks_unsupported`.
-  - `crates/mapmap-ui/src/editors/module_canvas/inspector/capabilities.rs` markiert Masken explizit als nicht voll unterstuetzt.
+  - `crates/mapflow/src/orchestration/evaluation.rs` erzeugt weiter `masks_unsupported`.
+  - `crates/mapflow-ui/src/editors/module_canvas/inspector/capabilities.rs` markiert Masken explizit als nicht voll unterstuetzt.
 - Blend Modes:
-  - `crates/mapmap/src/orchestration/evaluation.rs` erzeugt weiter `blend_mode_unsupported`.
-  - `crates/mapmap-ui/src/editors/module_canvas/inspector/capabilities.rs` behandelt praktisch nur `Normal` als wirklich unterstuetzt.
+  - `crates/mapflow/src/orchestration/evaluation.rs` erzeugt weiter `blend_mode_unsupported`.
+  - `crates/mapflow-ui/src/editors/module_canvas/inspector/capabilities.rs` behandelt praktisch nur `Normal` als wirklich unterstuetzt.
 - Sichtbarkeit nicht fertiger Nodes:
   - Der Node-Katalog und das Add-Node-Menue filtern nicht unterstuetzte Source-/Mask-/Blend-/Effect-Nodes inzwischen capabilities-basiert heraus.
   - Offene Runtime-Luecken bleiben davon getrennt weiter bestehen, insbesondere fuer Shader, LiveInput und Spout im Inspector-/Runtime-Pfad.
 - Hue:
-  - `crates/mapmap-ui/src/editors/module_canvas/inspector/output.rs` enthaelt fuer Hue-Pairing/Areas weiterhin TODOs.
+  - `crates/mapflow-ui/src/editors/module_canvas/inspector/output.rs` enthaelt fuer Hue-Pairing/Areas weiterhin TODOs.
 
 Bewertung:
 - Die groben P0-Architekturprobleme wurden reduziert.
@@ -170,13 +170,13 @@ Quelle:
 
 Status:
 - Erledigt:
-  - `visible_layers()` in `crates/mapmap-core/src/layer/manager.rs` liefert heute einen Iterator statt eines neu allokierten `Vec`.
+  - `visible_layers()` in `crates/mapflow-core/src/layer/manager.rs` liefert heute einen Iterator statt eines neu allokierten `Vec`.
 - Weiter offen:
   - `AppState` ist weiterhin `Clone`-lastig.
   - im Rendercode werden weiter BindGroups/Uniform-Buffer in Hot-Paths erzeugt, z. B. in:
-    - `crates/mapmap-render/src/effect_chain_renderer/apply.rs`
-    - `crates/mapmap-render/src/compositor.rs`
-    - `crates/mapmap-render/src/mesh_renderer.rs`
+    - `crates/mapflow-render/src/effect_chain_renderer/apply.rs`
+    - `crates/mapflow-render/src/compositor.rs`
+    - `crates/mapflow-render/src/mesh_renderer.rs`
 
 Bewertung:
 - Es gab Verbesserungen.

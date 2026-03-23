@@ -44,6 +44,6 @@ Einfache geometrische Primitive für schnelles Prototyping oder minimalistische 
 - `bevy-ui-gradients`: Inkompatibel mit 0.14. Native MapFlow UI-Gradients werden bevorzugt.
 
 ## 🔜 Nächste Schritte
-1.  **Node Expansion**: Implementierung der `SourceType` Varianten in `mapmap-core`.
+1.  **Node Expansion**: Implementierung der `SourceType` Varianten in `mapflow-core`.
 2.  **UI-Integration**: Erstellen von spezialisierten Inspector-Panels für jeden Bevy-Node.
 3.  **Renderer-Optimierung**: Verbessertes Readback der Bevy-Texture in den MapFlow-Main-Renderer.

@@ -15,27 +15,27 @@ Dieses Dokument fasst den realen Reifegrad der Professional Video I/O Features (
 
 | Feature | Typ | Status | Gating/Erreichbarkeit |
 |---|---|---|---|
-| **NDI Input** | In | **[Experimental]** | Im Code (`mapmap-io`) vorhanden. UI: Gated hinter unsupported warnings. |
-| **NDI Output**| Out | **[Experimental]** | Im Code (`mapmap-io`) Platzhalter/Sender. UI: Gated hinter unsupported warnings. |
-| **SRT Stream**| Out | **[Experimental]** | Im Code (`mapmap-io`) als reiner Stub markiert. UI: Keine Repräsentation. |
-| **HAP Player**| In | **[Experimental]** | Im Code (`mapmap-media`) Dekoder vorhanden, aber Container-Format Placeholder (FFmpeg fehlt). UI: nicht vollständig an Playback-Loop gebunden. |
+| **NDI Input** | In | **[Experimental]** | Im Code (`mapflow-io`) vorhanden. UI: Gated hinter unsupported warnings. |
+| **NDI Output**| Out | **[Experimental]** | Im Code (`mapflow-io`) Platzhalter/Sender. UI: Gated hinter unsupported warnings. |
+| **SRT Stream**| Out | **[Experimental]** | Im Code (`mapflow-io`) als reiner Stub markiert. UI: Keine Repräsentation. |
+| **HAP Player**| In | **[Experimental]** | Im Code (`mapflow-media`) Dekoder vorhanden, aber Container-Format Placeholder (FFmpeg fehlt). UI: nicht vollständig an Playback-Loop gebunden. |
 
 ## Technische Details & Pfade
 
 ### NDI (Network Device Interface)
-*   **Build-Pfad:** Benötigt das `ndi` Feature in `mapmap-io` und abhängigen Crates. Standardmäßig **nicht** im Default-Build aktiviert.
+*   **Build-Pfad:** Benötigt das `ndi` Feature in `mapflow-io` und abhängigen Crates. Standardmäßig **nicht** im Default-Build aktiviert.
 *   **Runtime-Pfad:**
-    *   Input: Nutzt `grafton_ndi`. Discovery funktioniert potenziell, aber Frame-Polling/Upload in die `mapmap` Texture-Pool-Architektur ist unvollständig.
+    *   Input: Nutzt `grafton_ndi`. Discovery funktioniert potenziell, aber Frame-Polling/Upload in die `mapflow` Texture-Pool-Architektur ist unvollständig.
     *   Output: `NdiSender` existiert als Platzhalter.
 *   **Issues:** #1091 (NDI MVP), #1250 (External I/O node gating).
 
 ### SRT (Secure Reliable Transport)
-*   **Build-Pfad:** Benötigt das `stream` Feature in `mapmap-io`.
-*   **Runtime-Pfad:** Reines Code-Stub-Skeleton in `crates/mapmap-io/src/stream/srt.rs`. Keine echten Puffer, kein Encoding-Link.
+*   **Build-Pfad:** Benötigt das `stream` Feature in `mapflow-io`.
+*   **Runtime-Pfad:** Reines Code-Stub-Skeleton in `crates/mapflow-io/src/stream/srt.rs`. Keine echten Puffer, kein Encoding-Link.
 *   **Issues:** Status-Tracking hier verankert (#1334).
 
 ### HAP Codec (Hardware Accelerated Video)
-*   **Build-Pfad:** Code befindet sich in `mapmap-media` (`hap_decoder.rs`, `hap_player.rs`).
+*   **Build-Pfad:** Code befindet sich in `mapflow-media` (`hap_decoder.rs`, `hap_player.rs`).
 *   **Runtime-Pfad:** Decoder für Snappy und GPU-Upload existieren. Der Container-Parse-Pfad (.mov via FFmpeg) ist ein Placeholder.
 *   **Issues:** Status-Tracking hier verankert (#1334). Siehe auch `DOC-C9_HAP_INTEGRATION.md`.
 

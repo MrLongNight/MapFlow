@@ -37,11 +37,11 @@ Alle Quellpunkte bleiben als `SRC-###` erhalten.
 | SRC-026 | User_2026-03-06 | Stelle sicher, dass man nur typen-gleiche Ein- und Ausgaenge verbinden kann. |
 | SRC-027 | User_2026-03-06 | Grafik & Performance in Settings ist nicht funktionsfaehig. |
 | SRC-028 | User_2026-03-06 | Theme Switcher inkl. Auswahlmenue unterschiedlicher Themes fehlt. |
-| SRC-029 | User_2026-03-06 | Fixe ERROR mapmap_control::hue::controller: Failed to connect to Hue Bridge DTLS... OpenSSL not compiled in. |
+| SRC-029 | User_2026-03-06 | Fixe ERROR mapflow_control::hue::controller: Failed to connect to Hue Bridge DTLS... OpenSSL not compiled in. |
 | SRC-030 | User_2026-03-06 | Stelle sicher, dass bereits gespeicherte Bridge Verbindungsdaten verwendet werden. |
 | SRC-031 | User_2026-03-06 | Mesh Editor in der Layer Node ist nicht verfuegbar. |
 | SRC-032 | User_2026-03-06 | Erfasse alle Fehler/Probleme in der Roadmap inkl. Feld fuer Dev-Fix und Feld fuer User-Testbestaetigung. |
-| SRC-033 | User_2026-03-06 | ERROR mapmap_control::hue::controller ... OpenSSL support is not compiled in (erneut genannt). |
+| SRC-033 | User_2026-03-06 | ERROR mapflow_control::hue::controller ... OpenSSL support is not compiled in (erneut genannt). |
 | SRC-034 | User_2026-03-06 | Pruefe, ob "Wird das wirklich benoetigt?" eine sinnvolle Funktion hat oder weg kann. |
 | SRC-035 | User_2026-03-06 | Feature-Status-Uebersicht ist nicht vollstaendig. |
 | SRC-036 | User_2026-03-06 | Viele Punkte haben Haken, funktionieren aber in Wirklichkeit nicht. |
@@ -68,7 +68,7 @@ Alle Quellpunkte bleiben als `SRC-###` erhalten.
 | SRC-057 | roadmap_proposal.md | Feedback- und Historien-Log fuer Nacharbeiten. |
 | SRC-058 | roadmap_proposal.md | Token-Effizienz: keine Wiederholung kompletter Taskbeschreibungen in Delegationsprompts. |
 | SRC-059 | Codeanalyse_2026-03-06 | Doppelte Audio-Analyse Renderpfade in ui_layout.rs (Sidebar + Floating Window). |
-| SRC-060 | Codeanalyse_2026-03-06 | UIAction SelectAudioDevice/UpdateAudioConfig/ToggleAudioPanel in mapmap-ui definiert, in app/actions nicht behandelt. |
+| SRC-060 | Codeanalyse_2026-03-06 | UIAction SelectAudioDevice/UpdateAudioConfig/ToggleAudioPanel in mapflow-ui definiert, in app/actions nicht behandelt. |
 | SRC-061 | Codeanalyse_2026-03-06 | audio_backend vorhanden, aber get_samples/process_samples nicht im Hauptloop verdrahtet. |
 | SRC-062 | Codeanalyse_2026-03-06 | module_evaluator.update_audio existiert, wird im App-Loop nicht aufgerufen. |
 | SRC-063 | Codeanalyse_2026-03-06 | Connection-Drop in module_canvas/renderer.rs ohne harte Socket-Typpruefung. |

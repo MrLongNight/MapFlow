@@ -201,7 +201,7 @@ Wenn ein Task die Architektur bricht:
 
    Task: XYZ
    Problem: Würde zirkuläre Dependency erzeugen
-   Vorschlag: Neues Trait in mapmap-core definieren
+   Vorschlag: Neues Trait in mapflow-core definieren
    ```
 3. **WARTE** auf Entscheidung von @MrLongNight
 

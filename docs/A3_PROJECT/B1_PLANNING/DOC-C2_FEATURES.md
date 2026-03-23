@@ -18,7 +18,7 @@ Ziel: Nahtloser Austausch mit anderen VJ-Tools.
 - **Protokolle**:
     - **Spout (Windows)** / **Syphon (macOS)**: Zero-Copy Texture Sharing auf derselben GPU.
     - **NDI**: Netzwerk-Videoübertragung via LAN.
-- **Crate**: `mapmap-io`.
+- **Crate**: `mapflow-io`.
 
 ## 4. Universal Link System
 Ziel: Master/Slave Verknüpfung von Knoten im Module Canvas.

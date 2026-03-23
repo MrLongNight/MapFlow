@@ -6,8 +6,8 @@ Integration von Industriestandards für den Austausch von Video-Streams zwischen
 *   **Spout (Windows)** / **Syphon (macOS)**: Lokaler Austausch auf demselben Rechner via GPU-Texture-Sharing (Zero-Copy oder Near-Zero-Copy). Extrem schnell, extrem geringe Latenz.
 *   **NDI® (Network Device Interface)**: Austausch über LAN (Gigabit Ethernet). Komprimiert (ähnlich MPEG, aber I-Frame only), geringe Latenz (~1 Frame).
 
-## 2. Architektur: `mapmap-io`
-Das Crate `mapmap-io` wird zur zentralen Schaltstelle für diese Protokolle.
+## 2. Architektur: `mapflow-io`
+Das Crate `mapflow-io` wird zur zentralen Schaltstelle für diese Protokolle.
 
 ### 2.1 Spout (Windows)
 *   **Library**: Es gibt Rust-Bindings `spout` oder direkte Nutzung der `OpenGL32.dll` / DirectX shared handles.

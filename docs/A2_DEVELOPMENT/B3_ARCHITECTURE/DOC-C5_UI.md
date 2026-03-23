@@ -8,10 +8,10 @@ in favor of a custom, lightweight implementation tailored to MapFlow's needs.
 
 ### Key Components
 
-- **Canvas Types**: Located in `crates/mapmap-ui/src/canvas/types.rs`.
+- **Canvas Types**: Located in `crates/mapflow-ui/src/canvas/types.rs`.
   - `MediaPlaybackCommand`: Shared enum for media control.
   - `MediaPlayerInfo`: Shared struct for playback state.
-- **Trigger System**: Located in `crates/mapmap-core/src/trigger_system.rs`.
+- **Trigger System**: Located in `crates/mapflow-core/src/trigger_system.rs`.
   - Handles logic for `AudioFFT`, `Random`, `Fixed`, and `Beat` triggers.
   - Maintains persistent state for timers and random intervals.
 

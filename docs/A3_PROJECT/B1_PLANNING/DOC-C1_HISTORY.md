@@ -24,7 +24,7 @@ Regelmäßige Audits sichern die Qualität von MapFlow.
 
 | Datum | Typ | Ergebnis |
 | :--- | :--- | :--- |
-| 05.03.2026 | Release Cleanup | Alle TODOs in mapmap-core gelöst, CI stabilisiert. |
+| 05.03.2026 | Release Cleanup | Alle TODOs in mapflow-core gelöst, CI stabilisiert. |
 | 29.12.2025 | Code Analysis | Sicherheits-Audit bezüglich Hardcoded Paths (behoben). |
 | 15.12.2025 | Documentation | Restrukturierung der docs zur besseren Übersicht (DOC-A0-Standard). |
 

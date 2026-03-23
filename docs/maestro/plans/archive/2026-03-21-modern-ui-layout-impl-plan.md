@@ -37,33 +37,33 @@ graph TD
 - **Ziel**: Einführung des `LayoutTree` und der Slot-Logik zur Trennung von Inhalt und Bereich.
 - **Agent**: `architect`
 - **Dateien erstellen**:
-  - `crates/mapmap-ui/src/core/layout.rs`: Definition der Slots (Top, Bottom, Left, Right, Center) und des LayoutManagers.
+  - `crates/mapflow-ui/src/core/layout.rs`: Definition der Slots (Top, Bottom, Left, Right, Center) und des LayoutManagers.
 - **Dateien ändern**:
-  - `crates/mapmap-ui/src/app_ui.rs`: Refactor der Render-Logik von festen Panels zu Slot-basierten Rendern.
+  - `crates/mapflow-ui/src/app_ui.rs`: Refactor der Render-Logik von festen Panels zu Slot-basierten Rendern.
 - **Validierung**: `cargo check --workspace` & Manuelle Prüfung des Slot-Resizing.
 
 ### Phase 2: Adaptive Inspector (Ergonomics)
 - **Ziel**: Spaltensystem und Skalierbarkeit für den Inspector-Inhalt.
 - **Agent**: `ux_designer`
 - **Dateien ändern**:
-  - `crates/mapmap-ui/src/panels/inspector/panel.rs`: Implementierung des `AdaptiveGrid`.
-  - `crates/mapmap-ui/src/panels/inspector/ui.rs`: Integration der `DensityScale` (Widget-Skalierung).
+  - `crates/mapflow-ui/src/panels/inspector/panel.rs`: Implementierung des `AdaptiveGrid`.
+  - `crates/mapflow-ui/src/panels/inspector/ui.rs`: Integration der `DensityScale` (Widget-Skalierung).
 - **Validierung**: Unit Tests für das Spalten-Umbruch-Verhalten.
 
 ### Phase 3: Custom Node Skins (Aesthetics)
 - **Ziel**: Data-Driven Skinning und interaktive Node-Animationen.
 - **Agent**: `design_system_engineer`
 - **Dateien ändern**:
-  - `crates/mapmap-ui/src/editors/node_editor.rs`: Integration des `SkinLoaders` und der Shader-Glow-Effekte.
-  - `crates/mapmap-ui/src/editors/module_canvas/types.rs`: Erweiterung der Node-Daten um visuelle Metadaten.
+  - `crates/mapflow-ui/src/editors/node_editor.rs`: Integration des `SkinLoaders` und der Shader-Glow-Effekte.
+  - `crates/mapflow-ui/src/editors/module_canvas/types.rs`: Erweiterung der Node-Daten um visuelle Metadaten.
 - **Validierung**: Visuelle Prüfung der Flow-Animationen im Graph.
 
 ### Phase 4: Polish & Performance (Cleanup)
 - **Ziel**: Behebung der Audit-Reports und Optimierung der UI-Performance.
 - **Agent**: `performance_engineer`
 - **Dateien ändern**:
-  - `crates/mapmap-ui/src/editors/node_editor.rs`: Verbesserung der Socket-Erkennung (Audit Ref: 560).
-  - `crates/mapmap-ui/src/mesh_editor.rs`: Entfernung von Dead Code (Audit Report).
+  - `crates/mapflow-ui/src/editors/node_editor.rs`: Verbesserung der Socket-Erkennung (Audit Ref: 560).
+  - `crates/mapflow-ui/src/mesh_editor.rs`: Entfernung von Dead Code (Audit Report).
 - **Validierung**: `cargo clippy` & Performance-Messung der Transition-Engine.
 
 ## Kostenabschätzung

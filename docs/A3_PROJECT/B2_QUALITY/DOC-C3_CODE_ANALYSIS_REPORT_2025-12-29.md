@@ -8,7 +8,7 @@
 | Metrik | Wert |
 |--------|------|
 | Rust-Dateien | 133 |
-| Hauptcrate | mapmap (1808 Zeilen in main.rs) |
+| Hauptcrate | mapflow (1808 Zeilen in main.rs) |
 | Build Status | ✅ Kompiliert |
 | Tests | ✅ Alle bestanden |
 | Clippy Warnungen | 0 |
@@ -19,15 +19,15 @@
 
 ```
 crates/
-├── mapmap/           # Hauptanwendung (UI + Event Loop)
-├── mapmap-core/      # Kernlogik (Layer, Module, Audio)
-├── mapmap-control/   # MIDI, OSC, Shortcuts
-├── mapmap-render/    # WGPU Rendering
-├── mapmap-io/        # Datei I/O
-├── mapmap-media/     # Media Handling
-├── mapmap-ui/        # egui UI Panels
-├── mapmap-mcp/       # MCP Integration
-└── mapmap-ffi/       # FFI Bindings
+├── mapflow/           # Hauptanwendung (UI + Event Loop)
+├── mapflow-core/      # Kernlogik (Layer, Module, Audio)
+├── mapflow-control/   # MIDI, OSC, Shortcuts
+├── mapflow-render/    # WGPU Rendering
+├── mapflow-io/        # Datei I/O
+├── mapflow-media/     # Media Handling
+├── mapflow-ui/        # egui UI Panels
+├── mapflow-mcp/       # MCP Integration
+└── mapflow-ffi/       # FFI Bindings
 ```
 
 ---
@@ -96,11 +96,11 @@ mod render {
 
 ### Fehler 1: Unresolved Import
 ```
-error[E0432]: unresolved import `mapmap_render::MeshBufferCache`
+error[E0432]: unresolved import `mapflow_render::MeshBufferCache`
 ```
 
 **Lösung:**
-1. In `crates/mapmap-render/src/lib.rs` hinzufügen:
+1. In `crates/mapflow-render/src/lib.rs` hinzufügen:
 ```rust
 pub mod mesh_buffer_cache;  // Falls Datei existiert
 pub use mesh_buffer_cache::MeshBufferCache;

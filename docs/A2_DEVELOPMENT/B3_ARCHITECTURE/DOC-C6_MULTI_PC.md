@@ -8,7 +8,7 @@ MapFlow unterstützt skalierbare Setups über mehrere Computer hinweg. Dies ist 
 Nutzung von NDI (Network Device Interface) zur Übertragung von Video über IP.
 *   **Master**: Rendert das Composing und sendet Slices oder das Gesamtbild per NDI.
 *   **Clients**: Empfangen den NDI-Stream und zeigen ihn im Fullscreen an.
-*   **Status**: Implementiert (`mapmap-io/src/ndi`).
+*   **Status**: Implementiert (`mapflow-io/src/ndi`).
 
 ### Option B: Distributed Rendering (High-End)
 Szenen-Synchronisation statt Video-Streaming.

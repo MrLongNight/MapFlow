@@ -50,20 +50,20 @@ Die meisten aktuellen Tests pruefen Logik, nicht sichtbare UI.
 
 Beispiele:
 
-- `crates/mapmap-ui/tests/timeline_automation_tests.rs`
+- `crates/mapflow-ui/tests/timeline_automation_tests.rs`
 - diverse `#[cfg(test)]`-Bereiche in UI-Panels und Editoren
 
 Die vorhandenen GPU-Tests laufen offscreen und sind derzeit ignoriert:
 
-- `crates/mapmap-render/tests/effect_chain_tests.rs`
-- `crates/mapmap-render/tests/effect_chain_integration_tests.rs`
+- `crates/mapflow-render/tests/effect_chain_tests.rs`
+- `crates/mapflow-render/tests/effect_chain_integration_tests.rs`
 
 Der echte Fensterpfad liegt im Produktionslauf:
 
-- `crates/mapmap/src/main.rs`
-- `crates/mapmap/src/app/core/init.rs`
-- `crates/mapmap/src/window_manager.rs`
-- `crates/mapmap/src/app/loops/render.rs`
+- `crates/mapflow/src/main.rs`
+- `crates/mapflow/src/app/core/init.rs`
+- `crates/mapflow/src/window_manager.rs`
+- `crates/mapflow/src/app/loops/render.rs`
 
 Wesentliche Schlussfolgerung:
 
@@ -135,7 +135,7 @@ Empfohlene Richtung:
 
 Noetig:
 
-- vorhandenen GPU-Readback-Code aus `crates/mapmap/src/app/loops/render.rs` verallgemeinern
+- vorhandenen GPU-Readback-Code aus `crates/mapflow/src/app/loops/render.rs` verallgemeinern
 - Screenshots fuer Main-Window und Projektorfenster speichern
 - Artefakte als PNG ablegen
 - optional Serienaufnahme fuer spaetere Videobildung bereitstellen
@@ -191,13 +191,13 @@ Die drei bereits implementierten Harness-Szenarien decken den unteren technische
 ### Phase 4: CI-Integration auf self-hosted Runner
 
 Sichtbare GUI-Automation sollte spaeter nur auf einem geeigneten self-hosted Windows-Runner laufen.
-Der dedizierte Test `test_release_smoke_automation_empty_project` in `crates/mapmap/tests/app_automation_tests.rs` dient als dokumentierter minimaler Release-Smoke-Test fuer den aktuellen Automation-/Screenshot-Pfad. Er prueft den Main-Window-Startzustand und exportiert einen Screenshot.
+Der dedizierte Test `test_release_smoke_automation_empty_project` in `crates/mapflow/tests/app_automation_tests.rs` dient als dokumentierter minimaler Release-Smoke-Test fuer den aktuellen Automation-/Screenshot-Pfad. Er prueft den Main-Window-Startzustand und exportiert einen Screenshot.
 
 Damit dieser Automation-Test im CI-Lauf ausgefuehrt wird, muss die Umgebungsvariable `MAPFLOW_SELF_HOSTED_RUN_VISUAL_AUTOMATION` auf `true` gesetzt sein (siehe `scripts/build/self-hosted-post-merge.ps1`). Da echte sichtbare Fenster und GPU-Surface-Praesentation getestet werden, verlangt der Test eine interaktive Windows-Sitzung. Er ist deshalb regulaer mit `#[ignore]` markiert und wird nur durch explizite CI-Konfiguration auf dem self-hosted Runner aktiviert.
 
 Diese Tests dienen als Release-/QA-Baseline fuer die Gesamt-App, waehrend spezifischere Themen in Multi-Output-/Projektor-QA (Issue #1095) vertieft werden.
 
-Als dedizierte Standard-Absicherung fuer den reinen, nicht-interaktiven Capture-Pfad fungiert `mapflow_visual_harness` (siehe `crates/mapmap/tests/visual_capture_tests.rs`). Dieser Harness laesst sich prinzipiell headless/offscreen initialisieren oder mit Mock-Surfaces betreiben, was ihn zum primaren Kandidaten fuer CI-Umgebungen ohne gueltige Desktop-Session macht, in denen dennoch grundlegende GPU-Szenarien und Frame-Readbacks abgesichert werden muessen.
+Als dedizierte Standard-Absicherung fuer den reinen, nicht-interaktiven Capture-Pfad fungiert `mapflow_visual_harness` (siehe `crates/mapflow/tests/visual_capture_tests.rs`). Dieser Harness laesst sich prinzipiell headless/offscreen initialisieren oder mit Mock-Surfaces betreiben, was ihn zum primaren Kandidaten fuer CI-Umgebungen ohne gueltige Desktop-Session macht, in denen dennoch grundlegende GPU-Szenarien und Frame-Readbacks abgesichert werden muessen.
 
 Wichtige Betriebsbedingung:
 

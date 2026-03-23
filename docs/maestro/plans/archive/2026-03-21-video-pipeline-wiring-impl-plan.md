@@ -7,7 +7,7 @@ date: 2026-03-21
 # Phasenplan: Video Pipeline Wiring (FramePipeline)
 
 ## Plan-Überblick
-Dieser Plan integriert die bereits existierende, aber bisher nur in Tests verwendete `FramePipeline` (aus `mapmap-media`) in die Haupt-Rendering-Schleife der Anwendung.
+Dieser Plan integriert die bereits existierende, aber bisher nur in Tests verwendete `FramePipeline` (aus `mapflow-media`) in die Haupt-Rendering-Schleife der Anwendung.
 
 - **Gesamtphasen**: 2
 - **Beteiligte Agenten**: `coder`, `code_reviewer`
@@ -25,15 +25,15 @@ Dieser Plan integriert die bereits existierende, aber bisher nur in Tests verwen
 - **Ziel**: `create_player_handle` in `media.rs` soll eine `FramePipeline` starten (decode_thread + upload_thread) statt einer einfachen `std::thread::spawn` Schleife.
 - **Agent**: `coder`
 - **Dateien ändern**:
-  - `crates/mapmap/src/orchestration/media.rs`:
+  - `crates/mapflow/src/orchestration/media.rs`:
     - Ersetze den manuellen `std::thread::spawn` Block durch `pipeline.start_decode_thread(player)` und `pipeline.start_upload_thread(...)`.
     - Das `upload_fn` Closure muss die Textur via `pool.upload_data(...)` in die WGPU Queue schreiben.
     - Speichere die `FramePipeline` (oder einen Wrapper) im `MediaPlayerHandle`, damit sie bei Bedarf gestoppt werden kann.
-- **Validierung**: `cargo check -p mapmap`
+- **Validierung**: `cargo check -p mapflow`
 
 ### Phase 2: Quality & Review
 - **Ziel**: Sicherstellen, dass keine Deadlocks oder verwaisten Threads entstehen.
 - **Agent**: `code_reviewer`
 - **Dateien prüfen**:
-  - `crates/mapmap/src/orchestration/media.rs`
+  - `crates/mapflow/src/orchestration/media.rs`
 - **Validierung**: Lesendes Review, keine Code-Änderungen.

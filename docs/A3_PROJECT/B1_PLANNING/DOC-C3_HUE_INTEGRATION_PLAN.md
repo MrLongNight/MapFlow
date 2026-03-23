@@ -3,15 +3,15 @@
 ## Status
 *   **Current Phase**: MVP (Phase 1 & Partial Phase 2)
 *   **Implemented**:
-    *   `hue` module in `mapmap-control` (Discovery, DTLS Client, Effect Engine structures).
-    *   `OutputType::Hue` in `mapmap-core`.
+    *   `hue` module in `mapflow-control` (Discovery, DTLS Client, Effect Engine structures).
+    *   `OutputType::Hue` in `mapflow-core`.
     *   UI in `ModuleCanvas` (Discovery, Manual IP, Spatial Editor).
 
 ## Roadmap
 
 ### Phase 1: Foundation (Current PR)
-*   [x] Port `HueFlow` core logic to `mapmap-control`.
-*   [x] Add `OutputType::Hue` to `mapmap-core` data model.
+*   [x] Port `HueFlow` core logic to `mapflow-control`.
+*   [x] Add `OutputType::Hue` to `mapflow-core` data model.
 *   [x] Implement basic UI for adding Hue nodes and editing properties.
 *   [x] Implement Bridge Discovery (mDNS/N-UPnP) via `tokio` async tasks.
 *   [x] Implement 2D Spatial Editor for lamp positioning.
@@ -37,6 +37,6 @@
 *   [ ] **Performance Optimization**: Ensure DTLS streaming doesn't block the main UI thread.
 
 ## Architecture
-*   **Control**: `crates/mapmap-control/src/hue/` handles all protocol logic.
-*   **State**: `HueConfig` in `mapmap-core` stores the topology.
-*   **UI**: `mapmap-ui` renders the setup and spatial editor.
+*   **Control**: `crates/mapflow-control/src/hue/` handles all protocol logic.
+*   **State**: `HueConfig` in `mapflow-core` stores the topology.
+*   **UI**: `mapflow-ui` renders the setup and spatial editor.

@@ -1,6 +1,6 @@
 # Refactoring Plan: `main.rs` Decomposition & Architecture
 
-This document serves as the master plan for refactoring the MapMap application. It is broken down into specific, actionable
+This document serves as the master plan for refactoring the MapFlow application. It is broken down into specific, actionable
 "Jules Tasks" that are self-contained and verifiable.
 
 ## 🎯 Strategic Goals
@@ -21,22 +21,22 @@ This document serves as the master plan for refactoring the MapMap application. 
 #### [Task 1.1] Setup UI Module & Extract Settings
 
 - **Objective**: Create the foundational `ui` module structure and move the "Settings" window.
-- **Input**: `crates/mapmap/src/main.rs` (Settings window block)
+- **Input**: `crates/mapflow/src/main.rs` (Settings window block)
 - **Actions**:
-  1. Create `crates/mapmap/src/ui/mod.rs` and `crates/mapmap/src/ui/settings.rs`.
+  1. Create `crates/mapflow/src/ui/mod.rs` and `crates/mapflow/src/ui/settings.rs`.
   2. Define `pub fn show(ctx: &egui::Context, state: &mut AppState, ...)` in `settings.rs`.
   3. Move the `egui::Window::new("Settings")` logic from `main.rs` to this function.
   4. Update `main.rs` to import `mod ui` and call `ui::settings::show()`.
 - **Validation**:
-  - `cargo check -p mapmap` passes.
+  - `cargo check -p mapflow` passes.
   - Settings window opens and functions identical to before.
 
 #### [Task 1.2] Extract Sidebar & Master Controls
 
 - **Objective**: Move the left sidebar (containing Master Gain, BPM, Audio Viz) to a dedicated module.
-- **Input**: `crates/mapmap/src/main.rs` (`egui::SidePanel::left`)
+- **Input**: `crates/mapflow/src/main.rs` (`egui::SidePanel::left`)
 - **Actions**:
-  1. Create `crates/mapmap/src/ui/sidebar.rs`.
+  1. Create `crates/mapflow/src/ui/sidebar.rs`.
   2. Extract the `SidePanel::left` logic into a public render function.
   3. Pass necessary state (AudioContext, ProjectState) as arguments.
   4. Replace the block in `main.rs` with the function call.
@@ -45,9 +45,9 @@ This document serves as the master plan for refactoring the MapMap application. 
 #### [Task 1.3] Extract Timeline & Bottom Panel
 
 - **Objective**: Isolate the Timeline/Sequencer UI.
-- **Input**: `crates/mapmap/src/main.rs` (`egui::BottomPanel`)
+- **Input**: `crates/mapflow/src/main.rs` (`egui::BottomPanel`)
 - **Actions**:
-  1. Create `crates/mapmap/src/ui/timeline.rs`.
+  1. Create `crates/mapflow/src/ui/timeline.rs`.
   2. Move `BottomPanel` logic.
   3. Ensure `Transport` controls (Play/Pause) are correctly wired to state.
 - **Validation**: Timeline renders at bottom, playback controls update state.
@@ -55,9 +55,9 @@ This document serves as the master plan for refactoring the MapMap application. 
 #### [Task 1.4] Extract Module Canvas (Center Panel)
 
 - **Objective**: Move the main workspace (Node Graph/Canvas) logic.
-- **Input**: `crates/mapmap/src/main.rs` (`egui::CentralPanel`)
+- **Input**: `crates/mapflow/src/main.rs` (`egui::CentralPanel`)
 - **Actions**:
-  1. Create `crates/mapmap/src/ui/canvas.rs`.
+  1. Create `crates/mapflow/src/ui/canvas.rs`.
   2. Move `CentralPanel` logic.
   3. Crucial: Ensure `Module` iteration and rendering logic is preserved or passed in cleanly.
 - **Validation**: Nodes appear on canvas, interactions (drag/drop) still work.
@@ -71,9 +71,9 @@ This document serves as the master plan for refactoring the MapMap application. 
 #### [Task 2.1] Define AppState Struct
 
 - **Objective**: Separate state definition from the application runner.
-- **Input**: `crates/mapmap/src/main.rs` (`struct App`)
+- **Input**: `crates/mapflow/src/main.rs` (`struct App`)
 - **Actions**:
-  1. Create `crates/mapmap/src/state.rs`.
+  1. Create `crates/mapflow/src/state.rs`.
   2. Move `struct App` (rename to `AppState`?) and its fields here.
   3. Create a separate `App` wrapper in `main.rs` that holds `AppState` and implements `winit::ApplicationHandler`.
 - **Validation**: Application compiles, state checks work.
@@ -81,9 +81,9 @@ This document serves as the master plan for refactoring the MapMap application. 
 #### [Task 2.2] Extract Event Handling
 
 - **Objective**: Move massive match statements for Winit events out of `main.rs`.
-- **Input**: `crates/mapmap/src/main.rs` (`impl ApplicationHandler for App`)
+- **Input**: `crates/mapflow/src/main.rs` (`impl ApplicationHandler for App`)
 - **Actions**:
-  1. Create `crates/mapmap/src/inputs.rs`.
+  1. Create `crates/mapflow/src/inputs.rs`.
   2. Create functions like `handle_keyboard_input`, `handle_mouse_input`.
   3. Call these functions from the main event loop.
 - **Validation**: Keyboard shortcuts and mouse input work as expected.
@@ -91,9 +91,9 @@ This document serves as the master plan for refactoring the MapMap application. 
 #### [Task 2.3] Systems Extraction (Audio/Physics)
 
 - **Objective**: Move update logic (audio processing, physics steps) to "Systems".
-- **Input**: `crates/mapmap/src/main.rs` (`App::update` method)
+- **Input**: `crates/mapflow/src/main.rs` (`App::update` method)
 - **Actions**:
-  1. Create `crates/mapmap/src/systems/audio.rs` and `crates/mapmap/src/systems/physics.rs`.
+  1. Create `crates/mapflow/src/systems/audio.rs` and `crates/mapflow/src/systems/physics.rs`.
   2. Move the respective logic blocks from `App::update` to these modules.
 - **Validation**: Audio analysis updates visuals, physics simulations run.
 
@@ -106,9 +106,9 @@ This document serves as the master plan for refactoring the MapMap application. 
 #### [Task 3.1] Extract Renderer
 
 - **Objective**: Move raw WGPU calls (render pass, encoder) to a renderer struct.
-- **Input**: `crates/mapmap/src/main.rs` (`App::render` WGPU sections)
+- **Input**: `crates/mapflow/src/main.rs` (`App::render` WGPU sections)
 - **Actions**:
-  1. Create `crates/mapmap/src/renderer.rs`.
+  1. Create `crates/mapflow/src/renderer.rs`.
   2. Define `struct MapFlowRenderer` holding Device, Queue, Surface.
   3. Move initialization and `render_frame` logic here.
 - **Validation**: Graphics render correctly, `main.rs` contains minimal WGPU code.

@@ -8,7 +8,7 @@ Diese Datei zeigt die physische und logische Struktur des Projekts.
 Auflistung der Ordnerpfade
 Volumeseriennummer : 7AE1-A876
 C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
-+---mapmap
++---mapflow
 |   |   build.rs
 |   |   Cargo.toml
 |   |   README.md
@@ -79,7 +79,7 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |           License.rtf
 |           main.wxs
 |
-+---mapmap-bevy
++---mapflow-bevy
 |   |   Cargo.toml
 |   |   README.md
 |   |
@@ -97,7 +97,7 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |           resources.rs
 |           systems.rs
 |
-+---mapmap-control
++---mapflow-control
 |   |   Cargo.toml
 |   |   README.md
 |   |
@@ -178,7 +178,7 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |               server.rs
 |               websocket.rs
 |
-+---mapmap-core
++---mapflow-core
 |   |   Cargo.toml
 |   |   README.md
 |   |
@@ -257,14 +257,14 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |           trigger_system_tests.rs
 |           trigger_tests.rs
 |
-+---mapmap-ffi
++---mapflow-ffi
 |   |   Cargo.toml
 |   |   README.md
 |   |
 |   \---src
 |           lib.rs
 |
-+---mapmap-io
++---mapflow-io
 |   |   Cargo.toml
 |   |   README.md
 |   |
@@ -302,7 +302,7 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |   \---tests
 |           project_tests.rs
 |
-+---mapmap-mcp
++---mapflow-mcp
 |   |   Cargo.toml
 |   |   README.md
 |   |
@@ -312,7 +312,7 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |           protocol.rs
 |           server.rs
 |
-+---mapmap-media
++---mapflow-media
 |   |   Cargo.toml
 |   |   README.md
 |   |
@@ -330,7 +330,7 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |           player.rs
 |           sequence.rs
 |
-+---mapmap-render
++---mapflow-render
 |   |   Cargo.toml
 |   |   README.md
 |   |
@@ -364,7 +364,7 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |           effect_chain_tests.rs
 |           multi_output_tests.rs
 |
-+---mapmap-ui
++---mapflow-ui
 |   |   Cargo.toml
 |   |   README.md
 |   |
@@ -488,16 +488,16 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 
 | Crate | Pfad | Beschreibung |
 |-------|------|--------------|
-| mapmap | crates/mapmap | MapFlow - Professional Projection Mapping Software |
-| mapmap-bevy | crates/mapmap-bevy |  |
-| mapmap-control | crates/mapmap-control |  |
-| mapmap-core | crates/mapmap-core |  |
-| mapmap-ffi | crates/mapmap-ffi | MapFlow C/C++ Foreign Function Interface bindings. |
-| mapmap-io | crates/mapmap-io |  |
-| mapmap-mcp | crates/mapmap-mcp |  |
-| mapmap-media | crates/mapmap-media |  |
-| mapmap-render | crates/mapmap-render |  |
-| mapmap-ui | crates/mapmap-ui |  |
+| mapflow | crates/mapflow | MapFlow - Professional Projection Mapping Software |
+| mapflow-bevy | crates/mapflow-bevy |  |
+| mapflow-control | crates/mapflow-control |  |
+| mapflow-core | crates/mapflow-core |  |
+| mapflow-ffi | crates/mapflow-ffi | MapFlow C/C++ Foreign Function Interface bindings. |
+| mapflow-io | crates/mapflow-io |  |
+| mapflow-mcp | crates/mapflow-mcp |  |
+| mapflow-media | crates/mapflow-media |  |
+| mapflow-render | crates/mapflow-render |  |
+| mapflow-ui | crates/mapflow-ui |  |
 
 ## 3. Logische Modul-Hierarchie
 

@@ -8,7 +8,7 @@ This document details the implementation of the Universal Link System for Layers
 Allow each output channel of the Audio Trigger Node to be optionally inverted (Logic NOT).
 
 ### Implementation Details
-- **File**: `crates/mapmap-core/src/module.rs`
+- **File**: `crates/mapflow-core/src/module.rs`
 - **Struct**: `AudioTriggerOutputConfig`
 - **Changes**:
   - Add `inverted_outputs: HashMap<String, bool>` or a generic boolean flags structure.
@@ -39,7 +39,7 @@ Property per node determining its role:
 
 ### Data Structures
 
-**File**: `crates/mapmap-core/src/module.rs`
+**File**: `crates/mapflow-core/src/module.rs`
 
 New Enums:
 ```rust
@@ -92,7 +92,7 @@ pub struct NodeLinkData {
 
 ### Runtime Logic
 
-In `mapmap-core/src/module_eval.rs` or `mapmap-ui/src/module_canvas.rs`:
+In `mapflow-core/src/module_eval.rs` or `mapflow-ui/src/module_canvas.rs`:
 - **Master Evaluation**:
   - Read `Trigger Input` value.
   - Determine `is_active` state.
@@ -108,17 +108,17 @@ In `mapmap-core/src/module_eval.rs` or `mapmap-ui/src/module_canvas.rs`:
 
 ## 3. Implementation Steps
 
-1.  **Update Core Data Structures** (`crates/mapmap-core/src/module.rs`)
+1.  **Update Core Data Structures** (`crates/mapflow-core/src/module.rs`)
     - Define `LinkMode`, `LinkBehavior`, `NodeLinkData`.
     - Update `LayerAssignmentType`, `MaskType`, `ModulizerType`.
     - Update `AudioTriggerOutputConfig` for inversion.
     - Add `ModuleSocketType::Link`? Or reuse Trigger with naming convention? -> **Decision: Add `ModuleSocketType::Link` for safety.**
 
-2.  **Update Module Construction** (`crates/mapmap-core/src/module.rs`)
+2.  **Update Module Construction** (`crates/mapflow-core/src/module.rs`)
     - Update `add_part` to initialize default `link_data`.
     - Implement `update_sockets` logic to dynamically show/hide Link/Trigger sockets based on Mode.
 
-3.  **Update UI Panels** (`crates/mapmap-ui/src/module_canvas/panels/`)
+3.  **Update UI Panels** (`crates/mapflow-ui/src/module_canvas/panels/`)
     - Add Inspector controls for Link Mode/Behavior.
     - Add "Invert" checkboxes for Audio Trigger.
 

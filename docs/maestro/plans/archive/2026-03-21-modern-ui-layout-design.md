@@ -50,7 +50,7 @@ Wir implementieren ein **Molares Slot-System**, das Inhalte (Panels) von ihrer D
 |-----------|--------|----------------------|------------|
 | **Flexibilität** | 40% | 5/5 | Volle Kontrolle über Workspace-Belegung. |
 | **UX-Modernität** | 30% | 5/5 | Animationen & Adaptive Widgets wirken professionell. |
-| **Aufwand** | 20% | 2/5 | Hoher Refactor-Aufwand in `mapmap-ui`. |
+| **Aufwand** | 20% | 2/5 | Hoher Refactor-Aufwand in `mapflow-ui`. |
 | **Stabilität** | 10% | 4/5 | Bewährte UI-Muster aus DCC-Tools. |
 | **Summe** | | **4.6** | |
 

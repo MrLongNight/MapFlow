@@ -44,8 +44,8 @@ Please refer to the main [BUILD.md](../B3_SUPPORT/DOC-C1_BUILD.md) for detailed,
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/johnjanik/mapmap.git
-cd mapmap
+git clone https://github.com/MrLongNight/MapFlow.git
+cd mapflow
 ```
 
 ---
@@ -59,24 +59,24 @@ Before we dive into code, let's understand MapFlow's modular architecture:
 MapFlow is organized as a Cargo workspace with specialized crates:
 
 ```
-mapmap/
-├── mapmap-core/      # Domain model (Paint/Mapping/Mesh)
-├── mapmap-render/    # GPU rendering (wgpu backend)
-├── mapmap-media/     # Video/image decoding (FFmpeg)
-├── mapmap-ui/        # User interface (ImGui/egui)
-├── mapmap-control/   # Control systems (MIDI/OSC/DMX)
-├── mapmap-io/        # Professional I/O (NDI/DeckLink)
-├── mapmap-ffi/       # Plugin API
-└── mapmap/           # Main application binary
+mapflow/
+├── mapflow-core/      # Domain model (Paint/Mapping/Mesh)
+├── mapflow-render/    # GPU rendering (wgpu backend)
+├── mapflow-media/     # Video/image decoding (FFmpeg)
+├── mapflow-ui/        # User interface (ImGui/egui)
+├── mapflow-control/   # Control systems (MIDI/OSC/DMX)
+├── mapflow-io/        # Professional I/O (NDI/DeckLink)
+├── mapflow-ffi/       # Plugin API
+└── mapflow/           # Main application binary
 ```
 
 ### Core Components
 
-1. **WgpuBackend** (`mapmap-render`): GPU abstraction layer using wgpu
-2. **Paint** (`mapmap-core`): Media source definition
-3. **Mesh** (`mapmap-core`): Warping geometry
-4. **Mapping** (`mapmap-core`): Connection between Paint and Mesh
-5. **QuadRenderer** (`mapmap-render`): GPU renderer for textured quads
+1. **WgpuBackend** (`mapflow-render`): GPU abstraction layer using wgpu
+2. **Paint** (`mapflow-core`): Media source definition
+3. **Mesh** (`mapflow-core`): Warping geometry
+4. **Mapping** (`mapflow-core`): Connection between Paint and Mesh
+5. **QuadRenderer** (`mapflow-render`): GPU renderer for textured quads
 
 ---
 
@@ -100,8 +100,8 @@ Create a new file at `examples/hello_world_projection.rs`:
 //! 3. Creating a Mapping (connecting Paint to Mesh)
 //! 4. Rendering the result
 
-use mapmap_core::{Paint, PaintType, Mesh, MeshType, Mapping};
-use mapmap_render::{QuadRenderer, TextureDescriptor, WgpuBackend};
+use mapflow_core::{Paint, PaintType, Mesh, MeshType, Mapping};
+use mapflow_render::{QuadRenderer, TextureDescriptor, WgpuBackend};
 use glam::Vec2;
 use winit::{
     event::{Event, WindowEvent, KeyboardInput, VirtualKeyCode, ElementState},
@@ -110,7 +110,7 @@ use winit::{
 };
 
 fn main() {
-    println!("MapMap - Hello World Projection Mapping Example");
+    println!("MapFlow - Hello World Projection Mapping Example");
     println!("===============================================\n");
 
     // Step 1: Create the window
@@ -335,11 +335,11 @@ pollster = "0.3"
 
 ### Build and Run
 
-Then build and run the example from the mapmap crate directory:
+Then build and run the example from the mapflow crate directory:
 
 ```bash
-# Navigate to the mapmap crate
-cd crates/mapmap
+# Navigate to the mapflow crate
+cd crates/mapflow
 
 # Build the example
 cargo build --example hello_world_projection
@@ -463,7 +463,7 @@ Congratulations! You've created your first projection mapping with MapFlow. Here
 
 ### 1. Load a Real Image or Video
 
-Replace the colored Paint with an actual image or video (requires integrating `mapmap-media`).
+Replace the colored Paint with an actual image or video (requires integrating `mapflow-media`).
 
 ### 2. Warp the Mesh
 

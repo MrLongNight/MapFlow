@@ -15,7 +15,7 @@ Sie dient als Architekturplan fuer die Konsolidierung zwischen:
 
 Wichtig:
 
-- `crates/mapmap/src/window_manager.rs` ist kein normaler Dead-Code-Cleanup-Kandidat.
+- `crates/mapflow/src/window_manager.rs` ist kein normaler Dead-Code-Cleanup-Kandidat.
 - Die dort markierten APIs sind teilweise aktive Infrastruktur und teilweise vorbereitete Lifecycle-Bausteine.
 - Das Ziel ist Integration und Konsolidierung, nicht blindes Entfernen.
 
@@ -24,8 +24,8 @@ Wichtig:
 ### 2.1 Was heute aktiv laeuft
 
 - Das Hauptfenster wird ueber `WindowManager::create_main_window_with_geometry(...)` erzeugt.
-- Projector-Fenster werden zur Laufzeit ueber `crates/mapmap/src/orchestration/outputs.rs` erzeugt.
-- `sync_output_windows(...)` wird aus `crates/mapmap/src/app/loops/logic.rs` aufgerufen.
+- Projector-Fenster werden zur Laufzeit ueber `crates/mapflow/src/orchestration/outputs.rs` erzeugt.
+- `sync_output_windows(...)` wird aus `crates/mapflow/src/app/loops/logic.rs` aufgerufen.
 - `main.rs` nutzt `WindowManager` bereits fuer Window-zu-Output-Zuordnung, Resize und Redraw.
 
 ### 2.2 Wo der Drift liegt
@@ -182,11 +182,11 @@ Diese Themen bauen auf dem vereinheitlichten Lifecycle auf.
 
 ## 9. Referenzen
 
-- `crates/mapmap/src/window_manager.rs`
-- `crates/mapmap/src/orchestration/outputs.rs`
-- `crates/mapmap/src/app/loops/logic.rs`
-- `crates/mapmap/src/main.rs`
-- `crates/mapmap-core/src/output.rs`
-- `crates/mapmap-core/src/module/types/output.rs`
+- `crates/mapflow/src/window_manager.rs`
+- `crates/mapflow/src/orchestration/outputs.rs`
+- `crates/mapflow/src/app/loops/logic.rs`
+- `crates/mapflow/src/main.rs`
+- `crates/mapflow-core/src/output.rs`
+- `crates/mapflow-core/src/module/types/output.rs`
 - `docs/A1_SYSTEM/B1_ARCHITECTURE/DOC-C4_RENDER-QUEUE.md`
 - `docs/A3_PROJECT/B2_QUALITY/DOC-C10_MODULE_NODE_SYSTEM_AUDIT_2026-03-18.md`

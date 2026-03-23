@@ -16,13 +16,13 @@ Diese Doku analysiert den aktuellen IST-Zustand des Module-Canvas-Node-Systems i
 
 Primaere Referenzen:
 
-- `crates/mapmap-core/src/module/types/*`
-- `crates/mapmap-core/src/module_eval/*`
-- `crates/mapmap-core/src/trigger_system.rs`
-- `crates/mapmap-ui/src/editors/module_canvas/*`
-- `crates/mapmap/src/orchestration/*`
-- `crates/mapmap/src/app/loops/render.rs`
-- `crates/mapmap-media/src/pipeline.rs`
+- `crates/mapflow-core/src/module/types/*`
+- `crates/mapflow-core/src/module_eval/*`
+- `crates/mapflow-core/src/trigger_system.rs`
+- `crates/mapflow-ui/src/editors/module_canvas/*`
+- `crates/mapflow/src/orchestration/*`
+- `crates/mapflow/src/app/loops/render.rs`
+- `crates/mapflow-media/src/pipeline.rs`
 - `docs/A1_SYSTEM/B1_ARCHITECTURE/DOC-C4_RENDER-QUEUE.md`
 
 ## 2. Kurzfazit
@@ -30,7 +30,7 @@ Primaere Referenzen:
 Der Node-Stack ist funktional nur in einem Teilbereich konsistent:
 
 - Der Core modelliert deutlich mehr Node-Typen, Parameter und Socket-Varianten als das Canvas, der Inspector und der Renderpfad real bedienen.
-- Die derzeitige Runtime ist keine einheitliche "Render Queue", sondern ein Mix aus direkter Media-Orchestrierung, `render_ops` aus dem Evaluator und einer ungenutzten Frame-Pipeline im `mapmap-media`-Crate.
+- Die derzeitige Runtime ist keine einheitliche "Render Queue", sondern ein Mix aus direkter Media-Orchestrierung, `render_ops` aus dem Evaluator und einer ungenutzten Frame-Pipeline im `mapflow-media`-Crate.
 - Trigger, Link-System, Hue, NDI/Spout/LiveInput, Blend-Modi, Masken und mehrere Effekte sind nur teilweise oder gar nicht end-to-end verdrahtet.
 - Das derzeitige Connector-Modell ist index-basiert, zu lose typisiert und erlaubt ungueltige Verbindungen, die spaeter in Evaluator und Renderpfad zu stillen Fehlern fuehren.
 - Fuer einen belastbaren SOLL-Zustand braucht das System eine Schema-getriebene Node-Definition mit stabilen Socket-IDs, klaren Connector-Klassen und einer sauberen Trennung zwischen `Media`, `Control` und `Event`.
@@ -353,7 +353,7 @@ Der aktive Runtime-Pfad besteht aktuell aus drei Schichten:
 
 ### 5.2 Was zusaetzlich im Code existiert, aber nicht sichtbar verdrahtet ist
 
-- `mapmap-media/src/pipeline.rs` enthaelt `FramePipeline` und `FrameScheduler`.
+- `mapflow-media/src/pipeline.rs` enthaelt `FramePipeline` und `FrameScheduler`.
 - `DOC-C4_RENDER-QUEUE.md` beschreibt diese Pipeline als zentrale Architektur.
 - Im eigentlichen App-Lauf wurde jedoch kein aktiver Aufrufpfad auf diese Pipeline gefunden.
 
@@ -479,7 +479,7 @@ Beide Konzepte sind nicht sauber zusammengefuehrt:
 
 - `module_eval/triggers.rs` ist der aktive Evaluationspfad.
 - `trigger_system.rs` definiert ein zweites Trigger-System, das in der App-Laufzeit nicht sichtbar genutzt wird.
-- `mapmap-control/src/cue/triggers.rs` definiert zusaetzlich Cue-Trigger fuer MIDI/Time/OSC.
+- `mapflow-control/src/cue/triggers.rs` definiert zusaetzlich Cue-Trigger fuer MIDI/Time/OSC.
 
 Ergebnis:
 

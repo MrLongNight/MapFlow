@@ -187,7 +187,7 @@ Aktuell erledigt der Job:
 - Pruefung auf `git`, `cargo`, `rustup`, `LLVM/Clang` und `vcpkg`
 - Bootstrap von `vcpkg`, falls noetig
 - Installation der Manifest-Abhaengigkeiten fuer Windows
-- Release-Build von `mapmap` mit `audio,ffmpeg`
+- Release-Build von `mapflow` mit `audio,ffmpeg`
 - optional spaeter ignorierte GPU-Tests
 - optionale lokale visuelle Screenshot-Regressionstests
 
@@ -195,7 +195,7 @@ Lokaler Start fuer die visuellen Tests:
 
 ```powershell
 $env:MAPFLOW_VISUAL_CAPTURE_OUTPUT_DIR = "artifacts/visual-capture"
-cargo test -p mapmap --no-default-features --test visual_capture_tests -- --ignored --nocapture
+cargo test -p mapflow --no-default-features --test visual_capture_tests -- --ignored --nocapture
 ```
 
 Der vorbereitete Self-hosted-Job setzt diesen Ordner automatisch und kann die erzeugten

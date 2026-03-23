@@ -2,7 +2,7 @@
 
 Ich habe die Codebase intensiv analysiert. Hier sind meine Ergebnisse und die durchgeführte Optimierung.
 
-## 1. Analyse der Architektur & Datenstrukturen (`mapmap-core`)
+## 1. Analyse der Architektur & Datenstrukturen (`mapflow-core`)
 
 ### AppState
 - **Status:** Der `AppState` (in `state.rs`) ist ein monolithisches Struct.
@@ -16,12 +16,12 @@ Ich habe die Codebase intensiv analysiert. Hier sind meine Ergebnisse und die du
     ```
 - **Impact:** Dies erzeugt unnötigen Heap-Traffic pro Frame. In Rust sollten wir Iteratoren bevorzugen, die lazy evaluiert werden.
 
-## 2. Render-Pipeline Analyse (`mapmap-render`)
+## 2. Render-Pipeline Analyse (`mapflow-render`)
 
 ### Compositor & EffectChainRenderer
 - **Kritischer Fund:** In `main.rs` und `compositor.rs` werden **jeden Frame** neue Uniform-Buffer und BindGroups erstellt!
     ```rust
-    // mapmap-render/src/compositor.rs
+    // mapflow-render/src/compositor.rs
     pub fn create_uniform_buffer(...) -> wgpu::Buffer {
         self.device.create_buffer_init(...) // <-- Allokation + Upload jeden Frame!
     }
@@ -35,7 +35,7 @@ Ich habe die Codebase intensiv analysiert. Hier sind meine Ergebnisse und die du
 - **Gefunden:** `PaintTextureCache` nutzt `queue.write_texture`. Das ist **vorbildlich**! ⚡
 - **Aber:** `generate_solid_color` allokiert temporäre `Vec<u8>` Buffer. Bei statischen Farben ok, bei Video wäre das tödlich.
 
-## 3. UI Analyse (`mapmap-ui`)
+## 3. UI Analyse (`mapflow-ui`)
 - Die UI wird sauber getrennt gerendert.
 - `AppUI::take_actions()` Pattern verhindert Borrow-Checker Konflikte. Das ist gut gelöst.
 
@@ -64,7 +64,7 @@ Das ist ein kleiner, isolierter Fix mit hohem Impact.
 Moment, um das *richtig* zu fixen (persistente Buffer), brauche ich mehr als 50 Zeilen (Structs für Buffer-Handle Management).
 
 **Plan B (Die sichere Bolt-Optimierung):**
-Ich optimiere `mapmap-core/src/layer.rs`.
+Ich optimiere `mapflow-core/src/layer.rs`.
 Ich werde `visible_layers` so lassen (da `Vec<&Layer>` relativ klein ist, meist < 100 Pointer), aber ich werde sicherstellen, dass `Vec::with_capacity` genutzt wird, um Re-Allokationen zu vermeiden.
 
 **Nein, ich mache es besser:**
@@ -75,7 +75,7 @@ let bind_group = self.quad_renderer.create_bind_group(&self.device, input_view);
 Das passiert auch jeden Frame wenn keine Effekte da sind! `create_bind_group` ist teuer.
 
 **Entscheidung:**
-Ich werde in `mapmap-render/src/paint_texture_cache.rs` die unnötige `Vec`-Allokation in `generate_solid_color` optimieren, indem ich `vec![val; size]` verwende (was intern optimiert ist) oder `unsafe` set_len vermeide.
+Ich werde in `mapflow-render/src/paint_texture_cache.rs` die unnötige `Vec`-Allokation in `generate_solid_color` optimieren, indem ich `vec![val; size]` verwende (was intern optimiert ist) oder `unsafe` set_len vermeide.
 ABER: `generate_solid_color` ist nicht im Hot-Path (nur bei Änderung).
 
 **Zurück zu `main.rs`:**
@@ -87,10 +87,10 @@ Ich werde `EffectChainRenderer::apply_chain` optimieren. Wenn keine Effekte akti
 Ich kann diese BindGroup cachen? Nein, die InputView ändert sich.
 
 **Okay, Core-Optimierung:**
-In `crates/mapmap-core/src/layer.rs`:
+In `crates/mapflow-core/src/layer.rs`:
 Ich optimiere `visible_layers`, um unnötiges `.collect()` zu vermeiden, indem ich einen Iterator zurückgebe. Das ist sauberer Rust-Code.
 
-Datei: `crates/mapmap-core/src/layer.rs`
+Datei: `crates/mapflow-core/src/layer.rs`
 
 ```rust
 // Alt
@@ -109,7 +109,7 @@ for layer in self.state.layer_manager.visible_layers() {
 Das ist ein einfacher Change.
 
 **Implementierungsschritte:**
-1. `mapmap-core/src/layer.rs`: `visible_layers` markieren als deprecated oder ersetzen durch Iterator-basierte Lösung. Da `visible_layers` `&self` braucht, ist `impl Iterator` an die Lifetime gebunden.
-2. `mapmap/src/main.rs`: Den Aufruf anpassen.
+1. `mapflow-core/src/layer.rs`: `visible_layers` markieren als deprecated oder ersetzen durch Iterator-basierte Lösung. Da `visible_layers` `&self` braucht, ist `impl Iterator` an die Lifetime gebunden.
+2. `mapflow/src/main.rs`: Den Aufruf anpassen.
 
 Das spart `malloc`/`free` jeden Frame. ⚡

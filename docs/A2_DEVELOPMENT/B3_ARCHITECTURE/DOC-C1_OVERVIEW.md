@@ -10,27 +10,27 @@ Das Projekt ist als Cargo Workspace organisiert, wobei jede Funktionalität in e
 
 | Crate | Beschreibung |
 |-------|--------------|
-| `mapmap` | **Main Application**. Der Einstiegspunkt. Initialisiert Plugins und startet die App. |
-| `mapmap-core` | **Logik-Kern**. Enthält Datenstrukturen (Layers, Mappings, Paints), State-Management und die Geschäftslogik. Unabhängig von UI und Rendering. |
-| `mapmap-render` | **Grafik-Engine**. Zuständig für die WGPU-Pipeline, Shader-Verwaltung, Compositing, Warping und Effekte. |
-| `mapmap-ui` | **Benutzeroberfläche**. Basiert auf `egui`. Enthält alle Panels, den Node-Editor und die Timeline. |
-| `mapmap-media` | **Medien-Playback**. Video-Decoding (FFmpeg/MPV), Audio-Streaming und Bild-Loading. |
-| `mapmap-control` | **Externe Steuerung**. OSC, MIDI, WebSocket Server zur Fernsteuerung der App. |
-| `mapmap-io` | **Input/Output**. NDI, Spout, Dateisystem-Zugriffe. |
-| `mapmap-mcp` | **AI Interface**. Model Context Protocol Server für die Integration von AI-Agenten. |
+| `mapflow` | **Main Application**. Der Einstiegspunkt. Initialisiert Plugins und startet die App. |
+| `mapflow-core` | **Logik-Kern**. Enthält Datenstrukturen (Layers, Mappings, Paints), State-Management und die Geschäftslogik. Unabhängig von UI und Rendering. |
+| `mapflow-render` | **Grafik-Engine**. Zuständig für die WGPU-Pipeline, Shader-Verwaltung, Compositing, Warping und Effekte. |
+| `mapflow-ui` | **Benutzeroberfläche**. Basiert auf `egui`. Enthält alle Panels, den Node-Editor und die Timeline. |
+| `mapflow-media` | **Medien-Playback**. Video-Decoding (FFmpeg/MPV), Audio-Streaming und Bild-Loading. |
+| `mapflow-control` | **Externe Steuerung**. OSC, MIDI, WebSocket Server zur Fernsteuerung der App. |
+| `mapflow-io` | **Input/Output**. NDI, Spout, Dateisystem-Zugriffe. |
+| `mapflow-mcp` | **AI Interface**. Model Context Protocol Server für die Integration von AI-Agenten. |
 
 ---
 
 ## Datenfluss & Pipeline
 
-### 1. Layer & Mapping System (`mapmap-core`)
+### 1. Layer & Mapping System (`mapflow-core`)
 Das visuelle Ergebnis entsteht durch die Kombination von:
 *   **Paints**: Die Quellen (Videos, Bilder, Shader, Live-Inputs).
 *   **Layers**: Container für Paints mit Transformation (Pos, Rot, Scale), Opacity und Blend-Modes.
 *   **Mappings**: Die Projektionsflächen (Meshes, Quads), auf die Layer projiziert werden.
 *   **Trigger**: Signale (Audio, MIDI, Random), die Parameter steuern via Node-Graph.
 
-### 2. Render Pipeline (`mapmap-render`)
+### 2. Render Pipeline (`mapflow-render`)
 Die Rendering-Engine arbeitet in mehreren Pässen:
 1.  **Media Upload**: Dekodierte Video-Frames werden in GPU-Texturen geladen.
 2.  **Layer Composition**: Layer werden basierend auf Blend-Modes und Masken in einen Offscreen-Buffer gerendert.

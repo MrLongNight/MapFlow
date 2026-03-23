@@ -33,7 +33,7 @@ Bei VP8/VP9 tritt im Medienpfad der Fehler `Decoder error: Input changed` auf. D
 
 ### Beobachteter Ist-Zustand
 
-- In `crates/mapmap-media/src/decoder.rs` existiert der konkrete Fehlerpfad:
+- In `crates/mapflow-media/src/decoder.rs` existiert der konkrete Fehlerpfad:
   - `Decoder error: Input changed? Scaler run failed: {}`
 - Der `seek()`-Pfad flusht den Decoder bereits, aber es gibt aktuell keinen belastbaren Reinit-Pfad fuer geaenderte Frame- oder Scaler-Parameter.
 - Der Task ist auf Stabilisierung des bestehenden Decoder-Pfads ausgerichtet, nicht auf neue Codec-Features.
@@ -53,7 +53,7 @@ Bei VP8/VP9 tritt im Medienpfad der Fehler `Decoder error: Input changed` auf. D
 
 ### Primaere Dateien
 
-- `crates/mapmap-media/src/decoder.rs`
+- `crates/mapflow-media/src/decoder.rs`
 - bei Bedarf angrenzende Playback-/Reload-Aufrufer im App-Medienpfad
 
 ### Empfohlene Umsetzung
@@ -102,10 +102,10 @@ Aktuell existieren mehrere Undo/Redo-Ansatzpunkte parallel, aber der im Module-C
 
 ### Beobachteter Ist-Zustand
 
-- `crates/mapmap-core/src/history.rs` verwaltet `AppState`-Snapshots.
-- `crates/mapmap-ui/src/core/undo_redo.rs` enthaelt ein separates Command-System.
+- `crates/mapflow-core/src/history.rs` verwaltet `AppState`-Snapshots.
+- `crates/mapflow-ui/src/core/undo_redo.rs` enthaelt ein separates Command-System.
 - Der real genutzte Module-Canvas-Pfad arbeitet ueber `ModuleCanvas.undo_stack` / `redo_stack`.
-- `CanvasAction` in `crates/mapmap-ui/src/editors/module_canvas/types.rs` kennt derzeit vor allem:
+- `CanvasAction` in `crates/mapflow-ui/src/editors/module_canvas/types.rs` kennt derzeit vor allem:
   - `AddPart`
   - `DeletePart`
   - `MovePart`
@@ -127,7 +127,7 @@ Fuer `MF-056` ist der aktive Module-Canvas-History-Pfad die kanonische Implement
 Das heisst konkret:
 - `CanvasAction` wird erweitert.
 - Kein app-weites Undo/Redo-Rewrite in diesem Task.
-- `mapmap-core/src/history.rs` und `mapmap-ui/src/core/undo_redo.rs` werden hoechstens als Referenz betrachtet, aber nicht als Pflicht-Migrationsziel fuer diesen Task.
+- `mapflow-core/src/history.rs` und `mapflow-ui/src/core/undo_redo.rs` werden hoechstens als Referenz betrachtet, aber nicht als Pflicht-Migrationsziel fuer diesen Task.
 
 ### Nicht-Ziele
 
@@ -137,15 +137,15 @@ Das heisst konkret:
 
 ### Primaere Dateien
 
-- `crates/mapmap-ui/src/editors/module_canvas/types.rs`
-- `crates/mapmap-ui/src/editors/module_canvas/state.rs`
-- `crates/mapmap-ui/src/editors/module_canvas/controller.rs`
-- `crates/mapmap-ui/src/editors/module_canvas/renderer.rs`
-- `crates/mapmap-ui/src/editors/module_canvas/inspector/source.rs`
-- `crates/mapmap-ui/src/editors/module_canvas/inspector/effect.rs`
-- `crates/mapmap-ui/src/editors/module_canvas/inspector/layer.rs`
-- `crates/mapmap-ui/src/editors/module_canvas/inspector/output.rs`
-- `crates/mapmap-ui/src/editors/module_canvas/inspector/trigger.rs`
+- `crates/mapflow-ui/src/editors/module_canvas/types.rs`
+- `crates/mapflow-ui/src/editors/module_canvas/state.rs`
+- `crates/mapflow-ui/src/editors/module_canvas/controller.rs`
+- `crates/mapflow-ui/src/editors/module_canvas/renderer.rs`
+- `crates/mapflow-ui/src/editors/module_canvas/inspector/source.rs`
+- `crates/mapflow-ui/src/editors/module_canvas/inspector/effect.rs`
+- `crates/mapflow-ui/src/editors/module_canvas/inspector/layer.rs`
+- `crates/mapflow-ui/src/editors/module_canvas/inspector/output.rs`
+- `crates/mapflow-ui/src/editors/module_canvas/inspector/trigger.rs`
 
 ### Empfohlene Umsetzung
 
@@ -199,7 +199,7 @@ Die NDI-Discovery ist strategisch beschrieben und in Teilen bereits im Code vorh
 ### Beobachteter Ist-Zustand
 
 - `DOC-C11_VIDEO_IO_STRATEGY.md` beschreibt die Architektur auf Strategie-Ebene.
-- `crates/mapmap-io/src/ndi/mod.rs` enthaelt bereits:
+- `crates/mapflow-io/src/ndi/mod.rs` enthaelt bereits:
   - `discover_sources`
   - `discover_sources_async`
   - `connect`
@@ -207,8 +207,8 @@ Die NDI-Discovery ist strategisch beschrieben und in Teilen bereits im Code vorh
   - `ndi_sources`
   - `ndi_discovery_rx`
   - `pending_ndi_connect`
-- `UIAction::ConnectNdiSource` existiert bereits in `crates/mapmap-ui/src/lib.rs`.
-- Die eigentliche Runtime-Verarbeitung des Connects existiert bereits in `crates/mapmap/src/app/actions.rs`.
+- `UIAction::ConnectNdiSource` existiert bereits in `crates/mapflow-ui/src/lib.rs`.
+- Die eigentliche Runtime-Verarbeitung des Connects existiert bereits in `crates/mapflow/src/app/actions.rs`.
 - `pending_ndi_connect` wird aktuell jedoch nicht sichtbar weiterverarbeitet.
 - NDI-Inspector-Logik ist mindestens in `inspector/source.rs` und `inspector/mod.rs` doppelt bzw. ueberlappend vorhanden.
 
@@ -220,7 +220,7 @@ Die NDI-Discovery ist strategisch beschrieben und in Teilen bereits im Code vorh
 
 ### Leitentscheidung
 
-Fuer `MF-021` ist `crates/mapmap-ui/src/editors/module_canvas/inspector/source.rs` die kanonische UI-Stelle fuer `SourceType::NdiInput`.
+Fuer `MF-021` ist `crates/mapflow-ui/src/editors/module_canvas/inspector/source.rs` die kanonische UI-Stelle fuer `SourceType::NdiInput`.
 
 Das heisst konkret:
 - Keine zweite parallele NDI-Inspector-Implementierung pflegen.
@@ -235,12 +235,12 @@ Das heisst konkret:
 
 ### Primaere Dateien
 
-- `crates/mapmap-io/src/ndi/mod.rs`
-- `crates/mapmap-ui/src/editors/module_canvas/inspector/source.rs`
-- `crates/mapmap-ui/src/editors/module_canvas/inspector/mod.rs`
-- `crates/mapmap-ui/src/editors/module_canvas/state.rs`
-- `crates/mapmap-ui/src/lib.rs`
-- `crates/mapmap/src/app/actions.rs`
+- `crates/mapflow-io/src/ndi/mod.rs`
+- `crates/mapflow-ui/src/editors/module_canvas/inspector/source.rs`
+- `crates/mapflow-ui/src/editors/module_canvas/inspector/mod.rs`
+- `crates/mapflow-ui/src/editors/module_canvas/state.rs`
+- `crates/mapflow-ui/src/lib.rs`
+- `crates/mapflow/src/app/actions.rs`
 
 ### Empfohlene Umsetzung
 

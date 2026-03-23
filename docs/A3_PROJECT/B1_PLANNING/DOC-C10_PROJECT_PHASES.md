@@ -63,7 +63,7 @@ The goal of this phase was to migrate the legacy ImGui interface to a profession
 ### Packaging & Distribution
 
 - [x] **App Icon Embedding**
-  - Uses `winres` to embed `mapmap.ico` into the Windows executable.
+  - Uses `winres` to embed `mapflow.ico` into the Windows executable.
 - [ ] **Windows Installer (WiX)**
   - Basic configuration (`main.wxs`) exists.
   - Needs verification of DLL bundling (FFmpeg) and shortcut creation.
@@ -93,8 +93,8 @@ This phase enables distributed output across multiple PCs, supporting profession
 
 The master PC renders all content and streams the finished video to player clients.
 
-- [ ] **NDI Integration** (`mapmap-ndi/`)
-  - [ ] Create new crate `mapmap-ndi`
+- [ ] **NDI Integration** (`mapflow-ndi/`)
+  - [ ] Create new crate `mapflow-ndi`
   - [ ] Integrate `grafton-ndi` Rust bindings
   - [ ] Implement NDI Sender (wgpu Texture → NDI)
   - [ ] Implement NDI Receiver (NDI → Fullscreen)
@@ -116,8 +116,8 @@ The master PC renders all content and streams the finished video to player clien
 
 For very old hardware (2010+ era), using hardware-accelerated H.264 decoding.
 
-- [ ] **H.264/RTSP Streaming** (`mapmap-legacy/`)
-  - [ ] Create new crate `mapmap-legacy`
+- [ ] **H.264/RTSP Streaming** (`mapflow-legacy/`)
+  - [ ] Create new crate `mapflow-legacy`
   - [ ] H.264 Encoder (x264 software / NvEnc hardware)
   - [ ] RTSP Server for stream distribution
   - [ ] Hardware decoder support (DXVA, VA-API, VideoToolbox)
@@ -151,7 +151,7 @@ Budget-friendly player using Raspberry Pi hardware.
 
 Clients render independently, receiving only control commands.
 
-- [ ] **Control Protocol** (`mapmap-sync/`)
+- [ ] **Control Protocol** (`mapflow-sync/`)
   - [ ] OSC-based control messaging
   - [ ] Timecode synchronization (NTP-based)
   - [ ] Frame-sync via hardware genlock (optional)

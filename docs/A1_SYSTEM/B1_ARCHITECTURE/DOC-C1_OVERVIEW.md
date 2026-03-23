@@ -11,17 +11,17 @@ MapFlow basiert auf einer modernen, modularen Architektur in **Rust**, die **Bev
 ```mermaid
 graph TD
     %% Crates
-    Main[mapmap] --> UI[mapmap-ui]
-    Main --> Bevy[mapmap-bevy]
-    Main --> Media[mapmap-media]
-    Main --> Control[mapmap-control]
-    Main --> Render[mapmap-render]
+    Main[mapflow] --> UI[mapflow-ui]
+    Main --> Bevy[mapflow-bevy]
+    Main --> Media[mapflow-media]
+    Main --> Control[mapflow-control]
+    Main --> Render[mapflow-render]
 
-    UI --> Core[mapmap-core]
+    UI --> Core[mapflow-core]
     Render --> Core
     Bevy --> Core
     Control --> Core
-    Media --> IO[mapmap-io]
+    Media --> IO[mapflow-io]
     IO --> Core
 
     %% Externe Ressourcen
@@ -32,15 +32,15 @@ graph TD
 
 | Crate | Logische Rolle | Wichtigste Typen / Zuständigkeiten |
 | :--- | :--- | :--- |
-| `mapmap` | **Main App** | Einstiegspunkt, Event-Loop, App-State Orchestrierung. |
-| `mapmap-core` | **Logik-Kern** | Datenmodelle (Layer, Mapping, Paint), Graph-Evaluierung, Math. |
-| `mapmap-render` | **Renderer** | WGPU-Abstraktion, Shader-Verwaltung, Compositing, Texture-Pooling. |
-| `mapmap-ui` | **User Interface** | Egui-Implementierung, Panels, Node-Editor, Timeline. |
-| `mapmap-media` | **Media Engine** | Frame-Pipeline, Video-Decoding (FFmpeg), Bild-Loading. |
-| `mapmap-control` | **Peripherie** | MIDI, OSC, Philips Hue, Shortcuts. |
-| `mapmap-io` | **I/O & Netz** | NDI, Spout, Datei-System, Persistenz. |
-| `mapmap-bevy` | **3D/Particles** | Bevy ECS Integration für komplexe 3D-Inhalte. |
-| `mapmap-mcp` | **AI Interface** | Model Context Protocol Server für Agenten-Integration. |
+| `mapflow` | **Main App** | Einstiegspunkt, Event-Loop, App-State Orchestrierung. |
+| `mapflow-core` | **Logik-Kern** | Datenmodelle (Layer, Mapping, Paint), Graph-Evaluierung, Math. |
+| `mapflow-render` | **Renderer** | WGPU-Abstraktion, Shader-Verwaltung, Compositing, Texture-Pooling. |
+| `mapflow-ui` | **User Interface** | Egui-Implementierung, Panels, Node-Editor, Timeline. |
+| `mapflow-media` | **Media Engine** | Frame-Pipeline, Video-Decoding (FFmpeg), Bild-Loading. |
+| `mapflow-control` | **Peripherie** | MIDI, OSC, Philips Hue, Shortcuts. |
+| `mapflow-io` | **I/O & Netz** | NDI, Spout, Datei-System, Persistenz. |
+| `mapflow-bevy` | **3D/Particles** | Bevy ECS Integration für komplexe 3D-Inhalte. |
+| `mapflow-mcp` | **AI Interface** | Model Context Protocol Server für Agenten-Integration. |
 
 ---
 

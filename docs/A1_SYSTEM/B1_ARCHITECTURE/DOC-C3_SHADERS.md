@@ -16,4 +16,4 @@ Der Shader-Graph in der UI erlaubt es, visuelle Knoten zu Effekten zu kombiniere
 - **Uniforms**: Parameter wie `Speed`, `Intensity` oder `Color` werden als Uniform-Buffer an den Shader übergeben.
 
 ## 4. Hot Reloading
-Änderungen an den `.wgsl` Dateien im `shaders/` Verzeichnis werden vom `mapmap-render` automatisch erkannt und zur Laufzeit neu geladen.
+Änderungen an den `.wgsl` Dateien im `shaders/` Verzeichnis werden vom `mapflow-render` automatisch erkannt und zur Laufzeit neu geladen.

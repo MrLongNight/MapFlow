@@ -64,7 +64,7 @@ Recommendation:
 Tasks:
 - validate workspace build on macOS
 - review shared `winit` feature flags
-- review `mapmap-bevy` feature flags
+- review `mapflow-bevy` feature flags
 - validate `rfd`, `cpal`, `midir`, `ffmpeg-next`, and `libmpv2` behavior on macOS
 - feature-gate or disable unfinished platform paths
 
@@ -114,7 +114,7 @@ Deliverables:
 Estimate: 3-5 days
 
 Deliverables:
-- `cargo build -p mapmap` works on macOS
+- `cargo build -p mapflow` works on macOS
 - compile blockers documented or fixed
 - unfinished platform features gated
 
@@ -158,9 +158,9 @@ Deliverables:
 - [ ] Add macOS CI job to `.github/workflows/CICD-DevFlow_Job01_Validation.yml`
 - [ ] Add macOS release artifact job to `.github/workflows/CICD-MainFlow_Job03_Release.yml`
 - [ ] Validate `Cargo.toml` shared `winit` flags on macOS
-- [ ] Validate `crates/mapmap-bevy/Cargo.toml` feature set on macOS
-- [ ] Verify `cargo build --release -p mapmap` on Apple Silicon
-- [ ] Verify `cargo build --release -p mapmap` on Intel macOS
+- [ ] Validate `crates/mapflow-bevy/Cargo.toml` feature set on macOS
+- [ ] Verify `cargo build --release -p mapflow` on Apple Silicon
+- [ ] Verify `cargo build --release -p mapflow` on Intel macOS
 
 ### Runtime backlog
 - [ ] Test startup and render loop on Metal
@@ -183,7 +183,7 @@ Deliverables:
 
 ### Optional parity backlog
 - [ ] Add Syphon to app-level source/output model
-- [ ] Implement real `mapmap-io` Syphon support
+- [ ] Implement real `mapflow-io` Syphon support
 - [ ] Expose Syphon in UI only after runtime support is real
 - [ ] Re-evaluate Virtual Camera after beta feedback
 
@@ -244,15 +244,15 @@ Rationale:
 - Goal: make the workspace build cleanly on macOS with a clearly defined feature set.
 - Primary files:
   - `Cargo.toml`
-  - `crates/mapmap/Cargo.toml`
-  - `crates/mapmap-bevy/Cargo.toml`
-  - `crates/mapmap-ui/Cargo.toml`
+  - `crates/mapflow/Cargo.toml`
+  - `crates/mapflow-bevy/Cargo.toml`
+  - `crates/mapflow-ui/Cargo.toml`
 - Required outputs:
   - documented macOS build command
   - compile blockers removed or explicitly feature-gated
   - macOS build notes added where needed
 - Definition of done:
-  - `cargo build -p mapmap` is expected to work on macOS
+  - `cargo build -p mapflow` is expected to work on macOS
   - no unfinished macOS blockers remain hidden behind default settings
 
 ### MF-066-MACOS-CI-VALIDATION
@@ -271,9 +271,9 @@ Rationale:
 ### MF-063-MACOS-RUNTIME-STABILIZATION
 - Goal: make the compiled app launch and behave predictably on macOS.
 - Primary files:
-  - `crates/mapmap/src/main.rs`
-  - `crates/mapmap/src/window_manager.rs`
-  - `crates/mapmap/src/orchestration/outputs.rs`
+  - `crates/mapflow/src/main.rs`
+  - `crates/mapflow/src/window_manager.rs`
+  - `crates/mapflow/src/orchestration/outputs.rs`
   - platform-relevant UI/runtime files as needed
 - Required outputs:
   - stable startup
@@ -286,8 +286,8 @@ Rationale:
 ### MF-064-MACOS-MEDIA-FFMPEG-PATH
 - Goal: establish a stable macOS media path even if it starts with software decode only.
 - Primary files:
-  - `crates/mapmap-media/Cargo.toml`
-  - `crates/mapmap-media/src/decoder.rs`
+  - `crates/mapflow-media/Cargo.toml`
+  - `crates/mapflow-media/src/decoder.rs`
   - build and install docs if dependency handling changes
 - Required outputs:
   - defined FFmpeg strategy for macOS
@@ -299,8 +299,8 @@ Rationale:
 ### MF-065-MACOS-AUDIO-VALIDATION
 - Goal: validate whether audio should ship enabled, gated, or deferred on macOS.
 - Primary files:
-  - `crates/mapmap-core/src/audio/`
-  - `crates/mapmap-ui/Cargo.toml`
+  - `crates/mapflow-core/src/audio/`
+  - `crates/mapflow-ui/Cargo.toml`
   - relevant docs around build and runtime support
 - Required outputs:
   - clear macOS audio support decision
@@ -325,8 +325,8 @@ Rationale:
 ### MF-068-MACOS-NATIVE-INTEROP
 - Goal: add optional macOS-native interop only after the base app is already stable.
 - Primary files:
-  - `crates/mapmap-io/src/syphon/mod.rs`
-  - `crates/mapmap-io/src/virtual_camera/mod.rs`
+  - `crates/mapflow-io/src/syphon/mod.rs`
+  - `crates/mapflow-io/src/virtual_camera/mod.rs`
   - app-level source/output model and UI wiring
 - Required outputs:
   - explicit scope decision for Syphon and Virtual Camera

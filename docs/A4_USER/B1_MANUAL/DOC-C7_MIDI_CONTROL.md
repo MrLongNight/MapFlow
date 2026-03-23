@@ -50,7 +50,7 @@ MapFlow unterstützt MIDI-Eingabe für:
 │         ▼                                                               │
 │  ┌──────────────────────────────────────────────────────────────────┐   │
 │  │ midir Crate (Rust)                                               │   │
-│  │ Datei: mapmap-control/src/midi/input.rs                          │   │
+│  │ Datei: mapflow-control/src/midi/input.rs                          │   │
 │  │ Struct: MidiInputHandler                                         │   │
 │  │ - new() → Initialisierung                                        │   │
 │  │ - list_ports() → Alle verfügbaren Ports                          │   │
@@ -224,23 +224,23 @@ Das Overlay kann über das Menü **View** → **MIDI Controller Overlay** (oder 
 
 | Datei | Zweck |
 |-------|-------|
-| `mapmap-control/src/midi/mod.rs` | MIDI-Modul Root, MidiMessage enum |
-| `mapmap-control/src/midi/input.rs` | MidiInputHandler (Connect, Poll) |
-| `mapmap-control/src/midi/mapping.rs` | MidiMapping, MidiMappingKey |
-| `mapmap-control/src/midi/midi_learn.rs` | MidiLearnManager, MidiLearnState |
-| `mapmap-control/src/midi/ecler_nuo4.rs` | 89 vordefinierte Mappings |
-| `mapmap-ui/src/controller_overlay_panel.rs` | Overlay UI |
-| `mapmap-ui/src/module_canvas.rs` | MIDI Learn für Nodes |
-| `mapmap/src/main.rs` Zeile 451-460 | MIDI Message Routing |
+| `mapflow-control/src/midi/mod.rs` | MIDI-Modul Root, MidiMessage enum |
+| `mapflow-control/src/midi/input.rs` | MidiInputHandler (Connect, Poll) |
+| `mapflow-control/src/midi/mapping.rs` | MidiMapping, MidiMappingKey |
+| `mapflow-control/src/midi/midi_learn.rs` | MidiLearnManager, MidiLearnState |
+| `mapflow-control/src/midi/ecler_nuo4.rs` | 89 vordefinierte Mappings |
+| `mapflow-ui/src/controller_overlay_panel.rs` | Overlay UI |
+| `mapflow-ui/src/module_canvas.rs` | MIDI Learn für Nodes |
+| `mapflow/src/main.rs` Zeile 451-460 | MIDI Message Routing |
 | `resources/controllers/ecler_nuo4/elements.json` | Element-Positionen/MIDI-Config |
 
 ### Feature Flags
 
 ```toml
-# In crates/mapmap/Cargo.toml
+# In crates/mapflow/Cargo.toml
 [features]
 default = ["audio", "midi"]  # MIDI ist standardmäßig aktiviert
-midi = ["mapmap-control/midi", "mapmap-ui/midi"]
+midi = ["mapflow-control/midi", "mapflow-ui/midi"]
 ```
 
 ### Structs/Enums

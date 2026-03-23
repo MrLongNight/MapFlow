@@ -22,7 +22,7 @@ Ziel ist die Integration von Philips Hue Leuchten in MapFlow. Anders als bei ein
 ## 3. Architektur-Integration in MapFlow
 
 ### 3.1 Modul-Struktur
-Neues Modul in `mapmap-control`: `crates/mapmap-control/src/hue/`
+Neues Modul in `mapflow-control`: `crates/mapflow-control/src/hue/`
 *   `bridge.rs`: Discovery und Auth-Flow.
 *   `stream.rs`: Der DTLS-Client und Loop.
 *   `mapping.rs`: Konvertierung von MapFlow-Farben (RGB) in Hue-Commands.

@@ -16,18 +16,18 @@ Wichtig:
 
 Primaere Implementierungsstellen:
 
-- `crates/mapmap-core/src/module/types/socket.rs`
-- `crates/mapmap-core/src/module/types/schema.rs`
-- `crates/mapmap-core/src/module/types/module.rs`
-- `crates/mapmap-core/src/module/manager.rs`
-- `crates/mapmap-core/src/module_eval/evaluator/mod.rs`
-- `crates/mapmap/src/app/core/app_struct.rs`
-- `crates/mapmap/src/orchestration/evaluation.rs`
-- `crates/mapmap/src/app/loops/logic.rs`
-- `crates/mapmap/src/app/loops/render/content.rs`
-- `crates/mapmap/src/app/loops/render/mod.rs`
-- `crates/mapmap/src/app/loops/render/previews.rs`
-- `crates/mapmap/src/orchestration/media.rs`
+- `crates/mapflow-core/src/module/types/socket.rs`
+- `crates/mapflow-core/src/module/types/schema.rs`
+- `crates/mapflow-core/src/module/types/module.rs`
+- `crates/mapflow-core/src/module/manager.rs`
+- `crates/mapflow-core/src/module_eval/evaluator/mod.rs`
+- `crates/mapflow/src/app/core/app_struct.rs`
+- `crates/mapflow/src/orchestration/evaluation.rs`
+- `crates/mapflow/src/app/loops/logic.rs`
+- `crates/mapflow/src/app/loops/render/content.rs`
+- `crates/mapflow/src/app/loops/render/mod.rs`
+- `crates/mapflow/src/app/loops/render/previews.rs`
+- `crates/mapflow/src/orchestration/media.rs`
 
 Ergaenzende Architekturreferenz:
 
@@ -37,12 +37,12 @@ Ergaenzende Architekturreferenz:
 
 Es gibt jetzt zwei klar getrennte Ebenen:
 
-1. `mapmap-media::FramePipeline`
+1. `mapflow-media::FramePipeline`
    - dekodiert und uploadet Media-Frames
    - ist ein interner Source-Transport
    - ist **nicht** die globale Render Queue
 
-2. `mapmap::RuntimeRenderQueue`
+2. `mapflow::RuntimeRenderQueue`
    - ist die visuelle Queue fuer den aktuellen Frame
    - enthaelt `RuntimeRenderQueueItem { module_id, render_op }`
    - wird pro Frame aus den Evaluator-Ergebnissen neu aufgebaut
@@ -51,7 +51,7 @@ Es gibt jetzt zwei klar getrennte Ebenen:
 
 ### 4.1 Graph Repair
 
-In `crates/mapmap/src/app/loops/logic.rs` gilt:
+In `crates/mapflow/src/app/loops/logic.rs` gilt:
 
 - Wenn `graph_revision` geaendert wurde, ruft die App vor der Evaluation `ModuleManager::repair_modules(...)` auf.
 - Dadurch werden inkonsistente Socket-Schemata, ungultige Trigger-Mappings und kaputte oder doppelte Connections bereinigt.
@@ -59,7 +59,7 @@ In `crates/mapmap/src/app/loops/logic.rs` gilt:
 
 ### 4.2 Evaluation
 
-In `crates/mapmap/src/orchestration/evaluation.rs`:
+In `crates/mapflow/src/orchestration/evaluation.rs`:
 
 - `ModuleEvaluator::evaluate(...)` liefert `render_ops` pro Modul.
 - Daraus baut die App die konsolidierte `RuntimeRenderQueue`.
@@ -67,14 +67,14 @@ In `crates/mapmap/src/orchestration/evaluation.rs`:
 
 ### 4.3 Rendering
 
-In `crates/mapmap/src/app/loops/render/content.rs`:
+In `crates/mapflow/src/app/loops/render/content.rs`:
 
 - Der Render-Loop filtert `RuntimeRenderQueueItem`s pro Output.
 - Danach werden Effekte, Mesh-Rendering und Output-spezifische Post-Schritte angewandt.
 
 ### 4.4 Media
 
-In `crates/mapmap/src/orchestration/media.rs`:
+In `crates/mapflow/src/orchestration/media.rs`:
 
 - Media-Player und GPU-Uploads laufen weiterhin getrennt.
 - Die Render Queue referenziert nur die bereits verfuegbaren Texturen.
@@ -171,11 +171,11 @@ Die neue Basis ist implementiert, aber der Umbau ist noch nicht vollstaendig:
 
 ### 10.1 Start- und Stabilitaetsfixes 2026-03-19
 
-- `crates/mapmap/build.rs` kopiert FFmpeg-Runtime-DLLs jetzt bevorzugt aus `vcpkg_installed/x64-windows/bin` und validiert PE-Header, bevor Dateien in `target/<profile>` uebernommen werden.
-- `crates/mapmap-bevy/src/lib.rs` deaktiviert im eingebetteten Runner explizit `bevy::winit::WinitPlugin`, damit MapFlow und Bevy nicht konkurrierende Event-Loops erzeugen.
-- `crates/mapmap/src/app/loops/render/mod.rs` erhoeht `frame_counter` wieder im primaeren Renderpfad, sodass `--exit-after-frames` im Automation-Modus tatsaechlich greift.
-- `crates/mapmap-bevy/src/systems.rs` schliesst GPU-Readback-Mappings jetzt innerhalb desselben Frames ab und entmappt den Buffer deterministisch, statt gemappte Buffer in spaeteren Frames wiederzuverwenden.
-- `crates/mapmap/src/app/core/init.rs` erzeugt die `composite`-Textur jetzt mit `wgpu::TextureUsages::COPY_SRC`, sodass der Automation-Screenshot-Pfad keine WGPU-Validierungspanik mehr ausloest.
+- `crates/mapflow/build.rs` kopiert FFmpeg-Runtime-DLLs jetzt bevorzugt aus `vcpkg_installed/x64-windows/bin` und validiert PE-Header, bevor Dateien in `target/<profile>` uebernommen werden.
+- `crates/mapflow-bevy/src/lib.rs` deaktiviert im eingebetteten Runner explizit `bevy::winit::WinitPlugin`, damit MapFlow und Bevy nicht konkurrierende Event-Loops erzeugen.
+- `crates/mapflow/src/app/loops/render/mod.rs` erhoeht `frame_counter` wieder im primaeren Renderpfad, sodass `--exit-after-frames` im Automation-Modus tatsaechlich greift.
+- `crates/mapflow-bevy/src/systems.rs` schliesst GPU-Readback-Mappings jetzt innerhalb desselben Frames ab und entmappt den Buffer deterministisch, statt gemappte Buffer in spaeteren Frames wiederzuverwenden.
+- `crates/mapflow/src/app/core/init.rs` erzeugt die `composite`-Textur jetzt mit `wgpu::TextureUsages::COPY_SRC`, sodass der Automation-Screenshot-Pfad keine WGPU-Validierungspanik mehr ausloest.
 - Verifiziert am 2026-03-19:
   - `target/debug/MapFlow.exe --help` -> `EXIT=0`
   - `target/debug/MapFlow.exe --mode automation --exit-after-frames 1` -> `EXIT=0`
@@ -185,7 +185,7 @@ Die neue Basis ist implementiert, aber der Umbau ist noch nicht vollstaendig:
 
 - Der Runtime-Pfad fuer Output-Fenster ist noch nicht vollstaendig vereinheitlicht.
 - `sync_output_windows(...)` ist aktuell der aktive Projector-Window-Pfad.
-- `crates/mapmap/src/window_manager.rs` enthaelt dabei nicht nur tote Altlasten, sondern auch vorbereitete Lifecycle-Infrastruktur.
+- `crates/mapflow/src/window_manager.rs` enthaelt dabei nicht nur tote Altlasten, sondern auch vorbereitete Lifecycle-Infrastruktur.
 - Der geplante Soll-Zustand fuer `OutputManager`, `Projector`-Nodes und `WindowManager` ist in `DOC-C5_OUTPUT_WINDOW_LIFECYCLE.md` beschrieben.
 
 ## 11. Naechste Ausbaupunkte

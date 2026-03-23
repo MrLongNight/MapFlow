@@ -5,7 +5,7 @@ address space used in MapFlow.
 
 ## Overview
 
--   **Namespace:** All MapFlow commands are prefixed with `/mapmap`.
+-   **Namespace:** All MapFlow commands are prefixed with `/mapflow`.
 -   **Data Types:** OSC arguments are specified in brackets, e.g., `[f32]`. Common types include:
     -   `[bang]`: An OSC message with no arguments.
     -   `[bool]`: Boolean value (`true` or `false`).
@@ -18,15 +18,15 @@ address space used in MapFlow.
 
 ## 1. Layer Controls
 
-Address layers by their unique ID (e.g., `/mapmap/layer/1/...`).
+Address layers by their unique ID (e.g., `/mapflow/layer/1/...`).
 
 | Address                       | Arguments                            | Description                                                 |
 | ----------------------------- | ------------------------------------ | ----------------------------------------------------------- |
-| `/mapmap/layer/{id}/opacity`  | `[f32: 0.0-1.0]`                     | Sets the opacity for the specified layer.                   |
-| `/mapmap/layer/{id}/visibility`| `[bool]`                             | Toggles the visibility of the layer.                        |
-| `/mapmap/layer/{id}/position` | `[f32, f32]`                         | Sets the X and Y position of the layer.                     |
-| `/mapmap/layer/{id}/rotation` | `[f32]`                              | Sets the rotation in degrees.                               |
-| `/mapmap/layer/{id}/scale`    | `[f32]`                              | Sets the uniform scale.                                     |
+| `/mapflow/layer/{id}/opacity`  | `[f32: 0.0-1.0]`                     | Sets the opacity for the specified layer.                   |
+| `/mapflow/layer/{id}/visibility`| `[bool]`                             | Toggles the visibility of the layer.                        |
+| `/mapflow/layer/{id}/position` | `[f32, f32]`                         | Sets the X and Y position of the layer.                     |
+| `/mapflow/layer/{id}/rotation` | `[f32]`                              | Sets the rotation in degrees.                               |
+| `/mapflow/layer/{id}/scale`    | `[f32]`                              | Sets the uniform scale.                                     |
 
 ---
 
@@ -36,7 +36,7 @@ Control paint parameters by their ID.
 
 | Address                                  | Arguments                      | Description                                                  |
 | ---------------------------------------- | ------------------------------ | ------------------------------------------------------------ |
-| `/mapmap/paint/{id}/parameter/{name}`    | `[varies]`                     | Controls a specific parameter of the paint (e.g., "color").  |
+| `/mapflow/paint/{id}/parameter/{name}`    | `[varies]`                     | Controls a specific parameter of the paint (e.g., "color").  |
 
 ---
 
@@ -46,7 +46,7 @@ Control effect parameters by their ID.
 
 | Address                                   | Arguments        | Description                                                  |
 | ----------------------------------------- | ---------------- | ------------------------------------------------------------ |
-| `/mapmap/effect/{id}/parameter/{name}`    | `[varies]`       | Controls a specific parameter of the effect (e.g., "amount").|
+| `/mapflow/effect/{id}/parameter/{name}`    | `[varies]`       | Controls a specific parameter of the effect (e.g., "amount").|
 
 ---
 
@@ -56,8 +56,8 @@ Global playback commands.
 
 | Address                   | Arguments          | Description                                                     |
 | ------------------------- | ------------------ | --------------------------------------------------------------- |
-| `/mapmap/playback/speed`  | `[f32]`            | Sets the playback speed (1.0 is normal speed).                  |
-| `/mapmap/playback/position`| `[f32: 0.0-1.0]`   | Jumps to a specific position in the media.                      |
+| `/mapflow/playback/speed`  | `[f32]`            | Sets the playback speed (1.0 is normal speed).                  |
+| `/mapflow/playback/position`| `[f32: 0.0-1.0]`   | Jumps to a specific position in the media.                      |
 
 ---
 
@@ -67,4 +67,4 @@ Manage individual outputs and projectors.
 
 | Address                          | Arguments        | Description                                       |
 | -------------------------------- | ---------------- | ------------------------------------------------- |
-| `/mapmap/output/{id}/brightness` | `[f32: 0.0-1.0]` | Sets the brightness for the specified output.     |
+| `/mapflow/output/{id}/brightness` | `[f32: 0.0-1.0]` | Sets the brightness for the specified output.     |

@@ -11,7 +11,7 @@ MapFlow nutzt `wgpu` für das Rendering. Der Austausch von Videodaten mit andere
 
 ### Phase 1: WGPU & Spout Interop (MF-019)
 1.  Upgrade auf aktuelle `wgpu` Version zur Nutzung verbesserter `ExternalImage` APIs.
-2.  Implementierung eines `SpoutSender` Moduls in `mapmap-io`.
+2.  Implementierung eines `SpoutSender` Moduls in `mapflow-io`.
 3.  DirectX 11 Interop-Layer für Spout-Sharing (Zero-Copy Pfad).
 
 ### Phase 2: NDI Discovery & UI (MF-021)

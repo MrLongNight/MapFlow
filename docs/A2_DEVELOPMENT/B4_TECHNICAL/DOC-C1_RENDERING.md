@@ -4,13 +4,13 @@ MapFlow nutzt eine GPU-beschleunigte Pipeline basierend auf **WGPU** (WebGPU nat
 
 ## Pipeline-Stufen
 
-### 1. Compositor (`mapmap-render/src/compositor.rs`)
+### 1. Compositor (`mapflow-render/src/compositor.rs`)
 Der Compositor ist das Herzstueck der Bildmischung.
 *   **Multi-Layer**: Unterstuetzt unbegrenzte Layer.
 *   **Blend-Modi**: Implementiert ueber 10 Modi (Normal, Add, Multiply, Screen, Overlay, etc.) via `shaders/blend_modes.wgsl`.
 *   **Caching**: Texturen werden intelligent gecacht, um Uploads zu minimieren.
 
-### 2. Mesh & Warping (`mapmap-render/src/mesh_renderer.rs`)
+### 2. Mesh & Warping (`mapflow-render/src/mesh_renderer.rs`)
 Fuer Projection Mapping ist geometrische Verzerrung essenziell.
 *   **Bezier-Warping**: Meshes koennen durch Bezier-Kurven verformt werden, um sich gekruemmten Oberflaechen anzupassen.
 *   **Keystone**: Klassische 4-Punkt-Korrektur.
@@ -38,5 +38,5 @@ Fuer HAP existieren Decoder- und Shader-Bausteine, der Pfad ist aktuell aber nic
 *   **Funktionsweise**: HAP ist ein Textur-Kompressions-Format (aehnlich DXT/BC1). Die CPU muss nur entpacken (Snappy), die GPU uebernimmt das Decoding.
 *   **Implementation / aktueller Stand**:
     *   Hinweis: End-to-end-Integration und Produktionsreife muessen separat verifiziert werden.
-    *   Decoder: `mapmap-media/src/hap_decoder.rs`
+    *   Decoder: `mapflow-media/src/hap_decoder.rs`
     *   Shader: `shaders/ycocg_to_rgb.wgsl` (fuer Farbkonvertierung).
