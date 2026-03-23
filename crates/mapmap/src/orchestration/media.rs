@@ -5,7 +5,7 @@ use anyhow::Result;
 use crossbeam_channel::Sender;
 use mapmap_core::module::{ModulePartType, SourceType};
 use mapmap_render::TexturePool;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tracing::{error, info, warn};
@@ -197,22 +197,20 @@ pub fn create_player_handle(
 /// Synchronizes media players with the current module graph.
 pub fn sync_media_players(app: &mut App) {
     let desired_players = desired_media_players(app);
-    let desired_keys: HashSet<(u64, u64)> = desired_players
-        .iter()
-        .map(|player| (player.module_id, player.part_id))
-        .collect();
 
+    // Bolt Optimization: Removing intermediate `HashSet` allocation (`desired_keys`)
+    // and `.contains()` lookup, since we can just do a direct `.find()` over `desired_players`.
     let stale_keys: Vec<(u64, u64)> = app
         .media_players
         .iter()
         .filter_map(|(key, handle)| {
-            if !desired_keys.contains(key) {
-                return Some(*key);
-            }
-
-            let desired = desired_players
+            let desired = match desired_players
                 .iter()
-                .find(|player| (player.module_id, player.part_id) == *key)?;
+                .find(|player| (player.module_id, player.part_id) == *key)
+            {
+                Some(d) => d,
+                None => return Some(*key),
+            };
 
             let same_path = handle.source_path == desired.path;
             let same_speed = (handle.playback_speed - desired.playback_speed).abs() < f32::EPSILON;

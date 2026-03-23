@@ -136,7 +136,8 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
     let modules_for_eval: Vec<u64> = if let Some(module_id) = show_module_id {
         vec![module_id]
     } else {
-        all_module_ids.clone()
+        // Bolt Optimization: Removing unnecessary `.clone()` since ownership transfer is safe here
+        all_module_ids
     };
 
     // 5. Audio Analysis Update
