@@ -30,11 +30,11 @@ jobs:
       cancel-in-progress: false
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Resolve issue and guard against duplicate dispatch
         id: guard
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             core.setOutput('should_start', 'false');
@@ -104,7 +104,7 @@ jobs:
 
       - name: Note missing Jules API key
         if: ${{ steps.guard.outputs.should_start == 'true' && secrets.JULES_API_KEY == '' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const issueNumber = Number.parseInt('${{ steps.guard.outputs.issue_number }}', 10);

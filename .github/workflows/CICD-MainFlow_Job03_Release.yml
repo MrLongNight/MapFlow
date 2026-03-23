@@ -73,7 +73,7 @@ jobs:
     needs: [resolve-release]
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -227,7 +227,7 @@ jobs:
           Move-Item -Path $MsiPath -Destination "MapFlow-${{ needs.resolve-release.outputs.version }}-x64.msi"
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-artifacts
           if-no-files-found: error
@@ -240,7 +240,7 @@ jobs:
     needs: [resolve-release]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -279,7 +279,7 @@ jobs:
           cd target/release
           tar -czf "../../$TAR_NAME" MapFlow
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: linux-artifacts
           if-no-files-found: error
@@ -290,7 +290,7 @@ jobs:
     needs: [resolve-release]
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -339,7 +339,7 @@ jobs:
           bash scripts/mapflow/sign-and-notarize-macos.sh "MapFlow-${{ needs.resolve-release.outputs.version }}-macOS-beta.dmg"
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: macos-artifacts
           if-no-files-found: error
@@ -351,7 +351,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: release-artifacts
           merge-multiple: true
