@@ -617,6 +617,7 @@ pub fn check_hold_state(ui: &mut Ui, id: egui::Id, is_interacting: bool) -> (boo
 
         if progress >= 1.0 {
             triggered = true;
+            ui.ctx().request_repaint(); // Force repaint to show the 1-frame trigger flash
             ui.data_mut(|d| d.remove_temp::<Option<f64>>(start_time_id)); // Reset
             ui.data_mut(|d| d.remove_temp::<f32>(progress_id));
         } else {
