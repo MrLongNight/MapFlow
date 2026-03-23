@@ -1,4 +1,4 @@
-//! Phase 6: Enhanced Timeline Editor with Keyframe Animation
+//! Phase 6: Enhanced Timeline Editor with Keyframe Animation UI Logic
 //!
 //! Multi-track timeline with keyframe animation, using mapmap_core::animation types.
 
@@ -11,80 +11,8 @@ use mapmap_core::module::ModuleId;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 
-/// Lightweight module descriptor for timeline arrangement UI.
-#[derive(Debug, Clone)]
-pub struct TimelineModule<'a> {
-    /// Module ID
-    pub id: ModuleId,
-    /// Module display name
-    // Optimization: Borrow name string to prevent allocation overhead in UI hot loop.
-    pub name: &'a str,
-}
-
-/// Show orchestration mode for module arrangement.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
-pub enum ShowMode {
-    /// Fully automatic module switching by timeline time.
-    #[default]
-    FullyAutomated,
-    /// Timeline advances automatically, module switch is confirmed manually.
-    SemiAutomated,
-    /// Module switching is manual only (timeline acts as arrangement board).
-    Manual,
-    /// Hybrid logic combining time and triggers.
-    Hybrid,
-    /// Playback stops at markers, waiting for explicit trigger to continue.
-    Trackline,
-}
-
-impl ShowMode {
-    fn label(self) -> &'static str {
-        match self {
-            Self::FullyAutomated => "Fully Auto",
-            Self::SemiAutomated => "Semi Auto",
-            Self::Manual => "Manual",
-            Self::Hybrid => "Hybrid",
-            Self::Trackline => "Trackline",
-        }
-    }
-}
-
-/// A scheduled module block on the show timeline.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(default)]
-pub struct ModuleArrangementItem {
-    /// Unique ID for stable runtime selection.
-    pub id: u64,
-    /// Target module.
-    pub module_id: ModuleId,
-    /// Block start time in seconds.
-    pub start_time: f32,
-    /// Block duration in seconds.
-    pub duration: f32,
-    /// Whether this block is active in runtime.
-    pub enabled: bool,
-    /// Trigger that must be active to start this block (Hybrid Mode).
-    pub start_trigger: Option<String>,
-}
-
-impl Default for ModuleArrangementItem {
-    fn default() -> Self {
-        Self {
-            id: 0,
-            module_id: 0,
-            start_time: 0.0,
-            duration: 8.0,
-            enabled: true,
-            start_trigger: None,
-        }
-    }
-}
-
-impl ModuleArrangementItem {
-    fn end_time(&self) -> f32 {
-        self.start_time + self.duration.max(0.1)
-    }
-}
+use super::models::{ModuleArrangementItem, ShowMode};
+use super::types::{TimelineAction, TimelineModule};
 
 /// Timeline editor view state (data is in AnimationClip)
 #[derive(Serialize, Deserialize)]
@@ -1254,19 +1182,4 @@ impl TimelineV2 {
 
         action
     }
-}
-
-/// Actions triggered by timeline
-#[derive(Debug, Clone, Copy)]
-pub enum TimelineAction {
-    Play,
-    Pause,
-    Stop,
-    Seek(f32),
-    SelectModule(ModuleId),
-    AddMarker(f32),
-    RemoveMarker(u64),
-    ToggleMarkerPause(f32),
-    JumpNextMarker,
-    JumpPrevMarker,
 }

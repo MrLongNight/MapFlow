@@ -239,14 +239,14 @@ mod tests {
 
     #[test]
     fn test_osc_trigger() {
-        let trigger = OscTrigger::new("/mapmap/cue/1".to_string());
-        assert!(trigger.matches_address("/mapmap/cue/1"));
-        assert!(!trigger.matches_address("/mapmap/cue/2"));
+        let trigger = OscTrigger::new("/mapflow/cue/1".to_string());
+        assert!(trigger.matches_address("/mapflow/cue/1"));
+        assert!(!trigger.matches_address("/mapflow/cue/2"));
     }
 
     #[test]
     fn test_osc_trigger_with_value() {
-        let trigger = OscTrigger::with_value("/mapmap/cue/1".to_string(), "1.0".to_string());
+        let trigger = OscTrigger::with_value("/mapflow/cue/1".to_string(), "1.0".to_string());
         assert_eq!(trigger.value, Some("1.0".to_string()));
     }
 }

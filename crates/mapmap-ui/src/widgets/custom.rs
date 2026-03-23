@@ -194,7 +194,7 @@ pub fn styled_slider(
     } else if is_changed {
         colors::CYAN_ACCENT
     } else {
-        Color32::from_gray(180)
+        colors::STROKE_GREY
     };
 
     ui.painter().text(
@@ -468,7 +468,7 @@ pub fn icon_button_compact(
     // Accessibility info
     let enabled = ui.is_enabled();
     let label = if hover_text.is_empty() {
-        format!("{:?}", icon)
+        "Icon Button".to_string()
     } else {
         hover_text.to_string()
     };
@@ -569,7 +569,7 @@ pub fn delete_button(ui: &mut Ui) -> bool {
 }
 
 pub fn lock_button(ui: &mut Ui, active: bool) -> Response {
-    let active_color = Color32::from_rgb(200, 50, 50);
+    let active_color = colors::ERROR_COLOR;
     icon_button(ui, "🔒", Color32::TRANSPARENT, active_color, active).on_hover_text(if active {
         "Unlock"
     } else {
@@ -744,7 +744,7 @@ pub fn hold_to_action_icon(
     // Accessibility info
     let enabled = ui.is_enabled();
     let label = if hover_text.is_empty() {
-        format!("{:?}", icon)
+        "Hold Action Icon".to_string()
     } else {
         hover_text.to_string()
     };
@@ -780,7 +780,7 @@ pub fn hold_to_action_icon(
             let tint = if response.hovered() || is_interacting {
                 Color32::WHITE
             } else {
-                Color32::from_gray(200)
+                colors::LIGHTER_GREY
             };
             painter.image(
                 texture.id(),
