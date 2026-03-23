@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2026-03-23: docs: Rebrand references from MapMap to MapFlow (#1379)
 - 2026-03-21: test: establish release smoke baseline for visual capture (#1339)
 - 2026-03-21: fix: Gate External I/O nodes without full runtime paths (#1321)
 - 2026-03-19: refactor: Refactor Node Inspector Previews to a Family-Wide Standard (#1300)
