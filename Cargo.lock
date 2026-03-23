@@ -5582,6 +5582,7 @@ dependencies = [
  "mapmap-render",
  "once_cell",
  "parking_lot",
+ "rayon",
  "resvg 0.47.0",
  "rfd",
  "rust-embed",

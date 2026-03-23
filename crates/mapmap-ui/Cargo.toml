@@ -35,6 +35,7 @@ mapmap-media = { path = "../mapmap-media" }
 mapmap-render = { path = "../mapmap-render" }
 once_cell = { workspace = true }
 parking_lot = { workspace = true }
+rayon.workspace = true
 
 # SVG icon rendering
 resvg = { workspace = true }

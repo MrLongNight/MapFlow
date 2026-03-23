@@ -66,7 +66,7 @@ pub fn show(ui: &mut egui::Ui, ui_state: &mut AppUI) {
                     ui.add(egui::Label::new(
                         egui::RichText::new(bpm_text)
                             .size(16.0)
-                            .color(egui::Color32::from_rgb(255, 200, 0))
+                            .color(crate::theme::colors::WARN_COLOR)
                             .strong(),
                     ))
                     .clone()

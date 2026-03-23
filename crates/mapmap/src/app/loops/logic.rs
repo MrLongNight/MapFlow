@@ -25,23 +25,6 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
         .map(|m| m.id)
         .collect();
 
-    // Determine which modules to evaluate based on timeline
-    let show_module_id = app.ui_state.timeline_panel.runtime_show_module(
-        app.state.effect_animator.get_current_time() as f32,
-        app.state.effect_animator.is_playing(),
-        &all_module_ids,
-    );
-    if let Some(active_module_id) = show_module_id {
-        app.ui_state
-            .module_canvas
-            .set_active_module(Some(active_module_id));
-    }
-    let modules_for_eval: Vec<u64> = if let Some(module_id) = show_module_id {
-        vec![module_id]
-    } else {
-        all_module_ids.clone()
-    };
-
     // --- Performance Optimization: Early return if idle ---
     if all_module_ids.is_empty() {
         app.ui_state.current_fps = app.current_fps;
@@ -106,6 +89,55 @@ pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32)
             }
         }
     }
+
+    // Determine which modules to evaluate based on timeline
+    // Update hybrid active triggers from events before running show_module
+    app.ui_state.timeline_panel.hybrid_active_triggers.clear();
+    for key in &active_keys {
+        app.ui_state
+            .timeline_panel
+            .hybrid_active_triggers
+            .insert(key.clone());
+    }
+    for msg in &midi_events {
+        if let mapmap_control::midi::MidiMessage::NoteOn {
+            channel,
+            note,
+            velocity,
+        } = msg
+        {
+            if *velocity > 0 {
+                app.ui_state
+                    .timeline_panel
+                    .hybrid_active_triggers
+                    .insert(format!("MIDI_{}_{}", channel, note));
+            }
+        }
+    }
+    for packet in &osc_packets {
+        if let rosc::OscPacket::Message(msg) = packet {
+            app.ui_state
+                .timeline_panel
+                .hybrid_active_triggers
+                .insert(msg.addr.clone());
+        }
+    }
+
+    let show_module_id = app.ui_state.timeline_panel.runtime_show_module(
+        app.state.effect_animator.get_current_time() as f32,
+        app.state.effect_animator.is_playing(),
+        &all_module_ids,
+    );
+    if let Some(active_module_id) = show_module_id {
+        app.ui_state
+            .module_canvas
+            .set_active_module(Some(active_module_id));
+    }
+    let modules_for_eval: Vec<u64> = if let Some(module_id) = show_module_id {
+        vec![module_id]
+    } else {
+        all_module_ids.clone()
+    };
 
     // 5. Audio Analysis Update
     let timestamp = app.start_time.elapsed().as_secs_f64();

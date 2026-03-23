@@ -31,7 +31,11 @@ pub mod app_ui;
 // Re-export categorized modules to maintain API compatibility
 pub use crate::core::*;
 pub use crate::editors::{
-    mesh_editor::*, module_canvas::*, node_editor::*, shortcut_editor::*, timeline_v2::*,
+    mesh_editor::*,
+    module_canvas::*,
+    node_editor::*,
+    shortcut_editor::*,
+    timeline_v2::{ModuleArrangementItem, ShowMode, TimelineAction, TimelineModule, TimelineV2},
 };
 // Re-export panel types directly to avoid ambiguous glob re-exports
 pub use crate::panels::{
