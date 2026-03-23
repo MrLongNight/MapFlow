@@ -6,7 +6,7 @@
 
 **Tech Stack:**
 
-- **Sprache:** Rust 2021 (MSRV 1.75+)
+- **Sprache:** Rust 2021 (MSRV 1.94+)
 - **Graphics:** wgpu (Vulkan/Metal/DX12)
 - **UI:** egui (Immediate Mode)
 - **Media:** FFmpeg, NDI SDK
