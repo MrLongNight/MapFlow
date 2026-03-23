@@ -111,7 +111,7 @@ tiny-skia = "0.12"
 
 # Async runtime
 tokio = { version = "1.50.0", features = ["full"] }
-toml = "1.0.7"
+toml = "1.1.0"
 tower = "0.5"
 
 # Logging
