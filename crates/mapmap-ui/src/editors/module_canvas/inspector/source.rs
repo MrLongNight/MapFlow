@@ -578,10 +578,10 @@ pub fn render_source_ui(
                         }
                     });
             });
-            ui.label(
-                egui::RichText::new("Use the same ID to sync multiple nodes.")
-                    .weak()
-                    .small(),
+            crate::widgets::custom::render_info_label_with_size(
+                ui,
+                "Use the same ID to sync multiple nodes.",
+                10.0,
             );
 
             ui.separator();
@@ -638,10 +638,10 @@ pub fn render_source_ui(
                         }
                     });
             });
-            ui.label(
-                egui::RichText::new("Use the same ID to sync multiple nodes.")
-                    .weak()
-                    .small(),
+            crate::widgets::custom::render_info_label_with_size(
+                ui,
+                "Use the same ID to sync multiple nodes.",
+                10.0,
             );
 
             ui.separator();

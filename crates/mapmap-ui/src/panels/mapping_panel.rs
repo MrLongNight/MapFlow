@@ -4,7 +4,6 @@ use crate::widgets::icons::IconManager;
 use crate::widgets::panel::cyber_panel_frame;
 use crate::widgets::{custom, panel};
 use crate::UIAction;
-use egui::*;
 use mapmap_core::{MappingId, MappingManager};
 
 #[derive(Debug, Default)]
@@ -132,10 +131,10 @@ impl MappingPanel {
                                             // Let's keep it always for quick access.
                                             ui.horizontal(|ui| {
                                                 ui.add_space(24.0); // Indent to align with name text
-                                                ui.label(
-                                                    RichText::new(i18n.t("label-master-opacity"))
-                                                        .size(10.0)
-                                                        .weak(),
+                                                crate::widgets::custom::render_info_label_with_size(
+                                                    ui,
+                                                    &i18n.t("label-master-opacity"),
+                                                    10.0,
                                                 );
                                                 custom::styled_slider(
                                                     ui,
