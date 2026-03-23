@@ -94,6 +94,10 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 **Erkenntnis:** ROADMAP.md is officially no longer used in the project. Several PRs (#1321, #1300, #1282, #1252, #1226) were missing from CHANGELOG.md.
 **Aktion:** Tracker added the missing entries to CHANGELOG.md. No further ROADMAP.md updates will be made.
 
+## 2026-03-23 - Missing PR Documentation
+**Erkenntnis:** PR #1379 was merged but missing from CHANGELOG.md.
+**Aktion:** Added missing entry to CHANGELOG.md. No roadmap update needed as ROADMAP.md is deprecated.
+
 ## 2026-03-21 - Missing PR Documentation
 **Erkenntnis:** PR #1339 was merged but missing from CHANGELOG.md.
 **Aktion:** Added missing entry to CHANGELOG.md. No roadmap update needed as ROADMAP.md is deprecated.

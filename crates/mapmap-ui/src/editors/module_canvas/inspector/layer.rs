@@ -138,12 +138,9 @@ pub fn render_layer_ui(
                 ui.checkbox(mapping_mode, "Mapping Mode (Grid)");
                 render_mesh_ui(ui, mesh, 9999, show_mesh_editor); // Dummy ID
             });
-            ui.label(
-                egui::RichText::new(
-                    "⚠ Group layers are currently unsupported and act like a Single layer.",
-                )
-                .color(crate::theme::colors::WARN_COLOR)
-                .small(),
+            capabilities::render_unsupported_warning(
+                ui,
+                "Group layers are currently unsupported and act like a Single layer.",
             );
         }
         LayerType::All { opacity, .. } => {
@@ -151,12 +148,9 @@ pub fn render_layer_ui(
                 ui.label("🎚️ Master");
                 ui.add(egui::Slider::new(opacity, 0.0..=1.0).text("Opacity"));
             });
-            ui.label(
-                egui::RichText::new(
-                    "⚠ Master layers are currently unsupported and will not be rendered.",
-                )
-                .color(crate::theme::colors::WARN_COLOR)
-                .small(),
+            capabilities::render_unsupported_warning(
+                ui,
+                "Master layers are currently unsupported and will not be rendered.",
             );
         }
     }

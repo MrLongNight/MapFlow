@@ -487,10 +487,10 @@ impl ControllerOverlayPanel {
                             ui.label("Zuweisung:");
                             ui.colored_label(Color32::YELLOW, assign.target.to_string());
                         });
-                        ui.label(
-                            egui::RichText::new("(Klick für Details in Liste)")
-                                .italics()
-                                .size(10.0),
+                        crate::widgets::custom::render_info_label_with_size(
+                            ui,
+                            "(Klick für Details in Liste)",
+                            10.0,
                         );
                     } else {
                         ui.separator();
