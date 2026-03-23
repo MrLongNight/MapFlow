@@ -33,7 +33,7 @@ MapFlow uses a **Paint → Mapping → Mesh → Output** pipeline:
 
 ### System Requirements
 
-- **Rust 1.75+** (install from [rustup.rs](https://rustup.rs))
+- **Rust 1.94+** (install from [rustup.rs](https://rustup.rs))
 - **Operating System**: Linux, macOS, or Windows
 - **GPU**: Any modern GPU with Vulkan, Metal, or DirectX 12 support
 

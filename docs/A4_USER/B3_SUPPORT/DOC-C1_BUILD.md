@@ -19,7 +19,7 @@ This document provides comprehensive build instructions for MapFlow (Rust Editio
 
 ### Rust Toolchain
 
-MapFlow requires **Rust 1.75 or later**. Install it using rustup:
+MapFlow requires **Rust 1.94 or later**. Install it using rustup:
 
 ```bash
 # Install Rust

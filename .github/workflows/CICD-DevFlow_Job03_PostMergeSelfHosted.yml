@@ -14,14 +14,14 @@ on:
       toolchain:
         description: "Rust toolchain version"
         required: true
-        default: "stable"
+        default: "1.94.0"
   workflow_call:
     inputs:
       toolchain:
         description: "Rust toolchain version"
         required: false
         type: string
-        default: "stable"
+        default: "1.94.0"
 
 permissions:
   contents: read
@@ -279,7 +279,7 @@ jobs:
       - name: Set Rust Toolchain
         shell: powershell
         env:
-          toolchain: ${{ inputs.toolchain || vars.MAPFLOW_DEFAULT_TOOLCHAIN || 'stable' }}
+          toolchain: ${{ inputs.toolchain || vars.MAPFLOW_DEFAULT_TOOLCHAIN || '1.94.0' }}
           RUNNER_OS: ${{ runner.os }}
         run: |
           if (-not $env:toolchain) {
@@ -291,7 +291,7 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: ${{ inputs.toolchain || vars.MAPFLOW_DEFAULT_TOOLCHAIN || 'stable' }}
+          toolchain: ${{ inputs.toolchain || vars.MAPFLOW_DEFAULT_TOOLCHAIN || '1.94.0' }}
 
       - name: Set up MSVC Developer Command Prompt
         uses: ilammy/msvc-dev-cmd@v1
@@ -308,7 +308,7 @@ jobs:
           MAPFLOW_SELF_HOSTED_RUN_VISUAL_AUTOMATION: ${{ vars.MAPFLOW_SELF_HOSTED_RUN_VISUAL_AUTOMATION || 'false' }}
           MAPFLOW_SELF_HOSTED_RUN_PERFORMANCE_CHECK: ${{ vars.MAPFLOW_SELF_HOSTED_RUN_PERFORMANCE_CHECK || 'false' }}
           MAPFLOW_PERFORMANCE_THRESHOLD: ${{ vars.MAPFLOW_PERFORMANCE_THRESHOLD || '' }}
-          toolchain: ${{ inputs.toolchain || vars.MAPFLOW_DEFAULT_TOOLCHAIN || 'stable' }}
+          toolchain: ${{ inputs.toolchain || vars.MAPFLOW_DEFAULT_TOOLCHAIN || '1.94.0' }}
         run: .\scripts\build\self-hosted-post-merge.ps1
 
       - name: Upload visual capture artifacts

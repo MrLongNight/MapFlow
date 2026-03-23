@@ -1,6 +1,6 @@
 use super::capabilities;
 use super::common;
-use egui::{Color32, Ui};
+use egui::Ui;
 use mapmap_core::module::{BlendModeType, EffectType, ModulePartId, ModulizerType};
 
 /// Sets default parameters for a given effect type.
@@ -56,7 +56,7 @@ pub fn render_effect_ui(ui: &mut Ui, mod_type: &mut ModulizerType, part_id: Modu
                 ui.label(
                     egui::RichText::new(effect.name())
                         .size(22.0)
-                        .color(Color32::from_rgb(100, 200, 255))
+                        .color(crate::theme::colors::CYAN_ACCENT)
                         .strong(),
                 );
             });
@@ -67,7 +67,7 @@ pub fn render_effect_ui(ui: &mut Ui, mod_type: &mut ModulizerType, part_id: Modu
                 if crate::widgets::custom::hold_to_action_button(
                     ui,
                     "\u{27F2} Safe Reset",
-                    Color32::from_rgb(255, 180, 0),
+                    crate::theme::colors::WARN_COLOR,
                     "Safe Reset",
                 ) {
                     set_default_effect_params(*effect, params);

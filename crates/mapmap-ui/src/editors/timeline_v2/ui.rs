@@ -1,4 +1,4 @@
-//! Phase 6: Enhanced Timeline Editor with Keyframe Animation
+//! Phase 6: Enhanced Timeline Editor with Keyframe Animation UI Logic
 //!
 //! Multi-track timeline with keyframe animation, using mapmap_core::animation types.
 
@@ -11,80 +11,8 @@ use mapmap_core::module::ModuleId;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 
-/// Lightweight module descriptor for timeline arrangement UI.
-#[derive(Debug, Clone)]
-pub struct TimelineModule<'a> {
-    /// Module ID
-    pub id: ModuleId,
-    /// Module display name
-    // Optimization: Borrow name string to prevent allocation overhead in UI hot loop.
-    pub name: &'a str,
-}
-
-/// Show orchestration mode for module arrangement.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
-pub enum ShowMode {
-    /// Fully automatic module switching by timeline time.
-    #[default]
-    FullyAutomated,
-    /// Timeline advances automatically, module switch is confirmed manually.
-    SemiAutomated,
-    /// Module switching is manual only (timeline acts as arrangement board).
-    Manual,
-    /// Hybrid logic combining time and triggers.
-    Hybrid,
-    /// Playback stops at markers, waiting for explicit trigger to continue.
-    Trackline,
-}
-
-impl ShowMode {
-    fn label(self) -> &'static str {
-        match self {
-            Self::FullyAutomated => "Fully Auto",
-            Self::SemiAutomated => "Semi Auto",
-            Self::Manual => "Manual",
-            Self::Hybrid => "Hybrid",
-            Self::Trackline => "Trackline",
-        }
-    }
-}
-
-/// A scheduled module block on the show timeline.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(default)]
-pub struct ModuleArrangementItem {
-    /// Unique ID for stable runtime selection.
-    pub id: u64,
-    /// Target module.
-    pub module_id: ModuleId,
-    /// Block start time in seconds.
-    pub start_time: f32,
-    /// Block duration in seconds.
-    pub duration: f32,
-    /// Whether this block is active in runtime.
-    pub enabled: bool,
-    /// Trigger that must be active to start this block (Hybrid Mode).
-    pub start_trigger: Option<String>,
-}
-
-impl Default for ModuleArrangementItem {
-    fn default() -> Self {
-        Self {
-            id: 0,
-            module_id: 0,
-            start_time: 0.0,
-            duration: 8.0,
-            enabled: true,
-            start_trigger: None,
-        }
-    }
-}
-
-impl ModuleArrangementItem {
-    fn end_time(&self) -> f32 {
-        self.start_time + self.duration.max(0.1)
-    }
-}
+use super::models::{ModuleArrangementItem, ShowMode};
+use super::types::{TimelineAction, TimelineModule};
 
 /// Timeline editor view state (data is in AnimationClip)
 #[derive(Serialize, Deserialize)]
@@ -721,7 +649,24 @@ impl TimelineV2 {
                             }
                         }
                     }
-                    ShowMode::FullyAutomated | ShowMode::Hybrid | ShowMode::Trackline => {}
+                    ShowMode::Trackline => {
+                        if animator.is_playing() {
+                            if ui.button("Pause").clicked() {
+                                action = Some(TimelineAction::Pause);
+                            }
+                        } else {
+                            if ui.button("Play to Next Marker").clicked() {
+                                action = Some(TimelineAction::Play);
+                            }
+                        }
+                        if ui.button("Jump Prev Marker").clicked() {
+                            action = Some(TimelineAction::JumpPrevMarker);
+                        }
+                        if ui.button("Jump Next Marker").clicked() {
+                            action = Some(TimelineAction::JumpNextMarker);
+                        }
+                    }
+                    ShowMode::FullyAutomated | ShowMode::Hybrid => {}
                 }
             }
         });
@@ -1013,11 +958,95 @@ impl TimelineV2 {
 
             // Access immutable clip for drawing tracks
             let track_start_y = ruler_rect.max.y;
+
+            if module_track_height > 0.0 {
+                let module_track_y = track_start_y;
+                let module_rect = Rect::from_min_size(
+                    Pos2::new(rect.min.x, module_track_y),
+                    Vec2::new(rect.width(), module_track_height),
+                );
+                painter.rect_filled(module_rect, 0.0, Color32::from_rgb(22, 22, 22));
+                painter.text(
+                    Pos2::new(module_rect.min.x + 5.0, module_rect.min.y + 6.0),
+                    egui::Align2::LEFT_TOP,
+                    "Module Track",
+                    egui::FontId::proportional(13.0),
+                    Color32::from_rgb(200, 220, 255),
+                );
+
+                let active_module = self.runtime_show_module(
+                    self.playhead,
+                    animator.is_playing(),
+                    &available_module_ids,
+                );
+
+                // TRIGGER ACTION IF CHANGED
+                if let Some(mod_id) = active_module {
+                    // Check if we need to emit a select action (only if not already the active one in the app)
+                    // We use a simple heuristic: if it's the first frame or the ID changed.
+                    // For now, we just emit it, the handler in actions.rs should be idempotent.
+                    if action.is_none()
+                        && animator.is_playing()
+                        && (self.show_mode == ShowMode::FullyAutomated
+                            || self.show_mode == ShowMode::Hybrid
+                            || self.show_mode == ShowMode::Trackline)
+                    {
+                        action = Some(TimelineAction::SelectModule(mod_id));
+                    }
+                }
+
+                let active_block_id = match self.show_mode {
+                    ShowMode::FullyAutomated | ShowMode::Trackline => {
+                        self.full_auto_current_block_id
+                    }
+                    ShowMode::SemiAutomated => self.semi_auto_current_block_id,
+                    ShowMode::Manual => self.manual_current_block_id,
+                    ShowMode::Hybrid => self.hybrid_current_block_id,
+                };
+
+                for block in self.sorted_enabled_blocks() {
+                    let block_x = rect.min.x + block.start_time * self.zoom;
+                    let block_w = (block.duration * self.zoom).max(8.0);
+                    let block_rect = Rect::from_min_size(
+                        Pos2::new(block_x, module_rect.min.y + 24.0),
+                        Vec2::new(block_w, 28.0),
+                    );
+
+                    let color = if self.semi_auto_pending_block_id == Some(block.id) {
+                        Color32::from_rgb(255, 170, 0)
+                    } else if active_block_id == Some(block.id) {
+                        Color32::from_rgb(40, 180, 80)
+                    } else if active_module == Some(block.module_id) {
+                        Color32::from_rgb(55, 130, 200)
+                    } else {
+                        Color32::from_rgb(70, 70, 90)
+                    };
+
+                    painter.rect_filled(block_rect, 3.0, color);
+                    painter.rect_stroke(
+                        block_rect,
+                        3.0,
+                        Stroke::new(1.0, Color32::from_rgb(230, 230, 230)),
+                        egui::StrokeKind::Middle,
+                    );
+
+                    let label = Self::module_name(&module_names, block.module_id);
+                    painter.text(
+                        Pos2::new(block_rect.min.x + 4.0, block_rect.min.y + 6.0),
+                        egui::Align2::LEFT_TOP,
+                        label,
+                        egui::FontId::proportional(12.0),
+                        Color32::WHITE,
+                    );
+                }
+            }
+
             let mut current_lane_index = 0;
 
             for (group_name, tracks) in &track_groups {
                 let is_expanded = self.expanded_tracks.contains(group_name);
-                let header_y = track_start_y + (current_lane_index as f32 * 60.0);
+                let header_y =
+                    track_start_y + module_track_height + (current_lane_index as f32 * 60.0);
                 let header_rect = Rect::from_min_size(
                     Pos2::new(rect.min.x, header_y),
                     Vec2::new(rect.width(), 60.0),
@@ -1059,7 +1088,9 @@ impl TimelineV2 {
 
                 if is_expanded {
                     for track in tracks {
-                        let track_y = track_start_y + (current_lane_index as f32 * 60.0);
+                        let track_y = track_start_y
+                            + module_track_height
+                            + (current_lane_index as f32 * 60.0);
                         let track_rect = Rect::from_min_size(
                             Pos2::new(rect.min.x, track_y),
                             Vec2::new(rect.width(), 60.0),
@@ -1151,105 +1182,8 @@ impl TimelineV2 {
                     }
                 }
             }
-
-            if module_track_height > 0.0 {
-                let module_track_y = track_start_y + (visible_lanes_count as f32 * 60.0);
-                let module_rect = Rect::from_min_size(
-                    Pos2::new(rect.min.x, module_track_y),
-                    Vec2::new(rect.width(), module_track_height),
-                );
-                painter.rect_filled(module_rect, 0.0, Color32::from_rgb(22, 22, 22));
-                painter.text(
-                    Pos2::new(module_rect.min.x + 5.0, module_rect.min.y + 6.0),
-                    egui::Align2::LEFT_TOP,
-                    "Module Show",
-                    egui::FontId::proportional(13.0),
-                    Color32::from_rgb(200, 220, 255),
-                );
-
-                let active_module = self.runtime_show_module(
-                    self.playhead,
-                    animator.is_playing(),
-                    &available_module_ids,
-                );
-
-                // TRIGGER ACTION IF CHANGED
-                if let Some(mod_id) = active_module {
-                    // Check if we need to emit a select action (only if not already the active one in the app)
-                    // We use a simple heuristic: if it's the first frame or the ID changed.
-                    // For now, we just emit it, the handler in actions.rs should be idempotent.
-                    if action.is_none()
-                        && animator.is_playing()
-                        && (self.show_mode == ShowMode::FullyAutomated
-                            || self.show_mode == ShowMode::Hybrid
-                            || self.show_mode == ShowMode::Trackline)
-                    {
-                        action = Some(TimelineAction::SelectModule(mod_id));
-                    }
-                }
-
-                let active_block_id = match self.show_mode {
-                    ShowMode::FullyAutomated | ShowMode::Trackline => {
-                        self.full_auto_current_block_id
-                    }
-                    ShowMode::SemiAutomated => self.semi_auto_current_block_id,
-                    ShowMode::Manual => self.manual_current_block_id,
-                    ShowMode::Hybrid => self.hybrid_current_block_id,
-                };
-
-                for block in self.sorted_enabled_blocks() {
-                    let block_x = rect.min.x + block.start_time * self.zoom;
-                    let block_w = (block.duration * self.zoom).max(8.0);
-                    let block_rect = Rect::from_min_size(
-                        Pos2::new(block_x, module_rect.min.y + 24.0),
-                        Vec2::new(block_w, 28.0),
-                    );
-
-                    let color = if self.semi_auto_pending_block_id == Some(block.id) {
-                        Color32::from_rgb(255, 170, 0)
-                    } else if active_block_id == Some(block.id) {
-                        Color32::from_rgb(40, 180, 80)
-                    } else if active_module == Some(block.module_id) {
-                        Color32::from_rgb(55, 130, 200)
-                    } else {
-                        Color32::from_rgb(70, 70, 90)
-                    };
-
-                    painter.rect_filled(block_rect, 3.0, color);
-                    painter.rect_stroke(
-                        block_rect,
-                        3.0,
-                        Stroke::new(1.0, Color32::from_rgb(230, 230, 230)),
-                        egui::StrokeKind::Middle,
-                    );
-
-                    let label = Self::module_name(&module_names, block.module_id);
-                    painter.text(
-                        Pos2::new(block_rect.min.x + 4.0, block_rect.min.y + 6.0),
-                        egui::Align2::LEFT_TOP,
-                        label,
-                        egui::FontId::proportional(12.0),
-                        Color32::WHITE,
-                    );
-                }
-            }
         });
 
         action
     }
-}
-
-/// Actions triggered by timeline
-#[derive(Debug, Clone, Copy)]
-pub enum TimelineAction {
-    Play,
-    Pause,
-    Stop,
-    Seek(f32),
-    SelectModule(ModuleId),
-    AddMarker(f32),
-    RemoveMarker(u64),
-    ToggleMarkerPause(f32),
-    JumpNextMarker,
-    JumpPrevMarker,
 }
