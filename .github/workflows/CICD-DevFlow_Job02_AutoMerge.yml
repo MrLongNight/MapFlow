@@ -36,7 +36,7 @@ jobs:
 
     steps:
       - name: Evaluate Auto-Merge Eligibility
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             if (process.env.AUTO_MERGE_ENABLED !== 'true') {
