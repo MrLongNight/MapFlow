@@ -23,7 +23,7 @@ Das Projekt ist als Rust-Workspace organisiert und zeigt eine klare funktionale 
 ## 2. Code-Qualität & Sicherheit
 
 ### 2.1 Fehlerbehandlung (Error Handling)
-*   **Inkonsistenz**: Es existiert eine Mischung aus `anyhow` (für die App-Ebene) und `thiserror` (für Bibliotheken). 
+*   **Inkonsistenz**: Es existiert eine Mischung aus `anyhow` (für die App-Ebene) und `thiserror` (für Bibliotheken).
 *   **Anti-Patterns**: In `mapmap-control` werden Fehler häufig nur geloggt (`error!`), anstatt sie strukturiert an den Aufrufer zurückzugeben. Dies kann in asynchronen Tasks zu "Silent Failures" führen (z.B. bei Verbindungsabbrüchen), bei denen die UI den Benutzer nicht informiert.
 
 ### 2.2 Sicherheit & Unsafe Code

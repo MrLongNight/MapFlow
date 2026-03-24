@@ -9,7 +9,7 @@ Dieses Dokument fasst die Abweichungen zwischen dem aktuellen, durch Subagents e
 Diese Punkte wurden durch die aktuelle Deep-Scan-Analyse der Subagents neu aufgedeckt und fehlen in den archivierten Berichten oder wurden dort nicht in dieser Schärfe benannt:
 
 ### 1.1 Kritischer WGPU-Versionskonflikt (Blocker-Risiko)
-*   **Aktueller Befund**: `mapmap-bevy` nutzt **WGPU 24.0**, während der Rest des Workspaces auf **WGPU 27.0** migriert. 
+*   **Aktueller Befund**: `mapmap-bevy` nutzt **WGPU 24.0**, während der Rest des Workspaces auf **WGPU 27.0** migriert.
 *   **Abweichung**: Die Archiv-Berichte (`DOC-C10`, `DOC-C11`) erwähnen zwar allgemeine Render-Probleme und Bevy-Integrationsthemen, identifizieren aber nicht diesen harten Versions-Clash als Kernrisiko für Linker-Fehler und inkompatible Grafik-Pipelines.
 *   **Relevanz**: **Hoch**. Dies ist ein technischer Blocker, der sofortige Harmonisierung erfordert.
 
