@@ -3,7 +3,6 @@
 use crate::app::core::app_struct::App;
 use anyhow::Result;
 use mapmap_core::module::OutputType;
-use std::collections::HashSet;
 
 /// Synchronizes output windows with the current module graph configuration.
 pub fn sync_output_windows(
@@ -12,7 +11,8 @@ pub fn sync_output_windows(
     _ui_needs_sync: bool,
     _graph_dirty: bool,
 ) -> Result<()> {
-    let mut active_window_ids: HashSet<u64> = HashSet::new();
+    // Bolt Optimization: Replace HashSet with Vec to avoid allocation overhead for small lookups
+    let mut active_window_ids: Vec<u64> = Vec::new();
 
     // 1. Reconcile graph Projector nodes into OutputManager
     // First, collect the required updates to avoid borrowing `app.state` mutably while iterating over it
@@ -28,7 +28,9 @@ pub fn sync_output_windows(
                     output_height,
                     ..
                 }) => {
-                    active_window_ids.insert(*id);
+                    if !active_window_ids.contains(id) {
+                        active_window_ids.push(*id);
+                    }
                     projector_configs.push((*id, name.clone(), *output_width, *output_height));
                 }
                 #[cfg(target_os = "macos")]
