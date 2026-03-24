@@ -1,13 +1,13 @@
 use crate::editors::mesh_editor::MeshEditor;
 use egui::{Pos2, TextureHandle, Vec2};
+#[cfg(feature = "ndi")]
+use std::sync::mpsc;
 use vorce_core::{
     audio_reactive::AudioTriggerData,
     module::{ModulePartId, ModuleSocketType},
 };
 #[cfg(feature = "ndi")]
 use vorce_io::ndi::NdiSource;
-#[cfg(feature = "ndi")]
-use std::sync::mpsc;
 
 use super::types::*;
 use super::utils;

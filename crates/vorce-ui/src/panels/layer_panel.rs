@@ -5,8 +5,8 @@ use crate::widgets::icons::IconManager;
 use crate::widgets::panel::{cyber_panel_frame, render_panel_header};
 use crate::UIAction;
 use egui::*;
-use vorce_core::{BlendMode, LayerManager};
 use std::collections::HashMap;
+use vorce_core::{BlendMode, LayerManager};
 
 #[derive(Debug, Clone)]
 pub enum LayerPanelAction {

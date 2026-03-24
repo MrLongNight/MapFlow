@@ -4,9 +4,9 @@ use crate::orchestration::evaluation::perform_evaluation;
 use crate::orchestration::media::{sync_media_players, update_media_players};
 use crate::orchestration::outputs::sync_output_windows;
 use anyhow::Result;
+use std::collections::HashSet;
 use vorce_core::audio::backend::AudioBackend;
 use vorce_io::save_project;
-use std::collections::HashSet;
 
 /// Global update loop (physics/logic), independent of render rate per window.
 pub fn update(app: &mut App, elwt: &winit::event_loop::ActiveEventLoop, dt: f32) -> Result<()> {

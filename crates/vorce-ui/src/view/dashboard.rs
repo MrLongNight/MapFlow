@@ -7,9 +7,9 @@ use crate::i18n::LocaleManager;
 use crate::theme::colors;
 use crate::widgets::hold_to_action_icon;
 use egui::Ui;
+use std::time::Duration;
 use vorce_core::AudioAnalysis;
 use vorce_media::{LoopMode, PlaybackState};
-use std::time::Duration;
 
 /// Dashboard control panel
 pub struct Dashboard {

@@ -2,8 +2,8 @@
 
 use crate::app::core::app_struct::App;
 use anyhow::Result;
-use vorce_core::module::OutputType;
 use std::collections::HashSet;
+use vorce_core::module::OutputType;
 
 /// Synchronizes output windows with the current module graph configuration.
 pub fn sync_output_windows(

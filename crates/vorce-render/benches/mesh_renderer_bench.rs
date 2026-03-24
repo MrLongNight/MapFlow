@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use vorce_render::MeshRenderer;
 use std::sync::Arc;
+use vorce_render::MeshRenderer;
 use wgpu::Instance;
 
 fn mesh_renderer_benchmark(c: &mut Criterion) {

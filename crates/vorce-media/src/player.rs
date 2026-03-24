@@ -5,10 +5,10 @@
 
 use crate::VideoDecoder;
 use crossbeam_channel::{unbounded, Receiver, Sender};
-use vorce_io::VideoFrame;
 use std::time::Duration;
 use thiserror::Error;
 use tracing::{error, info, warn};
+use vorce_io::VideoFrame;
 
 /// Player errors
 #[derive(Debug, Clone, Error, PartialEq, Eq)]

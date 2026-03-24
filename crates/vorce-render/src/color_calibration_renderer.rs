@@ -5,9 +5,9 @@
 
 use crate::Result;
 use bytemuck::{Pod, Zeroable};
-use vorce_core::ColorCalibration;
 use std::sync::Arc;
 use tracing::info;
+use vorce_core::ColorCalibration;
 use wgpu::util::DeviceExt;
 
 /// Color calibration uniform parameters matching the WGSL shader

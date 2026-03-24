@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use vorce_media::{FFmpegDecoder, TestPatternDecoder, VideoDecoder};
 use std::hint::black_box;
 use std::time::Duration;
+use vorce_media::{FFmpegDecoder, TestPatternDecoder, VideoDecoder};
 
 fn bench_video_decode(c: &mut Criterion) {
     c.benchmark_group("video_decode")

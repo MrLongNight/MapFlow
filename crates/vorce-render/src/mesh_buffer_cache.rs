@@ -3,8 +3,8 @@
 //! Prevents re-allocating vertex and index buffers every frame for static geometry.
 
 use crate::mesh_renderer::GpuVertex;
-use vorce_core::{mapping::MappingId, Mesh, MeshType};
 use std::collections::HashMap;
+use vorce_core::{mapping::MappingId, Mesh, MeshType};
 use wgpu::util::DeviceExt;
 
 /// Cached GPU buffers for a mesh

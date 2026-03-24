@@ -2,9 +2,9 @@ use crate::protocol::*;
 use crate::McpAction;
 use anyhow::Result;
 use crossbeam_channel::Sender;
-use vorce_control::osc::client::OscClient;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tracing::{error, info};
+use vorce_control::osc::client::OscClient;
 
 pub struct McpServer {
     // Optional OSC client (currently unused but will be used for OSC tools)

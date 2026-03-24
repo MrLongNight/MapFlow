@@ -1,8 +1,8 @@
 //! Integration tests for the EffectChainRenderer
 
+use std::sync::Arc;
 use vorce_core::EffectChain;
 use vorce_render::{EffectChainRenderer, WgpuBackend};
-use std::sync::Arc;
 use wgpu::util::DeviceExt;
 use wgpu::{
     CommandEncoderDescriptor, Extent3d, TexelCopyBufferInfo, TexelCopyBufferLayout,

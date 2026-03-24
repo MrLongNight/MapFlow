@@ -5,12 +5,12 @@
 //! complexities of managing winit windows and wgpu surfaces.
 
 use anyhow::Result;
-use vorce_core::{runtime_paths, OutputId, OutputManager};
-use vorce_render::WgpuBackend;
-use vorce_ui::config::VSyncMode;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::info;
+use vorce_core::{runtime_paths, OutputId, OutputManager};
+use vorce_render::WgpuBackend;
+use vorce_ui::config::VSyncMode;
 use winit::{
     event_loop::ActiveEventLoop,
     window::{Fullscreen, Window, WindowAttributes, WindowId},

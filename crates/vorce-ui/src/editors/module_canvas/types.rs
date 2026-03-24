@@ -1,8 +1,8 @@
 use crate::theme::colors;
 use egui::Pos2;
 use egui_node_editor::*;
-use vorce_core::module::{ModulePartId, ModulePartType, ModuleSocketType, TriggerType};
 use std::borrow::Cow;
+use vorce_core::module::{ModulePartId, ModulePartType, ModuleSocketType, TriggerType};
 
 /// Information about a socket position for hit detection
 #[derive(Clone)]

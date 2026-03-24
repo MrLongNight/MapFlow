@@ -1,6 +1,6 @@
+use std::collections::HashSet;
 use vorce_core::module::{MapFlowModule, ModulePartType, ModulePlaybackMode, TriggerType};
 use vorce_core::module_eval::ModuleEvaluator;
-use std::collections::HashSet;
 
 #[test]
 fn test_manual_trigger() {

@@ -1,11 +1,11 @@
 //! Project serialization and deserialization tests
 
-use vorce_core::{AppSettings, AppState};
-use vorce_io::error::IoError;
-use vorce_io::project::{load_project, save_project};
 use std::fs::File;
 use std::io::Write;
 use tempfile::tempdir;
+use vorce_core::{AppSettings, AppState};
+use vorce_io::error::IoError;
+use vorce_io::project::{load_project, save_project};
 
 /// Creates a sample AppState for testing.
 fn create_sample_app_state() -> AppState {

@@ -11,10 +11,10 @@
 
 use crate::{pipeline::UniformBufferAllocator, QuadRenderer, Result};
 use bytemuck::{Pod, Zeroable};
-use vorce_core::EffectType;
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
 use tracing::{debug, info, warn};
+use vorce_core::EffectType;
 use wgpu::util::DeviceExt;
 
 mod apply;

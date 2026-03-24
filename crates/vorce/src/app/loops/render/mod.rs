@@ -3,11 +3,11 @@
 use crate::app::core::app_struct::App;
 use crate::app::ui_layout;
 use anyhow::Result;
-use vorce_core::OutputId;
 #[cfg(feature = "ndi")]
 use std::sync::atomic::{AtomicBool, Ordering};
 #[cfg(feature = "ndi")]
 use std::sync::Arc;
+use vorce_core::OutputId;
 
 mod content;
 mod effects;

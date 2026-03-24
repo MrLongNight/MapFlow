@@ -4,11 +4,11 @@
 //! virtually all video formats with hardware acceleration.
 
 use crate::{MediaError, Result, VideoDecoder};
-use vorce_io::format::{PixelFormat, VideoFormat};
-use vorce_io::VideoFrame;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 use tracing::{error, info, warn};
+use vorce_io::format::{PixelFormat, VideoFormat};
+use vorce_io::VideoFrame;
 
 use libmpv2::Mpv;
 

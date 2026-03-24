@@ -5,11 +5,11 @@
 use crate::theme::colors;
 use crate::widgets::hold_to_action_button;
 use egui::{Color32, Pos2, Rect, Sense, Stroke, Ui, Vec2};
+use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
 use vorce_core::animation::AnimValue;
 use vorce_core::effect_animation::EffectParameterAnimator;
 use vorce_core::module::ModuleId;
-use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
 
 use super::models::{ModuleArrangementItem, ShowMode};
 use super::types::{TimelineAction, TimelineModule};

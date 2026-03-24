@@ -4,11 +4,11 @@ use egui::{Color32, Pos2, Rect, Response, Sense, Stroke, TextureHandle, Ui, Vec2
 #[allow(unused_imports)]
 use crate::config::{MidiAssignment, MidiAssignmentTarget, UserConfig};
 
+#[allow(unused_imports)]
+use std::collections::{HashMap, HashSet};
 #[cfg(feature = "midi")]
 use vorce_control::midi::{ControllerElements, MidiMessage};
 use vorce_core::runtime_paths;
-#[allow(unused_imports)]
-use std::collections::{HashMap, HashSet};
 
 use super::panel::{ControllerOverlayPanel, MidiLearnTarget};
 

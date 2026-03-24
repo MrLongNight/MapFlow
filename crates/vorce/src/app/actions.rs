@@ -3,12 +3,12 @@
 use crate::app::core::app_struct::App;
 use crate::orchestration::node_logic::load_project_file;
 use anyhow::Result;
-use vorce_io::save_project;
-use vorce_mcp::McpAction;
-use vorce_ui::{NodeEditorAction, UIAction};
 use rfd::FileDialog;
 use std::path::PathBuf;
 use tracing::{error, info};
+use vorce_io::save_project;
+use vorce_mcp::McpAction;
+use vorce_ui::{NodeEditorAction, UIAction};
 
 /// Handle global UI actions
 pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
@@ -671,8 +671,7 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
                         let name = format!("Marker {:.1}s", t);
                         // Simple ID generation for markers
                         let id = (t * 1000.0) as u64;
-                        animator
-                            .add_marker(vorce_core::animation::Marker::new(id, t as f64, name));
+                        animator.add_marker(vorce_core::animation::Marker::new(id, t as f64, name));
                     }
                     TimelineAction::RemoveMarker(t) => {
                         let animator = std::sync::Arc::make_mut(&mut app.state.effect_animator);

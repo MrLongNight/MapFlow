@@ -3,12 +3,12 @@
 use crate::app::core::app_struct::App;
 use anyhow::Result;
 use crossbeam_channel::Sender;
-use vorce_core::module::{ModulePartType, SourceType};
-use vorce_render::TexturePool;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tracing::{error, info, warn};
+use vorce_core::module::{ModulePartType, SourceType};
+use vorce_render::TexturePool;
 
 /// Handle to a background media player.
 pub struct MediaPlayerHandle {

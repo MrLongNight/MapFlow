@@ -2,9 +2,9 @@
 //!
 #![allow(deprecated)]
 
+use std::sync::Arc;
 use vorce_core::Paint;
 use vorce_render::{QuadRenderer, RenderBackend, TextureDescriptor, WgpuBackend};
-use std::sync::Arc;
 use winit::event::{ElementState, Event, KeyEvent, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::keyboard::{Key, NamedKey};

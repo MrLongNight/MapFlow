@@ -5,11 +5,11 @@
 
 use crate::error::{IoError, Result};
 use chrono::{DateTime, Utc};
-use vorce_core::AppState;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::Path;
+use vorce_core::AppState;
 
 /// The current version of the project file format.
 ///
@@ -144,8 +144,8 @@ pub struct ProjectMetadata {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vorce_core::AppState;
     use tempfile::NamedTempFile;
+    use vorce_core::AppState;
 
     #[test]
     #[ignore]

@@ -5,9 +5,9 @@
 
 use crate::i18n::LocaleManager;
 use egui::{Color32, Pos2, Rect, Response, Sense, Stroke, Ui, Vec2};
-pub use vorce_core::shader_graph::{DataType, GraphId, NodeType, ParameterValue};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+pub use vorce_core::shader_graph::{DataType, GraphId, NodeType, ParameterValue};
 
 /// Node graph editor
 pub struct NodeEditor {

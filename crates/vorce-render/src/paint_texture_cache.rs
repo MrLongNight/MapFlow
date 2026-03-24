@@ -1,9 +1,9 @@
 //! Paint texture cache - manages GPU textures for paints
 
-use vorce_core::paint::{Paint, PaintId, PaintType};
 use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::Arc;
+use vorce_core::paint::{Paint, PaintId, PaintType};
 use wgpu;
 
 /// Caches GPU textures for paints to avoid recreating them every frame

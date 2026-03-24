@@ -7,8 +7,8 @@
 
 use crate::error::{IoError, Result};
 use crate::project_format::{ProjectFile, PROJECT_FILE_VERSION};
-use vorce_core::AppState;
 use std::path::Path;
+use vorce_core::AppState;
 
 /// Saves the application state to a project file.
 ///
@@ -73,9 +73,9 @@ pub fn load_project(path: &Path) -> Result<AppState> {
 ///
 /// A `Result` indicating success or an `IoError` on failure.
 pub fn export_project(state: &AppState, path: &Path) -> Result<()> {
-    use vorce_core::module::SourceType;
     use std::collections::HashSet;
     use std::fs::File;
+    use vorce_core::module::SourceType;
     use zip::write::FileOptions;
 
     let file = File::create(path)?;
@@ -152,8 +152,8 @@ pub fn export_project(state: &AppState, path: &Path) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vorce_core::AppState;
     use tempfile::NamedTempFile;
+    use vorce_core::AppState;
 
     #[test]
     #[ignore]

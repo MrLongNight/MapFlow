@@ -1,9 +1,9 @@
 use super::{types::EffectParams, EffectChainRenderer};
 use crate::pipeline::Allocation;
-use vorce_core::{warn_once, EffectChain, EffectType};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
 use tracing::{debug, warn};
+use vorce_core::{warn_once, EffectChain, EffectType};
 use wgpu::util::DeviceExt;
 
 impl EffectChainRenderer {

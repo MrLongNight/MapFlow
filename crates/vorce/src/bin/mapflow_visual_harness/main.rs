@@ -13,8 +13,8 @@ use std::{
 use anyhow::{anyhow, Context, Result};
 use clap::{Parser, Subcommand};
 use image::RgbaImage;
-use vorce_render::{QuadRenderer, RenderBackend, TextureDescriptor, WgpuBackend};
 use scenarios::{build_scenario, ScenarioName, ScenarioSpec};
+use vorce_render::{QuadRenderer, RenderBackend, TextureDescriptor, WgpuBackend};
 use winit::{
     event::{ElementState, Event, KeyEvent, WindowEvent},
     event_loop::{ControlFlow, EventLoop},

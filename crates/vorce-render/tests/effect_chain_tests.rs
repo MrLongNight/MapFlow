@@ -1,8 +1,8 @@
 //! Tests for the EffectChainRenderer
 
+use std::sync::Arc;
 use vorce_core::{EffectChain, EffectType};
 use vorce_render::{EffectChainRenderer, WgpuBackend};
-use std::sync::Arc;
 use wgpu::util::DeviceExt;
 use wgpu::{CommandEncoderDescriptor, Extent3d, TextureDescriptor, TextureUsages};
 

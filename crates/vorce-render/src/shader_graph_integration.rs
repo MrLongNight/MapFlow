@@ -3,11 +3,11 @@
 //! This module bridges the ShaderGraph system with the EffectChainRenderer,
 //! allowing node-based shaders to be used as custom effects in the render pipeline.
 
-use vorce_core::codegen::WGSLCodegen;
-use vorce_core::shader_graph::{GraphId, ShaderGraph};
 use std::collections::HashMap;
 use thiserror::Error;
 use tracing::{debug, info, warn};
+use vorce_core::codegen::WGSLCodegen;
+use vorce_core::shader_graph::{GraphId, ShaderGraph};
 
 use crate::EffectChainRenderer;
 

@@ -4,9 +4,9 @@
 
 use crate::Result;
 use bytemuck::{Pod, Zeroable};
-use vorce_core::{OscillatorConfig, PhaseInitMode};
 use std::sync::Arc;
 use tracing::{debug, info};
+use vorce_core::{OscillatorConfig, PhaseInitMode};
 use wgpu::util::DeviceExt;
 
 /// Simulation uniform parameters

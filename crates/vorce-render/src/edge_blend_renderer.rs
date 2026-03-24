@@ -4,9 +4,9 @@
 
 use crate::Result;
 use bytemuck::{Pod, Zeroable};
-use vorce_core::EdgeBlendConfig;
 use std::sync::Arc;
 use tracing::info;
+use vorce_core::EdgeBlendConfig;
 use wgpu::util::DeviceExt;
 
 /// Edge blend uniform parameters matching the WGSL shader

@@ -1,5 +1,5 @@
-use vorce_core::module::ModuleId;
 use serde::{Deserialize, Serialize};
+use vorce_core::module::ModuleId;
 
 /// Show orchestration mode for module arrangement.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]

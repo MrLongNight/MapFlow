@@ -25,11 +25,11 @@ use crate::sink::VideoSink;
 #[cfg(all(feature = "spout", target_os = "windows"))]
 use crate::source::VideoSource;
 #[cfg(all(feature = "spout", target_os = "windows"))]
-use vorce_render::wgpu;
-#[cfg(all(feature = "spout", target_os = "windows"))]
 use rusty_spout::RustySpout;
 #[cfg(all(feature = "spout", target_os = "windows"))]
 use std::{ffi::CString, sync::Arc};
+#[cfg(all(feature = "spout", target_os = "windows"))]
+use vorce_render::wgpu;
 
 /// Information about a Spout sender.
 #[cfg(all(feature = "spout", target_os = "windows"))]

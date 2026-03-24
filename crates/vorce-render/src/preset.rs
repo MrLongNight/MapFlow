@@ -3,7 +3,6 @@
 //! Save/Load Effect Chain configurations as JSON files.
 //! Provides preset management with categories and favorites.
 
-use vorce_core::{EffectChain, EffectType};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
@@ -11,6 +10,7 @@ use std::io;
 use std::path::{Path, PathBuf};
 use thiserror::Error;
 use tracing::{debug, info, warn};
+use vorce_core::{EffectChain, EffectType};
 
 /// Errors that can occur when working with presets
 #[derive(Error, Debug)]

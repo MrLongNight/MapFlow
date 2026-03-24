@@ -5,10 +5,10 @@
 
 use crate::Result;
 use bytemuck::{Pod, Zeroable};
-use vorce_core::BlendMode;
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
 use tracing::debug;
+use vorce_core::BlendMode;
 use wgpu::util::DeviceExt;
 
 /// Compositor parameters for blend modes

@@ -3,8 +3,8 @@
 use crate::core::theme::colors;
 use crate::LocaleManager;
 use egui::{RichText, ScrollArea, TextEdit, Ui};
-use vorce_control::shortcuts::KeyBindings;
 use std::collections::HashSet;
+use vorce_control::shortcuts::KeyBindings;
 
 /// Panel for viewing and configuring keyboard shortcuts
 #[derive(Default)]

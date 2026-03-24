@@ -1,5 +1,5 @@
-use vorce_core::{Assignment, AssignmentManager, ControlSource, ControlTarget};
 use uuid::Uuid;
+use vorce_core::{Assignment, AssignmentManager, ControlSource, ControlTarget};
 
 #[test]
 fn test_assignment_creation() {

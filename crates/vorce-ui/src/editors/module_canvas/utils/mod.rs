@@ -16,8 +16,8 @@ pub use styling::*;
 mod tests {
     use super::*;
     use crate::editors::module_canvas::inspector::capabilities;
-    use vorce_core::module::{ModulePartType, ModulizerType, SourceType};
     use std::collections::HashSet;
+    use vorce_core::module::{ModulePartType, ModulizerType, SourceType};
 
     #[test]
     fn test_node_catalog_not_empty() {

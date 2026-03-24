@@ -12,10 +12,10 @@ use super::mesh;
 use super::state::{LayerInspectorViewMode, ModuleCanvas};
 use crate::UIAction;
 use egui::{Ui, Vec2};
+use std::collections::HashSet;
 use vorce_core::module::{
     MapFlowModule, ModuleId, ModulePart, ModulePartId, ModulePartType, OutputType,
 };
-use std::collections::HashSet;
 
 #[derive(Debug, Clone, Default)]
 pub struct InspectorPreviewContext {

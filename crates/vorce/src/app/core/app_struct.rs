@@ -18,12 +18,12 @@ use vorce_core::{
 };
 use vorce_mcp::McpAction;
 // use vorce_media::player::VideoPlayer;
+use std::collections::{HashMap, VecDeque};
 use vorce_render::{
     ColorCalibrationRenderer, Compositor, EdgeBlendRenderer, EffectChainRenderer, MeshBufferCache,
     MeshRenderer, OscillatorRenderer, QuadRenderer, TexturePool, WgpuBackend,
 };
 use vorce_ui::AppUI;
-use std::collections::{HashMap, VecDeque};
 
 /// Runtime state for the startup animation overlay.
 #[derive(Default)]

@@ -6,10 +6,10 @@
 
 use crate::{MediaError, Result, VideoDecoder};
 use image::{AnimationDecoder, DynamicImage};
-use vorce_io::{PixelFormat, VideoFrame};
 use std::path::Path;
 use std::time::Duration;
 use tracing::info;
+use vorce_io::{PixelFormat, VideoFrame};
 
 // ============================================================================
 // Still Image Decoder

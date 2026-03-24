@@ -1,10 +1,10 @@
 //! Image sequence decoder (directory of numbered frames)
 
 use crate::{MediaError, Result, VideoDecoder};
-use vorce_io::VideoFrame;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 use tracing::{info, warn};
+use vorce_io::VideoFrame;
 use walkdir::WalkDir;
 
 /// Maximum number of frames to load in a sequence

@@ -1,8 +1,8 @@
+use std::collections::HashMap;
 use vorce_core::module::{
     HueMappingMode, MapFlowModule, ModuleManager, ModulePartType, ModulePlaybackMode,
     ModuleSocketType, OutputType, PartType,
 };
-use std::collections::HashMap;
 
 #[test]
 fn test_create_module() {

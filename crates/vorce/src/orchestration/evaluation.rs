@@ -1,7 +1,7 @@
 use crate::app::core::app_struct::App;
 use crate::app::core::app_struct::RuntimeRenderQueueItem;
-use vorce_core::audio::AudioAnalysis;
 use std::collections::HashMap;
+use vorce_core::audio::AudioAnalysis;
 
 /// Orchestrates the evaluation of the module graph and synchronizes with the Bevy engine.
 pub fn perform_evaluation(

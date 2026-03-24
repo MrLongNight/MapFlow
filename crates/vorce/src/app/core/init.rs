@@ -7,6 +7,9 @@ use anyhow::Result;
 use crossbeam_channel::unbounded;
 use egui_wgpu::Renderer;
 use egui_winit::State;
+use std::collections::{HashMap, VecDeque};
+use std::thread;
+use tracing::{error, info, warn};
 use vorce_control::hue::controller::HueController;
 #[cfg(feature = "midi")]
 use vorce_control::midi::MidiInputHandler;
@@ -23,9 +26,6 @@ use vorce_render::{
     MeshRenderer, OscillatorRenderer, QuadRenderer, TexturePool, WgpuBackend,
 };
 use vorce_ui::AppUI;
-use std::collections::{HashMap, VecDeque};
-use std::thread;
-use tracing::{error, info, warn};
 
 impl App {
     /// Creates a new `App`.
