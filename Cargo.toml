@@ -3,6 +3,7 @@
 resolver = "2"
 members = [
     "crates/mapmap",
+    "crates/mapmap-bevy",
     "crates/mapmap-control",
     "crates/mapmap-core",
     "crates/mapmap-ffi",
