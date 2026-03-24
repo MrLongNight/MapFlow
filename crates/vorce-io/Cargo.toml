@@ -1,0 +1,74 @@
+[package]
+name = "vorce-io"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[features]
+default = []
+# Individual features
+ffmpeg = ["stream"]
+ndi = ["dep:grafton-ndi", "dep:tokio"]
+decklink = []
+spout = ["dep:windows", "dep:rusty-spout"]
+syphon = ["cocoa", "core-foundation", "objc"]
+stream = ["ffmpeg-next", "dep:tokio"]
+virtual-camera = []
+
+# Platform-specific Features
+texture-sharing = []
+
+# Convenience features
+all-io = ["ndi", "decklink", "syphon", "stream", "virtual-camera"]
+# CI-safe feature for Linux builds (excludes platform-specific: spout, syphon, ndi)
+ci-linux = ["virtual-camera"]
+
+[dependencies]
+bytemuck = { workspace = true }
+chrono = { workspace = true }
+
+# Media encoding/decoding
+ffmpeg-next = { workspace = true, optional = true }
+grafton-ndi = { version = "0.2.4", optional = true }
+
+# Format conversion
+image = { workspace = true }
+vorce-core = { path = "../vorce-core" }
+once_cell = { workspace = true }
+ron.workspace = true
+serde = { workspace = true }
+serde_json = { workspace = true }
+tempfile = "3.27"
+thiserror = { workspace = true }
+
+# Async runtime
+tokio = { workspace = true, optional = true }
+tracing = { workspace = true }
+# Core dependencies
+wgpu = { workspace = true }
+zip = "8.4"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+cocoa = { version = "0.26", optional = true }
+core-foundation = { version = "0.9", optional = true }
+objc = { version = "0.2", optional = true }
+
+# Platform-specific dependencies
+[target.'cfg(windows)'.dependencies]
+rusty-spout = { git = "https://github.com/virtual-puppet-project/rusty-spout", optional = true }
+windows = { version = "0.58", features = [
+    "Win32_Graphics_Direct3D11",
+    "Win32_Graphics_Dxgi",
+    "Win32_System_Com",
+], optional = true }
+
+[build-dependencies]
+bindgen = { workspace = true, optional = true }
+cc = { workspace = true, optional = true }
+
+[dev-dependencies]
+tempfile = "3.27"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

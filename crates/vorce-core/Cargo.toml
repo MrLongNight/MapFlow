@@ -1,0 +1,51 @@
+[package]
+name = "vorce-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[features]
+default = ["audio"]
+audio = ["cpal"]
+winit = ["dep:winit"]
+mock-audio = []
+
+[dependencies]
+
+# Audio Analysis (Phase 1 Migration)
+audio-processor-analysis = "2.4"
+audio-processor-traits = "4.3"
+chrono = "0.4"
+cpal = { workspace = true, optional = true }
+crossbeam-channel = { workspace = true }
+dirs = "6.0"
+glam = { workspace = true }
+hound = { workspace = true }
+image = { workspace = true }
+num-complex = "0.4"
+num-traits = "0.2"
+once_cell = { workspace = true }
+parking_lot = { workspace = true }
+rand = "0.10.0"
+resvg.workspace = true
+rustfft = { workspace = true }
+serde = { workspace = true, features = ["rc"] }
+serde_json = { workspace = true }
+
+# Professional BPM/Key Detection
+stratum-dsp = "1.0"
+thiserror = { workspace = true }
+tobj = "4.0.3"
+tracing = { workspace = true }
+usvg.workspace = true
+uuid = { version = "1.22.0", features = ["v4", "serde"] }
+walkdir = "2.5.0"
+winit = { workspace = true, optional = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+ron = { workspace = true }
+tempfile = "3.27"

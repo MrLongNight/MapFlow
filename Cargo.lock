@@ -5354,288 +5354,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "mapmap"
-version = "0.2.0"
-dependencies = [
- "anyhow",
- "arc-swap",
- "axum",
- "bindgen 0.72.1",
- "bytemuck",
- "cbindgen",
- "cc",
- "clap",
- "cpal 0.17.1",
- "criterion",
- "crossbeam-channel",
- "dirs",
- "egui",
- "egui-wgpu",
- "egui-winit",
- "egui_extras",
- "ffmpeg-next",
- "futures",
- "glam 0.32.1",
- "hound",
- "hyper",
- "image 0.24.9",
- "mapmap-bevy",
- "mapmap-control",
- "mapmap-core",
- "mapmap-io",
- "mapmap-mcp",
- "mapmap-media",
- "mapmap-render",
- "mapmap-ui",
- "midir",
- "parking_lot",
- "pollster",
- "proptest",
- "rayon",
- "rfd",
- "ron 0.12.0",
- "rosc",
- "rustfft",
- "serde",
- "serde_json",
- "sysinfo 0.38.4",
- "thiserror 1.0.69",
- "tokio",
- "toml 1.1.0+spec-1.1.0",
- "tower",
- "tracing",
- "tracing-appender",
- "tracing-subscriber",
- "wgpu 27.0.1",
- "winit",
- "winres",
-]
-
-[[package]]
-name = "mapmap-bevy"
-version = "0.2.0"
-dependencies = [
- "anyhow",
- "bevy",
- "bevy_atmosphere",
- "bevy_mod_outline",
- "hexx",
- "mapmap-core",
- "rand 0.9.2",
- "thiserror 1.0.69",
- "tracing",
- "wgpu 24.0.5",
-]
-
-[[package]]
-name = "mapmap-control"
-version = "0.2.0"
-dependencies = [
- "ableton-link-rs",
- "anyhow",
- "axum",
- "futures",
- "hex",
- "http",
- "midir",
- "palette",
- "parking_lot",
- "reqwest",
- "rosc",
- "serde",
- "serde_json",
- "sha2",
- "subtle",
- "thiserror 1.0.69",
- "tokio",
- "tower",
- "tower-http 0.5.2",
- "tracing",
- "uuid",
- "webrtc-dtls",
- "webrtc-util 0.17.1",
-]
-
-[[package]]
-name = "mapmap-core"
-version = "0.2.0"
-dependencies = [
- "audio-processor-analysis",
- "audio-processor-traits",
- "chrono",
- "cpal 0.17.1",
- "crossbeam-channel",
- "dirs",
- "glam 0.32.1",
- "hound",
- "image 0.24.9",
- "num-complex",
- "num-traits",
- "once_cell",
- "parking_lot",
- "proptest",
- "rand 0.10.0",
- "resvg 0.47.0",
- "ron 0.12.0",
- "rustfft",
- "serde",
- "serde_json",
- "stratum-dsp",
- "tempfile",
- "thiserror 1.0.69",
- "tobj",
- "tracing",
- "usvg 0.47.0",
- "uuid",
- "walkdir",
- "winit",
-]
-
-[[package]]
-name = "mapmap-ffi"
-version = "0.2.0"
-dependencies = [
- "bindgen 0.72.1",
- "cbindgen",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "mapmap-io"
-version = "0.2.0"
-dependencies = [
- "bindgen 0.72.1",
- "bytemuck",
- "cc",
- "chrono",
- "cocoa",
- "core-foundation 0.9.4",
- "ffmpeg-next",
- "grafton-ndi",
- "image 0.24.9",
- "mapmap-core",
- "objc",
- "once_cell",
- "ron 0.12.0",
- "rusty-spout",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
- "wgpu 27.0.1",
- "windows 0.58.0",
- "zip",
-]
-
-[[package]]
-name = "mapmap-mcp"
-version = "0.2.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "crossbeam-channel",
- "futures",
- "mapmap-control",
- "mapmap-core",
- "rosc",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "mapmap-media"
-version = "0.2.0"
-dependencies = [
- "criterion",
- "crossbeam-channel",
- "ffmpeg-next",
- "ffmpeg-sys-next",
- "image 0.24.9",
- "libmpv2",
- "libmpv2-sys",
- "mapmap-io",
- "parking_lot",
- "snap",
- "tempfile",
- "thiserror 1.0.69",
- "tracing",
- "walkdir",
-]
-
-[[package]]
-name = "mapmap-render"
-version = "0.2.0"
-dependencies = [
- "anyhow",
- "bytemuck",
- "criterion",
- "crossbeam-channel",
- "futures-channel",
- "glam 0.32.1",
- "image 0.24.9",
- "mapmap-core",
- "notify",
- "parking_lot",
- "pollster",
- "rand 0.10.0",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
- "wgpu 27.0.1",
- "wgpu-hal 29.0.0",
- "windows 0.58.0",
- "winit",
-]
-
-[[package]]
-name = "mapmap-ui"
-version = "0.2.0"
-dependencies = [
- "anyhow",
- "cpal 0.17.1",
- "dirs",
- "egui",
- "egui-wgpu",
- "egui-winit",
- "egui_extras",
- "egui_node_editor",
- "fluent",
- "fluent-langneg 0.14.2",
- "glam 0.32.1",
- "image 0.24.9",
- "mapmap-control",
- "mapmap-core",
- "mapmap-io",
- "mapmap-media",
- "mapmap-render",
- "once_cell",
- "parking_lot",
- "rayon",
- "resvg 0.47.0",
- "rfd",
- "rust-embed",
- "serde",
- "serde_json",
- "sysinfo 0.38.4",
- "thiserror 1.0.69",
- "tiny-skia 0.12.0",
- "tokio",
- "tracing",
- "unic-langid",
- "usvg 0.47.0",
- "wgpu 27.0.1",
- "winit",
-]
-
-[[package]]
 name = "matchers"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9683,6 +9401,288 @@ name = "virtue"
 version = "0.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "051eb1abcf10076295e815102942cc58f9d5e3b4560e46e53c21e8ff6f3af7b1"
+
+[[package]]
+name = "vorce"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "arc-swap",
+ "axum",
+ "bindgen 0.72.1",
+ "bytemuck",
+ "cbindgen",
+ "cc",
+ "clap",
+ "cpal 0.17.1",
+ "criterion",
+ "crossbeam-channel",
+ "dirs",
+ "egui",
+ "egui-wgpu",
+ "egui-winit",
+ "egui_extras",
+ "ffmpeg-next",
+ "futures",
+ "glam 0.32.1",
+ "hound",
+ "hyper",
+ "image 0.24.9",
+ "midir",
+ "parking_lot",
+ "pollster",
+ "proptest",
+ "rayon",
+ "rfd",
+ "ron 0.12.0",
+ "rosc",
+ "rustfft",
+ "serde",
+ "serde_json",
+ "sysinfo 0.38.4",
+ "thiserror 1.0.69",
+ "tokio",
+ "toml 1.1.0+spec-1.1.0",
+ "tower",
+ "tracing",
+ "tracing-appender",
+ "tracing-subscriber",
+ "vorce-bevy",
+ "vorce-control",
+ "vorce-core",
+ "vorce-io",
+ "vorce-mcp",
+ "vorce-media",
+ "vorce-render",
+ "vorce-ui",
+ "wgpu 27.0.1",
+ "winit",
+ "winres",
+]
+
+[[package]]
+name = "vorce-bevy"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "bevy",
+ "bevy_atmosphere",
+ "bevy_mod_outline",
+ "hexx",
+ "rand 0.9.2",
+ "thiserror 1.0.69",
+ "tracing",
+ "vorce-core",
+ "wgpu 24.0.5",
+]
+
+[[package]]
+name = "vorce-control"
+version = "0.2.0"
+dependencies = [
+ "ableton-link-rs",
+ "anyhow",
+ "axum",
+ "futures",
+ "hex",
+ "http",
+ "midir",
+ "palette",
+ "parking_lot",
+ "reqwest",
+ "rosc",
+ "serde",
+ "serde_json",
+ "sha2",
+ "subtle",
+ "thiserror 1.0.69",
+ "tokio",
+ "tower",
+ "tower-http 0.5.2",
+ "tracing",
+ "uuid",
+ "webrtc-dtls",
+ "webrtc-util 0.17.1",
+]
+
+[[package]]
+name = "vorce-core"
+version = "0.2.0"
+dependencies = [
+ "audio-processor-analysis",
+ "audio-processor-traits",
+ "chrono",
+ "cpal 0.17.1",
+ "crossbeam-channel",
+ "dirs",
+ "glam 0.32.1",
+ "hound",
+ "image 0.24.9",
+ "num-complex",
+ "num-traits",
+ "once_cell",
+ "parking_lot",
+ "proptest",
+ "rand 0.10.0",
+ "resvg 0.47.0",
+ "ron 0.12.0",
+ "rustfft",
+ "serde",
+ "serde_json",
+ "stratum-dsp",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tobj",
+ "tracing",
+ "usvg 0.47.0",
+ "uuid",
+ "walkdir",
+ "winit",
+]
+
+[[package]]
+name = "vorce-ffi"
+version = "0.2.0"
+dependencies = [
+ "bindgen 0.72.1",
+ "cbindgen",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "vorce-io"
+version = "0.2.0"
+dependencies = [
+ "bindgen 0.72.1",
+ "bytemuck",
+ "cc",
+ "chrono",
+ "cocoa",
+ "core-foundation 0.9.4",
+ "ffmpeg-next",
+ "grafton-ndi",
+ "image 0.24.9",
+ "objc",
+ "once_cell",
+ "ron 0.12.0",
+ "rusty-spout",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "vorce-core",
+ "wgpu 27.0.1",
+ "windows 0.58.0",
+ "zip",
+]
+
+[[package]]
+name = "vorce-mcp"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "crossbeam-channel",
+ "futures",
+ "rosc",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "vorce-control",
+ "vorce-core",
+]
+
+[[package]]
+name = "vorce-media"
+version = "0.2.0"
+dependencies = [
+ "criterion",
+ "crossbeam-channel",
+ "ffmpeg-next",
+ "ffmpeg-sys-next",
+ "image 0.24.9",
+ "libmpv2",
+ "libmpv2-sys",
+ "parking_lot",
+ "snap",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tracing",
+ "vorce-io",
+ "walkdir",
+]
+
+[[package]]
+name = "vorce-render"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "criterion",
+ "crossbeam-channel",
+ "futures-channel",
+ "glam 0.32.1",
+ "image 0.24.9",
+ "notify",
+ "parking_lot",
+ "pollster",
+ "rand 0.10.0",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "vorce-core",
+ "wgpu 27.0.1",
+ "wgpu-hal 29.0.0",
+ "windows 0.58.0",
+ "winit",
+]
+
+[[package]]
+name = "vorce-ui"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "cpal 0.17.1",
+ "dirs",
+ "egui",
+ "egui-wgpu",
+ "egui-winit",
+ "egui_extras",
+ "egui_node_editor",
+ "fluent",
+ "fluent-langneg 0.14.2",
+ "glam 0.32.1",
+ "image 0.24.9",
+ "once_cell",
+ "parking_lot",
+ "rayon",
+ "resvg 0.47.0",
+ "rfd",
+ "rust-embed",
+ "serde",
+ "serde_json",
+ "sysinfo 0.38.4",
+ "thiserror 1.0.69",
+ "tiny-skia 0.12.0",
+ "tokio",
+ "tracing",
+ "unic-langid",
+ "usvg 0.47.0",
+ "vorce-control",
+ "vorce-core",
+ "vorce-io",
+ "vorce-media",
+ "vorce-render",
+ "wgpu 27.0.1",
+ "winit",
+]
 
 [[package]]
 name = "wait-timeout"

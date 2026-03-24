@@ -1,0 +1,294 @@
+//! Main application struct definition.
+
+use crate::media_manager_ui::MediaManagerUI;
+use crate::window_manager::WindowManager;
+use crossbeam_channel::Receiver;
+use egui::TextureHandle;
+use egui_wgpu::Renderer;
+use egui_winit::State;
+use vorce_control::hue::controller::HueController;
+#[cfg(feature = "midi")]
+use vorce_control::midi::MidiInputHandler;
+use vorce_control::ControlManager;
+use vorce_core::{
+    audio::backend::cpal_backend::CpalBackend,
+    media_library::MediaLibrary,
+    module::{ModuleId, ModulePartId},
+    AppState, History, ModuleEvaluator, RenderOp,
+};
+use vorce_mcp::McpAction;
+// use vorce_media::player::VideoPlayer;
+use vorce_render::{
+    ColorCalibrationRenderer, Compositor, EdgeBlendRenderer, EffectChainRenderer, MeshBufferCache,
+    MeshRenderer, OscillatorRenderer, QuadRenderer, TexturePool, WgpuBackend,
+};
+use vorce_ui::AppUI;
+use std::collections::{HashMap, VecDeque};
+
+/// Runtime state for the startup animation overlay.
+#[derive(Default)]
+pub struct StartupAnimationState {
+    /// Configured startup animation path as entered by the user.
+    pub requested_path: String,
+    /// Resolved runtime path to the startup media file.
+    pub resolved_path: Option<std::path::PathBuf>,
+    /// Short-lived media player used only during the startup overlay.
+    pub player: Option<vorce_media::VideoPlayer>,
+    /// Uploaded egui texture for the most recent decoded frame.
+    pub texture: Option<TextureHandle>,
+    /// Timestamp of the last player update.
+    pub last_update: Option<std::time::Instant>,
+    /// Last startup animation loading or decoding error.
+    pub error: Option<String>,
+}
+
+impl StartupAnimationState {
+    /// Drop the transient player, texture and any tracked path state.
+    pub fn reset(&mut self) {
+        self.requested_path.clear();
+        self.resolved_path = None;
+        self.player = None;
+        self.texture = None;
+        self.last_update = None;
+        self.error = None;
+    }
+}
+
+/// Level of severity for a render diagnostic.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DiagnosticSeverity {
+    /// Non-critical issue that might cause visual degradation.
+    Warning,
+    /// Critical issue that prevents rendering.
+    Error,
+}
+
+/// Structured diagnostic information for a render queue item.
+#[derive(Debug, Clone)]
+pub struct RenderDiagnostic {
+    /// The module ID associated with the diagnostic.
+    pub module_id: ModuleId,
+    /// The part ID associated with the diagnostic.
+    pub part_id: ModulePartId,
+    /// The severity of the diagnostic.
+    pub severity: DiagnosticSeverity,
+    /// A unique feature code or reason for the diagnostic.
+    pub code: String,
+    /// Human-readable message.
+    pub message: String,
+}
+
+/// Single render queue item for the app runtime.
+#[derive(Debug, Clone)]
+pub struct RuntimeRenderQueueItem {
+    /// Owning module ID.
+    pub module_id: ModuleId,
+    /// Evaluated render operation.
+    pub render_op: RenderOp,
+    /// Diagnostics for this queue item.
+    pub diagnostics: Vec<RenderDiagnostic>,
+}
+
+/// Consolidated visual render queue for the current frame.
+#[derive(Debug, Clone, Default)]
+pub struct RuntimeRenderQueue {
+    /// Graph revision that produced this queue.
+    pub graph_revision: u64,
+    /// Render items pre-partitioned by output ID.
+    pub items: std::collections::HashMap<u64, Vec<RuntimeRenderQueueItem>>,
+}
+
+impl RuntimeRenderQueue {
+    /// Clear queue contents for reuse.
+    pub fn clear(&mut self) {
+        for v in self.items.values_mut() {
+            v.clear();
+        }
+    }
+}
+
+/// Configuration for application initialization.
+#[derive(Default)]
+pub struct InitializationConfig {
+    /// Whether the app is running in automation mode.
+    pub is_automation: bool,
+    /// Whether to skip loading the autosave project.
+    pub skip_autosave: bool,
+    /// Whether to skip audio backend initialization.
+    pub skip_audio: bool,
+    /// Whether to skip MIDI initialization.
+    pub skip_midi: bool,
+    /// Whether to skip MCP server initialization.
+    pub skip_mcp: bool,
+    /// Whether to skip Hue controller initialization.
+    pub skip_hue: bool,
+}
+
+impl InitializationConfig {
+    /// Create a config for automation mode.
+    pub fn automation() -> Self {
+        Self {
+            is_automation: true,
+            skip_autosave: true,
+            skip_audio: true,
+            skip_midi: true,
+            skip_mcp: true,
+            skip_hue: true,
+        }
+    }
+}
+
+/// The main application state.
+pub struct App {
+    /// Manages all application windows.
+    pub window_manager: WindowManager,
+
+    /// The UI state.
+    pub ui_state: AppUI,
+    /// The application's render backend.
+    pub backend: WgpuBackend,
+    /// Texture pool for intermediate textures.
+    pub texture_pool: std::sync::Arc<TexturePool>,
+    /// The main compositor.
+    pub _compositor: Compositor,
+    /// The effect chain renderer.
+    pub effect_chain_renderer: EffectChainRenderer,
+    /// Dedicated effect chain renderer for sidebar previews to avoid VRAM thrashing.
+    pub preview_effect_chain_renderer: EffectChainRenderer,
+    /// The mesh renderer.
+    pub mesh_renderer: MeshRenderer,
+    /// Cache for mesh GPU buffers
+    pub mesh_buffer_cache: MeshBufferCache,
+    /// Quad renderer for passthrough.
+    pub _quad_renderer: QuadRenderer,
+    /// Final composite texture before output processing.
+    pub _composite_texture: String,
+    /// Ping-pong textures for layer composition.
+    pub layer_ping_pong: [String; 2],
+    /// The application state (project data).
+    pub state: AppState,
+    /// Undo/Redo history
+    pub history: History,
+    /// The audio backend.
+    pub audio_backend: Option<CpalBackend>,
+    /// The audio analyzer.
+    pub audio_analyzer: vorce_core::audio::AudioAnalyzer,
+    /// List of available audio devices.
+    pub audio_devices: Vec<String>,
+    /// The egui context.
+    pub egui_context: egui::Context,
+    /// The egui state.
+    pub egui_state: State,
+    /// The egui renderer.
+    pub egui_renderer: Renderer,
+    /// Last autosave timestamp.
+    pub last_autosave: std::time::Instant,
+    /// Last update timestamp for delta time calculation.
+    pub last_update: std::time::Instant,
+    /// Application start time.
+    pub start_time: std::time::Instant,
+    /// Startup animation video state.
+    pub startup_animation: StartupAnimationState,
+    /// Last VRAM Garbage Collection timestamp.
+    pub last_texture_gc: std::time::Instant,
+    /// Receiver for MCP commands
+    pub mcp_receiver: Receiver<McpAction>,
+    /// Sender for internal actions (async -> sync)
+    pub action_sender: crossbeam_channel::Sender<McpAction>,
+    /// Unified control manager
+    pub control_manager: ControlManager,
+    /// Flag to track if exit was requested
+    pub exit_requested: bool,
+    /// Flag to track if restart was requested
+    pub restart_requested: bool,
+    /// The oscillator distortion renderer.
+    pub oscillator_renderer: Option<OscillatorRenderer>,
+    /// A dummy texture used as input for effects when no other source is available.
+    pub dummy_texture: Option<wgpu::Texture>,
+    /// A view of the dummy texture.
+    pub dummy_view: Option<std::sync::Arc<wgpu::TextureView>>,
+    /// Module evaluator
+    pub module_evaluator: ModuleEvaluator,
+    /// Last processed graph revision
+    pub last_graph_revision: u64,
+    /// Cached info about output parts for preview rendering
+    pub cached_output_infos: Vec<(u64, u64, String)>,
+    /// Global frame counter for throttling
+    pub frame_counter: u64,
+    /// Active media pipelines for source nodes ((ModuleID, PartID) -> Pipeline)
+    pub media_players:
+        HashMap<(ModulePartId, ModulePartId), crate::orchestration::media::MediaPlayerHandle>,
+    /// FPS calculation: accumulated frame times
+    pub fps_samples: VecDeque<f32>,
+    /// Current calculated FPS
+    pub current_fps: f32,
+    /// Current frame time in ms
+    pub current_frame_time_ms: f32,
+    /// System info for CPU/RAM monitoring
+    pub sys_info: sysinfo::System,
+    /// Last system refresh time
+    pub last_sysinfo_refresh: std::time::Instant,
+    /// MIDI Input Handler
+    #[cfg(feature = "midi")]
+    pub midi_handler: Option<MidiInputHandler>,
+    /// Available MIDI ports
+    #[cfg(feature = "midi")]
+    pub midi_ports: Vec<String>,
+    /// Selected MIDI port index
+    #[cfg(feature = "midi")]
+    pub selected_midi_port: Option<usize>,
+    /// NDI Receivers for module sources
+    #[cfg(feature = "ndi")]
+    pub ndi_receivers:
+        std::collections::HashMap<vorce_core::module::ModulePartId, vorce_io::ndi::NdiReceiver>,
+    /// NDI Senders for module outputs
+    #[cfg(feature = "ndi")]
+    pub ndi_senders:
+        std::collections::HashMap<vorce_core::module::ModulePartId, vorce_io::ndi::NdiSender>,
+    /// NDI Readback buffers (OutputID -> (Buffer, MappedState))
+    #[cfg(feature = "ndi")]
+    pub ndi_readbacks: std::collections::HashMap<
+        u64,
+        (wgpu::Buffer, std::sync::Arc<std::sync::atomic::AtomicBool>),
+    >,
+
+    /// Shader Graph Manager (Runtime)
+    #[allow(dead_code)]
+    pub shader_graph_manager: vorce_render::ShaderGraphManager,
+    /// Output assignments (OutputID -> List of Texture Names)
+    pub output_assignments: std::collections::HashMap<u64, Vec<String>>,
+    /// Recent Effect Configurations (User Prefs)
+    pub recent_effect_configs: vorce_core::RecentEffectConfigs,
+    /// Consolidated runtime render queue for the current frame.
+    pub render_queue: RuntimeRenderQueue,
+    /// Edge blend renderer for output windows
+    pub edge_blend_renderer: Option<EdgeBlendRenderer>,
+    /// Color calibration renderer for output windows
+    pub color_calibration_renderer: Option<ColorCalibrationRenderer>,
+    /// Cache for edge blending resources (OutputID -> (UniformBuffer, UniformBindGroup, ConfigHash))
+    pub edge_blend_cache: std::collections::HashMap<u64, (wgpu::Buffer, wgpu::BindGroup, u64)>,
+    /// Cache for edge blending texture bind groups (OutputID -> TextureBindGroup)
+    pub edge_blend_texture_cache: std::collections::HashMap<u64, wgpu::BindGroup>,
+    /// Temporary textures for output rendering (OutputID -> Texture)
+    pub output_temp_textures: std::collections::HashMap<u64, wgpu::Texture>,
+    /// Cache for egui textures to avoid re-registering every frame ((ModuleId, PartId) -> (EguiId, View))
+    pub preview_texture_cache:
+        HashMap<(u64, u64), (egui::TextureId, std::sync::Arc<wgpu::TextureView>)>,
+    /// Cache for output preview textures (OutputID -> (EguiTextureId, View))
+    pub output_preview_cache: HashMap<u64, (egui::TextureId, std::sync::Arc<wgpu::TextureView>)>,
+    /// Throttles repeated video diagnostics so missing-frame issues do not spam the log file.
+    pub video_diagnostic_log_times: HashMap<String, std::time::Instant>,
+    /// Unit Quad buffers for preview rendering (Vertex, Index, IndexCount)
+    pub preview_quad_buffers: (wgpu::Buffer, wgpu::Buffer, u32),
+    /// Philips Hue Controller
+    pub hue_controller: HueController,
+    /// Tokio runtime for async operations
+    pub tokio_runtime: tokio::runtime::Runtime,
+    /// Media Manager UI
+    pub media_manager_ui: MediaManagerUI,
+    /// Media Library
+    /// Media Library
+    pub media_library: MediaLibrary,
+    /// Bevy runner for 3D/Particles
+    pub bevy_runner: Option<vorce_bevy::BevyRunner>,
+}

@@ -2,24 +2,24 @@
 # CI Trigger fix attempt
 resolver = "2"
 members = [
-    "crates/mapmap",
-    "crates/mapmap-control",
-    "crates/mapmap-core",
-    "crates/mapmap-ffi",
-    "crates/mapmap-io",
-    "crates/mapmap-mcp",
-    "crates/mapmap-media",
-    "crates/mapmap-render",
-    "crates/mapmap-ui",
+    "crates/vorce",
+    "crates/vorce-control",
+    "crates/vorce-core",
+    "crates/vorce-ffi",
+    "crates/vorce-io",
+    "crates/vorce-mcp",
+    "crates/vorce-media",
+    "crates/vorce-render",
+    "crates/vorce-ui",
 ]
 
 [workspace.package]
 version = "0.2.0"
 edition = "2021"
 rust-version = "1.94.0"
-authors = ["MapMap Contributors", "MapFlow Contributors"]
+authors = ["MapMap Contributors", "Vorce Contributors"]
 license = "GPL-3.0-only"
-repository = "https://github.com/MrLongNight/MapFlow"
+repository = "https://github.com/MrLongNight/Vorce"
 
 [workspace.dependencies]
 ableton-link-rs = { version = "0.1" }

@@ -1,0 +1,85 @@
+[package]
+name = "vorce"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Vorce - Professional Projection Mapping Software"
+
+[[bin]]
+name = "Vorce"
+path = "src/main.rs"
+
+[features]
+default = ["audio", "midi", "ffmpeg", "http-api"]
+ffmpeg = ["ffmpeg-next", "vorce-media/ffmpeg"]
+audio = ["vorce-core/audio"]
+midi = ["vorce-control/midi", "vorce-ui/midi"]
+ndi = ["vorce-io/ndi", "vorce-ui/ndi"]
+http-api = ["vorce-control/http-api"]
+libmpv = ["vorce-media/libmpv"]
+macos-beta = []
+
+[dependencies]
+
+anyhow = { workspace = true }
+arc-swap = { workspace = true }
+axum = { workspace = true }
+bindgen = { workspace = true }
+bytemuck = { workspace = true }
+cbindgen = { workspace = true }
+cc = { workspace = true }
+clap = { version = "4.6.0", features = ["derive", "env"] }
+cpal = { workspace = true }
+criterion = { workspace = true }
+crossbeam-channel = { workspace = true }
+dirs = "6.0"
+
+egui = { workspace = true }
+egui-wgpu = { workspace = true }
+egui-winit = { workspace = true }
+egui_extras = { workspace = true }
+ffmpeg-next = { workspace = true, optional = true }
+futures = { workspace = true }
+glam = { workspace = true }
+hound = { workspace = true }
+hyper = { workspace = true }
+image = { workspace = true }
+vorce-bevy = { path = "../vorce-bevy" }
+vorce-control = { path = "../vorce-control" }
+vorce-core = { path = "../vorce-core", features = ["winit"] }
+vorce-io = { path = "../vorce-io" }
+vorce-mcp = { path = "../vorce-mcp" }
+vorce-media = { path = "../vorce-media" }
+vorce-render = { path = "../vorce-render" }
+vorce-ui = { path = "../vorce-ui" }
+midir = { workspace = true }
+parking_lot = { workspace = true }
+pollster = { workspace = true }
+proptest = { workspace = true }
+rayon = { workspace = true }
+
+rfd = "0.17"
+ron = { workspace = true }
+rosc = { workspace = true }
+rustfft = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sysinfo = "0.38"
+thiserror = { workspace = true }
+tokio = { workspace = true }
+toml = { workspace = true }
+tower = { workspace = true }
+tracing = { workspace = true }
+tracing-appender = "0.2"
+tracing-subscriber = { workspace = true }
+
+wgpu = { workspace = true }
+winit = { workspace = true }
+
+[build-dependencies]
+winres = { workspace = true }
+
+[dev-dependencies]
+image = { workspace = true }

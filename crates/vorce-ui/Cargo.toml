@@ -1,0 +1,59 @@
+[package]
+name = "vorce-ui"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[features]
+default = ["cpal", "midi"]
+midi = ["vorce-control/midi"]
+ndi = ["dep:vorce-io", "vorce-io/ndi", "dep:tokio"]
+tokio = ["dep:tokio"]
+
+[dependencies]
+anyhow = { workspace = true }
+cpal = { workspace = true, optional = true }
+dirs = "6.0"
+
+# Phase 6: egui migration
+egui = { workspace = true, features = ["serde"] }
+egui-wgpu = { workspace = true }
+egui-winit = { workspace = true }
+egui_extras = { workspace = true }
+egui_node_editor = { workspace = true }
+fluent = { workspace = true }
+fluent-langneg = { workspace = true }
+glam = { workspace = true }
+image = { workspace = true }
+vorce-control = { path = "../vorce-control", features = ["osc", "midi"] }
+vorce-core = { path = "../vorce-core" }
+vorce-io = { path = "../vorce-io", optional = true }                      # Added for NDI
+vorce-media = { path = "../vorce-media" }
+vorce-render = { path = "../vorce-render" }
+once_cell = { workspace = true }
+parking_lot = { workspace = true }
+rayon.workspace = true
+
+# SVG icon rendering
+resvg = { workspace = true }
+rfd = "0.17"
+rust-embed = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sysinfo = "0.38"
+thiserror = { workspace = true }
+tiny-skia = { workspace = true }
+tokio = { workspace = true, optional = true, features = [
+    "sync",
+    "macros",
+    "rt-multi-thread",
+] } # Added for NDI async
+tracing = { workspace = true }
+unic-langid = { workspace = true }
+usvg = { workspace = true }
+
+wgpu = { workspace = true }
+winit = { workspace = true }

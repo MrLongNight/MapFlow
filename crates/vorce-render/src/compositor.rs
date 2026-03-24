@@ -1,0 +1,393 @@
+//! Compositing engine for blending multiple layers
+//!
+//! The compositor handles rendering multiple layers with different blend modes
+//! and compositing them into a single output.
+
+use crate::Result;
+use bytemuck::{Pod, Zeroable};
+use vorce_core::BlendMode;
+use std::collections::HashMap;
+use std::sync::{Arc, Weak};
+use tracing::debug;
+use wgpu::util::DeviceExt;
+
+/// Compositor parameters for blend modes
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable, PartialEq)]
+struct CompositeParams {
+    blend_mode: u32,
+    opacity: f32,
+    _padding: [f32; 2],
+}
+
+struct CachedUniform {
+    buffer: wgpu::Buffer,
+    bind_group: Arc<wgpu::BindGroup>,
+    last_params: Option<CompositeParams>,
+}
+
+struct CachedTextureBindGroup {
+    base_weak: Weak<wgpu::TextureView>,
+    blend_weak: Weak<wgpu::TextureView>,
+    bind_group: Arc<wgpu::BindGroup>,
+}
+
+/// Compositor for blending layers
+pub struct Compositor {
+    pipeline: wgpu::RenderPipeline,
+    bind_group_layout: wgpu::BindGroupLayout,
+    uniform_bind_group_layout: wgpu::BindGroupLayout,
+    sampler: wgpu::Sampler,
+    device: Arc<wgpu::Device>,
+
+    // Caching
+    uniform_cache: Vec<CachedUniform>,
+    current_cache_index: usize,
+    bind_group_cache: HashMap<(usize, usize), CachedTextureBindGroup>,
+}
+
+impl Compositor {
+    /// Create a new compositor
+    pub fn new(device: Arc<wgpu::Device>, target_format: wgpu::TextureFormat) -> Result<Self> {
+        debug!("Creating compositor");
+
+        // Create sampler
+        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            label: Some("Compositor Sampler"),
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Linear,
+            ..Default::default()
+        });
+
+        // Create bind group layouts
+        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Compositor Bind Group Layout"),
+            entries: &[
+                // Base texture
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        multisampled: false,
+                    },
+                    count: None,
+                },
+                // Base sampler
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
+                // Blend texture
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        multisampled: false,
+                    },
+                    count: None,
+                },
+                // Blend sampler
+                wgpu::BindGroupLayoutEntry {
+                    binding: 3,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
+            ],
+        });
+
+        let uniform_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Compositor Uniform Bind Group Layout"),
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+            });
+
+        // Load shader
+        let shader_source = include_str!("../../../shaders/blend_modes.wgsl");
+        let shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Compositor Shader"),
+            source: wgpu::ShaderSource::Wgsl(shader_source.into()),
+        });
+
+        // Create pipeline layout
+        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("Compositor Pipeline Layout"),
+            bind_group_layouts: &[&bind_group_layout, &uniform_bind_group_layout],
+            push_constant_ranges: &[],
+        });
+
+        // Create render pipeline
+        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Compositor Pipeline"),
+            layout: Some(&pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &shader_module,
+                entry_point: Some("vs_main"),
+                buffers: &[wgpu::VertexBufferLayout {
+                    array_stride: 20, // 3 floats (pos) + 2 floats (uv) = 5 * 4 bytes
+                    step_mode: wgpu::VertexStepMode::Vertex,
+                    attributes: &wgpu::vertex_attr_array![
+                        0 => Float32x3,
+                        1 => Float32x2,
+                    ],
+                }],
+                compilation_options: Default::default(),
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &shader_module,
+                entry_point: Some("fs_main"),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: target_format,
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: Default::default(),
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: None,
+                unclipped_depth: false,
+                polygon_mode: wgpu::PolygonMode::Fill,
+                conservative: false,
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState {
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
+            multiview: None,
+            cache: None,
+        });
+
+        Ok(Self {
+            pipeline,
+            bind_group_layout,
+            uniform_bind_group_layout,
+            sampler,
+            device,
+            uniform_cache: Vec::new(),
+            current_cache_index: 0,
+            bind_group_cache: HashMap::new(),
+        })
+    }
+
+    /// Create a bind group for compositing two textures
+    pub fn create_bind_group(
+        &mut self,
+        base_view: &Arc<wgpu::TextureView>,
+        blend_view: &Arc<wgpu::TextureView>,
+    ) -> Arc<wgpu::BindGroup> {
+        let key = (
+            Arc::as_ptr(base_view) as usize,
+            Arc::as_ptr(blend_view) as usize,
+        );
+
+        if let Some(cached) = self.bind_group_cache.get(&key) {
+            if cached.base_weak.upgrade().is_some() && cached.blend_weak.upgrade().is_some() {
+                return cached.bind_group.clone();
+            }
+        }
+
+        let bg = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Compositor Bind Group"),
+            layout: &self.bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(base_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&self.sampler),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(blend_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: wgpu::BindingResource::Sampler(&self.sampler),
+                },
+            ],
+        });
+
+        let bg = Arc::new(bg);
+        self.bind_group_cache.insert(
+            key,
+            CachedTextureBindGroup {
+                base_weak: Arc::downgrade(base_view),
+                blend_weak: Arc::downgrade(blend_view),
+                bind_group: bg.clone(),
+            },
+        );
+
+        bg
+    }
+
+    /// Create a uniform buffer for composite parameters
+    pub fn create_uniform_buffer(&self, blend_mode: BlendMode, opacity: f32) -> wgpu::Buffer {
+        let params = CompositeParams {
+            blend_mode: blend_mode_to_u32(blend_mode),
+            opacity,
+            _padding: [0.0; 2],
+        };
+
+        self.device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Compositor Uniform Buffer"),
+                contents: bytemuck::cast_slice(&[params]),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            })
+    }
+
+    /// Reset cache index at start of frame
+    pub fn begin_frame(&mut self) {
+        self.current_cache_index = 0;
+
+        // Prune dead texture bind groups
+        self.bind_group_cache.retain(|_, cached| {
+            cached.base_weak.strong_count() > 0 && cached.blend_weak.strong_count() > 0
+        });
+    }
+
+    /// Get a uniform bind group with updated parameters, reusing cached resources
+    pub fn get_uniform_bind_group(
+        &mut self,
+        queue: &wgpu::Queue,
+        blend_mode: BlendMode,
+        opacity: f32,
+    ) -> Arc<wgpu::BindGroup> {
+        // Expand cache if needed
+        if self.current_cache_index >= self.uniform_cache.len() {
+            let params = CompositeParams {
+                blend_mode: blend_mode_to_u32(blend_mode),
+                opacity,
+                _padding: [0.0; 2],
+            };
+
+            let buffer = self
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Compositor Uniform Buffer"),
+                    contents: bytemuck::cast_slice(&[params]),
+                    usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                });
+
+            let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("Compositor Uniform Bind Group"),
+                layout: &self.uniform_bind_group_layout,
+                entries: &[wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: buffer.as_entire_binding(),
+                }],
+            });
+
+            self.uniform_cache.push(CachedUniform {
+                buffer,
+                bind_group: Arc::new(bind_group),
+                last_params: Some(params),
+            });
+        }
+
+        // Update current buffer
+        let cache_entry = &mut self.uniform_cache[self.current_cache_index];
+        let params = CompositeParams {
+            blend_mode: blend_mode_to_u32(blend_mode),
+            opacity,
+            _padding: [0.0; 2],
+        };
+
+        if cache_entry.last_params.as_ref() != Some(&params) {
+            queue.write_buffer(&cache_entry.buffer, 0, bytemuck::cast_slice(&[params]));
+            cache_entry.last_params = Some(params);
+        }
+
+        let bind_group = self.uniform_cache[self.current_cache_index]
+            .bind_group
+            .clone();
+        self.current_cache_index += 1;
+
+        bind_group
+    }
+
+    /// Composite two textures with a specific blend mode
+    pub fn composite<'a>(
+        &'a self,
+        render_pass: &mut wgpu::RenderPass<'a>,
+        vertex_buffer: &'a wgpu::Buffer,
+        index_buffer: &'a wgpu::Buffer,
+        bind_group: &'a wgpu::BindGroup,
+        uniform_bind_group: &'a wgpu::BindGroup,
+    ) {
+        render_pass.set_pipeline(&self.pipeline);
+        render_pass.set_bind_group(0, bind_group, &[]);
+        render_pass.set_bind_group(1, uniform_bind_group, &[]);
+        render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
+        render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+        render_pass.draw_indexed(0..6, 0, 0..1);
+    }
+}
+
+/// Convert BlendMode to u32 for shader
+///
+/// ⚡ Bolt: Replaced `match` with a direct `as` cast.
+/// This is slightly more efficient as it avoids a lookup table or series of comparisons.
+/// The `BlendMode` enum is marked with `#[repr(u32)]` to guarantee a stable conversion.
+fn blend_mode_to_u32(mode: BlendMode) -> u32 {
+    mode as u32
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_blend_mode_conversion() {
+        assert_eq!(blend_mode_to_u32(BlendMode::Normal), 0);
+        assert_eq!(blend_mode_to_u32(BlendMode::Multiply), 3);
+        assert_eq!(blend_mode_to_u32(BlendMode::Screen), 4);
+        assert_eq!(blend_mode_to_u32(BlendMode::Difference), 12);
+    }
+
+    #[test]
+    fn test_composite_params_size() {
+        assert_eq!(
+            std::mem::size_of::<CompositeParams>(),
+            16 // 4 bytes * 4 (u32 + f32 + 2*f32 padding)
+        );
+    }
+
+    #[test]
+    fn test_compositor_creation() {
+        pollster::block_on(async {
+            let backend = crate::WgpuBackend::new(None).await;
+            if let Ok(backend) = backend {
+                let compositor =
+                    Compositor::new(backend.device.clone(), wgpu::TextureFormat::Bgra8UnormSrgb);
+                assert!(compositor.is_ok());
+            }
+        });
+    }
+}
