@@ -43,7 +43,7 @@ We're simply a busy group of people, but you will hear back eventually.
 
 ## <a id='feature-requests'></a>Request a feature
 
-We already have a formal [roadmap](https://github.com/MrLongNight/MapFlow/issues) for the project but nevertheless we are a community of people
+We already have a formal [roadmap](ROADMAP.md) for the project but nevertheless we are a community of people
 who each contributes to sections that we feel are important for the project.
 Feature requests are therefore mostly a way of us discussing/feeling out together where we'd like the project to go.
 This can sometimes involve a lot of discussion, as everyone uses MapFlow differently.
@@ -139,7 +139,7 @@ This granularity makes the code easier to deal with in cases where some things h
 - [Build Instructions](docs/A4_USER/B3_SUPPORT/DOC-C1_BUILD.md)
 - [Architecture Documentation](docs/A1_SYSTEM/B1_ARCHITECTURE/DOC-C1_OVERVIEW.md)
 - [Development Setup](docs/A2_DEVELOPMENT/B1_SETUP/DOC-C3_DEVELOPMENT_SETUP.md)
-- [Roadmap](https://github.com/MrLongNight/MapFlow/issues)
+- [Roadmap](ROADMAP.md)
 
 ## Questions?
 

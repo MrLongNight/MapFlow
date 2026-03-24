@@ -257,10 +257,7 @@ impl TransformPanel {
                                 .color(colors::CYAN_ACCENT.linear_multiply(0.3)),
                         );
                         ui.add_space(16.0);
-                        crate::widgets::custom::render_info_label(
-                            ui,
-                            &i18n.t("transform-no-layer"),
-                        );
+                        ui.label(i18n.t("transform-no-layer"));
                         crate::widgets::custom::render_info_label(
                             ui,
                             &i18n.t("transform-select-tip"),

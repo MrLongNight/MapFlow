@@ -462,7 +462,7 @@ impl App {
         }
 
         // --- Ensure Output Windows exist ---
-        let existing_output_ids: Vec<u64> = state
+        let existing_output_ids: std::collections::HashSet<u64> = state
             .output_manager
             .outputs()
             .iter()
@@ -495,7 +495,8 @@ impl App {
 
         // --- Remove dangling connections ---
         for module in state.module_manager_mut().modules_mut() {
-            let part_ids: Vec<u64> = module.parts.iter().map(|p| p.id).collect();
+            let part_ids: std::collections::HashSet<u64> =
+                module.parts.iter().map(|p| p.id).collect();
             module
                 .connections
                 .retain(|c| part_ids.contains(&c.from_part) && part_ids.contains(&c.to_part));
