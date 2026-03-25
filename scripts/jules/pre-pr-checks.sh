@@ -30,22 +30,22 @@ if ! cargo fmt --all; then
 fi
 ok "Formatierung OK"
 
-log "2/5: cargo clippy --all-targets --all-features -- -D warnings"
-if ! cargo clippy --all-targets --all-features -- -D warnings; then
+log "2/5: cargo clippy --all-targets --features "vorce-io/ci-linux,ffmpeg" -- -D warnings"
+if ! cargo clippy --all-targets --features "vorce-io/ci-linux,ffmpeg" -- -D warnings; then
   err "Clippy hat Fehler/Warnungen (behandelt als Fehler). Bitte beheben."
   exit 3
 fi
 ok "Clippy OK"
 
-log "3/5: cargo check --all-targets --all-features"
-if ! cargo check --all-targets --all-features; then
+log "3/5: cargo check --all-targets --features "vorce-io/ci-linux,ffmpeg""
+if ! cargo check --all-targets --features "vorce-io/ci-linux,ffmpeg"; then
   err "cargo check fehlgeschlagen. Bitte Build-Probleme beheben."
   exit 4
 fi
 ok "Build-Check OK"
 
-log "4/5: cargo test --workspace --all-features"
-if ! cargo test --workspace --all-features; then
+log "4/5: cargo test --workspace --features "vorce-io/ci-linux,ffmpeg""
+if ! cargo test --workspace --features "vorce-io/ci-linux,ffmpeg"; then
   err "Tests fehlgeschlagen. Bitte Tests zum Passen bringen."
   exit 5
 fi

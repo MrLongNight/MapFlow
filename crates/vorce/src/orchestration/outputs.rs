@@ -2,6 +2,7 @@
 
 use crate::app::core::app_struct::App;
 use anyhow::Result;
+use std::collections::HashSet;
 use vorce_core::module::OutputType;
 
 /// Synchronizes output windows with the current module graph configuration.
@@ -11,8 +12,7 @@ pub fn sync_output_windows(
     _ui_needs_sync: bool,
     _graph_dirty: bool,
 ) -> Result<()> {
-    // Bolt Optimization: Replace HashSet with Vec to avoid allocation overhead for small lookups
-    let mut active_window_ids: Vec<u64> = Vec::new();
+    let mut active_window_ids: HashSet<u64> = HashSet::new();
 
     // 1. Reconcile graph Projector nodes into OutputManager
     // First, collect the required updates to avoid borrowing `app.state` mutably while iterating over it
@@ -28,9 +28,7 @@ pub fn sync_output_windows(
                     output_height,
                     ..
                 }) => {
-                    if !active_window_ids.contains(id) {
-                        active_window_ids.push(*id);
-                    }
+                    active_window_ids.insert(*id);
                     projector_configs.push((*id, name.clone(), *output_width, *output_height));
                 }
                 #[cfg(target_os = "macos")]

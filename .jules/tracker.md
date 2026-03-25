@@ -101,7 +101,3 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 ## 2026-03-21 - Missing PR Documentation
 **Erkenntnis:** PR #1339 was merged but missing from CHANGELOG.md.
 **Aktion:** Added missing entry to CHANGELOG.md. No roadmap update needed as ROADMAP.md is deprecated.
-
-## 2026-03-24 - Missing PR Documentation
-**Erkenntnis:** PR #1404 was merged but missing from CHANGELOG.md.
-**Aktion:** Added missing entry to CHANGELOG.md. No roadmap update needed as ROADMAP.md is deprecated.
