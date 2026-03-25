@@ -3,10 +3,7 @@ use std::ptr::NonNull;
 #[cfg(target_os = "windows")]
 use wgpu::Texture;
 
-#[cfg(target_os = "windows")]
-use windows::Win32::Foundation::HANDLE;
-#[cfg(target_os = "windows")]
-use windows::Win32::Graphics::Direct3D12::{ID3D12Device, ID3D12Resource};
+
 
 #[cfg(target_os = "windows")]
 /// Create a WGPU texture from a shared handle.
@@ -18,11 +15,11 @@ use windows::Win32::Graphics::Direct3D12::{ID3D12Device, ID3D12Resource};
 /// refers to a compatible D3D11/D3D12 resource, and that the resource is kept alive
 /// for the duration of the texture's usage.
 pub unsafe fn texture_from_shared_handle(
-    device: &wgpu::Device,
-    handle: NonNull<std::ffi::c_void>,
-    width: u32,
-    height: u32,
-    format: wgpu::TextureFormat,
+    _device: &wgpu::Device,
+    _handle: NonNull<std::ffi::c_void>,
+    _width: u32,
+    _height: u32,
+    _format: wgpu::TextureFormat,
 ) -> Result<Texture, &'static str> {
     Err("Spout integration is currently disabled due to wgpu backend changes")
 }
@@ -36,8 +33,8 @@ pub unsafe fn texture_from_shared_handle(
 /// interop calls which may result in undefined behavior if the texture is not compatible
 /// with sharing (e.g., incorrect usage flags or format) or if the device context is lost.
 pub unsafe fn shared_handle_from_texture(
-    device: &wgpu::Device,
-    texture: &wgpu::Texture,
+    _device: &wgpu::Device,
+    _texture: &wgpu::Texture,
 ) -> Result<NonNull<std::ffi::c_void>, &'static str> {
     Err("Spout integration is currently disabled due to wgpu backend changes")
 }

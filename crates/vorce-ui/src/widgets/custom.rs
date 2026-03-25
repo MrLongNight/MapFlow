@@ -721,9 +721,9 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32, hover_text
     }
 
     if !hover_text.is_empty() {
-        response.on_hover_text(hover_text);
+        response.on_hover_text(format!("{} (Hold to confirm)", hover_text));
     } else {
-        response.on_hover_text("Hold to confirm (Mouse or Space/Enter)");
+        response.on_hover_text(format!("Hold to confirm {} (Mouse or Space/Enter)", text));
     }
 
     triggered
@@ -843,9 +843,9 @@ pub fn hold_to_action_icon(
     }
 
     if !hover_text.is_empty() {
-        response.on_hover_text(hover_text);
+        response.on_hover_text(format!("{} (Hold to confirm)", hover_text));
     } else {
-        response.on_hover_text("Hold to confirm");
+        response.on_hover_text("Hold to confirm action");
     }
 
     triggered
