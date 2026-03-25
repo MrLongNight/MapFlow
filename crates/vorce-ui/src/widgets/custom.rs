@@ -651,7 +651,9 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32, hover_text
     } else {
         format!("{} (Hold to confirm)", hover_text)
     };
-    response.widget_info(|| WidgetInfo::labeled(WidgetType::Button, ui.is_enabled(), a11y_label.clone()));
+    response.widget_info(|| {
+        WidgetInfo::labeled(WidgetType::Button, ui.is_enabled(), a11y_label.clone())
+    });
 
     // Use response.id for unique state storage to prevent collisions
     let state_id = response.id.with("hold_state");
