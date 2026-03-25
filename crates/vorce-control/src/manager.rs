@@ -315,36 +315,6 @@ impl ControlManager {
         events
     }
 
-    /// Validate control value for security issues (e.g. path traversal)
-    fn validate_security(&self, target: &ControlTarget, value: &ControlValue) -> Result<()> {
-        if let ControlValue::String(s) = value {
-            // Check for path traversal attempts
-            if s == ".."
-                || s.starts_with("../")
-                || s.starts_with("..\\")
-                || s.contains("/../")
-                || s.contains("\\..\\")
-                || s.contains("/..\\")
-                || s.contains("\\../")
-                || s.ends_with("/..")
-                || s.ends_with("\\..")
-            {
-                let name = match target {
-                    ControlTarget::PaintParameter(_, name) => name.clone(),
-                    ControlTarget::EffectParameter(_, name) => name.clone(),
-                    ControlTarget::Custom(name) => name.clone(),
-                    _ => target.name(),
-                };
-
-                return Err(ControlError::InvalidParameter(format!(
-                    "Security violation: Path traversal detected in value for {}",
-                    name
-                )));
-            }
-        }
-        Ok(())
-    }
-
     /// Apply a control change
     pub fn apply_control(&mut self, target: ControlTarget, value: ControlValue) {
         // SECURITY: Validate target to prevent injection/traversal in names
@@ -353,9 +323,18 @@ impl ControlManager {
             return;
         }
 
-        // SECURITY: Validate potential file paths to prevent traversal
-        if let Err(e) = self.validate_security(&target, &value) {
-            warn!("Security violation in apply_control: {}", e);
+        // SECURITY: Validate potential file paths to prevent traversal and validate bounds/length limits
+        if let Err(e) = value.validate() {
+            let name = match &target {
+                ControlTarget::PaintParameter(_, name) => name.clone(),
+                ControlTarget::EffectParameter(_, name) => name.clone(),
+                ControlTarget::Custom(name) => name.clone(),
+                _ => target.name(),
+            };
+            warn!(
+                "Security violation in apply_control value for {}: {}",
+                name, e
+            );
             return;
         }
 
