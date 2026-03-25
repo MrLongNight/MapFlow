@@ -358,6 +358,12 @@ impl MediaBrowser {
 
     /// Get filtered and searched entries
     fn filtered_entries(&self) -> Vec<(usize, &MediaEntry)> {
+        let query = if !self.search_query.is_empty() {
+            Some(self.search_query.to_lowercase())
+        } else {
+            None
+        };
+
         self.entries
             .iter()
             .enumerate()
@@ -370,10 +376,9 @@ impl MediaBrowser {
                 }
 
                 // Filter by search query
-                if !self.search_query.is_empty() {
-                    let query = self.search_query.to_lowercase();
-                    let name_matches = entry.name.to_lowercase().contains(&query);
-                    let tag_matches = entry.tags.iter().any(|t| t.to_lowercase().contains(&query));
+                if let Some(q) = &query {
+                    let name_matches = entry.name.to_lowercase().contains(q);
+                    let tag_matches = entry.tags.iter().any(|t| t.to_lowercase().contains(q));
                     if !name_matches && !tag_matches {
                         return false;
                     }
