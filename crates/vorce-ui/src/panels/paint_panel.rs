@@ -1,4 +1,4 @@
-// crates/mapmap-ui/src/paint_panel.rs
+// crates/vorce-ui/src/paint_panel.rs
 
 use crate::core::responsive::ResponsiveLayout;
 use crate::i18n::LocaleManager;

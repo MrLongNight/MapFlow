@@ -94,9 +94,9 @@ if defined MPV_LIB_DIR (
 
 pushd "%ROOT_DIR%"
 if defined EXTRA_FEATURES (
-    cargo run --release -p mapmap --bin MapFlow --features "!EXTRA_FEATURES!"
+    cargo run --release -p vorce --bin Vorce --features "!EXTRA_FEATURES!"
 ) else (
-    cargo run --release -p mapmap --bin MapFlow
+    cargo run --release -p vorce --bin Vorce
 )
 set "EXIT_CODE=%ERRORLEVEL%"
 popd

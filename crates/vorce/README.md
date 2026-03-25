@@ -4,7 +4,7 @@ The main entry point and binary crate for the MapFlow projection mapping suite.
 
 ## Overview
 
-This crate glues together all the specialized crates (`mapmap-core`, `mapmap-render`, `mapmap-ui`, etc.) to form the complete application.
+This crate glues together all the specialized crates (`vorce-core`, `vorce-render`, `vorce-ui`, etc.) to form the complete application.
 It initializes the engine, sets up the windowing system, and runs the main event loop.
 
 ## Documentation

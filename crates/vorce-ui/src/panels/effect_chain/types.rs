@@ -2,7 +2,7 @@ use crate::i18n::LocaleManager;
 use crate::icons::AppIcon;
 use serde::{Deserialize, Serialize};
 
-/// Available effect types (mirror of mapmap-render::EffectType)
+/// Available effect types (mirror of vorce-render::EffectType)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum EffectType {
     LoadLUT,

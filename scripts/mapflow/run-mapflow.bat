@@ -22,7 +22,7 @@ if exist "%VCPKG_BIN%\*.dll" (
 )
 
 pushd "%ROOT_DIR%"
-cargo run --release -p mapmap --bin MapFlow --no-default-features --features "audio,ffmpeg"
+cargo run --release -p vorce --bin Vorce --no-default-features --features "audio,ffmpeg"
 set "EXIT_CODE=%ERRORLEVEL%"
 popd
 

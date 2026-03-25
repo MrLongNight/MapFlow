@@ -65,7 +65,7 @@
             <UIRef Id="WixUI_Minimal" />
         </UI>
         <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
-        <!-- License path: from target\release go up 2 levels to project root, then into crates\mapmap\wix -->
-        <WixVariable Id="WixUILicenseRtf" Value="$(var.CargoTargetBinDir)\..\..\crates\mapmap\wix\License.rtf" />
+        <!-- License path: from target\release go up 2 levels to project root, then into crates\vorce\wix -->
+        <WixVariable Id="WixUILicenseRtf" Value="$(var.CargoTargetBinDir)\..\..\crates\vorce\wix\License.rtf" />
     </Product>
 </Wix>

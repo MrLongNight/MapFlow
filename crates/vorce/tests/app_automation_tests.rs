@@ -11,7 +11,7 @@ fn test_release_smoke_automation_empty_project() {
     let workspace_root = manifest_dir
         .parent()
         .and_then(Path::parent)
-        .expect("mapmap crate should live under <workspace>/crates/mapmap");
+        .expect("vorce crate should live under <workspace>/crates/vorce");
 
     let fixture_path = workspace_root.join("tests/fixtures/empty_project.mflow");
     let output_dir = workspace_root.join("target/automation_test_output");

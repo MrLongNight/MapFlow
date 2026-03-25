@@ -168,6 +168,6 @@ fn workspace_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .and_then(Path::parent)
-        .expect("mapmap crate should live under <workspace>/crates/mapmap")
+        .expect("vorce crate should live under <workspace>/crates/vorce")
         .to_path_buf()
 }

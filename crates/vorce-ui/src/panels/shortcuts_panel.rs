@@ -213,9 +213,9 @@ impl ShortcutsPanel {
                         // Ignore modifier-only presses
                         if !matches!(key, egui::Key::PageUp | egui::Key::PageDown) {
                             let modifiers = input.modifiers;
-                            if let Some(mapmap_key) = to_mapmap_key(*key) {
+                            if let Some(vorce_key) = to_vorce_key(*key) {
                                 new_shortcut_key =
-                                    Some(Some((mapmap_key, to_mapmap_modifiers(modifiers))));
+                                    Some(Some((vorce_key, to_vorce_modifiers(modifiers))));
                             }
                         }
                     }
@@ -250,7 +250,7 @@ impl ShortcutsPanel {
     }
 }
 
-fn to_mapmap_key(key: egui::Key) -> Option<vorce_control::shortcuts::Key> {
+fn to_vorce_key(key: egui::Key) -> Option<vorce_control::shortcuts::Key> {
     use egui::Key::*;
     use vorce_control::shortcuts::Key as Mk;
 
@@ -324,7 +324,7 @@ fn to_mapmap_key(key: egui::Key) -> Option<vorce_control::shortcuts::Key> {
     }
 }
 
-fn to_mapmap_modifiers(modifiers: egui::Modifiers) -> vorce_control::shortcuts::Modifiers {
+fn to_vorce_modifiers(modifiers: egui::Modifiers) -> vorce_control::shortcuts::Modifiers {
     vorce_control::shortcuts::Modifiers {
         ctrl: modifiers.ctrl,
         alt: modifiers.alt,
