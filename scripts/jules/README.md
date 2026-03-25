@@ -13,6 +13,7 @@ PowerShell-Skripte fuer die Jules REST API mit optionaler GitHub-Issue-Synchroni
 - `create-jules-session.ps1`: Erstellt Jules Sessions direkt aus `-IssueNumber` oder `-Prompt`
 - `monitor-jules-sessions.ps1`: Listet Sessions, Status, Attention-Zustaende und letzte Aktivitaeten
 - `respond-jules-session.ps1`: Reagiert auf Sessions mit `approvePlan` und `sendMessage`
+- `run-master-issue-cycle.ps1`: Liest alle Issue-Paare aus einem Master-Issue und startet die komplette Kette automatisch
 - `sync-project-manager.ps1`: Synchronisiert alle relevanten Issues auf einen kompakten, verlaesslichen `MapFlow Project Manager`-Block
 
 ## Beispiele
@@ -24,6 +25,7 @@ PowerShell-Skripte fuer die Jules REST API mit optionaler GitHub-Issue-Synchroni
 ./scripts/jules/monitor-jules-sessions.ps1 -IssueNumber 123 -SyncIssueBody
 ./scripts/jules/respond-jules-session.ps1 -IssueNumber 123 -ApprovePlan
 ./scripts/jules/respond-jules-session.ps1 -IssueNumber 123 -Message "Bitte nutze die bestehenden UI-Komponenten in crates/mapmap-ui."
+./scripts/jules/run-master-issue-cycle.ps1 -MasterIssueNumber 1203 -Repository MrLongNight/MapFlow
 ./scripts/jules/sync-project-manager.ps1 -Repository MrLongNight/MapFlow -FailOnAttention
 ```
 
