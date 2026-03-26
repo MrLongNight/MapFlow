@@ -40,7 +40,7 @@ impl HueController {
         let poll_interval = std::time::Duration::from_secs(2);
 
         while start_time.elapsed() < timeout {
-            match api::client::HueClient::register_user(ip, "MapFlow").await {
+            match api::client::HueClient::register_user(ip, "Vorce").await {
                 Ok(config) => {
                     info!("Successfully registered with Hue Bridge!");
                     return Ok(config);

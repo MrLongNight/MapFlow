@@ -1,5 +1,5 @@
 
-app-title = MapFlow - VJ Projection Mapping
+app-title = Vorce - VJ Projection Mapping
 menu-file = File
 menu-file-new-project = New Project...
 menu-file-open-project = Open Project...
@@ -189,7 +189,7 @@ mode-play-once = Play Once
 panel-performance = Performance
 label-fps = FPS
 label-frame-time = Frame Time
-perf-demo = MapFlow Phase 0 Demo
+perf-demo = Vorce Phase 0 Demo
 
 # Layers
 panel-layers = Layers

@@ -130,12 +130,12 @@ pub fn extract_api_key(headers: &http::HeaderMap, _query: Option<&str>) -> Optio
     // Try Sec-WebSocket-Protocol header
     // Browser WebSocket clients cannot set custom headers, so we support passing the
     // API key as a subprotocol in the Sec-WebSocket-Protocol header.
-    // Format: mapflow.auth.<TOKEN>
+    // Format: vorce.auth.<TOKEN>
     if let Some(ws_protocol_header) = headers.get(http::header::SEC_WEBSOCKET_PROTOCOL) {
         if let Ok(protocols) = ws_protocol_header.to_str() {
             for protocol in protocols.split(',') {
                 let protocol = protocol.trim();
-                if let Some(token) = protocol.strip_prefix("mapflow.auth.") {
+                if let Some(token) = protocol.strip_prefix("vorce.auth.") {
                     return Some(token.to_string());
                 }
             }
@@ -245,10 +245,10 @@ mod tests {
     #[test]
     fn test_extract_websocket_protocol() {
         let mut headers = http::HeaderMap::new();
-        // Sec-WebSocket-Protocol: mapflow.auth.<TOKEN>
+        // Sec-WebSocket-Protocol: vorce.auth.<TOKEN>
         headers.insert(
             http::header::SEC_WEBSOCKET_PROTOCOL,
-            "mapflow.auth.test_key, json".parse().unwrap(),
+            "vorce.auth.test_key, json".parse().unwrap(),
         );
 
         let key = extract_api_key(&headers, None);

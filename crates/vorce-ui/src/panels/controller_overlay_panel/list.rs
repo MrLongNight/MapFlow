@@ -22,10 +22,10 @@ impl ControllerOverlayPanel {
                 self.element_filter = ElementFilter::All;
             }
             if ui
-                .selectable_label(self.element_filter == ElementFilter::MapFlow, "MapFlow")
+                .selectable_label(self.element_filter == ElementFilter::Vorce, "Vorce")
                 .clicked()
             {
-                self.element_filter = ElementFilter::MapFlow;
+                self.element_filter = ElementFilter::Vorce;
             }
             if ui
                 .selectable_label(
@@ -78,7 +78,7 @@ impl ControllerOverlayPanel {
                             // Apply filter
                             let show = match self.element_filter {
                                 ElementFilter::All => true,
-                                ElementFilter::MapFlow => matches!(assignment, Some(a) if matches!(a.target, MidiAssignmentTarget::MapFlow(_))),
+                                ElementFilter::Vorce => matches!(assignment, Some(a) if matches!(a.target, MidiAssignmentTarget::MapFlow(_))),
                                 ElementFilter::StreamerBot => matches!(assignment, Some(a) if matches!(a.target, MidiAssignmentTarget::StreamerBot(_))),
                                 ElementFilter::Mixxx => matches!(assignment, Some(a) if matches!(a.target, MidiAssignmentTarget::Mixxx(_))),
                                 ElementFilter::Unassigned => assignment.is_none(),

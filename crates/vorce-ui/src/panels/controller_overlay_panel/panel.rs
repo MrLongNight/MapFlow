@@ -33,7 +33,7 @@ const MIN_SCALE: f32 = 0.3;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum MidiLearnTarget {
-    MapFlow,
+    Vorce,
     StreamerBot(String), // Function name
     Mixxx(String),       // Function name
 }
@@ -98,7 +98,7 @@ pub struct ControllerOverlayPanel {
 pub enum ElementFilter {
     #[default]
     All,
-    MapFlow,
+    Vorce,
     StreamerBot,
     Mixxx,
     Unassigned,
@@ -256,7 +256,7 @@ impl ControllerOverlayPanel {
                     } else {
                         egui::Button::new("🎨 Zuweisungen")
                     };
-                    if ui.add(assign_btn).clone().on_hover_text("Zeigt alle Elemente farblich nach Zuweisung:\n🟢 Frei\n🔵 MapFlow\n🟣 Streamer.bot\n🟠 Mixxx").clicked() {
+                    if ui.add(assign_btn).clone().on_hover_text("Zeigt alle Elemente farblich nach Zuweisung:\n🟢 Frei\n🔵 Vorce\n🟣 Streamer.bot\n🟠 Mixxx").clicked() {
                         self.show_assignment_colors = !self.show_assignment_colors;
                     }
 
@@ -290,16 +290,16 @@ impl ControllerOverlayPanel {
                     {
                         let is_learning = self.is_learning();
 
-                        // MapFlow Learn
+                        // Vorce Learn
                         let mapflow_btn = if is_learning
-                            && matches!(self.learn_target, Some(MidiLearnTarget::MapFlow))
+                            && matches!(self.learn_target, Some(MidiLearnTarget::Vorce))
                         {
-                            ui.add(egui::Button::new("⏳ MapFlow...").fill(Color32::YELLOW))
+                            ui.add(egui::Button::new("⏳ Vorce...").fill(Color32::YELLOW))
                         } else {
-                            ui.button("🎯 MapFlow")
+                            ui.button("🎯 Vorce")
                         };
                         if mapflow_btn.clicked() && !is_learning {
-                            self.learn_target = Some(MidiLearnTarget::MapFlow);
+                            self.learn_target = Some(MidiLearnTarget::Vorce);
                             // Will start learn when element is clicked
                         }
 
