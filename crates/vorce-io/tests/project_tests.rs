@@ -41,8 +41,38 @@ fn create_sample_app_state() -> AppState {
 #[ignore]
 fn test_project_ron_roundtrip() {
     let dir = tempdir().unwrap();
-    let file_path = dir.path().join("test_project.mflow");
+    let file_path = dir.path().join("test_project.vorce");
 
+    let original_state = create_sample_app_state();
+    save_project(&original_state, &file_path).unwrap();
+
+    let loaded_state = load_project(&file_path).unwrap();
+
+    assert_eq!(original_state, loaded_state);
+}
+
+#[test]
+#[ignore]
+fn test_project_mflow_legacy_load() {
+    let dir = tempdir().unwrap();
+    let file_path = dir.path().join("legacy_project.mflow");
+
+    // We can simulate creating a legacy mflow project by just saving it.
+    let original_state = create_sample_app_state();
+    save_project(&original_state, &file_path).unwrap();
+
+    let loaded_state = load_project(&file_path).unwrap();
+
+    assert_eq!(original_state, loaded_state);
+}
+
+#[test]
+#[ignore]
+fn test_project_mapmap_legacy_load() {
+    let dir = tempdir().unwrap();
+    let file_path = dir.path().join("legacy_project.mapmap");
+
+    // We can simulate creating a legacy mapmap project by just saving it.
     let original_state = create_sample_app_state();
     save_project(&original_state, &file_path).unwrap();
 
@@ -67,7 +97,7 @@ fn test_project_json_roundtrip() {
 #[test]
 fn test_load_missing_file() {
     let dir = tempdir().unwrap();
-    let file_path = dir.path().join("non_existent_project.mflow");
+    let file_path = dir.path().join("non_existent_project.vorce");
 
     let result = load_project(&file_path);
     assert!(matches!(result, Err(IoError::Io(_))));
@@ -76,7 +106,7 @@ fn test_load_missing_file() {
 #[test]
 fn test_load_invalid_ron() {
     let dir = tempdir().unwrap();
-    let file_path = dir.path().join("invalid.mflow");
+    let file_path = dir.path().join("invalid.vorce");
 
     let mut file = File::create(&file_path).unwrap();
     writeln!(file, "this is not valid ron").unwrap();
@@ -88,13 +118,13 @@ fn test_load_invalid_ron() {
 #[test]
 fn test_autosave_backward_compatibility_master_blackout() {
     let dir = tempdir().unwrap();
-    let file_path = dir.path().join("autosave.mflow");
+    let file_path = dir.path().join("autosave.vorce");
 
     // Get a valid current project file string
     let app_state = vorce_core::AppState::default();
     let project_file = vorce_io::project_format::ProjectFile::new(app_state);
 
-    // We use RON format, because autosaves default to .mflow -> RON
+    // We use RON format, because autosaves default to .vorce -> RON
     let mut ron_string =
         ron::ser::to_string_pretty(&project_file, ron::ser::PrettyConfig::default()).unwrap();
 

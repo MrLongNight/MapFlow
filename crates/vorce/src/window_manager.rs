@@ -98,7 +98,7 @@ impl WindowManager {
         let default_height = height.unwrap_or(1080);
 
         let mut window_attributes = WindowAttributes::default()
-            .with_title("MapFlow - Main Control")
+            .with_title("Vorce - Main Control")
             .with_window_icon(load_app_icon())
             .with_inner_size(winit::dpi::PhysicalSize::new(default_width, default_height))
             .with_maximized(maximized);
@@ -181,7 +181,7 @@ impl WindowManager {
         let window = Arc::new(
             event_loop.create_window(
                 WindowAttributes::default()
-                    .with_title(format!("MapFlow Output - {}", output_config.name))
+                    .with_title(format!("Vorce Output - {}", output_config.name))
                     .with_window_icon(load_app_icon())
                     .with_inner_size(winit::dpi::PhysicalSize::new(
                         output_config.resolution.0,
@@ -289,7 +289,7 @@ impl WindowManager {
         };
 
         let mut window_attributes = WindowAttributes::default()
-            .with_title(format!("MapFlow - {}", name))
+            .with_title(format!("Vorce - {}", name))
             .with_window_icon(load_app_icon())
             .with_inner_size(winit::dpi::PhysicalSize::new(default_width, default_height));
 
@@ -454,8 +454,8 @@ impl WindowManager {
 /// Helper function to load the application icon.
 fn load_app_icon() -> Option<winit::window::Icon> {
     let search_paths = [
-        runtime_paths::existing_resource_path("app_icons/MapFlow_Logo_HQ-Full-M.png"),
-        runtime_paths::existing_resource_path("app_icons/mapflow.png"),
+        runtime_paths::existing_resource_path("app_icons/Vorce_Logo_HQ-Full-M.png"),
+        runtime_paths::existing_resource_path("app_icons/vorce.png"),
     ];
 
     for path in search_paths.into_iter().flatten() {

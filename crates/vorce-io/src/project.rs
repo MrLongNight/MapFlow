@@ -120,11 +120,11 @@ pub fn export_project(state: &AppState, path: &Path) -> Result<()> {
 
     // 1. Save project file to a temporary location
     let temp_dir = tempfile::tempdir()?;
-    let project_path = temp_dir.path().join("project.mflow");
+    let project_path = temp_dir.path().join("project.vorce");
     save_project(&export_state, &project_path)?;
 
     // 2. Add project file to ZIP
-    zip.start_file("project.mflow", options)
+    zip.start_file("project.vorce", options)
         .map_err(crate::IoError::from)?;
     let mut project_file = File::open(&project_path)?;
     std::io::copy(&mut project_file, &mut zip)?;

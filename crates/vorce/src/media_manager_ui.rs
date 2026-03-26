@@ -178,8 +178,8 @@ impl MediaManagerUI {
                         &mut iter3
                     };
 
-                let mut filtered_items = items
-                    .filter(|item| query.is_empty() || item.name.to_lowercase().contains(&query));
+                let mut filtered_items =
+                    items.filter(|item| query.is_empty() || item.name_lower.contains(&query));
 
                 match self.view_mode {
                     ViewMode::Grid => self.render_grid(ui, &mut filtered_items),

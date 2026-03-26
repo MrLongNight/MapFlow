@@ -306,7 +306,7 @@ impl App {
             recent_effect_configs: vorce_core::RecentEffectConfigs::with_persistence(
                 dirs::data_dir()
                     .unwrap_or(std::path::PathBuf::from("."))
-                    .join("MapFlow")
+                    .join("Vorce")
                     .join("recent_effect_configs.json"),
             ),
             render_queue: crate::app::core::app_struct::RuntimeRenderQueue::default(),
@@ -401,9 +401,8 @@ impl App {
     }
 
     fn load_autosave(state: &mut AppState, saved_config: &vorce_ui::config::UserConfig) {
-        let autosave_path =
-            dirs::data_local_dir().map(|p| p.join("MapFlow").join("autosave.mflow"));
-        if let Some(path) = &autosave_path {
+        let autosave_path = dirs::data_local_dir().map(|p| p.join("Vorce").join("autosave.vorce"));
+        if let Some(ref path) = autosave_path {
             if path.exists() {
                 info!("Found autosave at {:?}, attempting to load...", path);
                 match load_project(path) {
@@ -643,7 +642,7 @@ impl App {
 
     fn print_init_report(&self) {
         info!("==========================================");
-        info!("   MapFlow Initialization Status Report   ");
+        info!("   Vorce Initialization Status Report   ");
         info!("------------------------------------------");
         info!(
             "- Render Backend: {} ({:?})",

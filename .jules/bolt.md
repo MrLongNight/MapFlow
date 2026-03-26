@@ -4,4 +4,4 @@
 
 ## 2025-03-25 - [Redundant String Allocation in Loops]
 **Learning:** Found a common pattern in UI filtering where `String::to_lowercase()` was called inside a `.filter()` iterator closure. This causes O(N) heap allocations during search operations, degrading UI performance with large media libraries.
-**Action:** Always hoist string transformations like `to_lowercase()` outside of iterator closures when filtering static query data.
+**Action:** Always pre-compute and cache string transformations like `to_lowercase()` in the corresponding models (e.g. `MediaItem`, `EffectPreset`, `MediaEntry`) instead of dynamically calling `to_lowercase()` inside `filter()` closures during UI searches. This significantly reduces allocations and speeds up query operations.

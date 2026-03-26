@@ -26,7 +26,7 @@ use winit::{
 #[command(
     author,
     version,
-    about = "Local visible visual regression harness for MapFlow"
+    about = "Local visible visual regression harness for Vorce"
 )]
 struct Cli {
     #[command(subcommand)]

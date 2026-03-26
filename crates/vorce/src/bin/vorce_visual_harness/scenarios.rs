@@ -72,7 +72,7 @@ fn checkerboard() -> ScenarioSpec {
     );
 
     ScenarioSpec {
-        title: "MapFlow Visual Harness - Checkerboard",
+        title: "Vorce Visual Harness - Checkerboard",
         width: WIDTH,
         height: HEIGHT,
         source_pixels: pixels.clone(),
@@ -96,7 +96,7 @@ fn gradient() -> ScenarioSpec {
     fill_rect(&mut pixels, WIDTH, 96, 176, 128, 24, [255, 64, 0, 255]);
 
     ScenarioSpec {
-        title: "MapFlow Visual Harness - Gradient",
+        title: "Vorce Visual Harness - Gradient",
         width: WIDTH,
         height: HEIGHT,
         source_pixels: pixels.clone(),
@@ -130,7 +130,7 @@ fn alpha_overlay() -> ScenarioSpec {
     let expected = blend_over_black(&source);
 
     ScenarioSpec {
-        title: "MapFlow Visual Harness - Alpha Overlay",
+        title: "Vorce Visual Harness - Alpha Overlay",
         width: WIDTH,
         height: HEIGHT,
         source_pixels: source,

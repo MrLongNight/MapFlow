@@ -24,9 +24,15 @@ pub struct AssetManager {
 pub struct EffectPreset {
     /// Human-readable display name.
     pub name: String,
+    #[serde(default)]
+    pub name_lower: String,
     pub category: String,
     pub description: String,
+    #[serde(default)]
+    pub description_lower: String,
     pub tags: Vec<String>,
+    #[serde(default)]
+    pub tags_lower: Vec<String>,
     pub favorite: bool,
     pub parameters: HashMap<String, PresetParameter>,
     pub thumbnail: Option<PathBuf>,
@@ -90,7 +96,11 @@ impl AssetManager {
                 for entry in entries.flatten() {
                     if entry.path().extension().and_then(|s| s.to_str()) == Some("json") {
                         if let Ok(data) = std::fs::read_to_string(entry.path()) {
-                            if let Ok(preset) = serde_json::from_str::<EffectPreset>(&data) {
+                            if let Ok(mut preset) = serde_json::from_str::<EffectPreset>(&data) {
+                                preset.name_lower = preset.name.to_lowercase();
+                                preset.description_lower = preset.description.to_lowercase();
+                                preset.tags_lower =
+                                    preset.tags.iter().map(|t| t.to_lowercase()).collect();
                                 self.effect_presets.insert(preset.name.clone(), preset);
                             }
                         }
@@ -134,9 +144,13 @@ impl AssetManager {
     }
 
     /// Save effect preset
-    pub fn save_effect_preset(&mut self, preset: EffectPreset) -> Result<(), std::io::Error> {
+    pub fn save_effect_preset(&mut self, mut preset: EffectPreset) -> Result<(), std::io::Error> {
         let effects_path = self.library_path.join("effects");
         std::fs::create_dir_all(&effects_path)?;
+
+        preset.name_lower = preset.name.to_lowercase();
+        preset.description_lower = preset.description.to_lowercase();
+        preset.tags_lower = preset.tags.iter().map(|t| t.to_lowercase()).collect();
 
         let file_path = effects_path.join(format!("{}.json", preset.name));
         let data = serde_json::to_string_pretty(&preset)?;
@@ -190,12 +204,12 @@ impl AssetManager {
         self.effect_presets
             .values()
             .filter(|preset| {
-                preset.name.to_lowercase().contains(&query_lower)
-                    || preset.description.to_lowercase().contains(&query_lower)
+                preset.name_lower.contains(&query_lower)
+                    || preset.description_lower.contains(&query_lower)
                     || preset
-                        .tags
+                        .tags_lower
                         .iter()
-                        .any(|tag| tag.to_lowercase().contains(&query_lower))
+                        .any(|tag| tag.contains(&query_lower))
             })
             .collect()
     }
