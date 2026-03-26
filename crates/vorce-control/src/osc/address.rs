@@ -290,10 +290,7 @@ mod tests {
     #[test]
     fn test_control_target_to_address() {
         let target = ControlTarget::LayerOpacity(0);
-        assert_eq!(
-            control_target_to_address(&target),
-            "/vorce/layer/0/opacity"
-        );
+        assert_eq!(control_target_to_address(&target), "/vorce/layer/0/opacity");
 
         let target = ControlTarget::PaintParameter(3, "speed".to_string());
         assert_eq!(
