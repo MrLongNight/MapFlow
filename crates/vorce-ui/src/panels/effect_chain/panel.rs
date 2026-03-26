@@ -452,7 +452,7 @@ impl EffectChainPanel {
                                 let search_lower = self.preset_search.to_lowercase();
                                 for preset in &self.presets {
                                     if !self.preset_search.is_empty()
-                                        && !preset.name.to_lowercase().contains(&search_lower)
+                                        && !preset.name_lower.contains(&search_lower)
                                     {
                                         continue;
                                     }

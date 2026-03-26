@@ -142,3 +142,7 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 ## 2026-03-23 - Temporäre Dateien im Root entfernt
 **Erkenntnis:** Im Root-Verzeichnis befanden sich ein ausführbares Programm `test_macos` und die dazugehörige Quelldatei `test_macos.rs`, die nicht den Projektstandards für Root-Dateien entsprechen und unnötig mit Git getrackt wurden.
 **Aktion:** Dateien via `git rm` aus dem Repository entfernt.
+
+## 2026-03-26 - Temporäre Dateien im Root verschoben
+**Erkenntnis:** Im Root-Verzeichnis befanden sich `update_layer_inspector.patch` und `issue1203_body.md`, die nicht den Projektstandards für Root-Dateien entsprechen.
+**Aktion:** Dateien ins `.temp-archive/` verschoben und mit dem aktuellen Datum versehen.

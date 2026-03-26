@@ -157,6 +157,7 @@ mod tests {
         let item = MediaItem {
             path: path.clone(),
             name: "video.mp4".to_string(),
+            name_lower: "video.mp4".to_string(),
             media_type: MediaType::Video,
             metadata: None,
         };
@@ -188,6 +189,9 @@ pub struct MediaItem {
     pub path: PathBuf,
     /// Display name
     pub name: String,
+    /// Lowercased name for fast searching without allocation
+    #[serde(default)]
+    pub name_lower: String,
     /// Category of the media
     pub media_type: MediaType,
     /// Optional metadata
@@ -246,13 +250,15 @@ impl MediaLibrary {
                         let metadata = std::fs::metadata(path).ok();
                         let size = metadata.map(|m| m.len()).unwrap_or(0);
 
+                        let name = path
+                            .file_name()
+                            .unwrap_or_default()
+                            .to_string_lossy()
+                            .to_string();
                         let item = MediaItem {
                             path: path.to_path_buf(),
-                            name: path
-                                .file_name()
-                                .unwrap_or_default()
-                                .to_string_lossy()
-                                .to_string(),
+                            name: name.clone(),
+                            name_lower: name.to_lowercase(),
                             media_type,
                             metadata: Some(MediaMetadata {
                                 duration: None, // Requires FFmpeg

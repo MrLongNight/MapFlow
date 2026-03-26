@@ -19,12 +19,16 @@ pub struct MediaEntry {
     pub path: PathBuf,
     /// Human-readable display name.
     pub name: String,
+    /// Lowercased name for fast searching without allocation
+    pub name_lower: String,
     pub file_type: MediaType,
     pub size_bytes: u64,
     pub duration_secs: Option<f32>,
     pub thumbnail: Option<ThumbnailHandle>,
     pub color_tag: Option<Color32>,
     pub tags: Vec<String>,
+    /// Lowercased tags for fast searching without allocation
+    pub tags_lower: Vec<String>,
 }
 
 /// Media type classification
@@ -241,13 +245,15 @@ impl MediaBrowser {
 
                             self.entries.push(MediaEntry {
                                 path,
-                                name,
+                                name: name.clone(),
+                                name_lower: name.to_lowercase(),
                                 file_type,
                                 size_bytes: metadata.len(),
                                 duration_secs: None, // TODO: Extract from media file
                                 thumbnail,
                                 color_tag: None,
                                 tags: Vec::new(),
+                                tags_lower: Vec::new(),
                             });
                         }
                     }
@@ -377,8 +383,8 @@ impl MediaBrowser {
 
                 // Filter by search query
                 if let Some(q) = &query {
-                    let name_matches = entry.name.to_lowercase().contains(q);
-                    let tag_matches = entry.tags.iter().any(|t| t.to_lowercase().contains(q));
+                    let name_matches = entry.name_lower.contains(q);
+                    let tag_matches = entry.tags_lower.iter().any(|t| t.contains(q));
                     if !name_matches && !tag_matches {
                         return false;
                     }
