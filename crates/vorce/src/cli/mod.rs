@@ -57,7 +57,7 @@ mod tests {
             "--mode",
             "automation",
             "--fixture",
-            "test_fixture.mflow",
+            "test_fixture.vorce",
             "--exit-after-frames",
             "100",
             "--screenshot-dir",
@@ -67,7 +67,7 @@ mod tests {
         let cli = CliArgs::try_parse_from(args).expect("Failed to parse automation CLI args");
 
         assert_eq!(cli.mode, Mode::Automation);
-        assert_eq!(cli.fixture.as_deref(), Some("test_fixture.mflow"));
+        assert_eq!(cli.fixture.as_deref(), Some("test_fixture.vorce"));
         assert_eq!(cli.exit_after_frames, Some(100));
         assert_eq!(
             cli.screenshot_dir.as_deref(),

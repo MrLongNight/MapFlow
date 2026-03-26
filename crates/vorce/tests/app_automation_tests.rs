@@ -13,7 +13,7 @@ fn test_release_smoke_automation_empty_project() {
         .and_then(Path::parent)
         .expect("vorce crate should live under <workspace>/crates/vorce");
 
-    let fixture_path = workspace_root.join("tests/fixtures/empty_project.mflow");
+    let fixture_path = workspace_root.join("tests/fixtures/empty_project.vorce");
     let output_dir = workspace_root.join("target/automation_test_output");
 
     if output_dir.exists() {

@@ -155,7 +155,7 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
 
             UIAction::Export => {
                 if let Some(path) = FileDialog::new()
-                    .add_filter("MapFlow Project Export", &["zip"])
+                    .add_filter("Vorce Project Export", &["zip"])
                     .set_file_name("project_export.zip")
                     .save_file()
                 {
@@ -168,8 +168,8 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
             }
             UIAction::SaveProjectAs => {
                 if let Some(path) = FileDialog::new()
-                    .add_filter("MapFlow Project", &["mflow", "vorce", "ron", "json"])
-                    .set_file_name("project.mflow")
+                    .add_filter("Vorce Project", &["vorce", "mflow", "mapmap", "ron", "json"])
+                    .set_file_name("project.vorce")
                     .save_file()
                 {
                     if let Err(e) = save_project(&app.state, &path) {
@@ -182,8 +182,8 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
             UIAction::SaveProject(path_str) => {
                 let path = if path_str.is_empty() {
                     if let Some(path) = FileDialog::new()
-                        .add_filter("MapFlow Project", &["mflow", "vorce", "ron", "json"])
-                        .set_file_name("project.mflow")
+                        .add_filter("Vorce Project", &["vorce", "mflow", "mapmap", "ron", "json"])
+                        .set_file_name("project.vorce")
                         .save_file()
                     {
                         path
@@ -242,7 +242,7 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
             UIAction::LoadProject(path_str) => {
                 let path = if path_str.is_empty() {
                     if let Some(path) = FileDialog::new()
-                        .add_filter("MapFlow Project", &["mflow", "vorce", "ron", "json"])
+                        .add_filter("Vorce Project", &["vorce", "mflow", "mapmap", "ron", "json"])
                         .pick_file()
                     {
                         path
