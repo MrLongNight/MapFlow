@@ -168,7 +168,10 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
             }
             UIAction::SaveProjectAs => {
                 if let Some(path) = FileDialog::new()
-                    .add_filter("Vorce Project", &["vorce", "mflow", "mapmap", "ron", "json"])
+                    .add_filter(
+                        "Vorce Project",
+                        &["vorce", "mflow", "mapmap", "ron", "json"],
+                    )
                     .set_file_name("project.vorce")
                     .save_file()
                 {
@@ -182,7 +185,10 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
             UIAction::SaveProject(path_str) => {
                 let path = if path_str.is_empty() {
                     if let Some(path) = FileDialog::new()
-                        .add_filter("Vorce Project", &["vorce", "mflow", "mapmap", "ron", "json"])
+                        .add_filter(
+                            "Vorce Project",
+                            &["vorce", "mflow", "mapmap", "ron", "json"],
+                        )
                         .set_file_name("project.vorce")
                         .save_file()
                     {
@@ -242,7 +248,10 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
             UIAction::LoadProject(path_str) => {
                 let path = if path_str.is_empty() {
                     if let Some(path) = FileDialog::new()
-                        .add_filter("Vorce Project", &["vorce", "mflow", "mapmap", "ron", "json"])
+                        .add_filter(
+                            "Vorce Project",
+                            &["vorce", "mflow", "mapmap", "ron", "json"],
+                        )
                         .pick_file()
                     {
                         path
