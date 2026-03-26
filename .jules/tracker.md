@@ -101,3 +101,7 @@ Kritische Erkenntnisse aus Projektmanagement-Aktivitäten.
 ## 2026-03-21 - Missing PR Documentation
 **Erkenntnis:** PR #1339 was merged but missing from CHANGELOG.md.
 **Aktion:** Added missing entry to CHANGELOG.md. No roadmap update needed as ROADMAP.md is deprecated.
+
+## 2026-03-26 - Missing Documentation for Multiple PRs and Commits
+**Erkenntnis:** Over 20 PRs and direct commits were merged to `main` between 2026-03-24 and 2026-03-26 without being documented in `CHANGELOG.md` (e.g., #1419, #1418, #1417, #1414, #1415, #1408). This indicates a systemic failure in enforcing changelog updates during the merge/PR process.
+**Aktion:** Tracker audited the git commit history, extracted 25 missing commits, and appended them to the `[Unreleased]` section of `CHANGELOG.md`. Stricter CI or PR template enforcement is needed for changelog updates.
