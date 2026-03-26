@@ -1,10 +1,10 @@
-# MapFlow UI
+# Vorce UI
 
-The user interface layer for MapFlow, built with `egui`.
+The user interface layer for Vorce, built with `egui`.
 
 ## Overview
 
-This crate contains all the UI components, panels, and widgets that make up the MapFlow application.
+This crate contains all the UI components, panels, and widgets that make up the Vorce application.
 It manages the interaction between the user and the core application state.
 
 > **Note:** As of Phase 6 (Completed 2025-12-23), the legacy ImGui interface has been fully removed.
@@ -26,5 +26,5 @@ Interaction with the core application is handled via a `UIAction` enum, which de
 
 ## Themes
 
-MapFlow features a customizable theming system ("Cyber Dark") designed for low-light environments typical of live performances,
+Vorce features a customizable theming system ("Cyber Dark") designed for low-light environments typical of live performances,
 offering high contrast and reduced eye strain.

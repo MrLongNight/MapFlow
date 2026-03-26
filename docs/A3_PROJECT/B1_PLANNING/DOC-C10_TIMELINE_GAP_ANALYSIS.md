@@ -15,13 +15,13 @@ Dieses Dokument beschreibt den aktuellen Implementierungsstand der Timeline in V
 
 ### Lokale Codebasis
 
-- `crates/mapflow-ui/src/editors/timeline_v2.rs`
-- `crates/mapflow-core/src/animation.rs`
-- `crates/mapflow-core/src/effect_animation.rs`
-- `crates/mapflow/src/app/loops/logic.rs`
-- `crates/mapflow/src/app/actions.rs`
-- `crates/mapflow-ui/tests/timeline_automation_tests.rs`
-- `crates/mapflow-ui/src/panels/cue_panel.rs`
+- `crates/vorce-ui/src/editors/timeline_v2.rs`
+- `crates/vorce-core/src/animation.rs`
+- `crates/vorce-core/src/effect_animation.rs`
+- `crates/vorce/src/app/loops/logic.rs`
+- `crates/vorce/src/app/actions.rs`
+- `crates/vorce-ui/tests/timeline_automation_tests.rs`
+- `crates/vorce-ui/src/panels/cue_panel.rs`
 - `docs/A3_PROJECT/B2_QUALITY/DOC-C1_TEST_MATRIX.md`
 
 ### Offizielle externe Referenzen
@@ -73,7 +73,7 @@ Dieses Dokument beschreibt den aktuellen Implementierungsstand der Timeline in V
 - Keine sichtbare produktive Bindung von Effektparametern an den `EffectParameterAnimator` ausserhalb von Tests.
 - Die von `effect_animator.update()` erzeugten Parameter-Updates werden im Hauptloop aktuell nicht auf Effekte zurueckgeschrieben.
 - Cue-System und Timeline sind nicht integriert.
-- Die Cue-UI erzeugt `UIAction::AddCue`, `GoCue`, `NextCue`, `PrevCue`, `StopCue`, `UpdateCue`, `RemoveCue`, aber in `crates/mapflow/src/app/actions.rs` ist dafuer aktuell kein Handler sichtbar.
+- Die Cue-UI erzeugt `UIAction::AddCue`, `GoCue`, `NextCue`, `PrevCue`, `StopCue`, `UpdateCue`, `RemoveCue`, aber in `crates/vorce/src/app/actions.rs` ist dafuer aktuell kein Handler sichtbar.
 - Testabdeckung ist sehr schmal:
   - keine Tests fuer `SemiAutomated`
   - keine UI-Interaktionstests

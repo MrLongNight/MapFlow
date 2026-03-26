@@ -1,6 +1,6 @@
-# MapFlow Control
+# Vorce Control
 
-The control system integration layer for MapFlow, providing interfaces for external hardware and protocols.
+The control system integration layer for Vorce, providing interfaces for external hardware and protocols.
 
 ## Features
 
@@ -14,7 +14,7 @@ The control system integration layer for MapFlow, providing interfaces for exter
 ## Usage
 
 ```rust,no_run
-use mapmap_control::{ControlTarget, ControlValue};
+use vorce_control::{ControlTarget, ControlValue};
 
 // Example: Creating a control target for layer opacity
 let target = ControlTarget::LayerOpacity(0);

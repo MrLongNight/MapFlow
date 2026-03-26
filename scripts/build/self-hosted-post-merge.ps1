@@ -97,7 +97,7 @@ cargo build --workspace --release -j 4
 # Run Visual Automation if enabled
 if ($env:VORCE_SELF_HOSTED_RUN_VISUAL_AUTOMATION -eq "true") {
     Write-Host "Running Visual Automation Tests..."
-    cargo test -p mapmap --test visual_capture_tests --release -j 4 -- --ignored --nocapture
+    cargo test -p vorce --test visual_capture_tests --release -j 4 -- --ignored --nocapture
 }
 
 # Run GPU Tests if enabled

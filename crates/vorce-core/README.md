@@ -1,8 +1,8 @@
-# mapmap-core
+# vorce-core
 
-**MapFlow Core Domain Model and Business Logic.**
+**Vorce Core Domain Model and Business Logic.**
 
-`mapmap-core` is the heart of MapFlow, containing the fundamental data structures, state management, and business logic that drives the application.
+`vorce-core` is the heart of Vorce, containing the fundamental data structures, state management, and business logic that drives the application.
 It is designed to be renderer-agnostic and UI-agnostic.
 
 ## Features
@@ -26,10 +26,10 @@ It is designed to be renderer-agnostic and UI-agnostic.
 
 ## Usage
 
-This crate is primarily used by `mapmap` (the application binary) and `mapmap-ui` (for data visualization).
+This crate is primarily used by `vorce` (the application binary) and `vorce-ui` (for data visualization).
 
 ```rust
-use mapmap_core::Project;
+use vorce_core::Project;
 
 let project = Project::new("My Mapping Show");
 // Configure project...

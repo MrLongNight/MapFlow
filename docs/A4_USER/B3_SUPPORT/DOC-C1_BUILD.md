@@ -1,6 +1,6 @@
 # Build Instructions
 
-This document provides comprehensive build instructions for MapFlow (Rust Edition) on all supported platforms.
+This document provides comprehensive build instructions for Vorce (Rust Edition) on all supported platforms.
 
 ## Table of Contents
 
@@ -19,7 +19,7 @@ This document provides comprehensive build instructions for MapFlow (Rust Editio
 
 ### Rust Toolchain
 
-MapFlow requires **Rust 1.94 or later**. Install it using rustup:
+Vorce requires **Rust 1.94 or later**. Install it using rustup:
 
 ```bash
 # Install Rust
@@ -143,8 +143,8 @@ sudo pacman -S ffmpeg
 
 ```bash
 # Clone the repository
-git clone https://github.com/MrLongNight/MapFlow.git
-cd MapFlow
+git clone https://github.com/MrLongNight/Vorce.git
+cd Vorce
 
 # Build in debug mode (faster compile, slower runtime)
 cargo build
@@ -185,22 +185,22 @@ brew install ffmpeg
 
 ```bash
 # Clone the repository
-git clone https://github.com/MrLongNight/MapFlow.git
-cd MapFlow
+git clone https://github.com/MrLongNight/Vorce.git
+cd Vorce
 
 # Build the current macOS beta baseline
-cargo build --release -p mapflow --no-default-features --features macos-beta
+cargo build --release -p vorce --no-default-features --features macos-beta
 
 # Run the application
-cargo run --release -p mapflow --no-default-features --features macos-beta
+cargo run --release -p vorce --no-default-features --features macos-beta
 
 # Package a .app bundle from the built binary
-bash scripts/mapflow/package-macos-app.sh 0.2.0
+bash scripts/vorce/package-macos-app.sh 0.2.0
 ```
 
 Notes:
 - The current macOS beta build uses the core UI and rendering path without the default Windows/Linux feature set.
-- The packaging script creates `target/release/MapFlow.app` and copies runtime `assets/` and `resources/` into the bundle.
+- The packaging script creates `target/release/Vorce.app` and copies runtime `assets/` and `resources/` into the bundle.
 
 ---
 
@@ -238,8 +238,8 @@ Open Command Prompt or PowerShell:
 
 ```cmd
 # Clone the repository
-git clone https://github.com/MrLongNight/MapFlow.git
-cd MapFlow
+git clone https://github.com/MrLongNight/Vorce.git
+cd Vorce
 
 # Build in release mode
 cargo build --release
@@ -279,12 +279,12 @@ For production or distribution:
 cargo build --release
 
 # The binary will be at:
-# Linux/macOS: ./target/release/mapflow
-# Windows: .\target\release\mapflow.exe
+# Linux/macOS: ./target/release/vorce
+# Windows: .\target\release\vorce.exe
 
 # Run release build
-./target/release/mapflow  # Linux/macOS
-.\target\release\mapflow.exe  # Windows
+./target/release/vorce  # Linux/macOS
+.\target\release\vorce.exe  # Windows
 ```
 
 ---
@@ -296,8 +296,8 @@ cargo build --release
 cargo test
 
 # Run tests for a specific crate
-cargo test -p mapflow-core
-cargo test -p mapflow-render
+cargo test -p vorce-core
+cargo test -p vorce-render
 
 # Run tests with output
 cargo test -- --nocapture
@@ -375,4 +375,4 @@ Ensure your GPU drivers are up-to-date:
 - **Documentation:** See [docs/](../../DOC-A0_README.md) directory
 - **Architecture:** [Architecture](../../dev/architecture/README.md)
 - **Contributing:** [CONTRIBUTING.md](../../../CONTRIBUTING.md)
-- **Issues:** https://github.com/MrLongNight/MapFlow/issues
+- **Issues:** https://github.com/MrLongNight/Vorce/issues

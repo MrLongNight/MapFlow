@@ -1,6 +1,6 @@
 # OSC Control
 
-Documentation for controlling MapFlow via Open Sound Control (OSC).
+Documentation for controlling Vorce via Open Sound Control (OSC).
 
 ## Contents
 

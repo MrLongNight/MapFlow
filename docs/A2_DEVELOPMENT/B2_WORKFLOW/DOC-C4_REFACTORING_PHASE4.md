@@ -16,70 +16,70 @@ To minimize risk and manage complexity effectively, we will break this down into
 ### Component A: `module.rs` Decomposition (3 Tasks)
 
 #### [Task 4.1.1] Module Scaffolding & Trigger Extraction
-- **Files**: `crates/mapflow-core/src/module.rs` -> `crates/mapflow-core/src/module/mod.rs` + `trigger.rs`
+- **Files**: `crates/vorce-core/src/module.rs` -> `crates/vorce-core/src/module/mod.rs` + `trigger.rs`
 - **Output**:
-    - Directory `crates/mapflow-core/src/module/` created.
-    - File `crates/mapflow-core/src/module.rs` moved to `mod.rs`.
+    - Directory `crates/vorce-core/src/module/` created.
+    - File `crates/vorce-core/src/module.rs` moved to `mod.rs`.
     - `TriggerConfig`, `TriggerTarget`, `TriggerMappingMode` moved to `module/trigger.rs`.
     - `mod.rs` re-exports everything publicly.
-- **Verification**: `cargo check -p mapflow-core`
+- **Verification**: `cargo check -p vorce-core`
 
 #### [Task 4.1.2] Extract ModulePart
-- **Input**: `crates/mapflow-core/src/module/mod.rs`
+- **Input**: `crates/vorce-core/src/module/mod.rs`
 - **Output**:
-    - `ModulePart` struct and its impl blocks moved to `crates/mapflow-core/src/module/part.rs`.
+    - `ModulePart` struct and its impl blocks moved to `crates/vorce-core/src/module/part.rs`.
     - `mod.rs` imports and re-exports `ModulePart`.
-- **Verification**: `cargo check -p mapflow-core`, `cargo test -p mapflow-core`
+- **Verification**: `cargo check -p vorce-core`, `cargo test -p vorce-core`
 
 #### [Task 4.1.3] Graph Logic Consolidation
-- **Input**: `crates/mapflow-core/src/module/mod.rs`
+- **Input**: `crates/vorce-core/src/module/mod.rs`
 - **Output**:
-    - Rename/Structure remaining logic in `mod.rs` (the actual `MapFlowModule` graph) to ensure it's clean.
+    - Rename/Structure remaining logic in `mod.rs` (the actual `VorceModule` graph) to ensure it's clean.
     - (Optional) Move graph logic to `graph.rs` if `mod.rs` is still large, keeping `mod.rs` as just an entry point.
-- **Verification**: `cargo check -p mapflow-core`, `cargo test -p mapflow-core`
+- **Verification**: `cargo check -p vorce-core`, `cargo test -p vorce-core`
 
 ---
 
 ### Component B: `module_canvas.rs` Decomposition (5 Tasks)
 
 #### [Task 4.2.1] Canvas Scaffolding & Types
-- **Files**: `crates/mapflow-ui/src/editors/module_canvas.rs` -> `crates/mapflow-ui/src/editors/module_canvas/mod.rs` + `types.rs`
+- **Files**: `crates/vorce-ui/src/editors/module_canvas.rs` -> `crates/vorce-ui/src/editors/module_canvas/mod.rs` + `types.rs`
 - **Output**:
-    - Directory `crates/mapflow-ui/src/editors/module_canvas/` created.
+    - Directory `crates/vorce-ui/src/editors/module_canvas/` created.
     - File moved to `mod.rs`.
     - `MyDataType`, `MyValueType`, `MyResponse`, `MyNodeTemplate` moved to `types.rs`.
-- **Verification**: `cargo check -p mapflow-ui`
+- **Verification**: `cargo check -p vorce-ui`
 
 #### [Task 4.2.2] Extract Node Registry & Base Traits
-- **Input**: `crates/mapflow-ui/src/editors/module_canvas/mod.rs`
+- **Input**: `crates/vorce-ui/src/editors/module_canvas/mod.rs`
 - **Output**:
     - Create `nodes/mod.rs`.
     - Define traits or common logic for node UI rendering if applicable.
     - Ensure `mod.rs` can access `nodes` module.
-- **Verification**: `cargo check -p mapflow-ui`
+- **Verification**: `cargo check -p vorce-ui`
 
 #### [Task 4.2.3] Extract Media Node UI
-- **Input**: `crates/mapflow-ui/src/editors/module_canvas/mod.rs`
+- **Input**: `crates/vorce-ui/src/editors/module_canvas/mod.rs`
 - **Output**:
     - Move all `MediaNode` specific UI logic (drawing the node, inputs/outputs) to `nodes/media.rs`.
     - Update `mod.rs` `bottom_ui` match arm to delegate to `nodes::media::render(...)`.
-- **Verification**: `cargo check -p mapflow-ui`, Manual check of Media Nodes.
+- **Verification**: `cargo check -p vorce-ui`, Manual check of Media Nodes.
 
 #### [Task 4.2.4] Extract Effect Node UI
-- **Input**: `crates/mapflow-ui/src/editors/module_canvas/mod.rs`
+- **Input**: `crates/vorce-ui/src/editors/module_canvas/mod.rs`
 - **Output**:
     - Move all `EffectNode` specific UI logic to `nodes/effect.rs`.
     - Update `mod.rs` delegate.
-- **Verification**: `cargo check -p mapflow-ui`, Manual check of Effect Nodes.
+- **Verification**: `cargo check -p vorce-ui`, Manual check of Effect Nodes.
 
 #### [Task 4.2.5] Extract Remaining Nodes (Trigger, Layer, Output)
-- **Input**: `crates/mapflow-ui/src/editors/module_canvas/mod.rs`
+- **Input**: `crates/vorce-ui/src/editors/module_canvas/mod.rs`
 - **Output**:
     - Move `TriggerNode` to `nodes/trigger.rs`.
     - Move `LayerNode` to `nodes/layer.rs`.
     - Move `OutputNode` to `nodes/output.rs`.
     - Finalize `mod.rs` to have minimal logic, mostly delegation.
-- **Verification**: `cargo check -p mapflow-ui`, Full manual regression test.
+- **Verification**: `cargo check -p vorce-ui`, Full manual regression test.
 
 ## 🛡️ Execution Protocol
 

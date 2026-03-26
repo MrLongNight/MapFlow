@@ -30,17 +30,17 @@ if (Get-Command "cargo-sort" -ErrorAction SilentlyContinue) {
 }
 
 Write-Step "Running cargo clippy --fix"
-cargo clippy --fix --allow-dirty --allow-staged --workspace --all-targets --features "mapmap-io/ci-linux" -- -D warnings
+cargo clippy --fix --allow-dirty --allow-staged --workspace --all-targets --features "vorce-io/ci-linux" -- -D warnings
 if ($LASTEXITCODE -ne 0) {
     Write-Warning "[$Profile] Auto-fix did not clear all clippy issues; running strict validation next."
 }
 
 Write-Step "Running strict cargo clippy validation"
-cargo clippy --workspace --all-targets --features "mapmap-io/ci-linux" -- -D warnings
+cargo clippy --workspace --all-targets --features "vorce-io/ci-linux" -- -D warnings
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Step "Running cargo check --workspace --all-targets"
-cargo check --workspace --all-targets --features "mapmap-io/ci-linux"
+cargo check --workspace --all-targets --features "vorce-io/ci-linux"
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Step "Running git diff --check"

@@ -4,11 +4,11 @@ Stand: 2026-03-14
 
 ## Ziel
 
-Diese Notiz beschreibt den aktuellen Stand und die noetigen Anpassungen, damit spaeter automatisierte grafische Tests mit sichtbarem MapFlow-Fenster, Screenshots und optionalen Videoaufnahmen moeglich werden.
+Diese Notiz beschreibt den aktuellen Stand und die noetigen Anpassungen, damit spaeter automatisierte grafische Tests mit sichtbarem Vorce-Fenster, Screenshots und optionalen Videoaufnahmen moeglich werden.
 
 Das Zielbild ist:
 
-- MapFlow startet in einem deterministischen Testmodus
+- Vorce startet in einem deterministischen Testmodus
 - eine definierte Szene oder Fixture wird geladen
 - die App fuehrt reproduzierbare Schritte aus
 - relevante Fenster oder Outputs werden als Bild oder Video aufgenommen
@@ -20,7 +20,7 @@ Der aktuelle Testbestand ist fuer dieses Ziel noch nicht ausreichend, aber ein e
 
 ### Was bereits umgesetzt ist
 
-- dediziertes Binary `mapflow_visual_harness`
+- dediziertes Binary `vorce_visual_harness`
 - Screenshot-Export aus einem echten sichtbaren `winit`-Fenster
 - Pixelvergleich gegen feste Referenzbilder
 - optional fester Screenshot-Ausgabeordner ueber `MAPFLOW_VISUAL_CAPTURE_OUTPUT_DIR`
@@ -38,7 +38,7 @@ Der aktuelle Testbestand ist fuer dieses Ziel noch nicht ausreichend, aber ein e
 
 ### Was heute noch fehlt
 
-- kein dedizierter GUI-Test-Harness fuer die komplette MapFlow-App auf Basis des echten `run_app`-Pfads
+- kein dedizierter GUI-Test-Harness fuer die komplette Vorce-App auf Basis des echten `run_app`-Pfads
 - keine stabile CLI oder Test-API fuer reproduzierbare UI-Szenarien
 - kein allgemeiner Screenshot- oder Videoexport fuer Tests
 - keine Artefakt-Konvention fuer spaetere automatische Auswertung
@@ -50,24 +50,24 @@ Die meisten aktuellen Tests pruefen Logik, nicht sichtbare UI.
 
 Beispiele:
 
-- `crates/mapflow-ui/tests/timeline_automation_tests.rs`
+- `crates/vorce-ui/tests/timeline_automation_tests.rs`
 - diverse `#[cfg(test)]`-Bereiche in UI-Panels und Editoren
 
 Die vorhandenen GPU-Tests laufen offscreen und sind derzeit ignoriert:
 
-- `crates/mapflow-render/tests/effect_chain_tests.rs`
-- `crates/mapflow-render/tests/effect_chain_integration_tests.rs`
+- `crates/vorce-render/tests/effect_chain_tests.rs`
+- `crates/vorce-render/tests/effect_chain_integration_tests.rs`
 
 Der echte Fensterpfad liegt im Produktionslauf:
 
-- `crates/mapflow/src/main.rs`
-- `crates/mapflow/src/app/core/init.rs`
-- `crates/mapflow/src/window_manager.rs`
-- `crates/mapflow/src/app/loops/render.rs`
+- `crates/vorce/src/main.rs`
+- `crates/vorce/src/app/core/init.rs`
+- `crates/vorce/src/window_manager.rs`
+- `crates/vorce/src/app/loops/render.rs`
 
 Wesentliche Schlussfolgerung:
 
-- fuer die volle MapFlow-App gilt das weiterhin
+- fuer die volle Vorce-App gilt das weiterhin
 - als erster Zwischenschritt existiert jetzt aber ein kleiner lokaler visueller Harness fuer echte sichtbare Fenster und Screenshot-Regressionen
 
 ## Wichtigste Blocker
@@ -121,7 +121,7 @@ Interne Previews werden aktuell gedrosselt aktualisiert. Fuer reproduzierbare Sc
 
 Noetig:
 
-- sichtbaren Test- oder Automationsmodus fuer MapFlow einfuehren
+- sichtbaren Test- oder Automationsmodus fuer Vorce einfuehren
 - Einstiegspunkt aus `main.rs` in wiederverwendbare Bausteine extrahieren
 - Fixture-Projekte automatisiert laden koennen
 - Testschritte von aussen parametrisieren
@@ -135,7 +135,7 @@ Empfohlene Richtung:
 
 Noetig:
 
-- vorhandenen GPU-Readback-Code aus `crates/mapflow/src/app/loops/render.rs` verallgemeinern
+- vorhandenen GPU-Readback-Code aus `crates/vorce/src/app/loops/render.rs` verallgemeinern
 - Screenshots fuer Main-Window und Projektorfenster speichern
 - Artefakte als PNG ablegen
 - optional Serienaufnahme fuer spaetere Videobildung bereitstellen
@@ -168,7 +168,7 @@ Empfohlene erste Zielkandidaten:
 
 ## Priorisierte visuelle Testszenarien
 
-Die folgenden Faelle sind fuer einen spaeteren echten MapFlow-App-Harness besonders wertvoll,
+Die folgenden Faelle sind fuer einen spaeteren echten Vorce-App-Harness besonders wertvoll,
 weil headless Runner oder reine Logiktests dort nicht genug Signal liefern:
 
 - Main-Window Startzustand mit leerem Testprojekt
@@ -191,13 +191,13 @@ Die drei bereits implementierten Harness-Szenarien decken den unteren technische
 ### Phase 4: CI-Integration auf self-hosted Runner
 
 Sichtbare GUI-Automation sollte spaeter nur auf einem geeigneten self-hosted Windows-Runner laufen.
-Der dedizierte Test `test_release_smoke_automation_empty_project` in `crates/mapflow/tests/app_automation_tests.rs` dient als dokumentierter minimaler Release-Smoke-Test fuer den aktuellen Automation-/Screenshot-Pfad. Er prueft den Main-Window-Startzustand und exportiert einen Screenshot.
+Der dedizierte Test `test_release_smoke_automation_empty_project` in `crates/vorce/tests/app_automation_tests.rs` dient als dokumentierter minimaler Release-Smoke-Test fuer den aktuellen Automation-/Screenshot-Pfad. Er prueft den Main-Window-Startzustand und exportiert einen Screenshot.
 
 Damit dieser Automation-Test im CI-Lauf ausgefuehrt wird, muss die Umgebungsvariable `MAPFLOW_SELF_HOSTED_RUN_VISUAL_AUTOMATION` auf `true` gesetzt sein (siehe `scripts/build/self-hosted-post-merge.ps1`). Da echte sichtbare Fenster und GPU-Surface-Praesentation getestet werden, verlangt der Test eine interaktive Windows-Sitzung. Er ist deshalb regulaer mit `#[ignore]` markiert und wird nur durch explizite CI-Konfiguration auf dem self-hosted Runner aktiviert.
 
 Diese Tests dienen als Release-/QA-Baseline fuer die Gesamt-App, waehrend spezifischere Themen in Multi-Output-/Projektor-QA (Issue #1095) vertieft werden.
 
-Als dedizierte Standard-Absicherung fuer den reinen, nicht-interaktiven Capture-Pfad fungiert `mapflow_visual_harness` (siehe `crates/mapflow/tests/visual_capture_tests.rs`). Dieser Harness laesst sich prinzipiell headless/offscreen initialisieren oder mit Mock-Surfaces betreiben, was ihn zum primaren Kandidaten fuer CI-Umgebungen ohne gueltige Desktop-Session macht, in denen dennoch grundlegende GPU-Szenarien und Frame-Readbacks abgesichert werden muessen.
+Als dedizierte Standard-Absicherung fuer den reinen, nicht-interaktiven Capture-Pfad fungiert `vorce_visual_harness` (siehe `crates/vorce/tests/visual_capture_tests.rs`). Dieser Harness laesst sich prinzipiell headless/offscreen initialisieren oder mit Mock-Surfaces betreiben, was ihn zum primaren Kandidaten fuer CI-Umgebungen ohne gueltige Desktop-Session macht, in denen dennoch grundlegende GPU-Szenarien und Frame-Readbacks abgesichert werden muessen.
 
 Wichtige Betriebsbedingung:
 
@@ -232,13 +232,13 @@ Die benoetigten CLI-Parameter sind:
 **Beispielaufruf lokal:**
 
 ```bash
-cargo run --bin mapflow -- --mode automation \
+cargo run --bin vorce -- --mode automation \
   --fixture ./tests/fixtures/test_project.mflow \
   --exit-after-frames 60 \
   --screenshot-dir ./scripts/archive/logs/screenshots
 ```
 
-Damit laedt MapFlow das Test-Projekt, laesst es 60 Frames laufen (ausreichend, um sicherzustellen, dass Texturen und Shader geladen und berechnet sind), speichert einen Screenshot und beendet sich vollautomatisch, ohne auf Benutzereingaben zu warten.
+Damit laedt Vorce das Test-Projekt, laesst es 60 Frames laufen (ausreichend, um sicherzustellen, dass Texturen und Shader geladen und berechnet sind), speichert einen Screenshot und beendet sich vollautomatisch, ohne auf Benutzereingaben zu warten.
 
 ## Pragmatische Empfehlung
 

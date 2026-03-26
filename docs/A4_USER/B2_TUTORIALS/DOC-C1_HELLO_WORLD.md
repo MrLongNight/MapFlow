@@ -1,12 +1,12 @@
 # Hello World Projection Mapping Tutorial
 
-Welcome to your first projection mapping example with MapFlow! This tutorial will guide you through creating a simple "Hello World" projection mapping application that demonstrates the core concepts of the MapFlow projection mapping system.
+Welcome to your first projection mapping example with Vorce! This tutorial will guide you through creating a simple "Hello World" projection mapping application that demonstrates the core concepts of the Vorce projection mapping system.
 
 ## Table of Contents
 
 1. [What is Projection Mapping?](#what-is-projection-mapping)
 2. [Prerequisites](#prerequisites)
-3. [Understanding MapFlow Architecture](#understanding-mapflow-architecture)
+3. [Understanding Vorce Architecture](#understanding-vorce-architecture)
 4. [Building Your First Projection](#building-your-first-projection)
 5. [Running the Example](#running-the-example)
 6. [Understanding the Code](#understanding-the-code)
@@ -20,7 +20,7 @@ Welcome to your first projection mapping example with MapFlow! This tutorial wil
 
 ### Key Concepts
 
-MapFlow uses a **Paint → Mapping → Mesh → Output** pipeline:
+Vorce uses a **Paint → Mapping → Mesh → Output** pipeline:
 
 - **Paint**: A media source (video, image, test pattern, or solid color)
 - **Mapping**: Connects a Paint to a Mesh with opacity, depth, and transforms
@@ -44,39 +44,39 @@ Please refer to the main [BUILD.md](../B3_SUPPORT/DOC-C1_BUILD.md) for detailed,
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/MrLongNight/MapFlow.git
-cd mapflow
+git clone https://github.com/MrLongNight/Vorce.git
+cd vorce
 ```
 
 ---
 
-## Understanding MapFlow Architecture
+## Understanding Vorce Architecture
 
-Before we dive into code, let's understand MapFlow's modular architecture:
+Before we dive into code, let's understand Vorce's modular architecture:
 
 ### Crate Structure
 
-MapFlow is organized as a Cargo workspace with specialized crates:
+Vorce is organized as a Cargo workspace with specialized crates:
 
 ```
-mapflow/
-├── mapflow-core/      # Domain model (Paint/Mapping/Mesh)
-├── mapflow-render/    # GPU rendering (wgpu backend)
-├── mapflow-media/     # Video/image decoding (FFmpeg)
-├── mapflow-ui/        # User interface (ImGui/egui)
-├── mapflow-control/   # Control systems (MIDI/OSC/DMX)
-├── mapflow-io/        # Professional I/O (NDI/DeckLink)
-├── mapflow-ffi/       # Plugin API
-└── mapflow/           # Main application binary
+vorce/
+├── vorce-core/      # Domain model (Paint/Mapping/Mesh)
+├── vorce-render/    # GPU rendering (wgpu backend)
+├── vorce-media/     # Video/image decoding (FFmpeg)
+├── vorce-ui/        # User interface (ImGui/egui)
+├── vorce-control/   # Control systems (MIDI/OSC/DMX)
+├── vorce-io/        # Professional I/O (NDI/DeckLink)
+├── vorce-ffi/       # Plugin API
+└── vorce/           # Main application binary
 ```
 
 ### Core Components
 
-1. **WgpuBackend** (`mapflow-render`): GPU abstraction layer using wgpu
-2. **Paint** (`mapflow-core`): Media source definition
-3. **Mesh** (`mapflow-core`): Warping geometry
-4. **Mapping** (`mapflow-core`): Connection between Paint and Mesh
-5. **QuadRenderer** (`mapflow-render`): GPU renderer for textured quads
+1. **WgpuBackend** (`vorce-render`): GPU abstraction layer using wgpu
+2. **Paint** (`vorce-core`): Media source definition
+3. **Mesh** (`vorce-core`): Warping geometry
+4. **Mapping** (`vorce-core`): Connection between Paint and Mesh
+5. **QuadRenderer** (`vorce-render`): GPU renderer for textured quads
 
 ---
 
@@ -100,8 +100,8 @@ Create a new file at `examples/hello_world_projection.rs`:
 //! 3. Creating a Mapping (connecting Paint to Mesh)
 //! 4. Rendering the result
 
-use mapflow_core::{Paint, PaintType, Mesh, MeshType, Mapping};
-use mapflow_render::{QuadRenderer, TextureDescriptor, WgpuBackend};
+use vorce_core::{Paint, PaintType, Mesh, MeshType, Mapping};
+use vorce_render::{QuadRenderer, TextureDescriptor, WgpuBackend};
 use glam::Vec2;
 use winit::{
     event::{Event, WindowEvent, KeyboardInput, VirtualKeyCode, ElementState},
@@ -110,13 +110,13 @@ use winit::{
 };
 
 fn main() {
-    println!("MapFlow - Hello World Projection Mapping Example");
+    println!("Vorce - Hello World Projection Mapping Example");
     println!("===============================================\n");
 
     // Step 1: Create the window
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
-        .with_title("MapFlow - Hello World Projection")
+        .with_title("Vorce - Hello World Projection")
         .with_inner_size(winit::dpi::PhysicalSize::new(1280, 720))
         .build(&event_loop)
         .unwrap();
@@ -335,11 +335,11 @@ pollster = "0.3"
 
 ### Build and Run
 
-Then build and run the example from the mapflow crate directory:
+Then build and run the example from the vorce crate directory:
 
 ```bash
-# Navigate to the mapflow crate
-cd crates/mapflow
+# Navigate to the vorce crate
+cd crates/vorce
 
 # Build the example
 cargo build --example hello_world_projection
@@ -459,11 +459,11 @@ event_loop.run(move |event, _, control_flow| {
 
 ## Next Steps
 
-Congratulations! You've created your first projection mapping with MapFlow. Here's what to explore next:
+Congratulations! You've created your first projection mapping with Vorce. Here's what to explore next:
 
 ### 1. Load a Real Image or Video
 
-Replace the colored Paint with an actual image or video (requires integrating `mapflow-media`).
+Replace the colored Paint with an actual image or video (requires integrating `vorce-media`).
 
 ### 2. Warp the Mesh
 
@@ -471,7 +471,7 @@ Try different mesh coordinates to create perspective distortion. This is the ess
 
 ### 3. Explore the Full Application
 
-Run the full MapFlow application to see all features: `cargo run --release`
+Run the full Vorce application to see all features: `cargo run --release`
 
 ### 4. Read the Documentation
 

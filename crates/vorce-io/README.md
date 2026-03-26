@@ -1,6 +1,6 @@
-# MapFlow I/O
+# Vorce I/O
 
-Professional video input/output subsystem for MapFlow. This crate manages video sources (capture cards, network streams) and sinks (projectors, streams).
+Professional video input/output subsystem for Vorce. This crate manages video sources (capture cards, network streams) and sinks (projectors, streams).
 
 ## Features
 
@@ -9,7 +9,7 @@ Professional video input/output subsystem for MapFlow. This crate manages video 
 - **Spout**: Real-time texture sharing on Windows.
 - **Syphon**: Real-time texture sharing on macOS.
 - **Streaming**: RTMP/SRT streaming capabilities.
-- **Virtual Camera**: Output MapFlow content as a virtual webcam.
+- **Virtual Camera**: Output Vorce content as a virtual webcam.
 
 ## Architecture
 

@@ -11,4 +11,4 @@ Detaillierte Anleitungen zur Bedienung von Vorce.
 * [**DOC-C5_FEATURES.md**](./DOC-C5_FEATURES.md): Übersicht der Kernfunktionen.
 * [**DOC-C6_SHORTCUTS.md**](./DOC-C6_SHORTCUTS.md): Effizientes Arbeiten via Tastatur.
 * [**DOC-C7_MIDI_CONTROL.md**](./DOC-C7_MIDI_CONTROL.md): Einrichtung und Verwendung von MIDI-Controllern.
-* [**DOC-C11_MIGRATION_NOTES.md**](./DOC-C11_MIGRATION_NOTES.md): Notes for migrating from MapFlow to Vorce V2.
+* [**DOC-C11_MIGRATION_NOTES.md**](./DOC-C11_MIGRATION_NOTES.md): Notes for migrating from Vorce to Vorce V2.

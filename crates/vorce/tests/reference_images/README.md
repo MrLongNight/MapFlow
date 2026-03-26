@@ -20,9 +20,9 @@ Fenster-, Swapchain-, Present- und Screenshot-Pfad verwenden.
 Von der Repo-Wurzel aus:
 
 ```powershell
-cargo run -p vorce --bin mapflow_visual_harness --no-default-features -- reference --scenario checkerboard --output crates/vorce/tests/reference_images/checkerboard.png
-cargo run -p vorce --bin mapflow_visual_harness --no-default-features -- reference --scenario alpha_overlay --output crates/vorce/tests/reference_images/alpha_overlay.png
-cargo run -p vorce --bin mapflow_visual_harness --no-default-features -- reference --scenario gradient --output crates/vorce/tests/reference_images/gradient.png
+cargo run -p vorce --bin vorce_visual_harness --no-default-features -- reference --scenario checkerboard --output crates/vorce/tests/reference_images/checkerboard.png
+cargo run -p vorce --bin vorce_visual_harness --no-default-features -- reference --scenario alpha_overlay --output crates/vorce/tests/reference_images/alpha_overlay.png
+cargo run -p vorce --bin vorce_visual_harness --no-default-features -- reference --scenario gradient --output crates/vorce/tests/reference_images/gradient.png
 ```
 
 ## Lokale visuelle Tests ausfuehren

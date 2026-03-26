@@ -1,7 +1,7 @@
 # Spezifikation: Kamera-basierte Beamer-Kalibrierung & Smart Mapping
 
 ## 1. Übersicht
-Ziel ist die Implementierung einer automatischen Kalibrierung ("Auto-Mapping"), bei der eine Kamera die Projektionsfläche scannt und der Output von MapFlow automatisch an die Geometrie angepasst wird. Dies ermöglicht "Smart 3D Mapping", bei dem Inhalte präzise auf physische Objekte gemappt werden, ohne manuell Punkte ziehen zu müssen.
+Ziel ist die Implementierung einer automatischen Kalibrierung ("Auto-Mapping"), bei der eine Kamera die Projektionsfläche scannt und der Output von Vorce automatisch an die Geometrie angepasst wird. Dies ermöglicht "Smart 3D Mapping", bei dem Inhalte präzise auf physische Objekte gemappt werden, ohne manuell Punkte ziehen zu müssen.
 
 ## 2. Technischer Ansatz: Strukturiertes Licht (Structured Light)
 Wir verwenden das **Gray-Code** Verfahren (eine Form von Structured Light Scanning).
@@ -16,19 +16,19 @@ Wir verwenden das **Gray-Code** Verfahren (eine Form von Structured Light Scanni
 ## 3. Architektur & Stack
 
 ### 3.1 Kamera-Zugriff (Video Capture)
-Wir vermeiden schwere Abhängigkeiten wie OpenCV, um die Portabilität und Build-Zeiten von MapFlow zu schonen.
+Wir vermeiden schwere Abhängigkeiten wie OpenCV, um die Portabilität und Build-Zeiten von Vorce zu schonen.
 
 *   **Library**: `nokhwa` (https://crates.io/crates/nokhwa)
     *   *Features*: `input-native` (nutzt MediaFoundation auf Windows, V4L2 auf Linux, AVFoundation auf macOS).
 *   **Integration**:
-    *   Neues Crate (empfohlen): `crates/mapflow-vision`
+    *   Neues Crate (empfohlen): `crates/vorce-vision`
     *   API-Wrapper um `nokhwa`, der Frames als `image::RgbaImage` oder Rohdaten liefert.
 
 ### 3.2 Bildverarbeitung (Computer Vision)
 Die Verarbeitung erfolgt "Native Rust".
 
 *   **Pattern Generation**:
-    *   Ein neuer Modus im Renderer (`mapflow-render`), der statt User-Content mathematische Muster generiert.
+    *   Ein neuer Modus im Renderer (`vorce-render`), der statt User-Content mathematische Muster generiert.
 *   **Decoding Engine**:
     *   Input: Serie von Kamerabildern.
     *   Prozess:
@@ -46,7 +46,7 @@ Die Verarbeitung erfolgt "Native Rust".
 
 ### Phase 1: Setup
 1.  **Hardware**: Beamer und Kamera aufstellen und verbinden.
-2.  **View**: In MapFlow (neues Panel "Calibration") den Kamera-Input aktivieren.
+2.  **View**: In Vorce (neues Panel "Calibration") den Kamera-Input aktivieren.
 3.  **Ausrichtung**: Sicherstellen, dass die Kamera das gesamte Projektionsbild sieht.
 
 ### Phase 2: Scan (Der "Wizard")
@@ -68,7 +68,7 @@ Der User startet den "Auto-Calibrate" Prozess.
 ## 5. Datenstrukturen (Entwurf)
 
 ```rust
-// crates/mapflow-vision/src/lib.rs
+// crates/vorce-vision/src/lib.rs
 
 /// Repräsentiert eine Kalibrierungs-Sitzung
 pub struct CalibrationSession {
@@ -90,13 +90,13 @@ pub struct CalibrationResult {
 
 ## 6. Implementierungs-Plan
 
-### Schritt 1: `mapflow-vision` Crate Setup
+### Schritt 1: `vorce-vision` Crate Setup
 - Erstellen des Crates.
 - Einbinden von `nokhwa` und `image`.
 - Implementieren von `CameraInput` (Open, Stream, Capture Frame).
 
 ### Schritt 2: Pattern Generator
-- Erweitern von `mapflow-render` um `PatternRenderer`.
+- Erweitern von `vorce-render` um `PatternRenderer`.
 - Implementieren der Gray-Code Logik (rekursive Generierung der Streifenmuster).
 
 ### Schritt 3: UI Integration (Vorstufe)

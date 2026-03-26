@@ -1,10 +1,10 @@
-# MapFlow Render
+# Vorce Render
 
-The low-level graphics rendering engine for MapFlow, built on top of `wgpu`.
+The low-level graphics rendering engine for Vorce, built on top of `wgpu`.
 
 ## Overview
 
-MapFlow Render provides a robust abstraction over modern graphics APIs (Vulkan, Metal, DX12),
+Vorce Render provides a robust abstraction over modern graphics APIs (Vulkan, Metal, DX12),
 handling the complex details of the rendering pipeline so the core application can focus on logic.
 
 ## Key Modules
@@ -20,7 +20,7 @@ handling the complex details of the rendering pipeline so the core application c
 
 ## Architecture
 
-Rendering in MapFlow is pipeline-based. The `Compositor` takes a scene description and executes a series of render passes:
+Rendering in Vorce is pipeline-based. The `Compositor` takes a scene description and executes a series of render passes:
 
 1. **Layer Rendering**: Individual layers are rendered to intermediate textures.
 2. **Composition**: Layers are blended together.

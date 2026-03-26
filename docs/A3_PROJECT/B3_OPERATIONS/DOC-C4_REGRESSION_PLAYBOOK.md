@@ -53,7 +53,7 @@ Effekt:
 
 ### Fix-Ort
 
-- `crates/mapflow-core/src/module_eval.rs`
+- `crates/vorce-core/src/module_eval.rs`
 - Helfer: `primary_render_connection_idx(...)`
 - Visual chain folgt jetzt explizit `to_socket == 0`
 
@@ -89,8 +89,8 @@ Es lagen zwei getrennte Fehler vor:
 
 ### Fix-Ort
 
-- `crates/mapflow/src/main.rs`
-- `crates/mapflow/src/app/loops/render.rs`
+- `crates/vorce/src/main.rs`
+- `crates/vorce/src/app/loops/render.rs`
 
 ### Regressionstests
 

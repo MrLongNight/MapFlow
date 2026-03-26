@@ -12,7 +12,7 @@
 
 ## 1. Summary
 
-MapFlow can be made macOS-compatible, but the current repository is not yet ready to offer macOS as a supported release platform.
+Vorce can be made macOS-compatible, but the current repository is not yet ready to offer macOS as a supported release platform.
 
 The core architecture is suitable for a macOS port:
 - Rust workspace
@@ -64,7 +64,7 @@ Recommendation:
 Tasks:
 - validate workspace build on macOS
 - review shared `winit` feature flags
-- review `mapflow-bevy` feature flags
+- review `vorce-bevy` feature flags
 - validate `rfd`, `cpal`, `midir`, `ffmpeg-next`, and `libmpv2` behavior on macOS
 - feature-gate or disable unfinished platform paths
 
@@ -114,7 +114,7 @@ Deliverables:
 Estimate: 3-5 days
 
 Deliverables:
-- `cargo build -p mapflow` works on macOS
+- `cargo build -p vorce` works on macOS
 - compile blockers documented or fixed
 - unfinished platform features gated
 
@@ -158,9 +158,9 @@ Deliverables:
 - [ ] Add macOS CI job to `.github/workflows/CICD-DevFlow_Job01_Validation.yml`
 - [ ] Add macOS release artifact job to `.github/workflows/CICD-MainFlow_Job03_Release.yml`
 - [ ] Validate `Cargo.toml` shared `winit` flags on macOS
-- [ ] Validate `crates/mapflow-bevy/Cargo.toml` feature set on macOS
-- [ ] Verify `cargo build --release -p mapflow` on Apple Silicon
-- [ ] Verify `cargo build --release -p mapflow` on Intel macOS
+- [ ] Validate `crates/vorce-bevy/Cargo.toml` feature set on macOS
+- [ ] Verify `cargo build --release -p vorce` on Apple Silicon
+- [ ] Verify `cargo build --release -p vorce` on Intel macOS
 
 ### Runtime backlog
 - [ ] Test startup and render loop on Metal
@@ -183,7 +183,7 @@ Deliverables:
 
 ### Optional parity backlog
 - [ ] Add Syphon to app-level source/output model
-- [ ] Implement real `mapflow-io` Syphon support
+- [ ] Implement real `vorce-io` Syphon support
 - [ ] Expose Syphon in UI only after runtime support is real
 - [ ] Re-evaluate Virtual Camera after beta feedback
 
@@ -204,7 +204,7 @@ Deliverables:
 
 ## 7. Success Criteria
 
-MapFlow counts as macOS beta-ready when:
+Vorce counts as macOS beta-ready when:
 - CI builds the app on macOS
 - app launches on Apple Silicon
 - the main editing UI is usable
@@ -213,7 +213,7 @@ MapFlow counts as macOS beta-ready when:
 - audio is stable or intentionally disabled with clear UX
 - internal testers can run a packaged artifact
 
-MapFlow counts as production-ready for macOS when:
+Vorce counts as production-ready for macOS when:
 - a signed and notarized artifact exists
 - install steps are documented
 - core workflows pass regression testing on real Macs
@@ -244,15 +244,15 @@ Rationale:
 - Goal: make the workspace build cleanly on macOS with a clearly defined feature set.
 - Primary files:
   - `Cargo.toml`
-  - `crates/mapflow/Cargo.toml`
-  - `crates/mapflow-bevy/Cargo.toml`
-  - `crates/mapflow-ui/Cargo.toml`
+  - `crates/vorce/Cargo.toml`
+  - `crates/vorce-bevy/Cargo.toml`
+  - `crates/vorce-ui/Cargo.toml`
 - Required outputs:
   - documented macOS build command
   - compile blockers removed or explicitly feature-gated
   - macOS build notes added where needed
 - Definition of done:
-  - `cargo build -p mapflow` is expected to work on macOS
+  - `cargo build -p vorce` is expected to work on macOS
   - no unfinished macOS blockers remain hidden behind default settings
 
 ### MF-066-MACOS-CI-VALIDATION
@@ -271,9 +271,9 @@ Rationale:
 ### MF-063-MACOS-RUNTIME-STABILIZATION
 - Goal: make the compiled app launch and behave predictably on macOS.
 - Primary files:
-  - `crates/mapflow/src/main.rs`
-  - `crates/mapflow/src/window_manager.rs`
-  - `crates/mapflow/src/orchestration/outputs.rs`
+  - `crates/vorce/src/main.rs`
+  - `crates/vorce/src/window_manager.rs`
+  - `crates/vorce/src/orchestration/outputs.rs`
   - platform-relevant UI/runtime files as needed
 - Required outputs:
   - stable startup
@@ -286,8 +286,8 @@ Rationale:
 ### MF-064-MACOS-MEDIA-FFMPEG-PATH
 - Goal: establish a stable macOS media path even if it starts with software decode only.
 - Primary files:
-  - `crates/mapflow-media/Cargo.toml`
-  - `crates/mapflow-media/src/decoder.rs`
+  - `crates/vorce-media/Cargo.toml`
+  - `crates/vorce-media/src/decoder.rs`
   - build and install docs if dependency handling changes
 - Required outputs:
   - defined FFmpeg strategy for macOS
@@ -299,8 +299,8 @@ Rationale:
 ### MF-065-MACOS-AUDIO-VALIDATION
 - Goal: validate whether audio should ship enabled, gated, or deferred on macOS.
 - Primary files:
-  - `crates/mapflow-core/src/audio/`
-  - `crates/mapflow-ui/Cargo.toml`
+  - `crates/vorce-core/src/audio/`
+  - `crates/vorce-ui/Cargo.toml`
   - relevant docs around build and runtime support
 - Required outputs:
   - clear macOS audio support decision
@@ -325,8 +325,8 @@ Rationale:
 ### MF-068-MACOS-NATIVE-INTEROP
 - Goal: add optional macOS-native interop only after the base app is already stable.
 - Primary files:
-  - `crates/mapflow-io/src/syphon/mod.rs`
-  - `crates/mapflow-io/src/virtual_camera/mod.rs`
+  - `crates/vorce-io/src/syphon/mod.rs`
+  - `crates/vorce-io/src/virtual_camera/mod.rs`
   - app-level source/output model and UI wiring
 - Required outputs:
   - explicit scope decision for Syphon and Virtual Camera

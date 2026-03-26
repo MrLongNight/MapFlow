@@ -20,11 +20,11 @@ Alle kritischen Architektur-Probleme (God Files, Unsafe Pointer) der frühen Pha
 
 ## 2. Audit-Historie
 
-Regelmäßige Audits sichern die Qualität von MapFlow.
+Regelmäßige Audits sichern die Qualität von Vorce.
 
 | Datum | Typ | Ergebnis |
 | :--- | :--- | :--- |
-| 05.03.2026 | Release Cleanup | Alle TODOs in mapflow-core gelöst, CI stabilisiert. |
+| 05.03.2026 | Release Cleanup | Alle TODOs in vorce-core gelöst, CI stabilisiert. |
 | 29.12.2025 | Code Analysis | Sicherheits-Audit bezüglich Hardcoded Paths (behoben). |
 | 15.12.2025 | Documentation | Restrukturierung der docs zur besseren Übersicht (DOC-A0-Standard). |
 
@@ -32,7 +32,7 @@ Regelmäßige Audits sichern die Qualität von MapFlow.
 
 ## 3. Phasenplanung (Historisch)
 
-MapFlow wurde in 7 Kernphasen entwickelt:
+Vorce wurde in 7 Kernphasen entwickelt:
 - **Phase 0-2**: Foundation, Multi-Projector, Shader-System.
 - **Phase 3-5**: Control (MIDI/OSC), Assets, ImGui-Interface.
 - **Phase 6**: Vollständige Migration auf **egui** (Node-Editor, Timeline).

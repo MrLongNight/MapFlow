@@ -2,7 +2,7 @@
 
 ## ⚠️ Important Note
 
-Vorce is a complete rewrite of the legacy "MapFlow" application. The C++/Qt version instructions are obsolete.
+Vorce is a complete rewrite of the legacy "Vorce" application. The C++/Qt version instructions are obsolete.
 
 ## Supported Platforms
 

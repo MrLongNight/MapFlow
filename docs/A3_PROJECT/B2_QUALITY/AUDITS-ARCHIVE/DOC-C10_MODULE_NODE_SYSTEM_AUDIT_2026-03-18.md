@@ -4,7 +4,7 @@ Stand: 2026-03-18
 
 ## 1. Scope
 
-Diese Doku analysiert den aktuellen IST-Zustand des Module-Canvas-Node-Systems in MapFlow/VJMapper:
+Diese Doku analysiert den aktuellen IST-Zustand des Module-Canvas-Node-Systems in Vorce/VJMapper:
 
 - verfuegbare Node-Typen im Core
 - Erreichbarkeit im Module Canvas
@@ -16,13 +16,13 @@ Diese Doku analysiert den aktuellen IST-Zustand des Module-Canvas-Node-Systems i
 
 Primaere Referenzen:
 
-- `crates/mapflow-core/src/module/types/*`
-- `crates/mapflow-core/src/module_eval/*`
-- `crates/mapflow-core/src/trigger_system.rs`
-- `crates/mapflow-ui/src/editors/module_canvas/*`
-- `crates/mapflow/src/orchestration/*`
-- `crates/mapflow/src/app/loops/render.rs`
-- `crates/mapflow-media/src/pipeline.rs`
+- `crates/vorce-core/src/module/types/*`
+- `crates/vorce-core/src/module_eval/*`
+- `crates/vorce-core/src/trigger_system.rs`
+- `crates/vorce-ui/src/editors/module_canvas/*`
+- `crates/vorce/src/orchestration/*`
+- `crates/vorce/src/app/loops/render.rs`
+- `crates/vorce-media/src/pipeline.rs`
 - `docs/A1_SYSTEM/B1_ARCHITECTURE/DOC-C4_RENDER-QUEUE.md`
 
 ## 2. Kurzfazit
@@ -30,7 +30,7 @@ Primaere Referenzen:
 Der Node-Stack ist funktional nur in einem Teilbereich konsistent:
 
 - Der Core modelliert deutlich mehr Node-Typen, Parameter und Socket-Varianten als das Canvas, der Inspector und der Renderpfad real bedienen.
-- Die derzeitige Runtime ist keine einheitliche "Render Queue", sondern ein Mix aus direkter Media-Orchestrierung, `render_ops` aus dem Evaluator und einer ungenutzten Frame-Pipeline im `mapflow-media`-Crate.
+- Die derzeitige Runtime ist keine einheitliche "Render Queue", sondern ein Mix aus direkter Media-Orchestrierung, `render_ops` aus dem Evaluator und einer ungenutzten Frame-Pipeline im `vorce-media`-Crate.
 - Trigger, Link-System, Hue, NDI/Spout/LiveInput, Blend-Modi, Masken und mehrere Effekte sind nur teilweise oder gar nicht end-to-end verdrahtet.
 - Das derzeitige Connector-Modell ist index-basiert, zu lose typisiert und erlaubt ungueltige Verbindungen, die spaeter in Evaluator und Renderpfad zu stillen Fehlern fuehren.
 - Fuer einen belastbaren SOLL-Zustand braucht das System eine Schema-getriebene Node-Definition mit stabilen Socket-IDs, klaren Connector-Klassen und einer sauberen Trennung zwischen `Media`, `Control` und `Event`.
@@ -353,7 +353,7 @@ Der aktive Runtime-Pfad besteht aktuell aus drei Schichten:
 
 ### 5.2 Was zusaetzlich im Code existiert, aber nicht sichtbar verdrahtet ist
 
-- `mapflow-media/src/pipeline.rs` enthaelt `FramePipeline` und `FrameScheduler`.
+- `vorce-media/src/pipeline.rs` enthaelt `FramePipeline` und `FrameScheduler`.
 - `DOC-C4_RENDER-QUEUE.md` beschreibt diese Pipeline als zentrale Architektur.
 - Im eigentlichen App-Lauf wurde jedoch kein aktiver Aufrufpfad auf diese Pipeline gefunden.
 
@@ -479,7 +479,7 @@ Beide Konzepte sind nicht sauber zusammengefuehrt:
 
 - `module_eval/triggers.rs` ist der aktive Evaluationspfad.
 - `trigger_system.rs` definiert ein zweites Trigger-System, das in der App-Laufzeit nicht sichtbar genutzt wird.
-- `mapflow-control/src/cue/triggers.rs` definiert zusaetzlich Cue-Trigger fuer MIDI/Time/OSC.
+- `vorce-control/src/cue/triggers.rs` definiert zusaetzlich Cue-Trigger fuer MIDI/Time/OSC.
 
 Ergebnis:
 
@@ -706,7 +706,7 @@ Folgende Basis wurde inzwischen im Code umgesetzt:
   - `is_primary`
   - `accepts_multiple_connections`
 - `ModulePart::schema()` liefert ein konsolidiertes Node-/Socket-/Inspector-Schema.
-- `MapFlowModule` validiert neue Verbindungen ueber `validate_connection(...)` und `connect_parts(...)`.
+- `VorceModule` validiert neue Verbindungen ueber `validate_connection(...)` und `connect_parts(...)`.
 - `repair_graph()` entfernt inkonsistente Connections und ungueltige Trigger-Mappings und normalisiert doppelte IDs.
 - `ModuleManager::get_module_mut()` dirty-markiert nicht mehr implizit.
 - `ModuleManager::repair_modules(...)` wird im App-Loop vor der Evaluation fuer Self-Healing genutzt.
@@ -719,9 +719,9 @@ Folgende Basis wurde inzwischen im Code umgesetzt:
 - Das Bevy-Frame-Readback entmappt den GPU-Buffer jetzt deterministisch innerhalb desselben Frames.
 - Die `composite`-Textur wird fuer den Automation-Capture-Pfad jetzt mit `COPY_SRC` angelegt; dadurch verursacht `--screenshot-dir` keine WGPU-Validierungspanik mehr.
 - Debug-Smoke-Tests am 2026-03-19:
-  - `target/debug/MapFlow.exe --help` -> `EXIT=0`
-  - `target/debug/MapFlow.exe --mode automation --exit-after-frames 1` -> `EXIT=0`
-  - `target/debug/MapFlow.exe --mode automation --exit-after-frames 1 --screenshot-dir <dir>` -> `EXIT=0`
+  - `target/debug/Vorce.exe --help` -> `EXIT=0`
+  - `target/debug/Vorce.exe --mode automation --exit-after-frames 1` -> `EXIT=0`
+  - `target/debug/Vorce.exe --mode automation --exit-after-frames 1 --screenshot-dir <dir>` -> `EXIT=0`
   - `tmp/automation-check-debug/automation_frame_1.png` wird erfolgreich geschrieben
 
 Noch offen:

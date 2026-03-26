@@ -1,6 +1,6 @@
-# MapFlow (Application)
+# Vorce (Application)
 
-The main entry point and binary crate for the MapFlow projection mapping suite.
+The main entry point and binary crate for the Vorce projection mapping suite.
 
 ## Overview
 
@@ -15,7 +15,7 @@ Full project documentation is available in the [`docs/`](../../docs/) directory.
 - [User Guide](../../docs/A4_USER/B1_MANUAL/DOC-C0_README.md)
 - [Architecture](../../docs/A1_SYSTEM/B1_ARCHITECTURE/DOC-C1_OVERVIEW.md)
 
-## Running MapFlow
+## Running Vorce
 
 ### Prerequisites
 
@@ -36,8 +36,8 @@ cargo run --release --features ffmpeg,audio
 
 ## Configuration
 
-MapFlow stores user configuration (window positions, last used audio device, etc.) in the system's user data directory:
+Vorce stores user configuration (window positions, last used audio device, etc.) in the system's user data directory:
 
-- **Linux**: `~/.local/share/mapflow/`
-- **Windows**: `%APPDATA%\mapflow\`
-- **macOS**: `~/Library/Application Support/mapflow/`
+- **Linux**: `~/.local/share/vorce/`
+- **Windows**: `%APPDATA%\vorce\`
+- **macOS**: `~/Library/Application Support/vorce/`

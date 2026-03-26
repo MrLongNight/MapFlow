@@ -6,8 +6,8 @@ Integration von Industriestandards für den Austausch von Video-Streams zwischen
 *   **Spout (Windows)** / **Syphon (macOS)**: Lokaler Austausch auf demselben Rechner via GPU-Texture-Sharing (Zero-Copy oder Near-Zero-Copy). Extrem schnell, extrem geringe Latenz.
 *   **NDI® (Network Device Interface)**: Austausch über LAN (Gigabit Ethernet). Komprimiert (ähnlich MPEG, aber I-Frame only), geringe Latenz (~1 Frame).
 
-## 2. Architektur: `mapflow-io`
-Das Crate `mapflow-io` wird zur zentralen Schaltstelle für diese Protokolle.
+## 2. Architektur: `vorce-io`
+Das Crate `vorce-io` wird zur zentralen Schaltstelle für diese Protokolle.
 
 ### 2.1 Spout (Windows)
 *   **Library**: Es gibt Rust-Bindings `spout` oder direkte Nutzung der `OpenGL32.dll` / DirectX shared handles.
@@ -31,8 +31,8 @@ Das Crate `mapflow-io` wird zur zentralen Schaltstelle für diese Protokolle.
 *   Stream wird wie ein Live-Video behandelt (Buffer-Management wichtig für Jitter-Ausgleich).
 
 ### 3.2 Spout Receiver/Sender
-*   **Receiver**: MapFlow empfängt Visuals von Resolume oder TouchDesigner.
-*   **Sender**: MapFlow sendet den "Main Mix" oder einzelne Slices an OBS Studio (für Livestreaming).
+*   **Receiver**: Vorce empfängt Visuals von Resolume oder TouchDesigner.
+*   **Sender**: Vorce sendet den "Main Mix" oder einzelne Slices an OBS Studio (für Livestreaming).
 
 ## 4. UI Integration
 Neue Kategorie im "Source"-Panel: **Live Inputs**.
@@ -41,6 +41,6 @@ Neue Kategorie im "Source"-Panel: **Live Inputs**.
 *   Spout Senders
 
 ## 5. Roadmap
-1.  **Phase 1: Spout Sender (Windows)**. Das ist der häufigste Use-Case (MapFlow -> OBS / Resolume).
+1.  **Phase 1: Spout Sender (Windows)**. Das ist der häufigste Use-Case (Vorce -> OBS / Resolume).
 2.  **Phase 2: NDI Receiver**. Damit man Laptops verbinden kann.
 3.  **Phase 3: Syphon (macOS)**. Erst wenn Portierung auf Mac stabil ist.

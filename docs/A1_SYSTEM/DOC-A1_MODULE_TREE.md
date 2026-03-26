@@ -1,4 +1,4 @@
-﻿# MapFlow Module Tree (Generated: 2026-03-08 23:39)
+﻿# Vorce Module Tree (Generated: 2026-03-08 23:39)
 
 Diese Datei zeigt die physische und logische Struktur des Projekts.
 
@@ -8,7 +8,7 @@ Diese Datei zeigt die physische und logische Struktur des Projekts.
 Auflistung der Ordnerpfade
 Volumeseriennummer : 7AE1-A876
 C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
-+---mapflow
++---vorce
 |   |   build.rs
 |   |   Cargo.toml
 |   |   README.md
@@ -79,7 +79,7 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |           License.rtf
 |           main.wxs
 |
-+---mapflow-bevy
++---vorce-bevy
 |   |   Cargo.toml
 |   |   README.md
 |   |
@@ -97,7 +97,7 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |           resources.rs
 |           systems.rs
 |
-+---mapflow-control
++---vorce-control
 |   |   Cargo.toml
 |   |   README.md
 |   |
@@ -178,7 +178,7 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |               server.rs
 |               websocket.rs
 |
-+---mapflow-core
++---vorce-core
 |   |   Cargo.toml
 |   |   README.md
 |   |
@@ -257,14 +257,14 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |           trigger_system_tests.rs
 |           trigger_tests.rs
 |
-+---mapflow-ffi
++---vorce-ffi
 |   |   Cargo.toml
 |   |   README.md
 |   |
 |   \---src
 |           lib.rs
 |
-+---mapflow-io
++---vorce-io
 |   |   Cargo.toml
 |   |   README.md
 |   |
@@ -302,7 +302,7 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |   \---tests
 |           project_tests.rs
 |
-+---mapflow-mcp
++---vorce-mcp
 |   |   Cargo.toml
 |   |   README.md
 |   |
@@ -312,7 +312,7 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |           protocol.rs
 |           server.rs
 |
-+---mapflow-media
++---vorce-media
 |   |   Cargo.toml
 |   |   README.md
 |   |
@@ -330,7 +330,7 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |           player.rs
 |           sequence.rs
 |
-+---mapflow-render
++---vorce-render
 |   |   Cargo.toml
 |   |   README.md
 |   |
@@ -364,7 +364,7 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 |           effect_chain_tests.rs
 |           multi_output_tests.rs
 |
-+---mapflow-ui
++---vorce-ui
 |   |   Cargo.toml
 |   |   README.md
 |   |
@@ -488,16 +488,16 @@ C:\USERS\VINYL\DESKTOP\VJMAPPER\VJMAPPER\CRATES
 
 | Crate | Pfad | Beschreibung |
 |-------|------|--------------|
-| mapflow | crates/mapflow | MapFlow - Professional Projection Mapping Software |
-| mapflow-bevy | crates/mapflow-bevy |  |
-| mapflow-control | crates/mapflow-control |  |
-| mapflow-core | crates/mapflow-core |  |
-| mapflow-ffi | crates/mapflow-ffi | MapFlow C/C++ Foreign Function Interface bindings. |
-| mapflow-io | crates/mapflow-io |  |
-| mapflow-mcp | crates/mapflow-mcp |  |
-| mapflow-media | crates/mapflow-media |  |
-| mapflow-render | crates/mapflow-render |  |
-| mapflow-ui | crates/mapflow-ui |  |
+| vorce | crates/vorce | Vorce - Professional Projection Mapping Software |
+| vorce-bevy | crates/vorce-bevy |  |
+| vorce-control | crates/vorce-control |  |
+| vorce-core | crates/vorce-core |  |
+| vorce-ffi | crates/vorce-ffi | Vorce C/C++ Foreign Function Interface bindings. |
+| vorce-io | crates/vorce-io |  |
+| vorce-mcp | crates/vorce-mcp |  |
+| vorce-media | crates/vorce-media |  |
+| vorce-render | crates/vorce-render |  |
+| vorce-ui | crates/vorce-ui |  |
 
 ## 3. Logische Modul-Hierarchie
 

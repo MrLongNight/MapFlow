@@ -577,7 +577,7 @@ function Get-VorceProjectConfig {
                     Where-Object {
                         $_ -and
                         ($_.closed -eq $false) -and
-                        ([string]$_.title -eq "@MapFlow Project Manager")
+                        ([string]$_.title -eq "@Vorce Project Manager")
                     } |
                     Select-Object -First 1
             )

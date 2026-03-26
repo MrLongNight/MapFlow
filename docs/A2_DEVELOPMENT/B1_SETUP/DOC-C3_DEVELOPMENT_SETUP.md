@@ -1,6 +1,6 @@
 # Development Setup & Contribution Guide
 
-This document provides guidelines for contributing to the MapFlow project.
+This document provides guidelines for contributing to the Vorce project.
 
 **Note:** This guide was originally named `HACKING.md` and primarily refers to the development process of the **legacy C++/Qt version**. Guidelines for the Rust version are still evolving but will generally follow similar principles.
 
@@ -15,14 +15,14 @@ You will need to install markdown to build some of the documentation that comes 
 You might need to update the files:
 
 ```bash
-cd src/mapflow
-lupdate mapflow.pro
+cd src/vorce
+lupdate vorce.pro
 ```
 
 Then, do this:
 
 ```bash
-lrelease mapflow.pro
+lrelease vorce.pro
 ```
 
 ## Coding Style (Legacy C++/Qt)
@@ -41,7 +41,7 @@ We use Semantic Versioning 2.0.0. Given a version number MAJOR.MINOR.PATCH, incr
 * PATCH version when you make backwards-compatible bug fixes.
 See http://semver.org/
 
-We want the 0 series to be backward-compatible. That means that a project created with MapFlow 0.1 should still work with MapFlow 0.99, if we ever get to such a version number. When we will break this backward-compatibilty, we will start the 1 series and provide a migration script. This script might be ran from the command-line or on the Web. The other thing we need to be backward-compatible is the OSC interface. The rest of the software can change. This includes the names of the menu items and the appearance of the user interface. We will try to keep these consistent, though.
+We want the 0 series to be backward-compatible. That means that a project created with Vorce 0.1 should still work with Vorce 0.99, if we ever get to such a version number. When we will break this backward-compatibilty, we will start the 1 series and provide a migration script. This script might be ran from the command-line or on the Web. The other thing we need to be backward-compatible is the OSC interface. The rest of the software can change. This includes the names of the menu items and the appearance of the user interface. We will try to keep these consistent, though.
 
 ## Key Files
 * **HACKING**: (This file) What to know to contribute to the project.
@@ -64,7 +64,7 @@ We want the 0 series to be backward-compatible. That means that a project create
 ## How to Make a Release (Legacy)
 * If it's a new feature, increment minor. If it's bugfix, increment micro. If it's not backward-compatible, increment major.
 * Create a `release-x.y.z` branch
-* Verify the version number in all relevant files: `VERSION.txt`, `DMGVERSION.txt`, `mapflow.pro`, `docs/Doxyfile`, `NEWS`, `src/core/MM.cpp`
+* Verify the version number in all relevant files: `VERSION.txt`, `DMGVERSION.txt`, `vorce.pro`, `docs/Doxyfile`, `NEWS`, `src/core/MM.cpp`
 * Edit `NEWS` - update with the news for the release you are about to make
 * Run `./scripts/update-changelog.sh` and commit the changes
 * Maybe update `docs/informations/osc.md` and run `scripts/docs/update-osc.sh` and commit the changes
@@ -83,11 +83,11 @@ We want the 0 series to be backward-compatible. That means that a project create
 ## XML File Version Number
 * update its minor number when you introduce new features.
 * update its major number when it's not backward-comptatible anymore with its previous versions
-* generally, we should follow the MapFlow version, when new changes are introduced. (no need to increment it otherwise)
+* generally, we should follow the Vorce version, when new changes are introduced. (no need to increment it otherwise)
 * we will need to implement some fancy XML file version number checking in the future.
 
 ## Qt Resources System
-* The `mapflow.pro` file is where the packaging is done
-* The `mapflow.qrc` file is where we specify which resources are packaged with the app.
+* The `vorce.pro` file is where the packaging is done
+* The `vorce.qrc` file is where we specify which resources are packaged with the app.
 * Images are set there. They are then available as a path-like alias such as `:/fullscreen`
 * See http://doc.qt.io/qt-5/resources.html

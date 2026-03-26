@@ -1,6 +1,6 @@
 # Module Sockets and Connectors
 
-This document specifies the standards for node sockets in MapFlow to prevent drift and ensure schema consistency.
+This document specifies the standards for node sockets in Vorce to prevent drift and ensure schema consistency.
 
 ## Socket Types (ModuleSocketType)
 
@@ -15,7 +15,7 @@ The following signal variants exist in the current system:
 
 ## Standard Socket Builders
 
-To prevent drift and ensure nodes always present standard and reliable socket IDs, you must use the following standard builders located in `ModuleSocket` (`crates/mapflow-core/src/module/types/socket.rs`) instead of constructing sockets manually via `ModuleSocket::input()`:
+To prevent drift and ensure nodes always present standard and reliable socket IDs, you must use the following standard builders located in `ModuleSocket` (`crates/vorce-core/src/module/types/socket.rs`) instead of constructing sockets manually via `ModuleSocket::input()`:
 
 *   `standard_media_in()` -> ID: `"media_in"`
 *   `standard_media_out()` -> ID: `"media_out"`

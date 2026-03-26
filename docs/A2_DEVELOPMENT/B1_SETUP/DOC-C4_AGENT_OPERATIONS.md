@@ -1,13 +1,13 @@
 # AGENTS.md – Anweisungen für KI-Agenten
 
 Hallo Jules!
-Dieses Dokument enthält **technische und organisatorische Vorgaben** für alle KI-basierten Agenten und menschlichen Contributor:innen im MapFlow-Projekt.
+Dieses Dokument enthält **technische und organisatorische Vorgaben** für alle KI-basierten Agenten und menschlichen Contributor:innen im Vorce-Projekt.
 
 ---
 
 ## Projektübersicht
 
-- **MapFlow** ist ein vollständiger Rewrite einer bestehenden C++/Qt-Anwendung in Rust.
+- **Vorce** ist ein vollständiger Rewrite einer bestehenden C++/Qt-Anwendung in Rust.
 - Ziel ist eine hochperformante, speichersichere Projection-Mapping-Software.
 - Der gesamte Rust-Quellcode befindet sich im `crates/`-Verzeichnis, organisiert als Cargo-Workspace.
 
@@ -201,7 +201,7 @@ Wenn ein Task die Architektur bricht:
 
    Task: XYZ
    Problem: Würde zirkuläre Dependency erzeugen
-   Vorschlag: Neues Trait in mapflow-core definieren
+   Vorschlag: Neues Trait in vorce-core definieren
    ```
 3. **WARTE** auf Entscheidung von @MrLongNight
 

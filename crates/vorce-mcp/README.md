@@ -1,11 +1,11 @@
-# MapFlow MCP Server
+# Vorce MCP Server
 
-The **Model Context Protocol (MCP)** server for MapFlow.
-This crate enables AI assistants (like Claude, Gemini, or custom agents) to interact with and control the MapFlow application.
+The **Model Context Protocol (MCP)** server for Vorce.
+This crate enables AI assistants (like Claude, Gemini, or custom agents) to interact with and control the Vorce application.
 
 ## Overview
 
-MapFlow MCP exposes the internal state and control surface of the application via the standard [Model Context Protocol](https://modelcontextprotocol.io/).
+Vorce MCP exposes the internal state and control surface of the application via the standard [Model Context Protocol](https://modelcontextprotocol.io/).
 This allows for:
 
 - **Natural Language Control**: "Add a layer with the 'waves.mp4' file and set opacity to 50%."
@@ -14,7 +14,7 @@ This allows for:
 
 ## Architecture
 
-The MCP Server runs as a background service within the main MapFlow application (or as a standalone process for testing).
+The MCP Server runs as a background service within the main Vorce application (or as a standalone process for testing).
 It bridges external JSON-RPC requests to internal `McpAction` events, which are then processed by the main application loop.
 
 ## Features
@@ -29,14 +29,14 @@ It bridges external JSON-RPC requests to internal `McpAction` events, which are 
 
 ## Usage
 
-This crate is primarily used internally by `mapmap-control` and the main `mapmap` binary.
+This crate is primarily used internally by `vorce-control` and the main `vorce` binary.
 To enable it, ensure the `mcp` feature is active (if applicable) or that the server is initialized in your configuration.
 
 It can also be run standalone for testing:
 
 ```bash
 # Run the MCP server (stdio mode)
-cargo run -p mapmap-mcp
+cargo run -p vorce-mcp
 ```
 
 ## Integration
@@ -46,12 +46,12 @@ To integrate with an MCP client (e.g., Claude Desktop), add the following to you
 ```json
 {
   "mcpServers": {
-    "mapflow": {
+    "vorce": {
       "command": "cargo",
       "args": [
         "run",
         "-p",
-        "mapmap-mcp",
+        "vorce-mcp",
         "--quiet"
       ]
     }

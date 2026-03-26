@@ -1,6 +1,6 @@
 # DOC-C0: Architektur & Design
 
-Dokumentation der Kern-Architektur von MapFlow.
+Dokumentation der Kern-Architektur von Vorce.
 
 ## Dokumente
 

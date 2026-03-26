@@ -4,7 +4,7 @@ This directory is reserved for API documentation and reference materials.
 
 ## Rust API Documentation
 
-MapFlow uses standard Rust tools for API documentation. To generate and view the API documentation locally, run:
+Vorce uses standard Rust tools for API documentation. To generate and view the API documentation locally, run:
 
 ```bash
 cargo doc --workspace --no-deps --open

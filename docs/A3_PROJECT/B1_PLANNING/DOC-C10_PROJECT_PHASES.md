@@ -3,7 +3,7 @@
 > **⚠️ DEPRECATED:** This document is kept for historical reference only.
 > For the most up-to-date roadmap and feature status, please verify the GitHub Project Issues.
 
-This document outlines the complete project roadmap for the MapFlow Rust rewrite, from the initial core engine development to the final polish and release.
+This document outlines the complete project roadmap for the Vorce Rust rewrite, from the initial core engine development to the final polish and release.
 
 ## Phase Overview
 
@@ -63,7 +63,7 @@ The goal of this phase was to migrate the legacy ImGui interface to a profession
 ### Packaging & Distribution
 
 - [x] **App Icon Embedding**
-  - Uses `winres` to embed `mapflow.ico` into the Windows executable.
+  - Uses `winres` to embed `vorce.ico` into the Windows executable.
 - [ ] **Windows Installer (WiX)**
   - Basic configuration (`main.wxs`) exists.
   - Needs verification of DLL bundling (FFmpeg) and shortcut creation.
@@ -93,8 +93,8 @@ This phase enables distributed output across multiple PCs, supporting profession
 
 The master PC renders all content and streams the finished video to player clients.
 
-- [ ] **NDI Integration** (`mapflow-ndi/`)
-  - [ ] Create new crate `mapflow-ndi`
+- [ ] **NDI Integration** (`vorce-ndi/`)
+  - [ ] Create new crate `vorce-ndi`
   - [ ] Integrate `grafton-ndi` Rust bindings
   - [ ] Implement NDI Sender (wgpu Texture → NDI)
   - [ ] Implement NDI Receiver (NDI → Fullscreen)
@@ -109,15 +109,15 @@ The master PC renders all content and streams the finished video to player clien
   - [ ] Optional status overlay
 
 - [ ] **Installer Updates**
-  - [ ] Add "MapFlow Player (NDI)" shortcut
+  - [ ] Add "Vorce Player (NDI)" shortcut
   - [ ] NDI Runtime dependency check
 
 ### 8.2 Option C: Legacy Slave Client
 
 For very old hardware (2010+ era), using hardware-accelerated H.264 decoding.
 
-- [ ] **H.264/RTSP Streaming** (`mapflow-legacy/`)
-  - [ ] Create new crate `mapflow-legacy`
+- [ ] **H.264/RTSP Streaming** (`vorce-legacy/`)
+  - [ ] Create new crate `vorce-legacy`
   - [ ] H.264 Encoder (x264 software / NvEnc hardware)
   - [ ] RTSP Server for stream distribution
   - [ ] Hardware decoder support (DXVA, VA-API, VideoToolbox)
@@ -139,7 +139,7 @@ Budget-friendly player using Raspberry Pi hardware.
 
 - [ ] **Software Options**
   - [ ] Document Dicaffeine NDI Player setup
-  - [ ] Custom ARM64 MapFlow build (optional)
+  - [ ] Custom ARM64 Vorce build (optional)
   - [ ] VLC RTSP fallback
 
 - [ ] **Deployment**
@@ -151,7 +151,7 @@ Budget-friendly player using Raspberry Pi hardware.
 
 Clients render independently, receiving only control commands.
 
-- [ ] **Control Protocol** (`mapflow-sync/`)
+- [ ] **Control Protocol** (`vorce-sync/`)
   - [ ] OSC-based control messaging
   - [ ] Timecode synchronization (NTP-based)
   - [ ] Frame-sync via hardware genlock (optional)
@@ -174,7 +174,7 @@ Clients render independently, receiving only control commands.
 
 ### Success Criteria
 
-- [ ] **Option A MVP**: NDI stream from MapFlow to second PC, fullscreen display, <100ms latency
+- [ ] **Option A MVP**: NDI stream from Vorce to second PC, fullscreen display, <100ms latency
 - [ ] **Option C MVP**: RTSP stream to Intel HD 2000 PC, 1080p30 playback
 - [ ] **Option D MVP**: Raspberry Pi 4 playing 720p60 NDI stream via Dicaffeine
 - [ ] **Option B MVP**: Two PCs rendering synchronized content via timecode

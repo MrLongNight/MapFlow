@@ -1,9 +1,9 @@
 # DOC-C3: WGSL Shader System
 
-Dieses Dokument beschreibt die Implementierung und Nutzung von Shadern in MapFlow.
+Dieses Dokument beschreibt die Implementierung und Nutzung von Shadern in Vorce.
 
 ## 1. Shader-Sprache: WGSL
-MapFlow nutzt ausschließlich **WGSL** (WebGPU Shading Language). Dies garantiert native Performance auf allen Plattformen (Vulkan, Metal, DX12).
+Vorce nutzt ausschließlich **WGSL** (WebGPU Shading Language). Dies garantiert native Performance auf allen Plattformen (Vulkan, Metal, DX12).
 
 ## 2. Kern-Shader
 *   `shaders/mesh_warp.wgsl`: Berechnet die geometrische Verzerrung für das Projection Mapping.
@@ -16,4 +16,4 @@ Der Shader-Graph in der UI erlaubt es, visuelle Knoten zu Effekten zu kombiniere
 - **Uniforms**: Parameter wie `Speed`, `Intensity` oder `Color` werden als Uniform-Buffer an den Shader übergeben.
 
 ## 4. Hot Reloading
-Änderungen an den `.wgsl` Dateien im `shaders/` Verzeichnis werden vom `mapflow-render` automatisch erkannt und zur Laufzeit neu geladen.
+Änderungen an den `.wgsl` Dateien im `shaders/` Verzeichnis werden vom `vorce-render` automatisch erkannt und zur Laufzeit neu geladen.

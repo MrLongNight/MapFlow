@@ -1,6 +1,6 @@
 # DOC-B0: Entwickler-Leitfaden
 
-Ressourcen und Richtlinien für die Arbeit am MapFlow-Projekt.
+Ressourcen und Richtlinien für die Arbeit am Vorce-Projekt.
 
 ## 📁 Unterverzeichnisse (Ebene 3)
 

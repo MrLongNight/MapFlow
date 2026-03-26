@@ -1,6 +1,6 @@
 # DOC-B4: Planned Features & Specifications
 
-Dieses Dokument enthält technische Konzepte und Spezifikationen für zukünftige Erweiterungen von MapFlow.
+Dieses Dokument enthält technische Konzepte und Spezifikationen für zukünftige Erweiterungen von Vorce.
 
 ## 1. Kamera-basierte Kalibrierung (Auto-Mapping)
 Ziel: Automatische Anpassung des Outputs an die Geometrie der Projektionsfläche.
@@ -18,7 +18,7 @@ Ziel: Nahtloser Austausch mit anderen VJ-Tools.
 - **Protokolle**:
     - **Spout (Windows)** / **Syphon (macOS)**: Zero-Copy Texture Sharing auf derselben GPU.
     - **NDI**: Netzwerk-Videoübertragung via LAN.
-- **Crate**: `mapflow-io`.
+- **Crate**: `vorce-io`.
 
 ## 4. Universal Link System
 Ziel: Master/Slave Verknüpfung von Knoten im Module Canvas.

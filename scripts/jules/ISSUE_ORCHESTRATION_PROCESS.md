@@ -90,7 +90,7 @@ Die Reihenfolge ist strikt. Das naechste Jules-Issue darf erst starten, wenn das
 - Der fachliche Abschluss wird ueber die Felder gespiegelt:
   - `Status`
   - `remote_state`
-  - Projekt-Felder im `@MapFlow Project Manager`, insbesondere `jules_session_status` und `pr_checks_status`
+  - Projekt-Felder im `@Vorce Project Manager`, insbesondere `jules_session_status` und `pr_checks_status`
 - Falls externe Automatisierung Issues auf Basis von `Status = Done` schliesst, ist das zulaessig.
 
 ## Technische Umsetzung im Repo
@@ -136,7 +136,7 @@ Es setzt um:
   - `work_branch`
   - `last_update`
 - Update des Managed-Blocks im Issue-Body
-- direkte Synchronisation in das GitHub-Projekt `@MapFlow Project Manager`
+- direkte Synchronisation in das GitHub-Projekt `@Vorce Project Manager`
   - `jules_session_status`
   - `pr_checks_status`
 
@@ -146,7 +146,7 @@ Diese Datei enthaelt die GitHub-/Project-Helfer.
 
 Hier wurde explizit nachgezogen:
 
-- automatische Erkennung des Projekts `@MapFlow Project Manager`, auch ohne gesetzte `VORCE_PROJECT_NUMBER`
+- automatische Erkennung des Projekts `@Vorce Project Manager`, auch ohne gesetzte `VORCE_PROJECT_NUMBER`
 - robustere User-/Org-Erkennung fuer GitHub Projects
 - GraphQL-Fehlerbehandlung ohne Strict-Mode-Absturz bei fehlender `errors`- oder `options`-Property
 

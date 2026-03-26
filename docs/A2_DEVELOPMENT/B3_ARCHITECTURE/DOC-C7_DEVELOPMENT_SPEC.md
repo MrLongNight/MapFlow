@@ -21,7 +21,7 @@ LightNode[] ────┘
 
 ## 🔊 Audio Analysis
 
-### FFT Band Mapping (for MapFlow integration)
+### FFT Band Mapping (for Vorce integration)
 
 ```rust
 // Recommended frequency bands
