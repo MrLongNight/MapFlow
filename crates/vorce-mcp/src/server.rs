@@ -16,7 +16,7 @@ pub struct McpServer {
 
 impl McpServer {
     pub fn new(action_sender: Option<crossbeam_channel::Sender<crate::McpAction>>) -> Self {
-        // Try to connect to default MapFlow OSC port
+        // Try to connect to default Vorce OSC port
         let osc_client = match OscClient::new("127.0.0.1:8000") {
             Ok(client) => {
                 info!("MCP Server connected to OSC at 127.0.0.1:8000");
@@ -82,7 +82,7 @@ impl McpServer {
                         prompts: None,
                     },
                     server_info: ServerInfo {
-                        name: "MapFlow-mcp".to_string(),
+                        name: "Vorce-mcp".to_string(),
                         version: "0.1.0".to_string(),
                     },
                 };
@@ -111,7 +111,7 @@ impl McpServer {
                         "uri": "project://current",
                         "name": "Current Project",
                         "mimeType": "application/json",
-                        "description": "The current MapFlow project state"
+                        "description": "The current Vorce project state"
                     }),
                     serde_json::json!({
                         "uri": "layer://list",
@@ -200,7 +200,7 @@ impl McpServer {
                         "troubleshoot" => Some(success_response(
                             id,
                             serde_json::json!({
-                                "description": "Troubleshoot MapFlow",
+                                "description": "Troubleshoot Vorce",
                                 "messages": [
                                     {
                                         "role": "user",

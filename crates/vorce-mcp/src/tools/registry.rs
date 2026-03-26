@@ -5,7 +5,7 @@ pub fn get_tools() -> Vec<Tool> {
         // === Basic Tools ===
         Tool {
             name: "send_osc".to_string(),
-            description: Some("Send an Open Sound Control (OSC) message to MapFlow".to_string()),
+            description: Some("Send an Open Sound Control (OSC) message to Vorce".to_string()),
             input_schema: serde_json::json!({
                 "type": "object",
                 "properties": {

@@ -171,7 +171,7 @@ impl NdiReceiver {
             RecvColorFormat::UYVY_BGRA, // BGRA for easy GPU upload
             RecvBandwidth::Highest,
             false, // No interlaced fields
-            Some(format!("MapFlow-{}", source.name)),
+            Some(format!("Vorce-{}", source.name)),
         );
 
         let recv = Recv::new(receiver).map_err(|e| {

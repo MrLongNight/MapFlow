@@ -281,7 +281,7 @@ impl CuePanel {
             cue.time_trigger = None;
             match current_trigger_type {
                 TriggerTypeUI::Osc => {
-                    cue.osc_trigger = Some(OscTrigger::new("/mapflow/cue/".to_string()));
+                    cue.osc_trigger = Some(OscTrigger::new("/vorce/cue/".to_string()));
                 }
                 TriggerTypeUI::Midi => {
                     cue.midi_trigger = Some(MidiTrigger::note(0, 60)); // Default trigger

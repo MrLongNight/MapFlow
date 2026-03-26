@@ -1,6 +1,6 @@
 //! OSC address space parser
 //!
-//! Parses OSC addresses like `/mapflow/layer/0/opacity` to control targets
+//! Parses OSC addresses like `/vorce/layer/0/opacity` to control targets
 
 use crate::{error::ControlError, ControlTarget, Result};
 
@@ -12,16 +12,16 @@ const MAX_NAME_LENGTH: usize = 256;
 /// Parse an OSC address to a control target
 ///
 /// Supported address patterns:
-/// - `/mapflow/layer/{id}/opacity` - Layer opacity (0.0-1.0)
-/// - `/mapflow/layer/{id}/position` - Layer position (x, y)
-/// - `/mapflow/layer/{id}/rotation` - Layer rotation (degrees)
-/// - `/mapflow/layer/{id}/scale` - Layer scale
-/// - `/mapflow/layer/{id}/visibility` - Layer visibility (bool)
-/// - `/mapflow/paint/{id}/parameter/{name}` - Paint parameter
-/// - `/mapflow/effect/{id}/parameter/{name}` - Effect parameter
-/// - `/mapflow/playback/speed` - Playback speed
-/// - `/mapflow/playback/position` - Playback position
-/// - `/mapflow/output/{id}/brightness` - Output brightness
+/// - `/vorce/layer/{id}/opacity` - Layer opacity (0.0-1.0)
+/// - `/vorce/layer/{id}/position` - Layer position (x, y)
+/// - `/vorce/layer/{id}/rotation` - Layer rotation (degrees)
+/// - `/vorce/layer/{id}/scale` - Layer scale
+/// - `/vorce/layer/{id}/visibility` - Layer visibility (bool)
+/// - `/vorce/paint/{id}/parameter/{name}` - Paint parameter
+/// - `/vorce/effect/{id}/parameter/{name}` - Effect parameter
+/// - `/vorce/playback/speed` - Playback speed
+/// - `/vorce/playback/position` - Playback position
+/// - `/vorce/output/{id}/brightness` - Output brightness
 pub fn parse_osc_address(address: &str) -> Result<ControlTarget> {
     if address.len() > MAX_OSC_ADDRESS_LENGTH {
         return Err(ControlError::InvalidMessage(format!(
@@ -32,9 +32,9 @@ pub fn parse_osc_address(address: &str) -> Result<ControlTarget> {
 
     let parts: Vec<&str> = address.trim_start_matches('/').split('/').collect();
 
-    if parts.is_empty() || parts[0] != "mapflow" {
+    if parts.is_empty() || (parts[0] != "vorce" && parts[0] != "mapflow" && parts[0] != "mapmap") {
         return Err(ControlError::InvalidMessage(format!(
-            "OSC address must start with /mapflow: {}",
+            "OSC address must start with /vorce (or legacy /mapflow, /mapmap): {}",
             address
         )));
     }
@@ -205,48 +205,59 @@ fn parse_output_address(parts: &[&str]) -> Result<ControlTarget> {
 /// Generate OSC address from control target
 pub fn control_target_to_address(target: &ControlTarget) -> String {
     match target {
-        ControlTarget::LayerOpacity(id) => format!("/mapflow/layer/{}/opacity", id),
-        ControlTarget::LayerPosition(id) => format!("/mapflow/layer/{}/position", id),
-        ControlTarget::LayerScale(id) => format!("/mapflow/layer/{}/scale", id),
-        ControlTarget::LayerRotation(id) => format!("/mapflow/layer/{}/rotation", id),
-        ControlTarget::LayerVisibility(id) => format!("/mapflow/layer/{}/visibility", id),
+        ControlTarget::LayerOpacity(id) => format!("/vorce/layer/{}/opacity", id),
+        ControlTarget::LayerPosition(id) => format!("/vorce/layer/{}/position", id),
+        ControlTarget::LayerScale(id) => format!("/vorce/layer/{}/scale", id),
+        ControlTarget::LayerRotation(id) => format!("/vorce/layer/{}/rotation", id),
+        ControlTarget::LayerVisibility(id) => format!("/vorce/layer/{}/visibility", id),
         ControlTarget::PaintParameter(id, name) => {
-            format!("/mapflow/paint/{}/parameter/{}", id, name)
+            format!("/vorce/paint/{}/parameter/{}", id, name)
         }
         ControlTarget::EffectParameter(id, name) => {
-            format!("/mapflow/effect/{}/parameter/{}", id, name)
+            format!("/vorce/effect/{}/parameter/{}", id, name)
         }
-        ControlTarget::PlaybackSpeed(_) => "/mapflow/playback/speed".to_string(),
-        ControlTarget::PlaybackPosition => "/mapflow/playback/position".to_string(),
-        ControlTarget::OutputBrightness(id) => format!("/mapflow/output/{}/brightness", id),
+        ControlTarget::PlaybackSpeed(_) => "/vorce/playback/speed".to_string(),
+        ControlTarget::PlaybackPosition => "/vorce/playback/position".to_string(),
+        ControlTarget::OutputBrightness(id) => format!("/vorce/output/{}/brightness", id),
         ControlTarget::OutputEdgeBlend(id, edge) => {
-            format!("/mapflow/output/{}/edge_blend/{:?}", id, edge)
+            format!("/vorce/output/{}/edge_blend/{:?}", id, edge)
         }
-        ControlTarget::MasterOpacity => "/mapflow/master/opacity".to_string(),
-        ControlTarget::MasterBlackout => "/mapflow/master/blackout".to_string(),
-        ControlTarget::Custom(name) => format!("/mapflow/custom/{}", name),
+        ControlTarget::MasterOpacity => "/vorce/master/opacity".to_string(),
+        ControlTarget::MasterBlackout => "/vorce/master/blackout".to_string(),
+        ControlTarget::Custom(name) => format!("/vorce/custom/{}", name),
     }
 }
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn test_legacy_namespaces() {
+        // Test /mapflow/
+        let target1 = parse_osc_address("/mapflow/layer/0/opacity").unwrap();
+        assert_eq!(target1, ControlTarget::LayerOpacity(0));
+
+        // Test /mapmap/
+        let target2 = parse_osc_address("/mapmap/layer/5/position").unwrap();
+        assert_eq!(target2, ControlTarget::LayerPosition(5));
+    }
+
     use super::*;
 
     #[test]
     fn test_parse_layer_opacity() {
-        let target = parse_osc_address("/mapflow/layer/0/opacity").unwrap();
+        let target = parse_osc_address("/vorce/layer/0/opacity").unwrap();
         assert_eq!(target, ControlTarget::LayerOpacity(0));
     }
 
     #[test]
     fn test_parse_layer_position() {
-        let target = parse_osc_address("/mapflow/layer/5/position").unwrap();
+        let target = parse_osc_address("/vorce/layer/5/position").unwrap();
         assert_eq!(target, ControlTarget::LayerPosition(5));
     }
 
     #[test]
     fn test_parse_paint_parameter() {
-        let target = parse_osc_address("/mapflow/paint/3/parameter/speed").unwrap();
+        let target = parse_osc_address("/vorce/paint/3/parameter/speed").unwrap();
         assert_eq!(
             target,
             ControlTarget::PaintParameter(3, "speed".to_string())
@@ -255,7 +266,7 @@ mod tests {
 
     #[test]
     fn test_parse_effect_parameter() {
-        let target = parse_osc_address("/mapflow/effect/1/parameter/intensity").unwrap();
+        let target = parse_osc_address("/vorce/effect/1/parameter/intensity").unwrap();
         assert_eq!(
             target,
             ControlTarget::EffectParameter(1, "intensity".to_string())
@@ -264,7 +275,7 @@ mod tests {
 
     #[test]
     fn test_parse_playback_speed() {
-        let target = parse_osc_address("/mapflow/playback/speed").unwrap();
+        let target = parse_osc_address("/vorce/playback/speed").unwrap();
         assert_eq!(target, ControlTarget::PlaybackSpeed(None));
     }
 
@@ -272,8 +283,8 @@ mod tests {
     fn test_invalid_address() {
         assert!(parse_osc_address("/invalid/address").is_err());
         assert!(parse_osc_address("/mapflow").is_err());
-        assert!(parse_osc_address("/mapflow/layer").is_err());
-        assert!(parse_osc_address("/mapflow/layer/notanumber/opacity").is_err());
+        assert!(parse_osc_address("/vorce/layer").is_err());
+        assert!(parse_osc_address("/vorce/layer/notanumber/opacity").is_err());
     }
 
     #[test]
@@ -281,55 +292,55 @@ mod tests {
         let target = ControlTarget::LayerOpacity(0);
         assert_eq!(
             control_target_to_address(&target),
-            "/mapflow/layer/0/opacity"
+            "/vorce/layer/0/opacity"
         );
 
         let target = ControlTarget::PaintParameter(3, "speed".to_string());
         assert_eq!(
             control_target_to_address(&target),
-            "/mapflow/paint/3/parameter/speed"
+            "/vorce/paint/3/parameter/speed"
         );
     }
 
     #[test]
     fn test_parse_layer_rotation() {
-        let target = parse_osc_address("/mapflow/layer/2/rotation").unwrap();
+        let target = parse_osc_address("/vorce/layer/2/rotation").unwrap();
         assert_eq!(target, ControlTarget::LayerRotation(2));
     }
 
     #[test]
     fn test_parse_layer_scale() {
-        let target = parse_osc_address("/mapflow/layer/7/scale").unwrap();
+        let target = parse_osc_address("/vorce/layer/7/scale").unwrap();
         assert_eq!(target, ControlTarget::LayerScale(7));
     }
 
     #[test]
     fn test_parse_layer_visibility() {
-        let target = parse_osc_address("/mapflow/layer/10/visibility").unwrap();
+        let target = parse_osc_address("/vorce/layer/10/visibility").unwrap();
         assert_eq!(target, ControlTarget::LayerVisibility(10));
     }
 
     #[test]
     fn test_parse_playback_position() {
-        let target = parse_osc_address("/mapflow/playback/position").unwrap();
+        let target = parse_osc_address("/vorce/playback/position").unwrap();
         assert_eq!(target, ControlTarget::PlaybackPosition);
     }
 
     #[test]
     fn test_parse_output_brightness() {
-        let target = parse_osc_address("/mapflow/output/0/brightness").unwrap();
+        let target = parse_osc_address("/vorce/output/0/brightness").unwrap();
         assert_eq!(target, ControlTarget::OutputBrightness(0));
     }
 
     #[test]
     fn test_parse_master_opacity() {
-        let target = parse_osc_address("/mapflow/master/opacity").unwrap();
+        let target = parse_osc_address("/vorce/master/opacity").unwrap();
         assert_eq!(target, ControlTarget::MasterOpacity);
     }
 
     #[test]
     fn test_parse_master_blackout() {
-        let target = parse_osc_address("/mapflow/master/blackout").unwrap();
+        let target = parse_osc_address("/vorce/master/blackout").unwrap();
         assert_eq!(target, ControlTarget::MasterBlackout);
     }
 
@@ -378,35 +389,35 @@ mod tests {
 
     #[test]
     fn test_invalid_category() {
-        assert!(parse_osc_address("/mapflow/unknown/test").is_err());
+        assert!(parse_osc_address("/vorce/unknown/test").is_err());
     }
 
     #[test]
     fn test_invalid_output_address() {
-        assert!(parse_osc_address("/mapflow/output").is_err());
-        assert!(parse_osc_address("/mapflow/output/abc").is_err());
-        assert!(parse_osc_address("/mapflow/output/0").is_err());
-        assert!(parse_osc_address("/mapflow/output/0/unknown").is_err());
+        assert!(parse_osc_address("/vorce/output").is_err());
+        assert!(parse_osc_address("/vorce/output/abc").is_err());
+        assert!(parse_osc_address("/vorce/output/0").is_err());
+        assert!(parse_osc_address("/vorce/output/0/unknown").is_err());
     }
 
     #[test]
     fn test_invalid_master_address() {
-        assert!(parse_osc_address("/mapflow/master").is_err());
-        assert!(parse_osc_address("/mapflow/master/unknown").is_err());
+        assert!(parse_osc_address("/vorce/master").is_err());
+        assert!(parse_osc_address("/vorce/master/unknown").is_err());
     }
 
     #[test]
     fn test_parse_huge_address() {
         // Construct a valid address with a very long parameter name
         let huge_name = "a".repeat(10000);
-        let address = format!("/mapflow/paint/0/parameter/{}", huge_name);
+        let address = format!("/vorce/paint/0/parameter/{}", huge_name);
 
         // This should now fail due to length limits
         let result = parse_osc_address(&address);
         assert!(result.is_err());
 
         // Also verify the total address limit
-        let huge_address = format!("/mapflow/{}", "a".repeat(2000));
+        let huge_address = format!("/vorce/{}", "a".repeat(2000));
         let result_total = parse_osc_address(&huge_address);
         assert!(result_total.is_err());
     }
