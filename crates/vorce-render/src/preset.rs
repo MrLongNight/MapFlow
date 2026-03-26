@@ -39,14 +39,20 @@ pub type Result<T> = std::result::Result<T, PresetError>;
 pub struct PresetMetadata {
     /// Preset name
     pub name: String,
+    #[serde(skip, default)]
+    pub name_lower: String,
     /// Author name
     pub author: String,
     /// Description
     pub description: String,
+    #[serde(skip, default)]
+    pub description_lower: String,
     /// Category (e.g. "Color", "Distortion", "Film")
     pub category: String,
     /// Tags for searching
     pub tags: Vec<String>,
+    #[serde(skip, default)]
+    pub tags_lower: Vec<String>,
     /// Creation timestamp (Unix epoch seconds)
     pub created_at: u64,
     /// Last modified timestamp
@@ -66,10 +72,13 @@ impl Default for PresetMetadata {
 
         Self {
             name: "Untitled Preset".to_string(),
+            name_lower: "untitled preset".to_string(),
             author: String::new(),
             description: String::new(),
+            description_lower: String::new(),
             category: "Uncategorized".to_string(),
             tags: Vec::new(),
+            tags_lower: Vec::new(),
             created_at: now,
             modified_at: now,
             version: "1.0".to_string(),
@@ -92,6 +101,7 @@ impl EffectPreset {
     pub fn new(name: &str, chain: EffectChain) -> Self {
         let metadata = PresetMetadata {
             name: name.to_string(),
+            name_lower: name.to_lowercase(),
             ..Default::default()
         };
 
@@ -99,7 +109,10 @@ impl EffectPreset {
     }
 
     /// Create a preset with full metadata
-    pub fn with_metadata(metadata: PresetMetadata, chain: EffectChain) -> Self {
+    pub fn with_metadata(mut metadata: PresetMetadata, chain: EffectChain) -> Self {
+        metadata.name_lower = metadata.name.to_lowercase();
+        metadata.description_lower = metadata.description.to_lowercase();
+        metadata.tags_lower = metadata.tags.iter().map(|t| t.to_lowercase()).collect();
         Self { metadata, chain }
     }
 
@@ -114,7 +127,15 @@ impl EffectPreset {
     /// Load preset from a JSON file
     pub fn load(path: &Path) -> Result<Self> {
         let content = fs::read_to_string(path)?;
-        let preset: EffectPreset = serde_json::from_str(&content)?;
+        let mut preset: EffectPreset = serde_json::from_str(&content)?;
+        preset.metadata.name_lower = preset.metadata.name.to_lowercase();
+        preset.metadata.description_lower = preset.metadata.description.to_lowercase();
+        preset.metadata.tags_lower = preset
+            .metadata
+            .tags
+            .iter()
+            .map(|t| t.to_lowercase())
+            .collect();
         debug!("Loaded preset: {}", preset.metadata.name);
         Ok(preset)
     }
@@ -247,12 +268,12 @@ impl PresetLibrary {
         self.cache
             .iter()
             .filter(|(_, p)| {
-                p.metadata.name.to_lowercase().contains(&query_lower)
+                p.metadata.name_lower.contains(&query_lower)
                     || p.metadata
-                        .tags
+                        .tags_lower
                         .iter()
-                        .any(|t| t.to_lowercase().contains(&query_lower))
-                    || p.metadata.description.to_lowercase().contains(&query_lower)
+                        .any(|t| t.contains(&query_lower))
+                    || p.metadata.description_lower.contains(&query_lower)
             })
             .collect()
     }
