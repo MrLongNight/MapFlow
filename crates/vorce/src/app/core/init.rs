@@ -403,7 +403,7 @@ impl App {
     fn load_autosave(state: &mut AppState, saved_config: &vorce_ui::config::UserConfig) {
         let autosave_path =
             dirs::data_local_dir().map(|p| p.join("Vorce").join("autosave.vorce"));
-        if let Some(path) = &autosave_path {
+        if let Some(ref path) = autosave_path {
             if path.exists() {
                 info!("Found autosave at {:?}, attempting to load...", path);
                 match load_project(path) {
