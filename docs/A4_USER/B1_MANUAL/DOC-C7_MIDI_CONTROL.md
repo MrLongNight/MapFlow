@@ -1,4 +1,4 @@
-´9# MIDI User Guide - MapFlow
+# MIDI User Guide - Vorce
 
 > **Version:** 1.0
 > **Stand:** 2025-12-27
@@ -20,18 +20,21 @@
 
 ## Übersicht
 
-MapFlow unterstützt MIDI-Eingabe für:
+Vorce unterstützt MIDI-Eingabe für:
+
 - **Trigger-Nodes** im Module Canvas (Steuerung von Medien/Effekten)
 - **Controller Overlay** (visuelle Anzeige des Ecler NUO 4 Mixers)
 
-### Was funktioniert:
+### Was funktioniert
+
 ✅ MIDI-Ports werden automatisch erkannt
 ✅ Auto-Connect zum ersten verfügbaren Port
 ✅ Port-Auswahl in Settings
 ✅ MIDI Learn für Trigger-Nodes
 ✅ Controller Overlay zeigt MIDI-Werte in Echtzeit
 
-### Was noch fehlt:
+### Was noch fehlt
+
 ❌ MIDI-zu-Layer/Effect Routing (direkte Parametersteuerung)
 
 ---
@@ -50,7 +53,7 @@ MapFlow unterstützt MIDI-Eingabe für:
 │         ▼                                                               │
 │  ┌──────────────────────────────────────────────────────────────────┐   │
 │  │ midir Crate (Rust)                                               │   │
-│  │ Datei: mapflow-control/src/midi/input.rs                          │   │
+│  │ Datei: vorce-control/src/midi/input.rs                          │   │
 │  │ Struct: MidiInputHandler                                         │   │
 │  │ - new() → Initialisierung                                        │   │
 │  │ - list_ports() → Alle verfügbaren Ports                          │   │
@@ -89,11 +92,15 @@ MapFlow unterstützt MIDI-Eingabe für:
 
 ## User Workflow: MIDI Einrichten
 
-### Schritt 1: App starten
-MapFlow verbindet sich **automatisch** zum ersten verfügbaren MIDI-Port.
+![Screenshot: Vorce MIDI Settings](docs/assets/missing/vorce-midi-settings.png)
 
-Im Log (`logs/mapflow_*.log`) erscheint:
-```
+### Schritt 1: App starten
+
+Vorce verbindet sich **automatisch** zum ersten verfügbaren MIDI-Port.
+
+Im Log (`logs/vorce_*.log`) erscheint:
+
+```text
 INFO  MIDI initialized
 INFO  Available MIDI ports: ["Port 1", "Port 2"]
 INFO  Auto-connected to MIDI port: Port 1
@@ -120,10 +127,11 @@ Im Settings-Fenster gibt es eine **klappbare Section** "🎹 MIDI".
 
 1. **MIDI Port Dropdown** klicken
 2. Gewünschten Port auswählen
-3. MapFlow disconnectet vom alten Port und connectet zum neuen
+3. Vorce disconnectet vom alten Port und connectet zum neuen
 
 **Log-Ausgabe:**
-```
+
+```text
 INFO  Connected to MIDI port: Ecler NUO 4
 ```
 
@@ -132,6 +140,7 @@ INFO  Connected to MIDI port: Ecler NUO 4
 ## User Workflow: MIDI Learn
 
 ### Voraussetzung
+
 - MIDI-Device ist verbunden (Status: 🟢)
 - Ein **MIDI Trigger Node** existiert im Module Canvas
 
@@ -144,6 +153,7 @@ In der **linken Sidebar** → Modul auswählen → Canvas wird angezeigt
 **Toolbar:** `⚡ Trigger` → `🎹 MIDI`
 
 Ein neuer Node erscheint mit:
+
 - Channel: 1 (Slider 1-16)
 - Note: 0 (Slider 0-127)
 - Device: Dropdown (falls mehrere)
@@ -155,6 +165,7 @@ Klick auf den **MIDI Trigger Node** → erscheint im **Node Control Panel** (rec
 ### Schritt 4: MIDI Learn aktivieren
 
 Im Node Control Panel gibt es einen Button:
+
 - **"🎯 MIDI Learn"** (normal)
 - **"⏳ Waiting for MIDI..."** (aktiv)
 
@@ -169,7 +180,8 @@ Drehe einen **Knob** oder drücke eine **Taste** am MIDI-Controller.
 - Channel und Note werden im Node aktualisiert
 
 **Log-Ausgabe:**
-```
+
+```text
 INFO  MIDI Learn: Part ... assigned to CC 7 on channel 0
 INFO  Applied MIDI Learn: Channel=0, CC=7
 ```
@@ -185,6 +197,7 @@ Bewege den gelernten Control → Der Trigger Node sollte reagieren.
 ### Was ist der Controller Overlay?
 
 Ein **visuelles Fenster**, das den MIDI-Controller (z.B. Ecler NUO 4) darstellt mit:
+
 - Knobs die sich drehen
 - Fader die sich bewegen
 - Buttons die leuchten
@@ -192,6 +205,7 @@ Ein **visuelles Fenster**, das den MIDI-Controller (z.B. Ecler NUO 4) darstellt 
 ### Aktueller Status
 
 Das Controller Overlay zeigt:
+
 - Mixer-Foto als Hintergrund (z.B. Ecler NUO 4)
 - Asset-Bilder für Knobs, Fader und Buttons
 
@@ -224,23 +238,23 @@ Das Overlay kann über das Menü **View** → **MIDI Controller Overlay** (oder 
 
 | Datei | Zweck |
 |-------|-------|
-| `mapflow-control/src/midi/mod.rs` | MIDI-Modul Root, MidiMessage enum |
-| `mapflow-control/src/midi/input.rs` | MidiInputHandler (Connect, Poll) |
-| `mapflow-control/src/midi/mapping.rs` | MidiMapping, MidiMappingKey |
-| `mapflow-control/src/midi/midi_learn.rs` | MidiLearnManager, MidiLearnState |
-| `mapflow-control/src/midi/ecler_nuo4.rs` | 89 vordefinierte Mappings |
-| `mapflow-ui/src/controller_overlay_panel.rs` | Overlay UI |
-| `mapflow-ui/src/module_canvas.rs` | MIDI Learn für Nodes |
-| `mapflow/src/main.rs` Zeile 451-460 | MIDI Message Routing |
+| `vorce-control/src/midi/mod.rs` | MIDI-Modul Root, MidiMessage enum |
+| `vorce-control/src/midi/input.rs` | MidiInputHandler (Connect, Poll) |
+| `vorce-control/src/midi/mapping.rs` | MidiMapping, MidiMappingKey |
+| `vorce-control/src/midi/midi_learn.rs` | MidiLearnManager, MidiLearnState |
+| `vorce-control/src/midi/ecler_nuo4.rs` | 89 vordefinierte Mappings |
+| `vorce-ui/src/controller_overlay_panel.rs` | Overlay UI |
+| `vorce-ui/src/module_canvas.rs` | MIDI Learn für Nodes |
+| `vorce/src/main.rs` Zeile 451-460 | MIDI Message Routing |
 | `resources/controllers/ecler_nuo4/elements.json` | Element-Positionen/MIDI-Config |
 
 ### Feature Flags
 
 ```toml
-# In crates/mapflow/Cargo.toml
+# In crates/vorce/Cargo.toml
 [features]
 default = ["audio", "midi"]  # MIDI ist standardmäßig aktiviert
-midi = ["mapflow-control/midi", "mapflow-ui/midi"]
+midi = ["vorce-control/midi", "vorce-ui/midi"]
 ```
 
 ### Structs/Enums

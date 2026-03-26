@@ -1,8 +1,8 @@
-# MapFlow Installation Guide
+# Vorce Installation Guide
 
 ## ⚠️ Important Note
 
-MapFlow is a complete rewrite of the legacy "MapMap" application. The C++/Qt version instructions are obsolete.
+Vorce is a complete rewrite of the legacy "MapFlow" application. The C++/Qt version instructions are obsolete.
 
 ## Supported Platforms
 
@@ -16,15 +16,18 @@ MapFlow is a complete rewrite of the legacy "MapMap" application. The C++/Qt ver
 
 Pre-built binaries for Windows and Linux are available on the GitHub Releases page:
 
-[**Download Latest Release**](https://github.com/MrLongNight/MapFlow/releases)
+[**Download Latest Release**](https://github.com/MrLongNight/Vorce/releases)
+
+![Screenshot: Vorce Release Download Section](docs/assets/missing/vorce-release-download.png)
 
 1. Download the appropriate file for your OS (`.zip` for Windows, `.deb` for Debian/Ubuntu).
-2. **Windows**: Extract the zip archive and run `mapflow.exe`.
+2. **Windows**: Extract the zip archive and run `vorce.exe`.
 3. **Linux**: Install the package:
+
    ```bash
-   sudo dpkg -i mapflow_*.deb
+   sudo dpkg -i vorce_*.deb
    sudo apt-get install -f  # Fix missing dependencies if any
-   mapflow
+   vorce
    ```
 
 ### 2. Build from Source
@@ -35,8 +38,8 @@ Quick summary for Rust developers:
 
 ```bash
 # Clone
-git clone https://github.com/MrLongNight/MapFlow.git
-cd MapFlow
+git clone https://github.com/MrLongNight/Vorce.git
+cd Vorce
 
 # Install system dependencies (Ubuntu example)
 sudo apt-get install build-essential pkg-config libxcb1-dev libasound2-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev

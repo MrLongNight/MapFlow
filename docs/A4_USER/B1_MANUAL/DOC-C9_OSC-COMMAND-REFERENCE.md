@@ -1,32 +1,32 @@
 # OSC Command Reference
 
 This document provides a comprehensive reference for the Open Sound Control (OSC)
-address space used in MapFlow.
+address space used in Vorce.
 
 ## Overview
 
--   **Namespace:** All MapFlow commands are prefixed with `/mapflow`.
--   **Data Types:** OSC arguments are specified in brackets, e.g., `[f32]`. Common types include:
-    -   `[bang]`: An OSC message with no arguments.
-    -   `[bool]`: Boolean value (`true` or `false`).
-    -   `[i32]`: 32-bit integer.
-    -   `[f32]`: 32-bit float, typically normalized between `0.0` and `1.0` unless otherwise specified.
-    -   `[string]`: A string of characters.
-    -   `[f32, f32]`: Multiple float arguments for vectors (e.g., X and Y coordinates).
+- **Namespace:** All Vorce commands are prefixed with `/vorce`. *(Note: `/mapmap/` and `/mapflow/` are deprecated but kept for compatibility.)*
+- **Data Types:** OSC arguments are specified in brackets, e.g., `[f32]`. Common types include:
+  - `[bang]`: An OSC message with no arguments.
+  - `[bool]`: Boolean value (`true` or `false`).
+  - `[i32]`: 32-bit integer.
+  - `[f32]`: 32-bit float, typically normalized between `0.0` and `1.0` unless otherwise specified.
+  - `[string]`: A string of characters.
+  - `[f32, f32]`: Multiple float arguments for vectors (e.g., X and Y coordinates).
 
 ---
 
 ## 1. Layer Controls
 
-Address layers by their unique ID (e.g., `/mapflow/layer/1/...`).
+Address layers by their unique ID (e.g., `/vorce/layer/1/...`).
 
 | Address                       | Arguments                            | Description                                                 |
 | ----------------------------- | ------------------------------------ | ----------------------------------------------------------- |
-| `/mapflow/layer/{id}/opacity`  | `[f32: 0.0-1.0]`                     | Sets the opacity for the specified layer.                   |
-| `/mapflow/layer/{id}/visibility`| `[bool]`                             | Toggles the visibility of the layer.                        |
-| `/mapflow/layer/{id}/position` | `[f32, f32]`                         | Sets the X and Y position of the layer.                     |
-| `/mapflow/layer/{id}/rotation` | `[f32]`                              | Sets the rotation in degrees.                               |
-| `/mapflow/layer/{id}/scale`    | `[f32]`                              | Sets the uniform scale.                                     |
+| `/vorce/layer/{id}/opacity`  | `[f32: 0.0-1.0]`                     | Sets the opacity for the specified layer.                   |
+| `/vorce/layer/{id}/visibility`| `[bool]`                             | Toggles the visibility of the layer.                        |
+| `/vorce/layer/{id}/position` | `[f32, f32]`                         | Sets the X and Y position of the layer.                     |
+| `/vorce/layer/{id}/rotation` | `[f32]`                              | Sets the rotation in degrees.                               |
+| `/vorce/layer/{id}/scale`    | `[f32]`                              | Sets the uniform scale.                                     |
 
 ---
 
@@ -36,7 +36,7 @@ Control paint parameters by their ID.
 
 | Address                                  | Arguments                      | Description                                                  |
 | ---------------------------------------- | ------------------------------ | ------------------------------------------------------------ |
-| `/mapflow/paint/{id}/parameter/{name}`    | `[varies]`                     | Controls a specific parameter of the paint (e.g., "color").  |
+| `/vorce/paint/{id}/parameter/{name}`    | `[varies]`                     | Controls a specific parameter of the paint (e.g., "color").  |
 
 ---
 
@@ -46,7 +46,7 @@ Control effect parameters by their ID.
 
 | Address                                   | Arguments        | Description                                                  |
 | ----------------------------------------- | ---------------- | ------------------------------------------------------------ |
-| `/mapflow/effect/{id}/parameter/{name}`    | `[varies]`       | Controls a specific parameter of the effect (e.g., "amount").|
+| `/vorce/effect/{id}/parameter/{name}`    | `[varies]`       | Controls a specific parameter of the effect (e.g., "amount").|
 
 ---
 
@@ -56,8 +56,8 @@ Global playback commands.
 
 | Address                   | Arguments          | Description                                                     |
 | ------------------------- | ------------------ | --------------------------------------------------------------- |
-| `/mapflow/playback/speed`  | `[f32]`            | Sets the playback speed (1.0 is normal speed).                  |
-| `/mapflow/playback/position`| `[f32: 0.0-1.0]`   | Jumps to a specific position in the media.                      |
+| `/vorce/playback/speed`  | `[f32]`            | Sets the playback speed (1.0 is normal speed).                  |
+| `/vorce/playback/position`| `[f32: 0.0-1.0]`   | Jumps to a specific position in the media.                      |
 
 ---
 
@@ -67,4 +67,4 @@ Manage individual outputs and projectors.
 
 | Address                          | Arguments        | Description                                       |
 | -------------------------------- | ---------------- | ------------------------------------------------- |
-| `/mapflow/output/{id}/brightness` | `[f32: 0.0-1.0]` | Sets the brightness for the specified output.     |
+| `/vorce/output/{id}/brightness` | `[f32: 0.0-1.0]` | Sets the brightness for the specified output.     |
