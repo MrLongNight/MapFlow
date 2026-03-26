@@ -174,9 +174,10 @@ impl ShortcutsPanel {
                     ui.group(|ui| {
                         ui.vertical_centered(|ui| {
                             ui.add_space(10.0);
-                            crate::widgets::custom::render_info_label(
-                                ui,
-                                "Press any key combination...",
+                            ui.label(
+                                RichText::new("Press any key combination...")
+                                    .strong()
+                                    .color(colors::CYAN_ACCENT),
                             );
                             ui.label("(Press ESC to cancel)"); // Removed Backspace instruction
                             ui.add_space(10.0);
