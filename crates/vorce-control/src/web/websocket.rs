@@ -93,7 +93,7 @@ fn extract_auth_protocol(headers: &HeaderMap) -> Option<String> {
             protocols
                 .split(',')
                 .map(|p| p.trim())
-                .find(|p| p.starts_with("mapflow.auth."))
+                .find(|p| p.starts_with("vorce.auth."))
                 .map(|p| p.to_string())
         })
 }
@@ -331,11 +331,11 @@ mod tests {
         let mut headers = HeaderMap::new();
         headers.insert(
             "Sec-WebSocket-Protocol",
-            "mapflow.auth.secret, json".parse().unwrap(),
+            "vorce.auth.secret, json".parse().unwrap(),
         );
 
         let proto = extract_auth_protocol(&headers);
-        assert_eq!(proto, Some("mapflow.auth.secret".to_string()));
+        assert_eq!(proto, Some("vorce.auth.secret".to_string()));
 
         let headers_empty = HeaderMap::new();
         let proto_empty = extract_auth_protocol(&headers_empty);

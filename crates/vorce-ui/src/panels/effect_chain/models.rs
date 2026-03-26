@@ -145,6 +145,7 @@ pub enum EffectChainAction {
 pub struct PresetEntry {
     /// Human-readable display name.
     pub name: String,
+    pub name_lower: String,
     pub category: String,
     /// File system path to the asset or resource.
     pub path: String,

@@ -79,10 +79,9 @@ impl ShortcutsPanel {
                 if filter_lower.is_empty() {
                     return true;
                 }
-                s.description.to_lowercase().contains(&filter_lower)
-                    || s.to_shortcut_string()
-                        .to_lowercase()
-                        .contains(&filter_lower)
+                let desc_lower = s.description.to_lowercase();
+                let shortcut_str_lower = s.to_shortcut_string().to_lowercase();
+                desc_lower.contains(&filter_lower) || shortcut_str_lower.contains(&filter_lower)
             })
             .map(|(i, _)| i)
             .collect();

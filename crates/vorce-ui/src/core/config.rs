@@ -235,7 +235,7 @@ pub enum MidiAssignmentTarget {
 impl fmt::Display for MidiAssignmentTarget {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::MapFlow(id) => write!(f, "MapFlow: {}", id),
+            Self::MapFlow(id) => write!(f, "Vorce: {}", id),
             Self::StreamerBot(func) => write!(f, "Streamer.bot: {}", func),
             Self::Mixxx(func) => write!(f, "Mixxx: {}", func),
         }
@@ -507,7 +507,7 @@ impl UserConfig {
     /// Get the config file path
     fn config_path() -> Option<PathBuf> {
         dirs::config_dir().map(|mut p| {
-            p.push("MapFlow");
+            p.push("Vorce");
             p.push("config.json");
             p
         })

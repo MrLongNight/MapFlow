@@ -9,7 +9,7 @@ fn main() {
         #[cfg(windows)]
         {
             let mut res = winres::WindowsResource::new();
-            res.set_icon("../../resources/app_icons/MapFlow_Logo_LQ-Full.ico");
+            res.set_icon("../../resources/app_icons/Vorce_Logo_LQ-Full.ico");
             res.compile().unwrap();
         }
     }

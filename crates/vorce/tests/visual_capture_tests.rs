@@ -37,12 +37,12 @@ fn run_visual_regression(scenario: &str) {
         fs::create_dir_all(parent).expect("Failed to create temporary screenshot directory");
     }
 
-    let binary = env!("CARGO_BIN_EXE_mapflow_visual_harness");
+    let binary = env!("CARGO_BIN_EXE_vorce_visual_harness");
     let output = Command::new(binary)
         .args(["capture", "--scenario", scenario, "--output"])
         .arg(&actual_path)
         .output()
-        .expect("Failed to launch mapflow_visual_harness");
+        .expect("Failed to launch vorce_visual_harness");
 
     assert!(
         output.status.success(),
@@ -144,14 +144,14 @@ fn unique_output_dir(scenario: &str) -> PathBuf {
         .as_millis();
     let root = capture_output_root();
     root.join(format!(
-        "mapflow_visual_capture_{scenario}_{}_{}",
+        "vorce_visual_capture_{scenario}_{}_{}",
         std::process::id(),
         timestamp
     ))
 }
 
 fn capture_output_root() -> PathBuf {
-    match std::env::var_os("MAPFLOW_VISUAL_CAPTURE_OUTPUT_DIR") {
+    match std::env::var_os("VORCE_VISUAL_CAPTURE_OUTPUT_DIR") {
         Some(value) => {
             let path = PathBuf::from(value);
             if path.is_absolute() {

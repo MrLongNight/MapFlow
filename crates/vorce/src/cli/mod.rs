@@ -1,15 +1,15 @@
 use clap::{Parser, ValueEnum};
 
 #[derive(Parser, Debug)]
-#[command(author, version, about = "MapFlow - Professional Projection Mapping Software", long_about = None)]
-/// Command-line arguments for MapFlow.
+#[command(author, version, about = "Vorce - Professional Projection Mapping Software", long_about = None)]
+/// Command-line arguments for Vorce.
 pub struct CliArgs {
     /// Operating mode
     #[arg(short, long, value_enum, default_value_t = Mode::Editor)]
     pub mode: Mode,
 
     /// NDI Source name (for PlayerNdi mode)
-    #[arg(long, default_value = "MAPFLOW-MASTER")]
+    #[arg(long, default_value = "VORCE-MASTER")]
     pub source: String,
 
     /// Fullscreen mode
@@ -25,14 +25,14 @@ pub struct CliArgs {
     pub exit_after_frames: Option<u64>,
 
     /// Output directory for visual capture screenshots
-    #[arg(long, env = "MAPFLOW_VISUAL_CAPTURE_OUTPUT_DIR")]
+    #[arg(long, env = "VORCE_VISUAL_CAPTURE_OUTPUT_DIR")]
     pub screenshot_dir: Option<String>,
 }
 
 #[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
-/// Execution mode for MapFlow.
+/// Execution mode for Vorce.
 pub enum Mode {
-    /// Full MapFlow Editor and Rendering
+    /// Full Vorce Editor and Rendering
     Editor,
     /// Option A: NDI Receiver
     PlayerNdi,
@@ -53,7 +53,7 @@ mod tests {
     #[test]
     fn test_cli_automation_mode_parsing() {
         let args = vec![
-            "mapflow",
+            "vorce",
             "--mode",
             "automation",
             "--fixture",
@@ -61,7 +61,7 @@ mod tests {
             "--exit-after-frames",
             "100",
             "--screenshot-dir",
-            "/tmp/mapflow-screenshots",
+            "/tmp/vorce-screenshots",
         ];
 
         let cli = CliArgs::try_parse_from(args).expect("Failed to parse automation CLI args");
@@ -71,21 +71,21 @@ mod tests {
         assert_eq!(cli.exit_after_frames, Some(100));
         assert_eq!(
             cli.screenshot_dir.as_deref(),
-            Some("/tmp/mapflow-screenshots")
+            Some("/tmp/vorce-screenshots")
         );
     }
 
     #[test]
     fn test_cli_automation_mode_env_fallback() {
-        std::env::set_var("MAPFLOW_VISUAL_CAPTURE_OUTPUT_DIR", "/tmp/env-dir");
+        std::env::set_var("VORCE_VISUAL_CAPTURE_OUTPUT_DIR", "/tmp/env-dir");
 
-        let args = vec!["mapflow", "--mode", "automation"];
+        let args = vec!["vorce", "--mode", "automation"];
 
         let cli = CliArgs::try_parse_from(args).expect("Failed to parse CLI args");
 
         assert_eq!(cli.mode, Mode::Automation);
         assert_eq!(cli.screenshot_dir.as_deref(), Some("/tmp/env-dir"));
 
-        std::env::remove_var("MAPFLOW_VISUAL_CAPTURE_OUTPUT_DIR");
+        std::env::remove_var("VORCE_VISUAL_CAPTURE_OUTPUT_DIR");
     }
 }

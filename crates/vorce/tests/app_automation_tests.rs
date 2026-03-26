@@ -21,12 +21,12 @@ fn test_release_smoke_automation_empty_project() {
     }
     std::fs::create_dir_all(&output_dir).expect("failed to create output dir");
 
-    let binary_path = workspace_root.join("target/release/MapFlow.exe");
+    let binary_path = workspace_root.join("target/release/Vorce.exe");
     if !binary_path.exists() {
         // Fallback to debug if release not available, but automation tests should ideally run in release
-        let debug_path = workspace_root.join("target/debug/MapFlow.exe");
+        let debug_path = workspace_root.join("target/debug/Vorce.exe");
         if !debug_path.exists() {
-            panic!("MapFlow binary not found. Run 'cargo build --bin MapFlow' first.");
+            panic!("Vorce binary not found. Run 'cargo build --bin Vorce' first.");
         }
     }
 
@@ -41,15 +41,15 @@ fn test_release_smoke_automation_empty_project() {
         .arg("--screenshot-dir")
         .arg(output_dir.to_str().unwrap())
         .spawn()
-        .expect("failed to start MapFlow");
+        .expect("failed to start Vorce");
 
     // Wait for the app to finish (should exit after 10 frames)
     let status = child
         .wait_timeout(Duration::from_secs(30))
-        .expect("failed to wait for MapFlow")
-        .expect("MapFlow timed out");
+        .expect("failed to wait for Vorce")
+        .expect("Vorce timed out");
 
-    assert!(status.success(), "MapFlow exited with failure");
+    assert!(status.success(), "Vorce exited with failure");
 
     // Verify screenshot was created
     let screenshot_path = output_dir.join("automation_frame_10.png");
