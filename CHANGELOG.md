@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 2026-03-27: merge: Merge branch 'main' into codex/auto-merge-e2e-pr
+- 2026-03-27: feat: Add Vorce application icon and implement a new CI/CD workflow for automatic pull request merging.
+- 2026-03-27: fix: recover validation after update-branch race
+- 2026-03-26: merge: Merge branch 'main' into ux/hold-to-confirm-5715544885793255493
+- 2026-03-26: chore: auto-fix by pre-commit.ci
+- 2026-03-26: chore: 🗂️ Archivist: Repository Cleanup
+- 2026-03-24: fix: complete rebranding rename and resolve final conflicts
+- 2026-03-24: merge: Merge branch 'main' of https://github.com/MrLongNight/MapFlow
+- 2026-03-23: chore: 🎨 UI: Fix CI workflow feature flag and WGPU HAL errors
+- 2026-03-23: feat: implement hybrid timeline mode trigger capture logic (#1380)
+- 2026-03-23: fix: Fix MapFlow naming in linux .desktop file
+- 2026-03-22: feat: implement DMG packaging, codesign and notarization pipeline
+- 2026-03-22: docs: Establish Professional Video I/O Readiness Baseline
+- 2026-03-22: perf: ⚡ Bolt: Optimize HashMap extension in render loop
+- 2026-03-21: fix: resolve items_after_test_module clippy warning
+- 2026-03-21: refactor: migrate integer sockets to string IDs in evaluator
+- 2026-03-21: chore: 🎨 UI: Standardize empty state visibility and fix CI integration
+- 2026-03-21: docs: Stop executing empty Scribe update
+- 2026-03-20: chore: 🎨 UX: Standardize info labels and fallback messages in MapFlow UI
+- 2026-03-20: fix: 🛡️ Sentinel: [MEDIUM] Update X-XSS-Protection header to prevent exploitation
 - 2026-03-26: feat: Introduce a PowerShell script for GitHub API interactions and a new directory for user manual screenshots. (#c900b1a9)
 - 2026-03-26: docs: update user manual to match Vorce v2 rebranding (#1419)
 - 2026-03-26: feat: update protocols and external IDs to Vorce naming (#1418)
