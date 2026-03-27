@@ -17,6 +17,7 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   AUTO_MERGE_ENABLED: true
+  AUTO_UPDATE_BRANCH_WHEN_BEHIND: true
 
 concurrency:
   group: auto-merge-${{ github.event.pull_request.number || github.event.inputs.pr_number || github.event.workflow_run.head_sha || github.run_id }}
@@ -82,6 +83,37 @@ jobs:
                   body,
                 });
               }
+            };
+
+            const updateBranchIfBehind = async (pr, phaseLabel) => {
+              if (process.env.AUTO_UPDATE_BRANCH_WHEN_BEHIND !== 'true') {
+                await upsertManagedComment(
+                  pr.number,
+                  'Auto-merge wartet, weil der PR hinter `main` liegt. Bitte aktualisiere den Branch manuell; automatische Branch-Updates aus diesem Workflow sind deaktiviert.',
+                );
+                return true;
+              }
+
+              try {
+                await github.rest.pulls.updateBranch({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pr.number,
+                });
+
+                await upsertManagedComment(
+                  pr.number,
+                  `Auto-merge hat waehrend ${phaseLabel} erkannt, dass der PR hinter \`main\` liegt, und ein automatisches Branch-Update angestossen. Die Pflicht-Checks laufen jetzt auf dem neuen Head-SHA erneut an.`,
+                );
+              } catch (error) {
+                const message = error?.status === 422
+                  ? 'Auto-merge konnte den Branch nicht automatisch aktualisieren. GitHub meldet, dass der PR aktuell nicht per Update-Branch aktualisiert werden kann.'
+                  : `Auto-merge konnte den Branch nicht automatisch aktualisieren: ${error.message}`;
+
+                await upsertManagedComment(pr.number, `${message}\n\nBitte aktualisiere den Branch manuell.`);
+              }
+
+              return true;
             };
 
             const findOpenPrByHeadSha = async (headSha) => {
@@ -226,10 +258,7 @@ jobs:
             }
 
             if (pr.mergeable_state === 'behind') {
-              await upsertManagedComment(
-                prNumber,
-                'Auto-merge wartet, weil der PR hinter `main` liegt. Bitte aktualisiere den Branch manuell; automatische Branch-Updates aus diesem Workflow bleiben deaktiviert, damit GitHub Actions die PR-Checks auf dem neuen Head-SHA korrekt neu startet.',
-              );
+              await updateBranchIfBehind(pr, 'der fruehen Merge-Pruefung');
               return;
             }
 
@@ -344,10 +373,7 @@ jobs:
             }
 
             if (finalPr.mergeable_state === 'behind') {
-              await upsertManagedComment(
-                prNumber,
-                'Auto-merge wartet, weil der PR hinter `main` liegt. Bitte aktualisiere den Branch manuell; automatische Branch-Updates aus diesem Workflow bleiben deaktiviert, damit GitHub Actions die PR-Checks auf dem neuen Head-SHA korrekt neu startet.',
-              );
+              await updateBranchIfBehind(finalPr, 'der finalen Merge-Pruefung');
               return;
             }
 
