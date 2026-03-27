@@ -3,21 +3,21 @@
 <plist version="1.0">
 <dict>
 <key>CFBundleIdentifier</key>
-<string>__MAPFLOW_BUNDLE_ID__</string>
+<string>__VORCE_BUNDLE_ID__</string>
 <key>CFBundleName</key>
-<string>MapFlow</string>
+<string>Vorce</string>
 <key>CFBundleExecutable</key>
-<string>MapFlow</string>
+<string>Vorce</string>
 <key>CFBundlePackageGetInfoString</key>
 <string>Open source video mapping software</string>
 <key>CFBundleIconFile</key>
-<string>mapflow.icns</string>
+<string>vorce.icns</string>
 <key>CFBundlePackageType</key>
 <string>APPL</string>
 <key>CFBundleVersion</key>
-<string>__MAPFLOW_VERSION__</string>
+<string>__VORCE_VERSION__</string>
 <key>CFBundleShortVersionString</key>
-<string>__MAPFLOW_VERSION__</string>
+<string>__VORCE_VERSION__</string>
 <key>LSMinimumSystemVersion</key>
 <string>10.10</string>
 <key>NSPrincipalClass</key>

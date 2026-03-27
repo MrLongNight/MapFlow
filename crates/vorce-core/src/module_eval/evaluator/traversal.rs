@@ -1,5 +1,5 @@
 use crate::module::{
-    VorceModule, MeshType, ModulePartId, ModulePartType, ModulizerType, SourceType,
+    MeshType, ModulePartId, ModulePartType, ModulizerType, SourceType, VorceModule,
 };
 use crate::module_eval::evaluator::RenderOp;
 use crate::module_eval::types::{

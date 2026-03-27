@@ -193,7 +193,7 @@ jobs:
       - name: Build (Release)
         shell: pwsh
         run: |
-          cargo build --release -p mapflow --features "audio,ffmpeg" --verbose
+          cargo build --release -p vorce --features "audio,ffmpeg" --verbose
 
       - name: Prepare Release Folder & Copy DLLs
         shell: pwsh
@@ -206,8 +206,8 @@ jobs:
         shell: pwsh
         run: |
           $Version = "${{ needs.resolve-release.outputs.version }}"
-          $ZipName = "MapFlow-$Version-Windows-x64.zip"
-          Compress-Archive -Path "target/release/MapFlow.exe", "target/release/*.dll" -DestinationPath "$ZipName"
+          $ZipName = "Vorce-$Version-Windows-x64.zip"
+          Compress-Archive -Path "target/release/Vorce.exe", "target/release/*.dll" -DestinationPath "$ZipName"
           Add-Content -Path $env:GITHUB_ENV -Value "ZIP_PATH=$ZipName"
 
       - name: Ensure WiX Output Directory
@@ -218,13 +218,13 @@ jobs:
       - name: Build MSI Installer
         shell: pwsh
         run: |
-          cargo wix -p mapflow --no-build --release
+          cargo wix -p vorce --no-build --release
           $MsiPath = Get-ChildItem -Path "target/wix/*.msi" -File -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
           if (-not $MsiPath) {
             Write-Error "No MSI artifact was generated in target/wix."
             exit 1
           }
-          Move-Item -Path $MsiPath -Destination "MapFlow-${{ needs.resolve-release.outputs.version }}-x64.msi"
+          Move-Item -Path $MsiPath -Destination "Vorce-${{ needs.resolve-release.outputs.version }}-x64.msi"
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v7
@@ -232,8 +232,8 @@ jobs:
           name: windows-artifacts
           if-no-files-found: error
           path: |
-            MapFlow-${{ needs.resolve-release.outputs.version }}-Windows-x64.zip
-            MapFlow-${{ needs.resolve-release.outputs.version }}-x64.msi
+            Vorce-${{ needs.resolve-release.outputs.version }}-Windows-x64.zip
+            Vorce-${{ needs.resolve-release.outputs.version }}-x64.msi
 
   build-linux:
     name: "Build (Linux x64)"
@@ -271,19 +271,19 @@ jobs:
             libxinerama-dev libwayland-dev libxkbcommon-dev libssl-dev \
             ffmpeg
       - name: Build (Release)
-        run: cargo build --release -p mapflow --features "audio,ffmpeg"
+        run: cargo build --release -p vorce --features "audio,ffmpeg"
       - name: Create Tarball
         run: |
           VERSION="${{ needs.resolve-release.outputs.version }}"
-          TAR_NAME="MapFlow-$VERSION-Linux-x64.tar.gz"
+          TAR_NAME="Vorce-$VERSION-Linux-x64.tar.gz"
           cd target/release
-          tar -czf "../../$TAR_NAME" MapFlow
+          tar -czf "../../$TAR_NAME" Vorce
       - name: Upload Artifacts
         uses: actions/upload-artifact@v7
         with:
           name: linux-artifacts
           if-no-files-found: error
-          path: MapFlow-${{ needs.resolve-release.outputs.version }}-Linux-x64.tar.gz
+          path: Vorce-${{ needs.resolve-release.outputs.version }}-Linux-x64.tar.gz
 
   build-macos:
     name: "Build (macOS Beta)"
@@ -309,24 +309,24 @@ jobs:
             ${{ runner.os }}-cargo-
 
       - name: Build (Release)
-        run: cargo build --release -p mapflow --no-default-features --features "macos-beta"
+        run: cargo build --release -p vorce --no-default-features --features "macos-beta"
 
       - name: Package .app Bundle
         shell: bash
         run: |
-          bash scripts/mapflow/package-macos-app.sh "${{ needs.resolve-release.outputs.version }}"
+          bash scripts/vorce/package-macos-app.sh "${{ needs.resolve-release.outputs.version }}"
 
       - name: Sign .app Bundle
         shell: bash
         env:
           APPLE_DEV_ID: ${{ secrets.APPLE_DEV_ID }}
         run: |
-          bash scripts/mapflow/sign-and-notarize-macos.sh "target/release/MapFlow.app"
+          bash scripts/vorce/sign-and-notarize-macos.sh "target/release/Vorce.app"
 
       - name: Create DMG Artifact
         shell: bash
         run: |
-          bash scripts/mapflow/create-macos-dmg.sh "${{ needs.resolve-release.outputs.version }}" "target/release/MapFlow.app" "MapFlow-${{ needs.resolve-release.outputs.version }}-macOS-beta.dmg"
+          bash scripts/vorce/create-macos-dmg.sh "${{ needs.resolve-release.outputs.version }}" "target/release/Vorce.app" "Vorce-${{ needs.resolve-release.outputs.version }}-macOS-beta.dmg"
 
       - name: Sign and Notarize DMG
         shell: bash
@@ -336,14 +336,14 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
         run: |
-          bash scripts/mapflow/sign-and-notarize-macos.sh "MapFlow-${{ needs.resolve-release.outputs.version }}-macOS-beta.dmg"
+          bash scripts/vorce/sign-and-notarize-macos.sh "Vorce-${{ needs.resolve-release.outputs.version }}-macOS-beta.dmg"
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v7
         with:
           name: macos-artifacts
           if-no-files-found: error
-          path: MapFlow-${{ needs.resolve-release.outputs.version }}-macOS-beta.dmg
+          path: Vorce-${{ needs.resolve-release.outputs.version }}-macOS-beta.dmg
 
   publish-release:
     name: "Publish Release"
@@ -365,16 +365,16 @@ jobs:
           set -euo pipefail
 
           assets=(
-            "release-artifacts/MapFlow-$RELEASE_VERSION-Windows-x64.zip"
-            "release-artifacts/MapFlow-$RELEASE_VERSION-x64.msi"
-            "release-artifacts/MapFlow-$RELEASE_VERSION-Linux-x64.tar.gz"
-            "release-artifacts/MapFlow-$RELEASE_VERSION-macOS-beta.dmg"
+            "release-artifacts/Vorce-$RELEASE_VERSION-Windows-x64.zip"
+            "release-artifacts/Vorce-$RELEASE_VERSION-x64.msi"
+            "release-artifacts/Vorce-$RELEASE_VERSION-Linux-x64.tar.gz"
+            "release-artifacts/Vorce-$RELEASE_VERSION-macOS-beta.dmg"
           )
 
           args=(
             "$RELEASE_VERSION"
             --target "$GITHUB_SHA"
-            --title "MapFlow $RELEASE_VERSION"
+            --title "Vorce $RELEASE_VERSION"
             --generate-notes
           )
 

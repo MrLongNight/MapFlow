@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
-   <mime-type type="application/mapflow">
-     <comment>MapFlow Project File</comment>
+   <mime-type type="application/vorce">
+     <comment>Vorce Project File</comment>
      <magic priority="50">
        <match value="search-string" type="string" offset="10:140"/>
        <match type="string" value="#N " offset="0"/>
      </magic>
-     <glob pattern="*.mflow"/>
+     <glob pattern="*.vorce"/>
     <comment>Pure Data Document</comment>
-	<comment xml:lang="en">MapFlow Document</comment>
-	<comment xml:lang="fr">Document MapFlow</comment>
+	<comment xml:lang="en">Vorce Document</comment>
+	<comment xml:lang="fr">Document Vorce</comment>
    </mime-type>
 </mime-info>
