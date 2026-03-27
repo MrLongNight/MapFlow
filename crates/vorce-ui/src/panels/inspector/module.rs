@@ -1,7 +1,7 @@
 use crate::editors::module_canvas::state::ModuleCanvas;
 use crate::UIAction;
 use egui::Ui;
-use vorce_core::module::{VorceModule, ModulePartId};
+use vorce_core::module::{ModulePartId, VorceModule};
 
 /// Show module properties inspector
 #[allow(clippy::too_many_arguments)]

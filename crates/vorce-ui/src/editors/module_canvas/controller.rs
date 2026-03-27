@@ -1,6 +1,6 @@
 use super::state::ModuleCanvas;
 use super::types::CanvasAction;
-use vorce_core::module::{VorceModule, ModulePartId};
+use vorce_core::module::{ModulePartId, VorceModule};
 
 #[cfg(feature = "midi")]
 pub fn process_midi_message(canvas: &mut ModuleCanvas, message: vorce_control::midi::MidiMessage) {
