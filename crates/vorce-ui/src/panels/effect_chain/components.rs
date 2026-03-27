@@ -617,7 +617,7 @@ impl super::panel::EffectChainPanel {
                 );
             }
             _ => {
-                ui.label(locale.t("no-parameters"));
+                crate::widgets::custom::render_info_label(ui, &locale.t("no-parameters"));
             }
         }
         let _ = effect_id; // Silence unused warning

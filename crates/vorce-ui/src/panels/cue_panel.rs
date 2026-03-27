@@ -151,7 +151,7 @@ impl CuePanel {
             let cues_to_render: Vec<_> = cue_list.cues().to_vec();
 
             if cues_to_render.is_empty() {
-                ui.label(i18n.t("label-no-cues"));
+                crate::widgets::custom::render_info_label(ui, &i18n.t("label-no-cues"));
             } else {
                 for cue in cues_to_render {
                     let is_current = current_cue_id == Some(cue.id);

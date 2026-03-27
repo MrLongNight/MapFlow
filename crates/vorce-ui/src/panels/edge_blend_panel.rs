@@ -128,7 +128,7 @@ impl EdgeBlendPanel {
                     ui.separator();
                     self.show_color_calibration_controls(ui, i18n, output_id);
                 } else {
-                    ui.label(i18n.t("edge-blend-no-output"));
+                    crate::widgets::custom::render_info_label(ui, &i18n.t("edge-blend-no-output"));
                 }
             });
         self.visible = open;
