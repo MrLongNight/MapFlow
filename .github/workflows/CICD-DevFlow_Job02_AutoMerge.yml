@@ -152,6 +152,52 @@ jobs:
               return response.data;
             };
 
+            const recoverValidationAfterBranchUpdate = async (pr) => {
+              const headCommit = await github.rest.repos.getCommit({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: pr.head.sha,
+              });
+
+              const commitMessage = headCommit.data.commit.message || '';
+              const authorLogin = headCommit.data.author?.login || headCommit.data.committer?.login || '';
+              const looksLikeAutomatedBranchUpdate =
+                authorLogin === 'github-actions[bot]' &&
+                commitMessage.startsWith(`Merge branch 'main' into ${pr.head.ref}`);
+
+              if (!looksLikeAutomatedBranchUpdate) {
+                return false;
+              }
+
+              const validationStartedAutomatically = await waitForValidationChecksOnHead(pr.head.sha);
+              if (validationStartedAutomatically) {
+                await upsertManagedComment(
+                  pr.number,
+                  'Auto-merge hat erkannt, dass der aktuelle Head-SHA bereits durch ein automatisches Branch-Update entstanden ist, und bestaetigt, dass die Validation-Checks inzwischen erneut laufen.',
+                );
+                return true;
+              }
+
+              try {
+                const dispatchResult = await dispatchValidationWorkflow(pr.head.ref);
+                const detailsSuffix = dispatchResult?.html_url
+                  ? `\n\nValidation-Run: ${dispatchResult.html_url}`
+                  : '';
+
+                await upsertManagedComment(
+                  pr.number,
+                  `Auto-merge hat erkannt, dass der PR-Branch bereits automatisiert auf \`main\` aktualisiert wurde, aber auf dem neuen Head-SHA kein Validation-Lauf gestartet wurde. Deshalb wurde \`CICD-DevFlow: Job01 Validation\` nachtraeglich per workflow_dispatch gestartet.${detailsSuffix}`,
+                );
+              } catch (error) {
+                await upsertManagedComment(
+                  pr.number,
+                  `Auto-merge hat einen bereits aktualisierten PR-Branch erkannt, konnte die Validation aber nicht nachtraeglich starten: ${error.message}\n\nBitte starte \`CICD-DevFlow: Job01 Validation\` manuell fuer den aktuellen Head-SHA.`,
+                );
+              }
+
+              return true;
+            };
+
             const updateBranchIfBehind = async (pr, phaseLabel) => {
               if (process.env.AUTO_UPDATE_BRANCH_WHEN_BEHIND !== 'true') {
                 await upsertManagedComment(
@@ -448,6 +494,10 @@ jobs:
             }
 
             if (!allRequiredPassed) {
+              if (await recoverValidationAfterBranchUpdate(pr)) {
+                return;
+              }
+
               await upsertManagedComment(
                 prNumber,
                 `Auto-merge wartet noch auf erfolgreiche Pflicht-Checks: ${missingOrFailed.join(', ')}.`,
