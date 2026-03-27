@@ -146,3 +146,7 @@ Kritische Erkenntnisse aus Repository-Verwaltungsaktivitäten.
 ## 2026-03-26 - Temporäre Dateien im Root verschoben
 **Erkenntnis:** Im Root-Verzeichnis befanden sich `update_layer_inspector.patch` und `issue1203_body.md`, die nicht den Projektstandards für Root-Dateien entsprechen.
 **Aktion:** Dateien ins `.temp-archive/` verschoben und mit dem aktuellen Datum versehen.
+
+## 2026-03-27 - Root Directory Cleanup
+**Erkenntnis:** Im Root-Verzeichnis befanden sich `update_shortcuts_panel.patch`, `update_custom_widgets.patch`, `update_transform_panel.patch` und `fix_config.py`, die nicht den Projektstandards für Root-Dateien entsprechen.
+**Aktion:** Dateien ins `.temp-archive/` verschoben und mit dem aktuellen Datum versehen.
