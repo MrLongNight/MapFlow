@@ -1,0 +1,13 @@
+--- crates/vorce-ui/src/panels/transform_panel.rs
++++ crates/vorce-ui/src/panels/transform_panel.rs
+@@ -253,9 +253,5 @@
+                         ui.add_space(40.0);
+-                        ui.label(
+-                            egui::RichText::new("∅")
+-                                .size(48.0)
+-                                .color(colors::CYAN_ACCENT.linear_multiply(0.3)),
+-                        );
++                        crate::widgets::custom::render_info_label_with_size(ui, "∅", 48.0);
+                         ui.add_space(16.0);
+-                        ui.label(i18n.t("transform-no-layer"));
++                        crate::widgets::custom::render_info_label(ui, &i18n.t("transform-no-layer"));

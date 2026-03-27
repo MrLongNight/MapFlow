@@ -1433,7 +1433,8 @@ function Sync-VorceIssueTracking {
 
     $issue = Get-GitHubIssue -Repository $Repository -IssueNumber $IssueNumber
     $pullRequestUrl = if ($null -eq $Session) { $null } else { Get-JulesSessionPullRequestUrl -Session $Session }
-    if ([string]::IsNullOrWhiteSpace($pullRequestUrl)) {
+    $allowFallbackPullRequestLookup = $null -eq $Session
+    if ([string]::IsNullOrWhiteSpace($pullRequestUrl) -and $allowFallbackPullRequestLookup) {
         $fallbackSessionId = if ($null -eq $Session) { $null } else { Resolve-JulesSessionId -SessionIdOrName ([string]$Session.name) }
         $fallbackPullRequest = Find-GitHubPullRequestForIssue -Repository $Repository -IssueNumber $IssueNumber -SessionId $fallbackSessionId
         if ($null -ne $fallbackPullRequest -and -not [string]::IsNullOrWhiteSpace([string]$fallbackPullRequest.url)) {

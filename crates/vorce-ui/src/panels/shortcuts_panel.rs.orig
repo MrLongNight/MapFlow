@@ -79,9 +79,10 @@ impl ShortcutsPanel {
                 if filter_lower.is_empty() {
                     return true;
                 }
-                let desc_lower = s.description.to_lowercase();
-                let shortcut_str_lower = s.to_shortcut_string().to_lowercase();
-                desc_lower.contains(&filter_lower) || shortcut_str_lower.contains(&filter_lower)
+                s.description.to_lowercase().contains(&filter_lower)
+                    || s.to_shortcut_string()
+                        .to_lowercase()
+                        .contains(&filter_lower)
             })
             .map(|(i, _)| i)
             .collect();
@@ -173,9 +174,10 @@ impl ShortcutsPanel {
                     ui.group(|ui| {
                         ui.vertical_centered(|ui| {
                             ui.add_space(10.0);
-                            crate::widgets::custom::render_info_label(
-                                ui,
-                                "Press any key combination...",
+                            ui.label(
+                                RichText::new("Press any key combination...")
+                                    .strong()
+                                    .color(colors::CYAN_ACCENT),
                             );
                             ui.label("(Press ESC to cancel)"); // Removed Backspace instruction
                             ui.add_space(10.0);

@@ -1,0 +1,13 @@
+--- shortcuts_panel.rs
++++ shortcuts_panel.rs
+@@ -176,9 +176,7 @@
+                             ui.add_space(10.0);
+-                            ui.label(
+-                                RichText::new("Press any key combination...")
+-                                    .strong()
+-                                    .color(colors::CYAN_ACCENT),
+-                            );
++                            crate::widgets::custom::render_info_label(
++                                ui, "Press any key combination..."
++                            );
+                             ui.add_space(10.0);

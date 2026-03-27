@@ -1,0 +1,11 @@
+--- crates/vorce-ui/src/panels/shortcuts_panel.rs
++++ crates/vorce-ui/src/panels/shortcuts_panel.rs
+@@ -176,9 +176,5 @@
+                             ui.add_space(10.0);
+-                            ui.label(
+-                                RichText::new("Press any key combination...")
+-                                    .strong()
+-                                    .color(colors::CYAN_ACCENT),
+-                            );
++                            crate::widgets::custom::render_info_label(ui, "Press any key combination...");
+                             ui.label("(Press ESC to cancel)"); // Removed Backspace instruction
