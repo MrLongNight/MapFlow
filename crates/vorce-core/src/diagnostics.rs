@@ -2,7 +2,7 @@
 //! Diagnostic tools for Vorce modules.
 //!
 
-use crate::module::{ModulePartId, VorceModule};
+use crate::module::{VorceModule, ModulePartId};
 use serde::{Deserialize, Serialize};
 
 /// Represents an issue found during module diagnostics.

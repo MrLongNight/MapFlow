@@ -1,8 +1,8 @@
 [Desktop Entry]
-Name=Vorce
+Name=MapFlow
 Comment=Professional Projection Mapping Software
-Exec=Vorce
-Icon=vorce
+Exec=MapFlow
+Icon=mapflow
 Terminal=false
 Type=Application
 Categories=Graphics;Video;AudioVideo;

@@ -5,8 +5,8 @@ mod triggers;
 use crate::audio::analyzer_v2::AudioAnalysisV2;
 use crate::audio_reactive::AudioTriggerData;
 use crate::module::{
-    BlendModeType, LayerType, LinkBehavior, LinkMode, MaskType, MeshType, ModulePartId,
-    ModulePartType, ModulizerType, OutputType, SharedMediaState, SourceType, VorceModule,
+    BlendModeType, LayerType, LinkBehavior, LinkMode, VorceModule, MaskType, MeshType,
+    ModulePartId, ModulePartType, ModulizerType, OutputType, SharedMediaState, SourceType,
 };
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -624,7 +624,7 @@ mod evaluator_tests {
     use super::*;
     use crate::audio::analyzer_v2::AudioAnalysisV2;
     use crate::module::{
-        AudioTriggerOutputConfig, ModulePartType, SourceType, TriggerType, VorceModule,
+        AudioTriggerOutputConfig, VorceModule, ModulePartType, SourceType, TriggerType,
     };
     use crate::module_eval::ModuleEvaluator;
     use std::time::Duration;

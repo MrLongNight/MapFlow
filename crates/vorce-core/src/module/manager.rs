@@ -2,8 +2,8 @@
 
 use crate::module::config::default_color_palette;
 use crate::module::types::{
-    ModuleId, ModulePartId, ModulePlaybackMode, ModuleRepairReport, PartType, SharedMediaState,
-    VorceModule,
+    VorceModule, ModuleId, ModulePartId, ModulePlaybackMode, ModuleRepairReport, PartType,
+    SharedMediaState,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

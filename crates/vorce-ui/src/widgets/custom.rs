@@ -306,16 +306,7 @@ pub fn icon_button_simple(
     let (rect, response) = ui.allocate_at_least(desired_size, Sense::click());
 
     // Accessibility info
-    let enabled = ui.is_enabled();
-    let label = if hover_text.is_empty() {
-        icon.file_name()
-            .replace("ultimate_", "")
-            .replace(".svg", "")
-            .replace("_", " ")
-    } else {
-        hover_text.to_string()
-    };
-    response.widget_info(move || WidgetInfo::labeled(WidgetType::Button, enabled, label.clone()));
+    response.widget_info(|| WidgetInfo::labeled(WidgetType::Button, ui.is_enabled(), hover_text));
 
     let visuals = ui.style().interact(&response);
 
@@ -477,10 +468,7 @@ pub fn icon_button_compact(
     // Accessibility info
     let enabled = ui.is_enabled();
     let label = if hover_text.is_empty() {
-        icon.file_name()
-            .replace("ultimate_", "")
-            .replace(".svg", "")
-            .replace("_", " ")
+        "Icon Button".to_string()
     } else {
         hover_text.to_string()
     };
@@ -659,7 +647,7 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32, hover_text
 
     // Accessibility info
     let a11y_label = if hover_text.is_empty() {
-        format!("Hold to confirm {}...", text)
+        format!("Hold to confirm {}", text)
     } else {
         format!("{} (Hold to confirm)", hover_text)
     };
@@ -706,7 +694,7 @@ pub fn hold_to_action_button(ui: &mut Ui, text: &str, color: Color32, hover_text
         let display_progress = if triggered { 1.0 } else { progress };
         fill_rect.max.x = rect.min.x + rect.width() * display_progress;
         let fill_color = if triggered {
-            color // Flash brightly with solid full color on completion
+            color.linear_multiply(0.8) // Flash brightly on completion
         } else {
             color.linear_multiply(0.4) // Transparent version of action color
         };
@@ -757,12 +745,7 @@ pub fn hold_to_action_icon(
     // Accessibility info
     let enabled = ui.is_enabled();
     let label = if hover_text.is_empty() {
-        let icon_name = icon
-            .file_name()
-            .replace("ultimate_", "")
-            .replace(".svg", "")
-            .replace("_", " ");
-        format!("Hold to confirm {}...", icon_name)
+        "Hold to confirm action".to_string()
     } else {
         format!("{} (Hold to confirm)", hover_text)
     };
@@ -831,30 +814,28 @@ pub fn hold_to_action_icon(
     if progress > 0.0 || triggered {
         use std::f32::consts::TAU;
         let radius = size / 2.0 + 2.0;
-
-        if triggered {
-            // Full solid circular background fill on completion
-            painter.circle_filled(center, radius, color);
+        let stroke = if triggered {
+            Stroke::new(3.0, color) // Thicker, brighter ring on trigger
         } else {
-            let stroke = Stroke::new(2.0, color);
+            Stroke::new(2.0, color)
+        };
 
-            // Background ring (faint)
-            painter.circle_stroke(center, radius, Stroke::new(2.0, color.linear_multiply(0.2)));
+        // Background ring (faint)
+        painter.circle_stroke(center, radius, Stroke::new(2.0, color.linear_multiply(0.2)));
 
-            // Better visual: Arc using points
-            let start_angle = -TAU / 4.0; // Top
-            let end_angle = start_angle + progress * TAU;
-            let n_points = 32;
-            let points: Vec<Pos2> = (0..=n_points)
-                .map(|i| {
-                    let t = i as f32 / n_points as f32;
-                    let angle = lerp(start_angle..=end_angle, t);
-                    center + Vec2::new(angle.cos(), angle.sin()) * radius
-                })
-                .collect();
+        // Better visual: Arc using points
+        let start_angle = -TAU / 4.0; // Top
+        let end_angle = start_angle + (if triggered { 1.0 } else { progress }) * TAU;
+        let n_points = 32;
+        let points: Vec<Pos2> = (0..=n_points)
+            .map(|i| {
+                let t = i as f32 / n_points as f32;
+                let angle = lerp(start_angle..=end_angle, t);
+                center + Vec2::new(angle.cos(), angle.sin()) * radius
+            })
+            .collect();
 
-            painter.add(egui::Shape::line(points, stroke));
-        }
+        painter.add(egui::Shape::line(points, stroke));
     }
 
     if response.hovered() {
@@ -864,15 +845,7 @@ pub fn hold_to_action_icon(
     if !hover_text.is_empty() {
         response.on_hover_text(format!("{} (Hold to confirm)", hover_text));
     } else {
-        let icon_name = icon
-            .file_name()
-            .replace("ultimate_", "")
-            .replace(".svg", "")
-            .replace("_", " ");
-        response.on_hover_text(format!(
-            "Hold to confirm {}... (Mouse or Space/Enter)",
-            icon_name
-        ));
+        response.on_hover_text("Hold to confirm action");
     }
 
     triggered

@@ -21,12 +21,12 @@ VS_VERSION_INFO VERSIONINFO
 		BEGIN
 			BLOCK "040904b0"
 			BEGIN
-                                VALUE "CompanyName", "Vorce Contributors\0"
-                                VALUE "FileDescription", "Vorce Projection Mapping\0"
+                                VALUE "CompanyName", "MapFlow Team\0"
+                                VALUE "FileDescription", "MapFlow Projection Mapping\0"
 				VALUE "FileVersion", "0.6.0.0\0"
 				VALUE "LegalCopyright", "GPL v3\0"
-				VALUE "OriginalFilename", "Vorce.exe\0"
-                                VALUE "ProductName", "Vorce\0"
+				VALUE "OriginalFilename", "mapflow.exe\0"
+                                VALUE "ProductName", "MapFlow\0"
 				VALUE "ProductVersion", "0.6.0.0\0"
 			END
 		END
@@ -37,4 +37,4 @@ VS_VERSION_INFO VERSIONINFO
 	END
 /* End of Version info */
 
-IDI_ICON1               ICON    DISCARDABLE     "app_icons/Vorce_Logo_LQ-Full.ico"
+IDI_ICON1               ICON    DISCARDABLE     "app_icons/mapflow.ico"

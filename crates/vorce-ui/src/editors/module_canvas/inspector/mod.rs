@@ -14,7 +14,7 @@ use crate::UIAction;
 use egui::{Ui, Vec2};
 use std::collections::HashSet;
 use vorce_core::module::{
-    ModuleId, ModulePart, ModulePartId, ModulePartType, OutputType, VorceModule,
+    VorceModule, ModuleId, ModulePart, ModulePartId, ModulePartType, OutputType,
 };
 
 #[derive(Debug, Clone, Default)]
