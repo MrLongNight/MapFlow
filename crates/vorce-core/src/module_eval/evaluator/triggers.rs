@@ -1,5 +1,5 @@
 use crate::audio_reactive::AudioTriggerData;
-use crate::module::{VorceModule, ModulePartId, SharedMediaState, TriggerType};
+use crate::module::{ModulePartId, SharedMediaState, TriggerType, VorceModule};
 use crate::module_eval::types::TriggerState;
 use crate::module_eval::ModuleEvaluator;
 use rand::RngExt;

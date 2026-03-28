@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use vorce_core::module::{VorceModule, ModulePartType, ModulePlaybackMode, TriggerType};
+use vorce_core::module::{ModulePartType, ModulePlaybackMode, TriggerType, VorceModule};
 use vorce_core::module_eval::ModuleEvaluator;
 
 #[test]

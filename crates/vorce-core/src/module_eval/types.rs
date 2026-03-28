@@ -3,7 +3,7 @@
 //! Traverses the module graph and computes output values.
 //! This handles the full pipeline: Trigger -> Source -> Mask -> Effect -> Layer(Mesh) -> Output.
 
-use crate::module::{VorceModule, ModulePartId, ModulePartType};
+use crate::module::{ModulePartId, ModulePartType, VorceModule};
 use std::collections::HashMap;
 
 /// State for individual trigger nodes, stored in the evaluator
