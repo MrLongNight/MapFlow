@@ -19,7 +19,7 @@ env:
   AUTO_MERGE_ENABLED: true
   AUTO_UPDATE_BRANCH_WHEN_BEHIND: true
   VALIDATION_WORKFLOW_ID: CICD-DevFlow_Job01_Validation.yml
-  DEFAULT_RUST_TOOLCHAIN: ${{ vars.MAPFLOW_DEFAULT_TOOLCHAIN || '1.94.0' }}
+  DEFAULT_RUST_TOOLCHAIN: ${{ vars.VORCE_DEFAULT_TOOLCHAIN || vars.MAPFLOW_DEFAULT_TOOLCHAIN || '1.94.0' }}
 
 concurrency:
   group: auto-merge-${{ github.event.pull_request.number || github.event.inputs.pr_number || github.event.workflow_run.head_sha || github.run_id }}
@@ -114,7 +114,7 @@ jobs:
               return null;
             };
 
-            const waitForValidationChecksOnHead = async (headSha) => {
+            const getValidationChecksState = async (headSha) => {
               for (let attempt = 1; attempt <= 10; attempt += 1) {
                 const checks = await github.rest.checks.listForRef({
                   owner: context.repo.owner,
@@ -123,14 +123,24 @@ jobs:
                   per_page: 100,
                 });
 
-                if (checks.data.check_runs.some((run) => VALIDATION_CHECK_NAMES.has(run.name))) {
-                  return true;
+                const validationRuns = checks.data.check_runs.filter((run) =>
+                  VALIDATION_CHECK_NAMES.has(run.name),
+                );
+
+                if (validationRuns.length > 0) {
+                  return {
+                    found: true,
+                    hasActiveRun: validationRuns.some((run) => run.status !== 'completed'),
+                  };
                 }
 
                 await sleep(3000);
               }
 
-              return false;
+              return {
+                found: false,
+                hasActiveRun: false,
+              };
             };
 
             const dispatchValidationWorkflow = async (branchRef) => {
@@ -168,13 +178,17 @@ jobs:
                 return false;
               }
 
-              const validationStartedAutomatically = await waitForValidationChecksOnHead(pr.head.sha);
-              if (validationStartedAutomatically) {
+              const validationChecksState = await getValidationChecksState(pr.head.sha);
+              if (validationChecksState.hasActiveRun) {
                 await upsertManagedComment(
                   pr.number,
                   'Auto-merge hat erkannt, dass der aktuelle Head-SHA bereits durch ein automatisches Branch-Update entstanden ist, und bestaetigt, dass die Validation-Checks inzwischen erneut laufen.',
                 );
                 return true;
+              }
+
+              if (validationChecksState.found) {
+                return false;
               }
 
               try {
@@ -230,11 +244,19 @@ jobs:
                 return true;
               }
 
-              const validationStartedAutomatically = await waitForValidationChecksOnHead(updatedPr.head.sha);
-              if (validationStartedAutomatically) {
+              const validationChecksState = await getValidationChecksState(updatedPr.head.sha);
+              if (validationChecksState.hasActiveRun) {
                 await upsertManagedComment(
                   pr.number,
                   `Auto-merge hat waehrend ${phaseLabel} erkannt, dass der PR hinter \`main\` liegt, ein automatisches Branch-Update angestossen und bestaetigt, dass die Validation-Checks auf dem neuen Head-SHA erneut laufen.`,
+                );
+                return true;
+              }
+
+              if (validationChecksState.found) {
+                await upsertManagedComment(
+                  pr.number,
+                  `Auto-merge hat waehrend ${phaseLabel} erkannt, dass der PR hinter \`main\` liegt, ein automatisches Branch-Update angestossen und bestaetigt, dass die Validation-Checks auf dem neuen Head-SHA bereits registriert wurden.`,
                 );
                 return true;
               }
