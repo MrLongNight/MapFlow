@@ -31,10 +31,7 @@ pub fn show(ctx: &Context, show_about: &mut bool) {
             ui.add_space(10.0);
 
             ui.label("© 2026 MrLongNight & Vorce Team");
-            ui.hyperlink_to(
-                "GitHub Repository",
-                "https://github.com/MrLongNight/Vorce",
-            );
+            ui.hyperlink_to("GitHub Repository", "https://github.com/MrLongNight/Vorce");
 
             ui.add_space(20.0);
             if ui.button("Close").clicked() {

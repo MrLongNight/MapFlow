@@ -1,7 +1,7 @@
 use vorce_core::audio::analyzer_v2::AudioAnalysisV2;
 use vorce_core::module::{
-    AudioBand, AudioTriggerOutputConfig, VorceModule, ModulePartType, ModulePlaybackMode,
-    PartType, TriggerConfig, TriggerMappingMode, TriggerTarget, TriggerType,
+    AudioBand, AudioTriggerOutputConfig, ModulePartType, ModulePlaybackMode, PartType,
+    TriggerConfig, TriggerMappingMode, TriggerTarget, TriggerType, VorceModule,
 };
 use vorce_core::module_eval::ModuleEvaluator;
 

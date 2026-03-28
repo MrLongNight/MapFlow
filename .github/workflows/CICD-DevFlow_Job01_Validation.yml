@@ -27,7 +27,7 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  RUST_TOOLCHAIN: ${{ github.event.inputs.toolchain || inputs.toolchain || vars.MAPFLOW_DEFAULT_TOOLCHAIN || '1.94.0' }}
+  RUST_TOOLCHAIN: ${{ github.event.inputs.toolchain || inputs.toolchain || vars.VORCE_DEFAULT_TOOLCHAIN || '1.94.0' }}
 
 jobs:
   quality:

@@ -9,7 +9,7 @@ Dieses Dokument fasst die Abweichungen zwischen dem aktuellen, durch Subagents e
 Diese Punkte wurden durch die aktuelle Deep-Scan-Analyse der Subagents neu aufgedeckt und fehlen in den archivierten Berichten oder wurden dort nicht in dieser Schärfe benannt:
 
 ### 1.1 Kritischer WGPU-Versionskonflikt (Blocker-Risiko)
-*   **Aktueller Befund**: `mapmap-bevy` nutzt **WGPU 24.0**, während der Rest des Workspaces auf **WGPU 27.0** migriert.
+*   **Aktueller Befund**: `vorce-bevy` nutzt **WGPU 24.0**, während der Rest des Workspaces auf **WGPU 27.0** migriert.
 *   **Abweichung**: Die Archiv-Berichte (`DOC-C10`, `DOC-C11`) erwähnen zwar allgemeine Render-Probleme und Bevy-Integrationsthemen, identifizieren aber nicht diesen harten Versions-Clash als Kernrisiko für Linker-Fehler und inkompatible Grafik-Pipelines.
 *   **Relevanz**: **Hoch**. Dies ist ein technischer Blocker, der sofortige Harmonisierung erfordert.
 
@@ -50,8 +50,8 @@ Hier decken sich die Analysen, wobei die Archiv-Berichte oft eine höhere Detail
 Die archivierten Berichte (insbesondere `DOC-C10`) sind **extrem relevant**, um die semantische Tiefe des Node-Systems zu verstehen (Socket-IDs vs. Indizes). Mein aktuelles Audit liefert jedoch die **notwendige technologische Korrektur** bezüglich der WGPU-Versionen und der Code-Sicherheit (Unsafe), die in den alten Berichten übersehen wurde.
 
 ### Empfohlene Priorisierung für die Planung:
-1.  **Technischer Blocker**: Harmonisierung der WGPU-Versionen (Crate `mapmap-bevy`).
-2.  **Sicherheit**: Audit der `unsafe`-Blöcke in `mapmap-media` (HAP/FFmpeg) und Ergänzung der Safety-Docs.
+1.  **Technischer Blocker**: Harmonisierung der WGPU-Versionen (Crate `vorce-bevy`).
+2.  **Sicherheit**: Audit der `unsafe`-Blöcke in `vorce-media` (HAP/FFmpeg) und Ergänzung der Safety-Docs.
 3.  **Architektur**: Umstellung von index-basierten auf ID-basierte Sockets (wie in `DOC-C10` vorgeschlagen), um das Node-System robust zu machen.
 4.  **Bereinigung**: Entfernung der `imgui`-Legacy-Crates und des Vendor-Codes.
 

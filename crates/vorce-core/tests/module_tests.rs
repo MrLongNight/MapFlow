@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use vorce_core::module::{
-    HueMappingMode, VorceModule, ModuleManager, ModulePartType, ModulePlaybackMode,
-    ModuleSocketType, OutputType, PartType,
+    HueMappingMode, ModuleManager, ModulePartType, ModulePlaybackMode, ModuleSocketType,
+    OutputType, PartType, VorceModule,
 };
 
 #[test]

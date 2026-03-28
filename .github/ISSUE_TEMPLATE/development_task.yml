@@ -1,5 +1,5 @@
 name: Development Task
-description: Development task for MapFlow project (starts in user review queue)
+description: Development task for Vorce project (starts in user review queue)
 title: "MFuser_ "
 labels: ["enhancement", "Todo-UserISU"]
 assignees: []

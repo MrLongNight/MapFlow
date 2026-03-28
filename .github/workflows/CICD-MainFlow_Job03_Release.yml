@@ -374,7 +374,7 @@ jobs:
           args=(
             "$RELEASE_VERSION"
             --target "$GITHUB_SHA"
-            --title "MapFlow $RELEASE_VERSION"
+            --title "Vorce $RELEASE_VERSION"
             --generate-notes
           )
 
