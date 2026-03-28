@@ -22,7 +22,7 @@ We love hearing about bugs! It's how we get them fixed.
 - If it's caused by Vorce, make sure it **still occurs in the current development version** (where we continually fix problems)
   by checking out with git to the current `main` branch of Vorce.
 - If it looks like it's caused by Vorce (or if you're not sure) and still occurs on the current `main` branch,
-  submit a bug report to the [issue tracker](https://github.com/MrLongNight/MapFlow/issues).
+  submit a bug report to the [issue tracker](https://github.com/Vorce-Studios/Vorce/issues).
   - **Search the issue tracker** to make sure your problem has not been reported yet.
     If you find a relevant bug, comment there, even if it's an old or closed one!
   - Only if you don't find a relevant issue, open a new issue.
@@ -73,7 +73,7 @@ Before opening a feature request, please search the issue tracker and confirm an
 
 We are more likely to accept your code if we feel like it has been discussed already.
 If you are submitting a new feature, it's best if the feature has been discussed beforehand,
-either as a [feature request](#feature-requests) or in the [issue tracker](https://github.com/MrLongNight/MapFlow/issues).
+either as a [feature request](#feature-requests) or in the [issue tracker](https://github.com/Vorce-Studios/Vorce/issues).
 
 - Please follow the [Rust API Guidelines](https://rust-lang.github.io/api-guidelines/) and make sure your code conforms to them.
 If in doubt, try and match the style and practices you find in the code you are working with.
@@ -108,7 +108,7 @@ This granularity makes the code easier to deal with in cases where some things h
 - In the comments field on your new pull request, enter a description of everything that the code in the pull request does.
   - This description is the first contact most of the core team will have with your code,
     so you should use it to explain why your pull request is awesome and we should accept it.
-  - Reference any issues or bugs in the [Vorce issue tracker](https://github.com/MrLongNight/MapFlow/issues)
+  - Reference any issues or bugs in the [Vorce issue tracker](https://github.com/Vorce-Studios/Vorce/issues)
     that are relevant to your pull request using `#issue number` notation, eg to reference issue **1234** write `#1234`.
   - Mention if the code has been tested and on what platform.
   - Include screenshots or videos if your changes affect the UI.

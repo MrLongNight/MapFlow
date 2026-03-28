@@ -44,7 +44,7 @@ Please refer to the main [BUILD.md](../B3_SUPPORT/DOC-C1_BUILD.md) for detailed,
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/MrLongNight/Vorce.git
+git clone https://github.com/Vorce-Studios/Vorce.git
 cd Vorce
 ```
 

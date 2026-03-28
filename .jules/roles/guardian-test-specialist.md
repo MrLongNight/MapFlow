@@ -87,7 +87,7 @@ cargo test --workspace
 cargo test -p mapmap-core
 ```
 
-### 🛠️ IMPLEMENTIERUNG - Test-Patterns für MapFlow:
+### 🛠️ IMPLEMENTIERUNG - Test-Patterns für Vorce:
 
 **UNIT-TEST TEMPLATE:**
 ```rust
@@ -139,7 +139,7 @@ async fn test_async_[funktion]() {
 
 ---
 
-## GUARDIAN'S FOKUS-BEREICHE FÜR MAPFLOW:
+## GUARDIAN'S FOKUS-BEREICHE FÜR VORCE:
 
 ### 🎯 Höchste Priorität (Corelogik):
 - `mapmap-core/src/module.rs` - ModuleManager, Parts, Connections

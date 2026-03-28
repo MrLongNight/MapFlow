@@ -6,9 +6,9 @@
 ## High-Performance Real-Time Visual Synthesis & Projection Mapping
 
 <!-- markdownlint-disable MD013 -->
-  [![Build & Quality](https://github.com/MrLongNight/Vorce/actions/workflows/CICD-DevFlow_Job01_Validation.yml/badge.svg?branch=main)](https://github.com/MrLongNight/Vorce/actions/workflows/CICD-DevFlow_Job01_Validation.yml)
-  [![Security Analysis](https://github.com/MrLongNight/Vorce/actions/workflows/CI-02_security-scan.yml/badge.svg)](https://github.com/MrLongNight/Vorce/actions/workflows/CI-02_security-scan.yml)
-  [![Stable Release](https://github.com/MrLongNight/Vorce/actions/workflows/CICD-MainFlow_Job03_Release.yml/badge.svg)](https://github.com/MrLongNight/Vorce/actions/workflows/CICD-MainFlow_Job03_Release.yml)
+  [![Build & Quality](https://github.com/Vorce-Studios/Vorce/actions/workflows/CICD-DevFlow_Job01_Validation.yml/badge.svg?branch=main)](https://github.com/Vorce-Studios/Vorce/actions/workflows/CICD-DevFlow_Job01_Validation.yml)
+  [![Security Analysis](https://github.com/Vorce-Studios/Vorce/actions/workflows/CI-02_security-scan.yml/badge.svg)](https://github.com/Vorce-Studios/Vorce/actions/workflows/CI-02_security-scan.yml)
+  [![Stable Release](https://github.com/Vorce-Studios/Vorce/actions/workflows/CICD-MainFlow_Job03_Release.yml/badge.svg)](https://github.com/Vorce-Studios/Vorce/actions/workflows/CICD-MainFlow_Job03_Release.yml)
   ![OS: Windows | Linux](https://img.shields.io/badge/OS-Windows%20%7C%20Linux-blue.svg)
   [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
   [![Rust: 1.94+](https://img.shields.io/badge/Rust-1.94%2B-orange.svg)](https://www.rust-lang.org/)
@@ -90,7 +90,7 @@ you extend the software's capabilities.
 
 ```bash
 # Clone the repository
-git clone https://github.com/MrLongNight/Vorce.git
+git clone https://github.com/Vorce-Studios/Vorce.git
 cd Vorce
 
 # Run the application (Release mode recommended for performance)
@@ -118,7 +118,7 @@ Explore our comprehensive guides in the [`docs/`](docs/README.md) directory:
 
 We welcome contributions from visual artists and developers alike! Please read
 our [**Contributing Guidelines**](CONTRIBUTING.md) and check our
-[**GitHub Issues**](https://github.com/MrLongNight/Vorce/issues) for open
+[**GitHub Issues**](https://github.com/Vorce-Studios/Vorce/issues) for open
 tasks.
 
 ## 📄 License

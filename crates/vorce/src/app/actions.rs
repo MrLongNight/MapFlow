@@ -296,7 +296,7 @@ pub fn handle_ui_actions(app: &mut App) -> Result<bool> {
             }
             UIAction::OpenLicense => {
                 app.egui_context.open_url(egui::OpenUrl::new_tab(
-                    "https://github.com/MrLongNight/Vorce/blob/main/LICENSE",
+                    "https://github.com/Vorce-Studios/Vorce/blob/main/LICENSE",
                 ));
             }
 

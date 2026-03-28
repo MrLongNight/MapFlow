@@ -16,7 +16,7 @@ Vorce is a complete rewrite of the legacy "MapFlow" application. The C++/Qt vers
 
 Pre-built binaries for Windows and Linux are available on the GitHub Releases page:
 
-[**Download Latest Release**](https://github.com/MrLongNight/Vorce/releases)
+[**Download Latest Release**](https://github.com/Vorce-Studios/Vorce/releases)
 
 ![Screenshot: Vorce Release Download Section](docs/assets/missing/vorce-release-download.png)
 
@@ -38,7 +38,7 @@ Quick summary for Rust developers:
 
 ```bash
 # Clone
-git clone https://github.com/MrLongNight/Vorce.git
+git clone https://github.com/Vorce-Studios/Vorce.git
 cd Vorce
 
 # Install system dependencies (Ubuntu example)

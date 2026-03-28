@@ -14,7 +14,7 @@ When creating new tasks for Jules (`mcp_jules_create_coding_task`), STRICTLY fol
     *   Must match the exact resource string identifier.
     *   **Action:** Run `read_resource(ServerName="jules", Uri="jules://sources")` to get the list.
     *   **Format:** Typically `sources/github/{Owner}/{Repo}`.
-    *   **Example:** `sources/github/MrLongNight/MapFlow`.
+    *   **Example:** `sources/github/Vorce-Studios/Vorce`.
 
 3.  **Procedure:**
     *   Check `jules://sources`.

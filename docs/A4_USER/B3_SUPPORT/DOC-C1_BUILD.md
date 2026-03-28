@@ -143,7 +143,7 @@ sudo pacman -S ffmpeg
 
 ```bash
 # Clone the repository
-git clone https://github.com/MrLongNight/Vorce.git
+git clone https://github.com/Vorce-Studios/Vorce.git
 cd Vorce
 
 # Build in debug mode (faster compile, slower runtime)
@@ -185,7 +185,7 @@ brew install ffmpeg
 
 ```bash
 # Clone the repository
-git clone https://github.com/MrLongNight/Vorce.git
+git clone https://github.com/Vorce-Studios/Vorce.git
 cd Vorce
 
 # Build the current macOS beta baseline
@@ -238,7 +238,7 @@ Open Command Prompt or PowerShell:
 
 ```cmd
 # Clone the repository
-git clone https://github.com/MrLongNight/Vorce.git
+git clone https://github.com/Vorce-Studios/Vorce.git
 cd Vorce
 
 # Build in release mode
@@ -375,4 +375,4 @@ Ensure your GPU drivers are up-to-date:
 - **Documentation:** See [docs/](../../DOC-A0_README.md) directory
 - **Architecture:** [Architecture](../../dev/architecture/README.md)
 - **Contributing:** [CONTRIBUTING.md](../../../CONTRIBUTING.md)
-- **Issues:** https://github.com/MrLongNight/Vorce/issues
+- **Issues:** https://github.com/Vorce-Studios/Vorce/issues

@@ -123,7 +123,7 @@ gh issue list --label "jules-task"
 curl -X POST \
   -H "Accept: application/vnd.github+json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
-  https://api.github.com/repos/MrLongNight/MapFlow/actions/workflows/CI-03_create-issues.yml/dispatches \
+  https://api.github.com/repos/Vorce-Studios/Vorce/actions/workflows/CI-03_create-issues.yml/dispatches \
   -d '{"ref":"copilot/implement-ci-cd-workflow"}'
 ```
 

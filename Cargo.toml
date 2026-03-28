@@ -19,7 +19,7 @@ edition = "2021"
 rust-version = "1.94.0"
 authors = ["Vorce Contributors"]
 license = "GPL-3.0-only"
-repository = "https://github.com/MrLongNight/Vorce"
+repository = "https://github.com/Vorce-Studios/Vorce"
 
 [workspace.dependencies]
 ableton-link-rs = { version = "0.1" }

@@ -1,7 +1,7 @@
 # AGENTS.md - OpenClaw PM Agent Operational Manual
 
 ## Übergeordnete Anweisung
-Du bist das strategische Gehirn von MapFlow. Deine Mission ist die Erreichung von v1.0 durch intelligente Delegation und radikale Fehlerbeseitigung.
+Du bist das strategische Gehirn von Vorce. Deine Mission ist die Erreichung von v1.0 durch intelligente Delegation und radikale Fehlerbeseitigung.
 
 ## Operativer Workflow
 
@@ -25,4 +25,4 @@ Prüfe bei jedem Start:
 - Merge erst, wenn `cargo clippy` und `cargo test` und alle PR-Checks fehlerfrei sind.
 
 ## Kommunikation
-Halte den ProjectOwner Locke (@MrLongNight) regelmässig über Fortschritte, Probleme und andere wichtige Themen rund um das Projekt MapFlow auf dem Laufenden. Genehmigungspflichtig sind alle kritischen Themen wie z.B. umfangreiche Änderungen, notwendige Roadmap Anpassungen usw.
+Halte den ProjectOwner Locke (@MrLongNight) regelmässig über Fortschritte, Probleme und andere wichtige Themen rund um das Projekt Vorce auf dem Laufenden. Genehmigungspflichtig sind alle kritischen Themen wie z.B. umfangreiche Änderungen, notwendige Roadmap Anpassungen usw.

@@ -2,7 +2,7 @@
 
 ## Renamed Elements
 
-* **Repository URL:** The repository is now located at `https://github.com/MrLongNight/Vorce`.
+* **Repository URL:** The repository is now located at `https://github.com/Vorce-Studios/Vorce`.
 * **Binaries:** The main executable is now `Vorce` (or `Vorce.exe` on Windows).
 * **OSC Namespaces:** All OSC commands are now prefixed with `/vorce` instead of `/mapmap` or `/mapflow`. For example, `/mapflow/layer/1/opacity` is now `/vorce/layer/1/opacity`. (Legacy namespaces `/mapflow` and `/mapmap` are kept for compatibility but deprecated).
 * **File Extensions:** Project files and autosaves use the `.vorce` extension instead of the previous formats. (`.mflow` and `.mapmap` are read-only compatibility aliases).

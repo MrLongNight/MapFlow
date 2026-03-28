@@ -17,7 +17,7 @@ Ich habe ein **fertiges Script erstellt** das alle 8 Jules Issues für dich erst
 
 ```bash
 # 1. Repository clonen (falls noch nicht geschehen)
-git clone https://github.com/MrLongNight/Vorce.git
+git clone https://github.com/Vorce-Studios/Vorce.git
 cd Vorce
 
 # 2. Zu diesem Branch wechseln
@@ -95,7 +95,7 @@ bash create-jules-issues.sh
 gh issue list --label "jules-task"
 
 # 3. Jules API konfigurieren
-#    - Repository: MrLongNight/Vorce
+#    - Repository: Vorce-Studios/Vorce
 #    - Monitor Label: jules-task
 #    - PR Label: jules-pr
 
