@@ -109,7 +109,7 @@ mod tests {
         mapping.set_mapping("/test/save".into(), ControlTarget::MasterBlackout);
 
         let mut path = std::env::temp_dir();
-        path.push("mapmap_test_osc_mapping.json");
+        path.push("vorce_test_osc_mapping.json");
 
         // Ensure cleanup from previous runs
         if path.exists() {

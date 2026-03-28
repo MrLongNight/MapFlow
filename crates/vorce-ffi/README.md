@@ -1,13 +1,13 @@
-# mapmap-ffi
+# vorce-ffi
 
 **Vorce C/C++ Foreign Function Interface.**
 
-`mapmap-ffi` provides C-compatible bindings for the Vorce core, enabling integration with legacy C++ applications or other languages.
+`vorce-ffi` provides C-compatible bindings for the Vorce core, enabling integration with legacy C++ applications or other languages.
 
 ## Purpose
 
 Originally designed to bridge the gap between the legacy Qt/C++ application and the new Rust core.
-As the Rust rewrite (`mapmap`) becomes the primary application, this crate serves as an integration point for external systems.
+As Vorce becomes the primary application, this crate serves as an integration point for external systems.
 
 ## Features
 

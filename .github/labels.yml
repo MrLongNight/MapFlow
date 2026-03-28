@@ -1,5 +1,5 @@
 # GitHub Labels Configuration
-# This file defines standard labels for the MapFlow project
+# This file defines standard labels for the Vorce project
 # Can be synced using: gh label sync --file .github/labels.yml
 
 # Priority Labels
@@ -110,31 +110,31 @@
 # Component Labels
 - name: "component: core"
   color: "006b75"
-  description: "mapmap-core crate"
+  description: "vorce-core crate"
 
 - name: "component: render"
   color: "006b75"
-  description: "mapmap-render crate"
+  description: "vorce-render crate"
 
 - name: "component: media"
   color: "006b75"
-  description: "mapmap-media crate"
+  description: "vorce-media crate"
 
 - name: "component: ui"
   color: "006b75"
-  description: "mapmap-ui crate"
+  description: "vorce-ui crate"
 
 - name: "component: control"
   color: "006b75"
-  description: "mapmap-control crate"
+  description: "vorce-control crate"
 
 - name: "component: ffi"
   color: "006b75"
-  description: "mapmap-ffi crate"
+  description: "vorce-ffi crate"
 
 - name: "component: io"
   color: "006b75"
-  description: "mapmap-io crate"
+  description: "vorce-io crate"
 
 # Workflow Labels
 - name: "workflows"

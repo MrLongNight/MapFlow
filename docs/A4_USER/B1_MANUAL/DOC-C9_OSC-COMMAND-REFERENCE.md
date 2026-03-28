@@ -5,7 +5,7 @@ address space used in Vorce.
 
 ## Overview
 
-- **Namespace:** All Vorce commands are prefixed with `/vorce`. *(Note: `/mapmap/` and `/Vorce/` are deprecated but kept for compatibility.)*
+- **Namespace:** All Vorce commands are prefixed with `/vorce`. *(Note: `/mapmap/` and `/mapflow/` are deprecated but kept for compatibility.)*
 - **Data Types:** OSC arguments are specified in brackets, e.g., `[f32]`. Common types include:
   - `[bang]`: An OSC message with no arguments.
   - `[bool]`: Boolean value (`true` or `false`).

@@ -14,7 +14,7 @@ The control system integration layer for Vorce, providing interfaces for externa
 ## Usage
 
 ```rust,no_run
-use mapmap_control::{ControlTarget, ControlValue};
+use vorce_control::{ControlTarget, ControlValue};
 
 // Example: Creating a control target for layer opacity
 let target = ControlTarget::LayerOpacity(0);

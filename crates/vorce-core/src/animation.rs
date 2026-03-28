@@ -1,4 +1,4 @@
-//! Animation types and structures for the mapmap engine
+//! Animation types and structures for the Vorce engine
 
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;

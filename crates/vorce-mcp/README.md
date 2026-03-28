@@ -29,14 +29,14 @@ It bridges external JSON-RPC requests to internal `McpAction` events, which are 
 
 ## Usage
 
-This crate is primarily used internally by `mapmap-control` and the main `mapmap` binary.
+This crate is primarily used internally by `vorce-control` and the main `vorce` binary.
 To enable it, ensure the `mcp` feature is active (if applicable) or that the server is initialized in your configuration.
 
 It can also be run standalone for testing:
 
 ```bash
 # Run the MCP server (stdio mode)
-cargo run -p mapmap-mcp
+cargo run -p vorce-mcp
 ```
 
 ## Integration
@@ -51,7 +51,7 @@ To integrate with an MCP client (e.g., Claude Desktop), add the following to you
       "args": [
         "run",
         "-p",
-        "mapmap-mcp",
+        "vorce-mcp",
         "--quiet"
       ]
     }

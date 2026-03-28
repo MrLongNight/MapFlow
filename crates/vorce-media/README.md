@@ -15,7 +15,7 @@ Video decoding and playback engine for Vorce.
 ## Usage
 
 ```rust,no_run
-use mapmap_media::{open_path, LoopMode};
+use vorce_media::{open_path, LoopMode};
 
 // Open a video file (auto-detects format and selects backend)
 let mut player = open_path("content/video.mp4").unwrap();

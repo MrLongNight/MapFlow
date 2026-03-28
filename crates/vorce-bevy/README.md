@@ -19,7 +19,7 @@ It allows Vorce to leverage Bevy's robust 3D features while maintaining its own 
 
 ## Usage
 
-This crate is primarily used by the main `mapmap` application to power 3D modules and visualizers. It is not intended to be used as a standalone application.
+This crate is primarily used by the main `vorce` application to power 3D modules and visualizers. It is not intended to be used as a standalone application.
 
 ## Dependencies
 
@@ -27,4 +27,4 @@ This crate is primarily used by the main `mapmap` application to power 3D module
 - `bevy_enoki` (Particles)
 - `bevy_atmosphere` (Skybox/Atmosphere)
 - `bevy_mod_outline` (Visual outlines)
-- `mapmap-core` (Core data structures)
+- `vorce-core` (Core data structures)

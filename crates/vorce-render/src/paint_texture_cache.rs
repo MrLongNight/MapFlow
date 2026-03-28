@@ -121,7 +121,7 @@ impl PaintTextureCache {
                 }
             }
             PaintType::Video => {
-                // Legacy path. Active video routing goes directly to TexturePool via mapmap::orchestration::media.
+                // Legacy path. Active video routing goes directly to TexturePool via vorce::orchestration::media.
                 self.generate_test_pattern(width, height)
             }
             PaintType::Camera => {

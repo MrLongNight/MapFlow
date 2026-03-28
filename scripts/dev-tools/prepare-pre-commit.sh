@@ -27,15 +27,15 @@ else
 fi
 
 log "Running cargo clippy --fix"
-if ! cargo clippy --fix --allow-dirty --allow-staged --workspace --all-targets --features "mapmap-io/ci-linux" -- -D warnings; then
+if ! cargo clippy --fix --allow-dirty --allow-staged --workspace --all-targets --features "vorce-io/ci-linux" -- -D warnings; then
     warn "Auto-fix could not solve every clippy issue; running strict validation next"
 fi
 
 log "Running strict cargo clippy validation"
-cargo clippy --workspace --all-targets --features "mapmap-io/ci-linux" -- -D warnings
+cargo clippy --workspace --all-targets --features "vorce-io/ci-linux" -- -D warnings
 
 log "Running cargo check --workspace --all-targets"
-cargo check --workspace --all-targets --features "mapmap-io/ci-linux"
+cargo check --workspace --all-targets --features "vorce-io/ci-linux"
 
 log "Running git diff --check"
 git diff --check --exit-code

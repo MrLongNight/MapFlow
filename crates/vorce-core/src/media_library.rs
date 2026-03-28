@@ -55,7 +55,7 @@ mod tests {
             }
         }
 
-        let path = std::env::temp_dir().join(format!("mapmap_test_limit_{}", uuid::Uuid::new_v4()));
+        let path = std::env::temp_dir().join(format!("vorce_test_limit_{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&path).unwrap();
         let _guard = TempDir(path.clone()); // Ensures cleanup on panic
 

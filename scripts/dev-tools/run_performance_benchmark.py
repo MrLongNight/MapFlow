@@ -10,7 +10,7 @@ import argparse
 # Number of iterations to run the benchmark
 DEFAULT_ITERATIONS = 5
 
-# Mapflow binary path
+# Vorce binary path
 BINARY_PATH = "./target/release/Vorce"
 
 # Output directory for the artifacts
@@ -32,8 +32,8 @@ def run_benchmark():
 
     # Make sure we build the release binary first to avoid including build time in the benchmark
     print(f"Building Vorce release binary for {binary_path}...")
-    # Vorce binary is usually produced by 'mapmap' crate
-    subprocess.run(["cargo", "build", "--release", "-p", "mapmap"], check=True)
+    # Vorce binary is usually produced by the 'vorce' crate
+    subprocess.run(["cargo", "build", "--release", "-p", "vorce"], check=True)
 
     # Resolve binary path - cargo might put it in different places depending on OS
     if not os.path.exists(binary_path):

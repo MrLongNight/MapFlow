@@ -1,4 +1,4 @@
-name: "MapFlow CodeQL Config"
+name: "Vorce CodeQL Config"
 
 paths-ignore:
   - target/**

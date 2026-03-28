@@ -1,5 +1,5 @@
 name: Feature Request
-description: Suggest a new feature for MapFlow (starts in user review queue)
+description: Suggest a new feature for Vorce (starts in user review queue)
 title: "MFuser_ "
 labels: ["feature-request", "Todo-UserISU"]
 assignees: []
@@ -9,7 +9,7 @@ body:
     attributes:
       value: |
         ## Feature Request
-        Suggest a new feature or enhancement for MapFlow.
+        Suggest a new feature or enhancement for Vorce.
         This issue starts in the user review queue and will only be handed to Jules after explicit approval.
         After creation, the title is automatically normalized to `MFuser_#<issue_number>-...`.
 

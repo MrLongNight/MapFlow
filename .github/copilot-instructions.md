@@ -1,8 +1,8 @@
-# VjMapper - GitHub Copilot Review Instructions
+# Vorce - GitHub Copilot Review Instructions
 
 ## 🎯 Project Overview
 
-**VjMapper** ist ein professionelles Open-Source Projection-Mapping-Tool in Rust.
+**Vorce** ist ein professionelles Open-Source Projection-Mapping-Tool in Rust.
 
 **Tech Stack:**
 
@@ -16,11 +16,11 @@
 
 ```
 crates/
-├── mapmap-core      # Kernlogik, Projektmanagement
-├── mapmap-ui        # egui UI-Komponenten
-├── mapmap-io        # FFmpeg, NDI, Spout/Syphon
-├── mapmap-bevy      # 3D Engine (Bevy)
-└── mapmap           # Haupt-Binary
+├── vorce-core       # Kernlogik, Projektmanagement
+├── vorce-ui         # egui UI-Komponenten
+├── vorce-io         # FFmpeg, NDI, Spout/Syphon
+├── vorce-bevy       # 3D Engine (Bevy)
+└── vorce            # Haupt-Binary
 ```
 
 ---

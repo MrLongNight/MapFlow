@@ -1,4 +1,4 @@
-// Blend Mode Shaders for MapMap
+// Blend Mode Shaders for Vorce
 // Implements all standard blend modes for layer compositing
 
 // ============================================================================

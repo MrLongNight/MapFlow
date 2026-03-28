@@ -46,7 +46,7 @@ Thumbs.db
 # except icons files
 !resources/images/*
 !resources/macOS/Info.plist
-!resources/macOS/MapMap.icns
+!resources/macOS/vorce.icns
 
 # Allow assets icons
 !assets/icons/*.svg
