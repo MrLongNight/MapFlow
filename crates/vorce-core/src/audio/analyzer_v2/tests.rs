@@ -450,3 +450,131 @@ fn test_bpm_beat_timestamps_limit() {
     assert!(analysis.tempo_bpm.is_some());
     assert_eq!(analyzer.beat_timestamps.len(), 16);
 }
+
+// --- Guardian Tests for Edge Cases ---
+
+#[test]
+fn test_calculate_bpm_clamped_ranges() {
+    let config = AudioAnalyzerV2Config::default();
+    let mut analyzer = AudioAnalyzerV2::new(config);
+
+    // Test 1: > 200 BPM (e.g., 240 BPM -> 0.25s interval)
+    // Should divide by 2 to yield 120 BPM
+    analyzer.beat_timestamps.clear();
+    analyzer.beat_timestamps.push_back(1.00);
+    analyzer.beat_timestamps.push_back(1.25);
+    analyzer.beat_timestamps.push_back(1.50);
+    analyzer.beat_timestamps.push_back(1.75);
+    analyzer.beat_timestamps.push_back(2.00);
+
+    let bpm = analyzer.calculate_bpm();
+    assert_eq!(bpm, Some(120.0), "BPM > 200 should be halved");
+
+    // Test 2: < 60 BPM (e.g., 40 BPM -> 1.5s interval)
+    // Should multiply by 2 to yield 80 BPM
+    analyzer.beat_timestamps.clear();
+    analyzer.beat_timestamps.push_back(1.0);
+    analyzer.beat_timestamps.push_back(2.5);
+    analyzer.beat_timestamps.push_back(4.0);
+    analyzer.beat_timestamps.push_back(5.5);
+    analyzer.beat_timestamps.push_back(7.0);
+
+    let bpm = analyzer.calculate_bpm();
+    assert_eq!(bpm, Some(80.0), "BPM < 60 should be doubled");
+
+    // Test 3: < 30 BPM (e.g., 20 BPM -> 3.0s interval)
+    // Should return None as it's out of clamped bounds
+    analyzer.beat_timestamps.clear();
+    analyzer.beat_timestamps.push_back(1.0);
+    analyzer.beat_timestamps.push_back(4.0);
+    analyzer.beat_timestamps.push_back(7.0);
+    analyzer.beat_timestamps.push_back(10.0);
+    analyzer.beat_timestamps.push_back(13.0);
+
+    let bpm = analyzer.calculate_bpm();
+    assert_eq!(bpm, None, "BPM < 30 should return None");
+
+    // Test 4: > 400 BPM (e.g., 480 BPM -> 0.125s interval)
+    // Should return None as it's out of clamped bounds
+    analyzer.beat_timestamps.clear();
+    analyzer.beat_timestamps.push_back(1.000);
+    analyzer.beat_timestamps.push_back(1.125);
+    analyzer.beat_timestamps.push_back(1.250);
+    analyzer.beat_timestamps.push_back(1.375);
+    analyzer.beat_timestamps.push_back(1.500);
+
+    let bpm = analyzer.calculate_bpm();
+    assert_eq!(bpm, None, "BPM > 400 should return None");
+}
+
+#[test]
+fn test_calculate_bpm_zero_average() {
+    let config = AudioAnalyzerV2Config::default();
+    let mut analyzer = AudioAnalyzerV2::new(config);
+
+    // Provide identical timestamps. This results in intervals of 0.0.
+    // Average interval will be 0.0, which is <= 0.001. Should return None.
+    analyzer.beat_timestamps.clear();
+    analyzer.beat_timestamps.push_back(1.0);
+    analyzer.beat_timestamps.push_back(1.0);
+    analyzer.beat_timestamps.push_back(1.0);
+    analyzer.beat_timestamps.push_back(1.0);
+    analyzer.beat_timestamps.push_back(1.0);
+
+    let bpm = analyzer.calculate_bpm();
+    assert_eq!(
+        bpm, None,
+        "Zero average interval should return None to avoid division by zero"
+    );
+}
+
+#[test]
+fn test_calculate_bpm_empty_valid_intervals() {
+    // We already have `test_calculate_bpm_intervals_empty`, but here we explicitly
+    // verify the valid_intervals edge case by manipulating timestamps.
+    let config = AudioAnalyzerV2Config::default();
+    let mut analyzer = AudioAnalyzerV2::new(config);
+
+    // Provide less than 4 timestamps
+    analyzer.beat_timestamps.clear();
+    analyzer.beat_timestamps.push_back(1.0);
+    analyzer.beat_timestamps.push_back(2.0);
+    analyzer.beat_timestamps.push_back(3.0);
+
+    let bpm = analyzer.calculate_bpm();
+    assert_eq!(bpm, None, "Less than 4 timestamps should return None");
+}
+
+#[test]
+fn test_try_receive_behavior() {
+    let config = AudioAnalyzerV2Config::default();
+    let mut analyzer = AudioAnalyzerV2::new(config);
+
+    // Initially, there should be no analysis
+    assert!(
+        analyzer.try_receive().is_none(),
+        "try_receive should be None initially"
+    );
+
+    // Process some samples to trigger analysis to be sent over the channel
+    let sample_rate = 44100.0;
+    let freq = 440.0;
+    let samples: Vec<f32> = (0..2048)
+        .map(|i| (2.0 * std::f32::consts::PI * freq * i as f32 / sample_rate).sin())
+        .collect();
+
+    analyzer.process_samples(&samples, 1.0);
+
+    // We should be able to receive the analysis
+    let analysis = analyzer.try_receive();
+    assert!(
+        analysis.is_some(),
+        "try_receive should return Some after processing samples"
+    );
+
+    // Channel should be empty now
+    assert!(
+        analyzer.try_receive().is_none(),
+        "try_receive should be None after draining"
+    );
+}
